@@ -17,6 +17,6 @@ export PATH="$ROOT/../sdl/batcab-install/bin":$PATH
 #   This seems to be the easiest way to enable local processor optimizations
 export ARCHOPTS="-march=native"
 
-NUM_PROCESSORS=`cat /proc/cpuinfo | grep processor | wc -l`
+NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
 
 make -j$((NUM_PROCESSORS*2)) -C $ROOT
