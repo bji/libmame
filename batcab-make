@@ -1,0 +1,22 @@
+#!/bin/sh
+
+ROOT=`dirname $0`
+
+if [ "$1" = "clean" ]; then
+	make -C $ROOT clean
+	exit 0
+fi
+
+# Rationale:
+#   Want to include the sdl-config program from the locally built version
+#   of sdl, if it exists.  This seems to be the easiest way to trick the
+#   mame makefile into doing so
+export PATH="$ROOT/../sdl/batcab-install/bin":$PATH
+
+# Rationale:
+#   This seems to be the easiest way to enable local processor optimizations
+export ARCHOPTS="-march=native"
+
+NUM_PROCESSORS=`cat /proc/cpuinfo | grep processor | wc -l`
+
+make -j$((NUM_PROCESSORS*2)) -C $ROOT
