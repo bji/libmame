@@ -265,12 +265,21 @@ BUILD_EXE = $(EXE)
 endif
 
 # compiler, linker and utilities
+ifdef VERBOSE
+AR = ar
+CC = gcc
+LD = g++
+MD = -mkdir$(EXE)
+RM = rm -f
+ECHO = @true
+else
 AR = @ar
 CC = @gcc
 LD = @g++
-MD = -mkdir$(EXE)
+MD = -@mkdir$(EXE)
 RM = @rm -f
-
+ECHO = @echo
+endif
 
 
 #-------------------------------------------------
@@ -608,22 +617,26 @@ tools: maketree $(TOOLS)
 maketree: $(sort $(OBJDIRS))
 
 clean: $(OSDCLEAN)
-	@echo Deleting object tree $(OBJ)...
+	$(ECHO) Deleting object tree $(OBJ)...
 	$(RM) -r $(OBJ)
-	@echo Deleting $(EMULATOR)...
+	$(ECHO) Deleting $(EMULATOR)...
 	$(RM) $(EMULATOR)
-	@echo Deleting $(TOOLS)...
+	$(ECHO) Deleting $(TOOLS)...
 	$(RM) $(TOOLS)
 ifdef MAP
-	@echo Deleting $(FULLNAME).map...
+	$(ECHO) Deleting $(FULLNAME).map...
 	$(RM) $(FULLNAME).map
+endif
+ifdef LIBMAME_TARGET
+	$(ECHO) Deleting $(LIBMAME_TARGET)...
+	$(RM) $(LIBMAME_TARGET)
 endif
 
 checkautodetect:
-	@echo TARGETOS=$(TARGETOS) 
-	@echo PTR64=$(PTR64) 
-	@echo BIGENDIAN=$(BIGENDIAN) 
-	@echo UNAME="$(UNAME)"
+	$(ECHO) TARGETOS=$(TARGETOS) 
+	$(ECHO) PTR64=$(PTR64) 
+	$(ECHO) BIGENDIAN=$(BIGENDIAN) 
+	$(ECHO) UNAME="$(UNAME)"
 
 
 #-------------------------------------------------
@@ -645,7 +658,7 @@ ifndef EXECUTABLE_DEFINED
 $(VERSIONOBJ): $(DRVLIBS) $(LIBOSD) $(LIBEMU) $(LIBCPU) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(ZLIB) $(LIBOCORE) $(RESFILE)
 
 $(EMULATOR): $(VERSIONOBJ) $(DRVLIBS) $(LIBOSD) $(LIBEMU) $(LIBCPU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(ZLIB) $(LIBOCORE) $(RESFILE)
-	@echo Linking $@...
+	$(ECHO) Linking $@...
 	$(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@
 
 endif
@@ -657,34 +670,34 @@ endif
 #-------------------------------------------------
 
 $(OBJ)/%.o: $(SRC)/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -c $< -o $@
 
 $(OBJ)/%.pp: $(SRC)/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -E $< -o $@
 
 $(OBJ)/%.s: $(SRC)/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -S $< -o $@
 
 $(OBJ)/%.lh: $(SRC)/%.lay $(FILE2STR)
-	@echo Converting $<...
+	$(ECHO) Converting $<...
 	@$(FILE2STR) $< $@ layout_$(basename $(notdir $<))
 
 $(OBJ)/%.fh: $(SRC)/%.png $(PNG2BDC) $(FILE2STR)
-	@echo Converting $<...
+	$(ECHO) Converting $<...
 	@$(PNG2BDC) $< $(OBJ)/temp.bdc
 	@$(FILE2STR) $(OBJ)/temp.bdc $@ font_$(basename $(notdir $<)) UINT8
 
 $(OBJ)/%.a:
-	@echo Archiving $@...
+	$(ECHO) Archiving $@...
 	$(RM) $@
 	$(AR) -cr $@ $^
 
 ifeq ($(TARGETOS),macosx)
 $(OBJ)/%.o: $(SRC)/%.m | $(OSPREBUILD)
-	@echo Objective-C compiling $<...
+	$(ECHO) Objective-C compiling $<...
 	$(CC) $(CDEFS) $(COBJFLAGS) $(CCOMFLAGS) -c $< -o $@
 endif
 

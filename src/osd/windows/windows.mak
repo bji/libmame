@@ -164,17 +164,17 @@ ifneq ($(CROSS_BUILD),1)
 BUILD += $(VCONV)
 
 $(VCONV): $(WINOBJ)/vconv.o
-	@echo Linking $@...
+	$(ECHO) Linking $@...
 	@link.exe /nologo $^ version.lib /out:$@
 
 $(WINOBJ)/vconv.o: $(WINSRC)/vconv.c
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	@cl.exe /nologo /O1 -D_CRT_SECURE_NO_DEPRECATE -c $< /Fo$@
 
 OSDCLEAN = msvcclean
 
 msvcclean:
-	@echo Deleting Visual Studio specific files...
+	$(ECHO) Deleting Visual Studio specific files...
 	$(RM) *.pdb
 	$(RM) *.lib
 	$(RM) *.exp
@@ -317,7 +317,7 @@ LEDUTILOBJS = \
 	$(WINOBJ)/ledutil.o
 
 $(LEDUTIL): $(LEDUTILOBJS) $(LIBOCORE)
-	@echo Linking $@...
+	$(ECHO) Linking $@...
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
@@ -327,7 +327,7 @@ $(LEDUTIL): $(LEDUTILOBJS) $(LIBOCORE)
 #-------------------------------------------------
 
 $(WINOBJ)/%.res: $(WINSRC)/%.rc | $(OSPREBUILD)
-	@echo Compiling resources $<...
+	$(ECHO) Compiling resources $<...
 	$(RC) $(RCDEFS) $(RCFLAGS) -o $@ -i $<
 
 
@@ -339,5 +339,5 @@ $(WINOBJ)/%.res: $(WINSRC)/%.rc | $(OSPREBUILD)
 $(RESFILE): $(WINSRC)/mame.rc $(WINOBJ)/mamevers.rc
 
 $(WINOBJ)/mamevers.rc: $(BUILDOUT)/verinfo$(BUILD_EXE) $(SRC)/version.c
-	@echo Emitting $@...
+	$(ECHO) Emitting $@...
 	@"$(BUILDOUT)/verinfo$(BUILD_EXE)" -b windows $(SRC)/version.c > $@

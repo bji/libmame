@@ -8,6 +8,7 @@
 
 #include "osdcore.h"
 #include "osdepend.h"
+#include <signal.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/time.h>

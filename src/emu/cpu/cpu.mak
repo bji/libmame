@@ -1008,17 +1008,17 @@ endif
 
 # when we compile source files we need to include generated files from the OBJ directory
 $(CPUOBJ)/m68000/%.o: $(CPUSRC)/m68000/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -I$(CPUOBJ)/m68000 -c $< -o $@
 
 # when we compile generated files we need to include stuff from the src directory
 $(CPUOBJ)/m68000/%.o: $(CPUOBJ)/m68000/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -I$(CPUSRC)/m68000 -c $< -o $@
 
 # rule to generate the C files
 $(CPUOBJ)/m68000/m68kops.c: $(M68KMAKE) $(CPUSRC)/m68000/m68k_in.c
-	@echo Generating M68K source files...
+	$(ECHO) Generating M68K source files...
 	$(M68KMAKE) $(CPUOBJ)/m68000 $(CPUSRC)/m68000/m68k_in.c
 
 # rule to build the generator
@@ -1027,7 +1027,7 @@ ifneq ($(CROSS_BUILD),1)
 BUILD += $(M68KMAKE)
 
 $(M68KMAKE): $(CPUOBJ)/m68000/m68kmake.o $(LIBOCORE)
-	@echo Linking $@...
+	$(ECHO) Linking $@...
 	$(LD) $(LDFLAGS) $(OSDBGLDFLAGS) $^ $(LIBS) -o $@
 endif
 
@@ -1547,7 +1547,7 @@ $(CPUOBJ)/tms57002/57002dsm.o:	$(CPUSRC)/tms57002/57002dsm.c \
 
 # rule to generate the C file
 $(CPUOBJ)/tms57002/tms57002.inc: $(TMSMAKE) $(CPUSRC)/tms57002/tmsinstr.lst
-	@echo Generating TMS57002 source file...
+	$(ECHO) Generating TMS57002 source file...
 	$(TMSMAKE) $(CPUSRC)/tms57002/tmsinstr.lst $@
 
 # rule to build the generator
@@ -1556,7 +1556,7 @@ ifneq ($(CROSS_BUILD),1)
 BUILD += $(TMSMAKE)
 
 $(TMSMAKE): $(CPUOBJ)/tms57002/tmsmake.o $(LIBOCORE)
-	@echo Linking $@...
+	$(ECHO) Linking $@...
 	$(LD) $(LDFLAGS) $(OSDBGLDFLAGS) $^ $(LIBS) -o $@
 
 endif

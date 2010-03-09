@@ -65,7 +65,7 @@ EXPATOBJS = \
 $(OBJ)/libexpat.a: $(EXPATOBJS)
 
 $(LIBOBJ)/expat/%.o: $(LIBSRC)/explat/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CCOMFLAGS) $(CONLYFLAGS) -c $< -o $@
 
 
@@ -91,5 +91,5 @@ ZLIBOBJS = \
 $(OBJ)/libz.a: $(ZLIBOBJS)
 
 $(LIBOBJ)/zlib/%.o: $(LIBSRC)/zlib/%.c | $(OSPREBUILD)
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CCOMFLAGS) $(CONLYFLAGS) -c $< -o $@

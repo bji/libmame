@@ -503,14 +503,14 @@ TOOLS += \
 	testkeys$(EXE)
 
 $(SDLOBJ)/testkeys.o: $(SDLSRC)/testkeys.c
-	@echo Compiling $<...
+	$(ECHO) Compiling $<...
 	$(CC)  $(CFLAGS) $(DEFS) -c $< -o $@
 
 TESTKEYSOBJS = \
 	$(SDLOBJ)/testkeys.o \
 
 testkeys$(EXE): $(TESTKEYSOBJS) $(LIBUTIL) $(LIBOCORE) $(SDLUTILMAIN)
-	@echo Linking $@...
+	$(ECHO) Linking $@...
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 #-------------------------------------------------
@@ -540,7 +540,7 @@ zip:
 DEPENDFILE = .depend_$(EMULATOR)
 
 makedepend:
-	@echo Generating $(DEPENDFILE)
+	$(ECHO) Generating $(DEPENDFILE)
 	rm -f $(DEPENDFILE)
 	@for i in `find src -name "*.c"` ; do \
 		echo processing $$i; \

@@ -1,29 +1,12 @@
 #!/bin/sh
 
-ROOT=`dirname $0`
-
-if [ "$1" = "clean" ]; then
-	make -C $ROOT clean
-	exit 0
-fi
-
-# Rationale:
-#   Want to include the sdl-config program from the locally built version
-#   of sdl, if it exists.  This seems to be the easiest way to trick the
-#   mame makefile into doing so
-export PATH="$ROOT/../sdl/batcab-install/bin":$PATH
-
-# Rationale:
-#   This seems to be the easiest way to enable local processor optimizations
-export ARCHOPTS="-march=native"
-
 # To build mame as a library, use:
-# OSD=lib ./batcab-make
+# OSD=lib ./batcab-make libmame.a
 # You may also want to do:
-# OST=lib SUBTARGET=tiny ./batcab-make
-# The above will build a much smaller version of mame with many fewer romsets
-# supported but builds *alot* faster, which makes it good for testing
+# OST=lib SUBTARGET=tiny ./batcab-make libmame.a
+# The above will build a much smaller version of libmame with many fewer
+# romsets supported but builds *alot* faster, which makes it good for testing
 
 NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
 
-OSD="$OSD" SUBTARGET="$SUBTARGET" make -j$((NUM_PROCESSORS*2)) -C $ROOT "$@"
+make -j$((NUM_PROCESSORS*2)) -C `dirname $0` "$@"
