@@ -1,20 +1,14 @@
 /** **************************************************************************
  * osd_file.c
  *
- * Copyright Nicola Salmoria and the MAME Team.
+ * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
  *
  ************************************************************************** **/
 
-/**
- * This file contains some of the glue between the MAME osd layer and libmame.
- * It implements all of the osd_ functions that MAME calls that are related to
- * file I/O, in such a way that they integrate with the API that libmame
- * provides.
- **/
-
 #include "osdcore.h"
 #include "osdepend.h"
+#include "osd_util.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,30 +22,6 @@ struct _osd_file
     FILE *posix_file;
     UINT64 current_offset; /* To avoid fseek calls */
 };
-
-
-static int convert_to_posix_path(const char *path, char *posix_path,
-                                 int pathsize)
-{
-    char *posix_path_end = &(posix_path[pathsize - 1]);
-
-    while (*path) {
-        if (posix_path == posix_path_end) {
-            return 1;
-        }
-        if (!strncmp(path, PATH_SEPARATOR, sizeof(PATH_SEPARATOR) - 1)) {
-            *posix_path++ = '/';
-            path += sizeof(PATH_SEPARATOR) - 1;
-        }
-        else {
-            *posix_path++ = *path++;
-        }
-    }
-
-    *posix_path = 0;
-
-    return 0;
-}
 
 
 /* Has the same effect as mkdir -p.  Returns 0 on success and nonzero on
@@ -166,7 +136,7 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
             return FILERR_NOT_FOUND;
         case ENOMEM:
             return FILERR_OUT_OF_MEMORY;
-        defaut:
+        default:
             return FILERR_FAILURE;
         }
     }
@@ -236,7 +206,7 @@ file_error osd_write(osd_file *file, const void *buffer, UINT64 offset,
     }
 
     *actual = fwrite(buffer, 1, length, file->posix_file);
-    if ((*fwrite == 0) && ferror(file->posix_file)) {
+    if ((*actual == 0) && ferror(file->posix_file)) {
         return FILERR_FAILURE;
     }
 
@@ -285,6 +255,7 @@ int osd_uchar_from_osdchar(UINT32 /* unicode_char */ *uchar,
     while (count--) {
         *uchar++ = *osdchar++;
     }
+    *uchar = 0;
     
     return ret;
 }

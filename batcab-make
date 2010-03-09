@@ -17,6 +17,13 @@ export PATH="$ROOT/../sdl/batcab-install/bin":$PATH
 #   This seems to be the easiest way to enable local processor optimizations
 export ARCHOPTS="-march=native"
 
+# To build mame as a library, use:
+# OSD=lib ./batcab-make
+# You may also want to do:
+# OST=lib SUBTARGET=tiny ./batcab-make
+# The above will build a much smaller version of mame with many fewer romsets
+# supported but builds *alot* faster, which makes it good for testing
+
 NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
 
-make -j$((NUM_PROCESSORS*2)) -C $ROOT
+OSD="$OSD" SUBTARGET="$SUBTARGET" make -j$((NUM_PROCESSORS*2)) -C $ROOT "$@"
