@@ -14,7 +14,5 @@ int main(int argc, char **argv)
     (void) argc;
     (void) argv;
 
-    core_options options;
-
-    return mame_execute(&options);
+    return mame_execute(0);
 }
