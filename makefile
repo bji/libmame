@@ -271,6 +271,7 @@ CC = gcc
 LD = g++
 MD = -mkdir$(EXE)
 RM = rm -f
+CP = cp -a
 ECHO = @true
 else
 AR = @ar
@@ -279,6 +280,7 @@ LD = @g++
 MD = -@mkdir$(EXE)
 RM = @rm -f
 ECHO = @echo
+CP = @cp -a
 endif
 
 
@@ -627,9 +629,9 @@ ifdef MAP
 	$(ECHO) Deleting $(FULLNAME).map...
 	$(RM) $(FULLNAME).map
 endif
-ifdef LIBMAME_TARGET
-	$(ECHO) Deleting $(LIBMAME_TARGET)...
-	$(RM) $(LIBMAME_TARGET)
+ifdef LIBMAME_INSTALL
+	$(ECHO) Deleting $(LIBMAME_INSTALL)...
+	$(RM) -r $(LIBMAME_INSTALL)
 endif
 
 checkautodetect:

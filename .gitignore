@@ -1,5 +1,6 @@
-libmame.a
+libmame
 mame
 mame64
 mametiny
+mametinyd
 obj

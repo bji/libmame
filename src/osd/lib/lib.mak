@@ -10,7 +10,8 @@
 # object and source roots
 #-------------------------------------------------
 
-OSDLIBOBJ = $(OBJ)/osd/$(OSD)
+OSDLIBSRC = $(SRC)/osd/lib
+OSDLIBOBJ = $(OBJ)/osd/lib
 
 OBJDIRS += $(OSDLIBOBJ)
 
@@ -56,11 +57,22 @@ $(LIBOSD): $(OSDOBJS)
 #                   $(SOUNDOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) \
 #                   $(OSDCOREOBJS) $(VERSIONOBJ)
 
+# Consider removing expatobjs and zlibobjs from here, and instead require
+# applications to link against those libraries externally.
 LIBMAMECONTENTS = $(DRVLIBS) $(LIBEMUOBJS) $(CPUOBJS) $(SOUNDOBJS) \
                   $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) $(OSDCOREOBJS) \
                   $(VERSIONOBJ)
 
-LIBMAME_TARGET = libmame.a
+LIBMAME_INSTALL = libmame
 
-$(LIBMAME_TARGET): maketree buildtools $(LIBMAMECONTENTS)
+$(LIBMAME_INSTALL)/usr/lib/libmame.a: maketree $(LIBMAMECONTENTS)
+		   $(MD) -p `dirname $@`
 		   ar crv $@ $(LIBMAMECONTENTS)
+
+$(LIBMAME_INSTALL)/usr/include/libmame.h: $(OSDLIBSRC)/libmame.h
+			$(MD) -p `dirname $@`
+			$(CP) $< $@
+
+.PHONY: libmame
+libmame: $(LIBMAME_INSTALL)/usr/lib/libmame.a \
+         $(LIBMAME_INSTALL)/usr/include/libmame.h

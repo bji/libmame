@@ -102,13 +102,14 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
     }
 
     /* In POSIX, it is nonsensical to open a file write-only; so we consider
-       OPEN_FLAG_WRITE to imply OPEN_FLAG_READ */
+       OPEN_FLAG_WRITE to imply OPEN_FLAG_READ.  Additionally, the non-POSIX
+       "b" flag is used as a concession for Windows platforms. */
     if (openflags & OPEN_FLAG_WRITE) {
         if (openflags & OPEN_FLAG_CREATE) {
-            mode = "w+";
+            mode = "w+b";
         }
         else {
-            mode = "r+";
+            mode = "r+b";
         }
     }
     else {
@@ -116,7 +117,7 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
            is nonsensical to call osd_open without OPEN_FLAG_READ or
            OPEN_FLAG_WRITE.  Also don't check for OPEN_FLAG_CREATE, as it is
            nonsensical to create/truncate a file and then open it read-only. */
-        mode = "r";
+        mode = "rb";
     }
 
     FILE *f;
@@ -248,14 +249,9 @@ int osd_get_physical_drive_geometry(const char *filename, UINT32 *cylinders,
 int osd_uchar_from_osdchar(UINT32 /* unicode_char */ *uchar,
                            const char *osdchar, size_t count)
 {
-    size_t ret = count;
+    /* The format of osdchar is OS-defined; we use ISO-8891 single-byte
+       characters so the conversion is trivial */
+    *uchar = *osdchar;
 
-    /* The format of osdchar is OS-defined; we use ISO-8891
-       single-byte characters so the conversion is trivial */
-    while (count--) {
-        *uchar++ = *osdchar++;
-    }
-    *uchar = 0;
-    
-    return ret;
+    return 1;
 }
