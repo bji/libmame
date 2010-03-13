@@ -1,5 +1,5 @@
 /** **************************************************************************
- * osd_lib.c
+ * osd_iav.c
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.

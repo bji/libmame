@@ -56,8 +56,32 @@
 
 
 /**
- * Functions for querying information about libmame itself.
+ * ORIENTATION FLAGS
+ * - See info.c line 683
  **/
+
+
+#define LIBMAME_ORIENTATIONFLAGS_FLIP_X                         0x01
+#define LIBMAME_ORIENTATIONFLAGS_FLIP_Y                         0x02
+#define LIBMAME_ORIENTATIONFLAGS_ROTATE_90                      0x04
+#define LIBMAME_ORIENTATIONFLAGS_ROTATE_180                     0x08
+#define LIBMAME_ORIENTATIONFLAGS_ROTATE_270                     0x10
+
+
+/**
+ * Functions for managing the library.
+ **/
+
+/**
+ * Deinitializes libmame, releasing any resources that the library has
+ * allocated.  It is not necessary to call this method before a process exits,
+ * as the operating system will reclaim the memory that libmame has allocated;
+ * however, when debugging, it may be useful to call this so that memory
+ * allocated by libmame does not appear to have been leaked when the program
+ * exits.
+ **/
+void LibMame_Deinitialize();
+
 
 /**
  * Returns the string describing the version of mame that this instance of
@@ -82,14 +106,6 @@ int LibMame_Get_Game_Count();
 
 
 /**
- * Returns the full name of a game.
- *
- * @return the full name of a game.
- **/
-const char *LibMame_Get_Game_Full_Name(int gamenum);
-
-
-/**
  * Returns the short name of a game.
  *
  * @return the short name of a game.
@@ -98,9 +114,17 @@ const char *LibMame_Get_Game_Short_Name(int gamenum);
 
 
 /**
- * Returns the year that a game was released.
+ * Returns the full name of a game.
  *
- * @return the year that a game was released.
+ * @return the full name of a game.
+ **/
+const char *LibMame_Get_Game_Full_Name(int gamenum);
+
+
+/**
+ * Returns the year that a game was released, or -1 if the year is unknown.
+ *
+ * @return the year that a game was released, or -1 if the year is unknown.
  **/
 int LibMame_Get_Game_Year_Of_Release(int gamenum);
 
@@ -136,7 +160,14 @@ const char *LibMame_Get_Game_Manufacturer(int gamenum);
 int LibMame_Get_Game_WorkingFlags(int gamenum);
 
 
-
+/**
+ * Returns the set of flags describing the game's supported orientations.
+ * This is an or'd together set of flags from the LIBMAME_ORIENTATIONFLAGS_XXX
+ * symbols.
+ *
+ * @return the set of flags describing the game's supported orientations.
+ **/
+int LibMame_Get_Game_OrientationFlags(int gamenum);
 
 
 #endif /* __LIBMAME_H__ */

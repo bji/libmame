@@ -8,11 +8,15 @@
 
 #include "emu.h"
 #include "emuopts.h"
+#include "libmame.h"
+#include <stdio.h>
 
 int main(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
+
+    printf("LibMame version %s\n", LibMame_Get_Version_String());
 
     options_entry options_entries[1] = { { NULL } };
 
@@ -23,6 +27,8 @@ int main(int argc, char **argv)
     if (core_options != NULL) {
         options_free(core_options);
     }
+
+    LibMame_Deinitialize();
 
     return ret;
 }
