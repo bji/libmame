@@ -69,6 +69,24 @@
 
 
 /**
+ * Screen flags
+ **/
+
+#define LIBMAME_SCREENFLAGS_RASTER                              0x01
+#define LIBMAME_SCREENFLAGS_LCD                                 0x02
+#define LIBMAME_SCREENFLAGS_VECTOR                              0x04
+
+
+/**
+ * This is a screen size in pixels
+ **/
+typedef struct LibMame_ScreenResolution
+{
+    int width, height;
+} LibMame_ScreenResolution;
+
+
+/**
  * Functions for managing the library.
  **/
 
@@ -168,6 +186,33 @@ int LibMame_Get_Game_WorkingFlags(int gamenum);
  * @return the set of flags describing the game's supported orientations.
  **/
 int LibMame_Get_Game_OrientationFlags(int gamenum);
+
+
+/**
+ * Returns the set of flags describing the game's original screen.
+ * This is an or'd together set of flags from the LIBMAME_SCREENFLAGS_XXX
+ * symbols.
+ *
+ * @return the set of flags describing the game's supported orientations.
+ **/
+int LibMame_Get_Game_ScreenFlags(int gamenum);
+
+
+/**
+ * Returns the original resolution of the game.  If the game is a vector
+ * game, then this is an undefined value.
+ *
+ * @return the original resolution of the game.
+ **/
+LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum);
+
+
+/**
+ * Returns the original screen refresh rate, in Hz, of the game.
+ *
+ * @return the original screen refresh rate, in Hz, of the game.
+ **/
+int LibMame_Get_Game_ScreenRefreshRate(int gamenum);
 
 
 #endif /* __LIBMAME_H__ */

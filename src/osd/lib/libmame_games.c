@@ -19,24 +19,16 @@
 #include <string.h>
 
 
-#define FULL_NAME_MAX 80
-#define SHORT_NAME_MAX 9
-#define MANUFACTURER_MAX 64
-
-
 typedef struct GameInfo
 {
     bool converted;
     int driver_index;
-    char short_name[SHORT_NAME_MAX], full_name[FULL_NAME_MAX];
     int year_of_release;
-    char clone_of[SHORT_NAME_MAX];
-    char manufacturer[MANUFACTURER_MAX];
     int working_flags, orientation_flags, screen_flags;
-    int screen_width, screen_height, refresh_rate_hz;
+    LibMame_ScreenResolution screen_resolution;
+    int screen_refresh_rate;
 } GameInfo;
 
-typedef char short_name[SHORT_NAME_MAX];
 
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_game_count = 0;
@@ -57,46 +49,22 @@ static GameInfo *g_gameinfos = 0;
         }                                                              \
     } while (0)
 
-#define SAFE_STRCPY(dest, src) \
-    safe_strncpy(dest, src, sizeof(dest))
 
-
-static void safe_strncpy(char *dest, const char *src, size_t n)
+static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
-    if (src == NULL) {
-        *dest = 0;
-    }
-    else {
-        (void) strncpy(dest, src, n);
-        dest[n - 1] = 0;
-    }
-}
-
-
-static void convert_strings(const game_driver *driver,
-                            GameInfo *gameinfo)
-{
-    SAFE_STRCPY(gameinfo->full_name, driver->description);
-    SAFE_STRCPY(gameinfo->clone_of, driver->parent);
-    SAFE_STRCPY(gameinfo->manufacturer, driver->manufacturer);
-}
-
-
-static int convert_year(const char *yearstr)
-{
-    int year = 0;
+    gameinfo->year_of_release = 0;
+    const char *yearstr = driver->year;
     while (*yearstr) {
         if ((*yearstr >= '0') && (*yearstr <= '9')) {
-            year *= 10;
-            year += *yearstr - '0';
+            gameinfo->year_of_release *= 10;
+            gameinfo->year_of_release += *yearstr - '0';
         }
         else {
-            return -1;
+            gameinfo->year_of_release = -1;
+            break;
         }
         yearstr++;
     }
-
-    return year;
 }
 
 
@@ -144,17 +112,18 @@ static void convert_orientation_flags(const game_driver *driver,
 }
 
 
-static void convert_screen_info(const game_driver *driver,
+static void convert_screen_info(const machine_config *machineconfig,
                                 GameInfo *gameinfo)
 {
     gameinfo->screen_flags = 0;
-    gameinfo->screen_width = 0;
-    gameinfo->screen_height = 0;
-#if 0
+    gameinfo->screen_resolution.width = 0;
+    gameinfo->screen_resolution.height = 0;
+    gameinfo->screen_refresh_rate = 0;
+
     const device_config *devconfig;
-    for (devconfig = video_screen_first(driver->machine_config);
+    for (devconfig = video_screen_first(machineconfig);
          devconfig != NULL; devconfig = video_screen_next(devconfig)) {
-        const screen_config screenconfig =
+        const screen_config *screenconfig =
             (const screen_config *) devconfig->inline_config;
         switch (screenconfig->type) {
         case SCREEN_TYPE_RASTER:
@@ -168,17 +137,16 @@ static void convert_screen_info(const game_driver *driver,
             break;
         }
         if (screenconfig->type != SCREEN_TYPE_VECTOR) {
-            gameinfo->screen_width = 
+            gameinfo->screen_resolution.width = 
                 ((screenconfig->visarea.max_x - 
                   screenconfig->visarea.min_x) + 1);
-            gameinfo->screen_height = 
+            gameinfo->screen_resolution.height = 
                 ((screenconfig->visarea.max_y - 
                   screenconfig->visarea.min_y) + 1);
         }
-        gameinfo->refresh_rate_hz = 
+        gameinfo->screen_refresh_rate = 
             ATTOSECONDS_TO_HZ(screenconfig->refresh);
     }
-#endif
 }
 
 
@@ -186,15 +154,20 @@ static void convert_game_info(GameInfo *gameinfo)
 {
     const game_driver *driver = drivers[gameinfo->driver_index];
 
-    convert_strings(driver, gameinfo);
-    gameinfo->year_of_release = convert_year(driver->year);
+	machine_config *machineconfig = 
+        machine_config_alloc(driver->machine_config);
+    /* Mame's code assumes the above succeeds, we will too */
+
+    convert_year(driver, gameinfo);
     convert_working_flags(driver, gameinfo);
     convert_orientation_flags(driver, gameinfo);
-    convert_screen_info(driver, gameinfo);
+    convert_screen_info(machineconfig, gameinfo);
+
+    machine_config_free(machineconfig);
 }
 
 
-static GameInfo *get_gameinfo_helper(int gamenum, bool complete)
+static GameInfo *get_gameinfo_helper(int gamenum, bool converted)
 {
     pthread_mutex_lock(&g_mutex);
 
@@ -202,7 +175,7 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool complete)
         const game_driver * const *pdriver = drivers;
         while (*pdriver) {
             const game_driver *driver = *pdriver;
-            if (!(driver->flags & GAME_IS_BIOS_ROOT)) {
+            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE))) {
                 g_game_count++;
             }
             pdriver++;
@@ -216,10 +189,9 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool complete)
             if (driver == NULL) {
                 break;
             }
-            if (!(driver->flags & GAME_IS_BIOS_ROOT)) {
+            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE))) {
                 gameinfo->converted = false;
                 gameinfo->driver_index = driver_index;
-                SAFE_STRCPY(gameinfo->short_name, driver->name);
             }
             driver_index++;
         }
@@ -227,13 +199,19 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool complete)
 
     GameInfo *ret = &(g_gameinfos[gamenum]);
 
-    if (complete && !ret->converted) {
+    if (converted && !ret->converted) {
         convert_game_info(ret);
     }
 
     pthread_mutex_unlock(&g_mutex);
 
     return ret;
+}
+
+
+static const game_driver *get_game_driver(int gamenum)
+{
+    return drivers[get_gameinfo_helper(gamenum, false)->driver_index];
 }
 
 
@@ -269,13 +247,13 @@ int LibMame_Get_Game_Count()
 
 const char *LibMame_Get_Game_Short_Name(int gamenum)
 {
-    return get_gameinfo_helper(gamenum, false)->short_name;
+    return get_game_driver(gamenum)->name;
 }
 
 
 const char *LibMame_Get_Game_Full_Name(int gamenum)
 {
-    return get_gameinfo(gamenum)->full_name;
+    return get_game_driver(gamenum)->description;
 }
 
 
@@ -287,14 +265,13 @@ int LibMame_Get_Game_Year_Of_Release(int gamenum)
 
 const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum)
 {
-    const char *clone_of = get_gameinfo(gamenum)->clone_of;
-    return *clone_of ? clone_of : NULL;
+    return get_game_driver(gamenum)->parent;
 }
 
 
 const char *LibMame_Get_Game_Manufacturer(int gamenum)
 {
-    return get_gameinfo(gamenum)->manufacturer;
+    return get_game_driver(gamenum)->manufacturer;
 }
 
 
@@ -307,4 +284,22 @@ int LibMame_Get_Game_WorkingFlags(int gamenum)
 int LibMame_Get_Game_OrientationFlags(int gamenum)
 {
     return get_gameinfo(gamenum)->orientation_flags;
+}
+
+
+int LibMame_Get_Game_ScreenFlags(int gamenum)
+{
+    return get_gameinfo(gamenum)->screen_flags;
+}
+
+
+LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum)
+{
+    return get_gameinfo(gamenum)->screen_resolution;
+}
+
+
+int LibMame_Get_Game_ScreenRefreshRate(int gamenum)
+{
+    return get_gameinfo(gamenum)->screen_refresh_rate;
 }
