@@ -69,12 +69,14 @@
 
 
 /**
- * Screen flags
+ * Screen types
  **/
-
-#define LIBMAME_SCREENFLAGS_RASTER                              0x01
-#define LIBMAME_SCREENFLAGS_LCD                                 0x02
-#define LIBMAME_SCREENFLAGS_VECTOR                              0x04
+typedef enum
+{
+    LibMame_ScreenType_Raster,
+    LibMame_ScreenType_LCD,
+    LibMame_ScreenType_Vector
+} LibMame_ScreenType;
 
 
 /**
@@ -189,13 +191,11 @@ int LibMame_Get_Game_OrientationFlags(int gamenum);
 
 
 /**
- * Returns the set of flags describing the game's original screen.
- * This is an or'd together set of flags from the LIBMAME_SCREENFLAGS_XXX
- * symbols.
+ * Returns the type of the game's original screen.
  *
- * @return the set of flags describing the game's supported orientations.
+ * @return the type of the game's original screen.
  **/
-int LibMame_Get_Game_ScreenFlags(int gamenum);
+LibMame_ScreenType LibMame_Get_Game_ScreenType(int gamenum);
 
 
 /**

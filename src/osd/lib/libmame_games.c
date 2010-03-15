@@ -24,7 +24,8 @@ typedef struct GameInfo
     bool converted;
     int driver_index;
     int year_of_release;
-    int working_flags, orientation_flags, screen_flags;
+    int working_flags, orientation_flags;
+    LibMame_ScreenType screen_type;
     LibMame_ScreenResolution screen_resolution;
     int screen_refresh_rate;
 } GameInfo;
@@ -115,28 +116,29 @@ static void convert_orientation_flags(const game_driver *driver,
 static void convert_screen_info(const machine_config *machineconfig,
                                 GameInfo *gameinfo)
 {
-    gameinfo->screen_flags = 0;
+    gameinfo->screen_type = LibMame_ScreenType_Raster;
     gameinfo->screen_resolution.width = 0;
     gameinfo->screen_resolution.height = 0;
     gameinfo->screen_refresh_rate = 0;
 
-    const device_config *devconfig;
-    for (devconfig = video_screen_first(machineconfig);
-         devconfig != NULL; devconfig = video_screen_next(devconfig)) {
+    /* We assume that all screens are the same; and in any case, only report
+       on the first screen, which is assumed to be the primary screen */
+    const device_config *devconfig = video_screen_first(machineconfig);
+    if (devconfig != NULL) {
         const screen_config *screenconfig =
             (const screen_config *) devconfig->inline_config;
         switch (screenconfig->type) {
         case SCREEN_TYPE_RASTER:
-            gameinfo->screen_flags |= LIBMAME_SCREENFLAGS_RASTER;
+            gameinfo->screen_type = LibMame_ScreenType_Raster;
             break;
         case SCREEN_TYPE_LCD:
-            gameinfo->screen_flags |= LIBMAME_SCREENFLAGS_LCD;
+            gameinfo->screen_type = LibMame_ScreenType_LCD;
             break;
         case SCREEN_TYPE_VECTOR:
-            gameinfo->screen_flags |= LIBMAME_SCREENFLAGS_VECTOR;
+            gameinfo->screen_type = LibMame_ScreenType_Vector;
             break;
         }
-        if (screenconfig->type != SCREEN_TYPE_VECTOR) {
+        if (gameinfo->screen_type != LibMame_ScreenType_Vector) {
             gameinfo->screen_resolution.width = 
                 ((screenconfig->visarea.max_x - 
                   screenconfig->visarea.min_x) + 1);
@@ -193,7 +195,7 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool converted)
                 gameinfo->converted = false;
                 gameinfo->driver_index = driver_index;
             }
-            driver_index++;
+            driver_index++, gameinfo++;
         }
     }
 
@@ -265,7 +267,8 @@ int LibMame_Get_Game_Year_Of_Release(int gamenum)
 
 const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum)
 {
-    return get_game_driver(gamenum)->parent;
+    const char *clone_of = get_game_driver(gamenum)->parent;
+    return (clone_of && *clone_of && strcmp(clone_of, "0")) ? clone_of : NULL;
 }
 
 
@@ -287,9 +290,9 @@ int LibMame_Get_Game_OrientationFlags(int gamenum)
 }
 
 
-int LibMame_Get_Game_ScreenFlags(int gamenum)
+LibMame_ScreenType LibMame_Get_Game_ScreenType(int gamenum)
 {
-    return get_gameinfo(gamenum)->screen_flags;
+    return get_gameinfo(gamenum)->screen_type;
 }
 
 
