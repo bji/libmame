@@ -1,9 +1,10 @@
 #!/bin/sh
 
 # To build mame as a library, use:
-# OSD=lib ./batcab-make libmame.a
+# OSD=lib ./batcab-make libmame
+
 # You may also want to do:
-# OST=lib SUBTARGET=tiny ./batcab-make libmame.a
+# OST=lib SUBTARGET=tiny ./batcab-make libmame
 # The above will build a much smaller version of libmame with many fewer
 # romsets supported but builds *alot* faster, which makes it good for testing
 

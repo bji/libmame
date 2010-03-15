@@ -963,9 +963,8 @@ int render_is_live_screen(running_device *screen)
 	assert(screen != NULL);
 	assert(screen->machine != NULL);
 	assert(screen->machine->config != NULL);
-	assert(screen->tag != NULL);
 
-	screen_index = screen->machine->devicelist.index(VIDEO_SCREEN, screen->tag);
+	screen_index = screen->machine->devicelist.index(VIDEO_SCREEN, screen->tag());
 
 	assert(screen_index != -1);
 
@@ -1470,7 +1469,7 @@ void render_target_get_minimum_size(render_target *target, INT32 *minwidth, INT3
 			{
 				const device_config *screen = target->machine->config->devicelist.find(VIDEO_SCREEN, item->index);
 				const screen_config *scrconfig = (const screen_config *)screen->inline_config;
-				running_device *screendev = target->machine->device(screen->tag);
+				running_device *screendev = target->machine->device(screen->tag());
 				const rectangle vectorvis = { 0, 639, 0, 479 };
 				const rectangle *visarea = NULL;
 				render_container *container = get_screen_container_by_index(item->index);
@@ -1650,7 +1649,7 @@ const render_primitive_list *render_target_get_primitives(render_target *target)
 		ui_xform.xscale = (float) target->width;
 		ui_xform.yscale = (float) target->height;
 		ui_xform.color.r = ui_xform.color.g = ui_xform.color.b = ui_xform.color.a = 1.0f;
-		ui_xform.color.a = 0.9;
+		ui_xform.color.a = 0.9f;
 		ui_xform.orientation = target->orientation;
 		ui_xform.no_center = TRUE;
 

@@ -142,6 +142,7 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/i2cmem.o \
 	$(EMUMACHINE)/i2cmemdev.o \
 	$(EMUMACHINE)/idectrl.o \
+	$(EMUMACHINE)/ins8154.o	\
 	$(EMUMACHINE)/intelfsh.o \
 	$(EMUMACHINE)/k033906.o \
 	$(EMUMACHINE)/k056230.o \
@@ -178,9 +179,11 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/x76f041.o \
 	$(EMUMACHINE)/x76f100.o \
 	$(EMUMACHINE)/z80ctc.o \
+	$(EMUMACHINE)/z80dart.o \
 	$(EMUMACHINE)/z80dma.o \
 	$(EMUMACHINE)/z80pio.o \
 	$(EMUMACHINE)/z80sio.o \
+	$(EMUMACHINE)/z80sti.o \
 
 EMUVIDEOOBJS = \
 	$(EMUVIDEO)/generic.o \

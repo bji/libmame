@@ -19,6 +19,7 @@
 #include "cpu/superfx/superfx.h"
 #include "cpu/g65816/g65816.h"
 
+
 /* -- Globals -- */
 UINT8  *snes_ram = NULL;		/* 65816 ram */
 UINT8  *spc_ram = NULL;			/* spc700 ram */
@@ -30,7 +31,6 @@ static UINT8  vram_read_offset;	/* VRAM read offset */
 UINT8  spc_port_in[4];	/* Port for sending data to the SPC700 */
 UINT8  spc_port_out[4];	/* Port for receiving data from the SPC700 */
 static UINT8 snes_hdma_chnl;	/* channels enabled for HDMA */
-static UINT8 joy1l, joy1h, joy2l, joy2h, joy3l, joy3h, joy4l, joy4h;
 static UINT8 read_ophct = 0, read_opvct = 0;
 static emu_timer *snes_scanline_timer;
 static emu_timer *snes_hblank_timer;
@@ -51,14 +51,6 @@ static const UINT16 vram_fgr_shiftab[4] = { 0, 5, 6, 7 };
 
 struct snes_cart_info snes_cart;
 
-static struct
-{
-	UINT8 low;
-	UINT8 high;
-	UINT32 value;
-	UINT8 oldrol;
-} joypad[4];
-
 // add-on chip emulators
 #include "machine/snesdsp1.c"
 #include "machine/snesdsp2.c"
@@ -78,7 +70,7 @@ static struct
 *************************************/
 
 // utility function - latches the H/V counters.  Used by IRQ, writes to WRIO, etc.
-static void snes_latch_counters(running_machine *machine)
+void snes_latch_counters(running_machine *machine)
 {
 	snes_ppu.beam.current_horz = video_screen_get_hpos(machine->primary_screen) / snes_htmult;
 	snes_ppu.beam.latch_vert = video_screen_get_vpos(machine->primary_screen);
@@ -134,6 +126,8 @@ static TIMER_CALLBACK( snes_reset_hdma )
 
 static TIMER_CALLBACK( snes_scanline_tick )
 {
+	snes_state *state = (snes_state *)machine->driver_data;
+
 	/* Increase current line - we want to latch on this line during it, not after it */
 	snes_ppu.beam.current_vert = video_screen_get_vpos(machine->primary_screen);
 
@@ -204,43 +198,7 @@ static TIMER_CALLBACK( snes_scanline_tick )
 	/* three lines after start of vblank we update the controllers (value from snes9x) */
 	if (snes_ppu.beam.current_vert == snes_ppu.beam.last_visible_line + 2)
 	{
-		int i;
-
-		joypad[0].low  = input_port_read(machine, "PAD1L");
-		joypad[0].high = input_port_read(machine, "PAD1H");
-		joypad[1].low  = input_port_read(machine, "PAD2L");
-		joypad[1].high = input_port_read(machine, "PAD2H");
-		joypad[2].low  = input_port_read(machine, "PAD3L");
-		joypad[2].high = input_port_read(machine, "PAD3H");
-		joypad[3].low  = input_port_read(machine, "PAD4L");
-		joypad[3].high = input_port_read(machine, "PAD4H");
-
-		// avoid sending signals that could crash games
-		for (i = 0; i < 4; i++)
-		{
-			// if left, no right
-			if (joypad[i].high & 2)	joypad[i].high &= ~1;
-			// if up, no down
-			if (joypad[i].high & 8)	joypad[i].high &= ~4;
-		}
-
-		// is automatic reading on?
-		if (snes_ram[NMITIMEN] & 1)
-		{
-			joy1l = joypad[0].low;
-			joy1h = joypad[0].high;
-			joy2l = joypad[1].low;
-			joy2h = joypad[1].high;
-			joy3l = joypad[2].low;
-			joy3h = joypad[2].high;
-			joy4l = joypad[3].low;
-			joy4h = joypad[3].high;
-
-			// make sure oldrol starts returning all 1s because the auto-read reads it :-)
-			joypad[0].oldrol = 16;
-			joypad[1].oldrol = 16;
-		}
-
+		state->io_read(machine);
 		snes_ram[HVBJOY] &= 0xfe;		/* Clear busy bit */
 	}
 
@@ -295,6 +253,11 @@ static TIMER_CALLBACK( snes_hblank_tick )
 	timer_adjust_oneshot(snes_scanline_timer, video_screen_get_time_until_pos(machine->primary_screen, nextscan, 0), 0);
 }
 
+/* FIXME: multiplication should take 8 CPU cycles & division 16 CPU cycles, but
+using these timers breaks e.g. Chrono Trigger intro and Super Tennis gameplay.
+On the other hand, timers are needed for the translation of Breath of Fire 2
+to work. More weirdness: we might need to leave 8 CPU cycles for division at
+first, since using 16 produces bugs (see e.g. Triforce pieces in Zelda 3 intro) */
 
 static TIMER_CALLBACK(snes_div_callback)
 {
@@ -382,6 +345,7 @@ static READ8_HANDLER( snes_open_bus_r )
  */
 READ8_HANDLER( snes_r_io )
 {
+	snes_state *state = (snes_state *)space->machine->driver_data;
 	UINT8 value = 0;
 
 	// APU is mirrored from 2140 to 217f
@@ -608,7 +572,6 @@ READ8_HANDLER( snes_r_io )
 			read_ophct = 0;
 			read_opvct = 0;
 			value = snes_ram[offset];
-			value &= ~0x40;	// clear 'latched counters' flag
 			value |= (snes_ppu.ppu1_open_bus & 0x20);
 			value |= (snes_ppu.ppu2_version & 0x0f);
 			snes_ram[offset] = value;	// not sure if this is needed...
@@ -633,28 +596,23 @@ READ8_HANDLER( snes_r_io )
 			{
 				if (snes_ram[offset] & 0x1)
 				{
-					return 0 | (snes_open_bus_r(space,0) & 0xfc); //correct?
+					return 0 | (snes_open_bus_r(space, 0) & 0xfc); //correct?
 				}
-				value = ((joy1l | (joy1h << 8) | 0x10000) >> (16 - (joypad[0].oldrol & 0xf))) & 0x1;
-				joypad[0].oldrol++;
-				joypad[0].oldrol&=0xf;
-				if (!(joypad[0].oldrol % 17))
-					value = 0x1;
-				return (value & 0x03) | (snes_open_bus_r(space,0) & 0xfc); //correct?
+
+				value = state->oldjoy1_read(space->machine);
+
+				return (value & 0x03) | (snes_open_bus_r(space, 0) & 0xfc); //correct?
 			}
 		case OLDJOY2:	/* Data for old NES controllers (JOYSER2) */
 			{
 				if (snes_ram[OLDJOY1] & 0x1)
 				{
-					return 0 | 0x1c | (snes_open_bus_r(space,0) & 0xe0); //correct?
+					return 0 | 0x1c | (snes_open_bus_r(space, 0) & 0xe0); //correct?
 				}
-				value = ((joy2l | (joy2h << 8) | 0x10000) >> (16 - (joypad[1].oldrol & 0xf))) & 0x1;
-				joypad[1].oldrol++;
-				joypad[1].oldrol&=0xf;
-				if (!(joypad[1].oldrol % 17))
-					value = 0x1;
-				//value |= 0x1c;    // bits 4, 3, and 2 are always set
-				return value | 0x1c | (snes_open_bus_r(space,0) & 0xe0); //correct?
+
+				value = state->oldjoy2_read(space->machine);
+
+				return value | 0x1c | (snes_open_bus_r(space, 0) & 0xe0); //correct?
 			}
 		case HTIMEL:
 		case HTIMEH:
@@ -683,21 +641,21 @@ READ8_HANDLER( snes_r_io )
 		case RDMPYH:		/* Product/Remainder of mult/div result (high) */
 			return snes_ram[offset];
 		case JOY1L:			/* Joypad 1 status register (low) */
-			return joy1l;
+			return state->joy1l;
 		case JOY1H:			/* Joypad 1 status register (high) */
-			return joy1h;
+			return state->joy1h;
 		case JOY2L:			/* Joypad 2 status register (low) */
-			return joy2l;
+			return state->joy2l;
 		case JOY2H:			/* Joypad 2 status register (high) */
-			return joy2h;
+			return state->joy2h;
 		case JOY3L:			/* Joypad 3 status register (low) */
-			return joy3l;
+			return state->joy3l;
 		case JOY3H:			/* Joypad 3 status register (high) */
-			return joy3h;
+			return state->joy3h;
 		case JOY4L:			/* Joypad 4 status register (low) */
-			return joy4l;
+			return state->joy4l;
 		case JOY4H:			/* Joypad 4 status register (high) */
-			return joy4h;
+			return state->joy4h;
 		case DMAP0:
 		case DMAP1:
 		case DMAP2:
@@ -756,6 +714,8 @@ READ8_HANDLER( snes_r_io )
  */
 WRITE8_HANDLER( snes_w_io )
 {
+	snes_state *state = (snes_state *)space->machine->driver_data;
+
 	// APU is mirrored from 2140 to 217f
 	if (offset >= APU00 && offset < WMDATA)
 	{
@@ -817,46 +777,43 @@ WRITE8_HANDLER( snes_w_io )
 			snes_ppu.screen_brightness = (data & 0x0f) + 1;
 			break;
 		case OBSEL:		/* Object size and data area designation */
-			snes_ppu.layer[SNES_OAM].data = ((data & 0x3) * 0x2000) << 1;
-			snes_ppu.oam.name_select = (((data & 0x18) >> 3) * 0x1000) << 1;
-			/* Determine object size */
+			snes_ppu.oam.next_charmap = (data & 0x03) << 1;
+			snes_ppu.oam.next_name_select = (((data & 0x18) >> 3) * 0x1000) << 1;
+			snes_ppu.oam.next_size = (data & 0xe0) >> 5;
 			switch ((data & 0xe0) >> 5)
 			{
-				case 0:			/* 8 & 16 */
-					snes_ppu.oam.size[0] = 1;
-					snes_ppu.oam.size[1] = 2;
-					break;
-				case 1:			/* 8 & 32 */
-					snes_ppu.oam.size[0] = 1;
-					snes_ppu.oam.size[1] = 4;
-					break;
-				case 2:			/* 8 & 64 */
-					snes_ppu.oam.size[0] = 1;
-					snes_ppu.oam.size[1] = 8;
-					break;
-				case 3:			/* 16 & 32 */
-					snes_ppu.oam.size[0] = 2;
-					snes_ppu.oam.size[1] = 4;
-					break;
-				case 4:			/* 16 & 64 */
-					snes_ppu.oam.size[0] = 2;
-					snes_ppu.oam.size[1] = 8;
-					break;
-				case 5:			/* 32 & 64 */
-					snes_ppu.oam.size[0] = 4;
-					snes_ppu.oam.size[1] = 8;
-					break;
-				default:
-					/* Unknown size so default to 8 & 16 */
-					logerror("Object size unsupported: %d\n", (data & 0xe0) >> 5);
+				case 0:         /* 8 & 16 */
+		               snes_ppu.oam.size[0] = 1;
+		               snes_ppu.oam.size[1] = 2;
+		               break;
+		            case 1:         /* 8 & 32 */
+		               snes_ppu.oam.size[0] = 1;
+		               snes_ppu.oam.size[1] = 4;
+		               break;
+		            case 2:         /* 8 & 64 */
+		               snes_ppu.oam.size[0] = 1;
+		               snes_ppu.oam.size[1] = 8;
+		               break;
+		            case 3:         /* 16 & 32 */
+		               snes_ppu.oam.size[0] = 2;
+		               snes_ppu.oam.size[1] = 4;
+		               break;
+		            case 4:         /* 16 & 64 */
+		               snes_ppu.oam.size[0] = 2;
+		               snes_ppu.oam.size[1] = 8;
+		               break;
+		            case 5:         /* 32 & 64 */
+		               snes_ppu.oam.size[0] = 4;
+		               snes_ppu.oam.size[1] = 8;
+		               break;
+		            default:
+		               /* Unknown size so default to 8 & 16 */
+		               logerror("Object size unsupported: %d\n", (data & 0xe0) >> 5);
 
-					snes_ppu.oam.size[0] = 1;
-					snes_ppu.oam.size[1] = 2;
-#ifdef SNES_DBG_REG_W
-					mame_printf_debug("Object size unsupported: %d\n", (data & 0xe0) >> 5);
-#endif
+		               snes_ppu.oam.size[0] = 1;
+		               snes_ppu.oam.size[1] = 2;
+				break;
 			}
-			break;
 		case OAMADDL:	/* Address for accessing OAM (low) */
 			snes_ppu.oam.address_low = data;
 			snes_ppu.oam.saved_address_low = data;
@@ -867,7 +824,7 @@ WRITE8_HANDLER( snes_w_io )
 			snes_ppu.oam.address_high = data & 0x1;
 			snes_ppu.oam.saved_address_high = data;
 			snes_ppu.oam.address = ((data & 0x1) << 8) + snes_ppu.oam.address_low;
-			snes_ppu.oam.priority_rotation = (data & 0x80) ? 1 : 0;
+			snes_ppu.oam.priority_rotation = BIT(data, 7);
 			snes_ram[OAMDATA] = 0;
 			break;
 		case OAMDATA:	/* Data for OAM write (DW) */
@@ -913,41 +870,41 @@ WRITE8_HANDLER( snes_w_io )
 		case BGMODE:	/* BG mode and character size settings */
 			snes_ppu.mode = data & 0x07;
 			snes_dynamic_res_change(space->machine);
-			snes_ppu.bg3_priority_bit = data & 0x08;
-			snes_ppu.layer[SNES_BG1].tile_size = (data >> 4) & 0x1;
-			snes_ppu.layer[SNES_BG2].tile_size = (data >> 5) & 0x1;
-			snes_ppu.layer[SNES_BG3].tile_size = (data >> 6) & 0x1;
-			snes_ppu.layer[SNES_BG4].tile_size = (data >> 7) & 0x1;
+			snes_ppu.bg3_priority_bit = BIT(data, 3);
+			snes_ppu.layer[SNES_BG1].tile_size = BIT(data, 4);
+			snes_ppu.layer[SNES_BG2].tile_size = BIT(data, 5);
+			snes_ppu.layer[SNES_BG3].tile_size = BIT(data, 6);
+			snes_ppu.layer[SNES_BG4].tile_size = BIT(data, 7);
 			snes_ppu.update_offsets = 1;
 			break;
 		case MOSAIC:	/* Size and screen designation for mosaic */
 			/* FIXME: We support horizontal mosaic only partially */
 			snes_ppu.mosaic_size = (data & 0xf0) >> 4;
-			snes_ppu.layer[SNES_BG1].mosaic_enabled = data & 0x01;
-			snes_ppu.layer[SNES_BG2].mosaic_enabled = data & 0x02;
-			snes_ppu.layer[SNES_BG3].mosaic_enabled = data & 0x04;
-			snes_ppu.layer[SNES_BG4].mosaic_enabled = data & 0x08;
+			snes_ppu.layer[SNES_BG1].mosaic_enabled = BIT(data, 0);
+			snes_ppu.layer[SNES_BG2].mosaic_enabled = BIT(data, 1);
+			snes_ppu.layer[SNES_BG3].mosaic_enabled = BIT(data, 2);
+			snes_ppu.layer[SNES_BG4].mosaic_enabled = BIT(data, 3);
 			break;
 		case BG1SC:		/* Address for storing SC data BG1 SC size designation */
 		case BG2SC:		/* Address for storing SC data BG2 SC size designation  */
 		case BG3SC:		/* Address for storing SC data BG3 SC size designation  */
 		case BG4SC:		/* Address for storing SC data BG4 SC size designation  */
-			snes_ppu.layer[offset - BG1SC].map = (data & 0xfc) << 9;
-			snes_ppu.layer[offset - BG1SC].map_size = data & 0x3;
+			snes_ppu.layer[offset - BG1SC].tilemap = data & 0xfc;
+			snes_ppu.layer[offset - BG1SC].tilemap_size = data & 0x3;
 			break;
 		case BG12NBA:	/* Address for BG 1 and 2 character data */
-			snes_ppu.layer[SNES_BG1].data = (data & 0xf) << 13;
-			snes_ppu.layer[SNES_BG2].data = (data & 0xf0) << 9;
+			snes_ppu.layer[SNES_BG1].charmap = (data & 0x0f);
+			snes_ppu.layer[SNES_BG2].charmap = (data & 0xf0) >> 4;
 			break;
 		case BG34NBA:	/* Address for BG 3 and 4 character data */
-			snes_ppu.layer[SNES_BG3].data = (data & 0xf) << 13;
-			snes_ppu.layer[SNES_BG4].data = (data & 0xf0) << 9;
+			snes_ppu.layer[SNES_BG3].charmap = (data & 0x0f);
+			snes_ppu.layer[SNES_BG4].charmap = (data & 0xf0) >> 4;
 			break;
 
 		// Anomie says "H Current = (Byte<<8) | (Prev&~7) | ((Current>>8)&7); V Current = (Current<<8) | Prev;" and Prev is shared by all scrolls but in Mode 7!
 		case BG1HOFS:	/* BG1 - horizontal scroll (DW) */
 			/* In Mode 0->6 we use ppu_last_scroll as Prev */
-			snes_ppu.layer[SNES_BG1].offset.horizontal = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG1].offset.horizontal >> 8) & 7);
+			snes_ppu.layer[SNES_BG1].hoffs = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG1].hoffs >> 8) & 7);
 			snes_ppu.ppu_last_scroll = data;
 			/* In Mode 7 we use mode7_last_scroll as Prev */
 			snes_ppu.mode7.hor_offset = (data << 8) | (snes_ppu.mode7_last_scroll & ~7) | ((snes_ppu.mode7.hor_offset >> 8) & 7);
@@ -956,7 +913,7 @@ WRITE8_HANDLER( snes_w_io )
 			return;
 		case BG1VOFS:	/* BG1 - vertical scroll (DW) */
 			/* In Mode 0->6 we use ppu_last_scroll as Prev */
-			snes_ppu.layer[SNES_BG1].offset.vertical = (data << 8) | snes_ppu.ppu_last_scroll;
+			snes_ppu.layer[SNES_BG1].voffs = (data << 8) | snes_ppu.ppu_last_scroll;
 			snes_ppu.ppu_last_scroll = data;
 			/* In Mode 7 we use mode7_last_scroll as Prev */
 			snes_ppu.mode7.ver_offset = (data << 8) | snes_ppu.mode7_last_scroll;
@@ -964,32 +921,32 @@ WRITE8_HANDLER( snes_w_io )
 			snes_ppu.update_offsets = 1;
 			return;
 		case BG2HOFS:	/* BG2 - horizontal scroll (DW) */
-			snes_ppu.layer[SNES_BG2].offset.horizontal = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG2].offset.horizontal >> 8) & 7);
+			snes_ppu.layer[SNES_BG2].hoffs = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG2].hoffs >> 8) & 7);
 			snes_ppu.ppu_last_scroll = data;
 			snes_ppu.update_offsets = 1;
 			return;
 		case BG2VOFS:	/* BG2 - vertical scroll (DW) */
-			snes_ppu.layer[SNES_BG2].offset.vertical = (data << 8) | (snes_ppu.ppu_last_scroll);
+			snes_ppu.layer[SNES_BG2].voffs = (data << 8) | (snes_ppu.ppu_last_scroll);
 			snes_ppu.ppu_last_scroll = data;
 			snes_ppu.update_offsets = 1;
 			return;
 		case BG3HOFS:	/* BG3 - horizontal scroll (DW) */
-			snes_ppu.layer[SNES_BG3].offset.horizontal = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG3].offset.horizontal >> 8) & 7);
+			snes_ppu.layer[SNES_BG3].hoffs = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG3].hoffs >> 8) & 7);
 			snes_ppu.ppu_last_scroll = data;
 			snes_ppu.update_offsets = 1;
 			return;
 		case BG3VOFS:	/* BG3 - vertical scroll (DW) */
-			snes_ppu.layer[SNES_BG3].offset.vertical = (data << 8) | (snes_ppu.ppu_last_scroll);
+			snes_ppu.layer[SNES_BG3].voffs = (data << 8) | (snes_ppu.ppu_last_scroll);
 			snes_ppu.ppu_last_scroll = data;
 			snes_ppu.update_offsets = 1;
 			return;
 		case BG4HOFS:	/* BG4 - horizontal scroll (DW) */
-			snes_ppu.layer[SNES_BG4].offset.horizontal = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG4].offset.horizontal >> 8) & 7);
+			snes_ppu.layer[SNES_BG4].hoffs = (data << 8) | (snes_ppu.ppu_last_scroll & ~7) | ((snes_ppu.layer[SNES_BG4].hoffs >> 8) & 7);
 			snes_ppu.ppu_last_scroll = data;
 			snes_ppu.update_offsets = 1;
 			return;
 		case BG4VOFS:	/* BG4 - vertical scroll (DW) */
-			snes_ppu.layer[SNES_BG4].offset.vertical = (data << 8) | (snes_ppu.ppu_last_scroll);
+			snes_ppu.layer[SNES_BG4].voffs = (data << 8) | (snes_ppu.ppu_last_scroll);
 			snes_ppu.ppu_last_scroll = data;
 			snes_ppu.update_offsets = 1;
 			return;
@@ -999,10 +956,10 @@ WRITE8_HANDLER( snes_w_io )
 
 			if (data & 0xc)
 			{
-				int md = (data & 0xc)>>2;
+				int md = (data & 0xc) >> 2;
 
 				vram_fgr_count = vram_fgr_inccnts[md];
-				vram_fgr_mask = (vram_fgr_count*8)-1;
+				vram_fgr_mask = (vram_fgr_count * 8) - 1;
 				vram_fgr_shift = vram_fgr_shiftab[md];
 			}
 			else
@@ -1022,14 +979,13 @@ WRITE8_HANDLER( snes_w_io )
 				if (vram_fgr_count)
 				{
 					UINT32 rem = addr & vram_fgr_mask;
-					UINT32 faddr = (addr & ~vram_fgr_mask) + (rem >> vram_fgr_shift) +
-						       ((rem & (vram_fgr_count - 1)) << 3);
+					UINT32 faddr = (addr & ~vram_fgr_mask) + (rem >> vram_fgr_shift) + ((rem & (vram_fgr_count - 1)) << 3);
 
-					vram_read_buffer = snes_vram[(faddr<<1)&0x1ffff] | snes_vram[((faddr<<1)+1) & 0x1ffff]<<8;
+					vram_read_buffer = snes_vram[(faddr << 1) & 0x1ffff] | snes_vram[((faddr << 1) + 1) & 0x1ffff] << 8;
 				}
 				else
 				{
-					vram_read_buffer = snes_vram[(addr<<1)&0x1ffff] | snes_vram[((addr<<1)+1) & 0x1ffff]<<8;
+					vram_read_buffer = snes_vram[(addr << 1) & 0x1ffff] | snes_vram[((addr << 1) + 1) & 0x1ffff] << 8;
 				}
 
 			}
@@ -1041,21 +997,20 @@ WRITE8_HANDLER( snes_w_io )
 				if (vram_fgr_count)
 				{
 					UINT32 rem = addr & vram_fgr_mask;
-					UINT32 faddr = (addr & ~vram_fgr_mask) + (rem >> vram_fgr_shift) +
-						       ((rem & (vram_fgr_count - 1)) << 3);
+					UINT32 faddr = (addr & ~vram_fgr_mask) + (rem >> vram_fgr_shift) + ((rem & (vram_fgr_count - 1)) << 3);
 
-					snes_vram[(faddr<<1)&0x1ffff] = data;
+					snes_vram[(faddr << 1) & 0x1ffff] = data;
 				}
 				else
 				{
-					snes_vram[(addr<<1)&0x1ffff] = data;
+					snes_vram[(addr << 1) & 0x1ffff] = data;
 				}
 
 				if (!vram_fgr_high)
 				{
 					addr += vram_fgr_increment;
-					snes_ram[VMADDL] = addr&0xff;
-					snes_ram[VMADDH] = (addr>>8)&0xff;
+					snes_ram[VMADDL] = addr & 0xff;
+					snes_ram[VMADDH] = (addr >> 8) & 0xff;
 				}
 			}
 			return;
@@ -1066,28 +1021,27 @@ WRITE8_HANDLER( snes_w_io )
 				if (vram_fgr_count)
 				{
 					UINT32 rem = addr & vram_fgr_mask;
-					UINT32 faddr = (addr & ~vram_fgr_mask) + (rem >> vram_fgr_shift) +
-						       ((rem & (vram_fgr_count - 1)) << 3);
+					UINT32 faddr = (addr & ~vram_fgr_mask) + (rem >> vram_fgr_shift) + ((rem & (vram_fgr_count - 1)) << 3);
 
-					snes_vram[((faddr<<1)+1)&0x1ffff] = data;
+					snes_vram[((faddr << 1) + 1) & 0x1ffff] = data;
 				}
 				else
 				{
-					snes_vram[((addr<<1)+1)&0x1ffff] = data;
+					snes_vram[((addr << 1) + 1) & 0x1ffff] = data;
 				}
 
 				if (vram_fgr_high)
 				{
 					addr += vram_fgr_increment;
-					snes_ram[VMADDL] = addr&0xff;
-					snes_ram[VMADDH] = (addr>>8)&0xff;
+					snes_ram[VMADDL] = addr & 0xff;
+					snes_ram[VMADDH] = (addr >> 8) & 0xff;
 				}
 			}
 			return;
 		case M7SEL:		/* Mode 7 initial settings */
 			snes_ppu.mode7.repeat = (data >> 6) & 3;
-			snes_ppu.mode7.vflip  = data & 0x02;
-			snes_ppu.mode7.hflip  = data & 0x01;
+			snes_ppu.mode7.vflip  = BIT(data, 1);
+			snes_ppu.mode7.hflip  = BIT(data, 0);
 			break;
 		/* As per Anomie's doc: Reg = (Current<<8) | Prev; and there is only one Prev, shared by these matrix regs and Mode 7 scroll regs */
 		case M7A:		/* Mode 7 COS angle/x expansion (DW) */
@@ -1126,42 +1080,42 @@ WRITE8_HANDLER( snes_w_io )
 		case W12SEL:	/* Window mask settings for BG1-2 */
 			if (data != snes_ram[offset])
 			{
-				snes_ppu.layer[SNES_BG1].window1_invert = data & 0x01;
-				snes_ppu.layer[SNES_BG1].window1_enabled = data & 0x02;
-				snes_ppu.layer[SNES_BG1].window2_invert = data & 0x04;
-				snes_ppu.layer[SNES_BG1].window2_enabled = data & 0x08;
-				snes_ppu.layer[SNES_BG2].window1_invert = data & 0x10;
-				snes_ppu.layer[SNES_BG2].window1_enabled = data & 0x20;
-				snes_ppu.layer[SNES_BG2].window2_invert = data & 0x40;
-				snes_ppu.layer[SNES_BG2].window2_enabled = data & 0x80;
+				snes_ppu.layer[SNES_BG1].window1_invert  = BIT(data, 0);
+				snes_ppu.layer[SNES_BG1].window1_enabled = BIT(data, 1);
+				snes_ppu.layer[SNES_BG1].window2_invert  = BIT(data, 2);
+				snes_ppu.layer[SNES_BG1].window2_enabled = BIT(data, 3);
+				snes_ppu.layer[SNES_BG2].window1_invert  = BIT(data, 4);
+				snes_ppu.layer[SNES_BG2].window1_enabled = BIT(data, 5);
+				snes_ppu.layer[SNES_BG2].window2_invert  = BIT(data, 6);
+				snes_ppu.layer[SNES_BG2].window2_enabled = BIT(data, 7);
 				snes_ppu.update_windows = 1;
 			}
 			break;
 		case W34SEL:	/* Window mask settings for BG3-4 */
 			if (data != snes_ram[offset])
 			{
-				snes_ppu.layer[SNES_BG3].window1_invert = data & 0x01;
-				snes_ppu.layer[SNES_BG3].window1_enabled = data & 0x02;
-				snes_ppu.layer[SNES_BG3].window2_invert = data & 0x04;
-				snes_ppu.layer[SNES_BG3].window2_enabled = data & 0x08;
-				snes_ppu.layer[SNES_BG4].window1_invert = data & 0x10;
-				snes_ppu.layer[SNES_BG4].window1_enabled = data & 0x20;
-				snes_ppu.layer[SNES_BG4].window2_invert = data & 0x40;
-				snes_ppu.layer[SNES_BG4].window2_enabled = data & 0x80;
+				snes_ppu.layer[SNES_BG3].window1_invert  = BIT(data, 0);
+				snes_ppu.layer[SNES_BG3].window1_enabled = BIT(data, 1);
+				snes_ppu.layer[SNES_BG3].window2_invert  = BIT(data, 2);
+				snes_ppu.layer[SNES_BG3].window2_enabled = BIT(data, 3);
+				snes_ppu.layer[SNES_BG4].window1_invert  = BIT(data, 4);
+				snes_ppu.layer[SNES_BG4].window1_enabled = BIT(data, 5);
+				snes_ppu.layer[SNES_BG4].window2_invert  = BIT(data, 6);
+				snes_ppu.layer[SNES_BG4].window2_enabled = BIT(data, 7);
 				snes_ppu.update_windows = 1;
 			}
 			break;
 		case WOBJSEL:	/* Window mask settings for objects */
 			if (data != snes_ram[offset])
 			{
-				snes_ppu.layer[SNES_OAM].window1_invert = data & 0x01;
-				snes_ppu.layer[SNES_OAM].window1_enabled = data & 0x02;
-				snes_ppu.layer[SNES_OAM].window2_invert = data & 0x04;
-				snes_ppu.layer[SNES_OAM].window2_enabled = data & 0x08;
-				snes_ppu.layer[SNES_COLOR].window1_invert = data & 0x10;
-				snes_ppu.layer[SNES_COLOR].window1_enabled = data & 0x20;
-				snes_ppu.layer[SNES_COLOR].window2_invert = data & 0x40;
-				snes_ppu.layer[SNES_COLOR].window2_enabled = data & 0x80;
+				snes_ppu.layer[SNES_OAM].window1_invert  = BIT(data, 0);
+				snes_ppu.layer[SNES_OAM].window1_enabled = BIT(data, 1);
+				snes_ppu.layer[SNES_OAM].window2_invert  = BIT(data, 2);
+				snes_ppu.layer[SNES_OAM].window2_enabled = BIT(data, 3);
+				snes_ppu.layer[SNES_COLOR].window1_invert  = BIT(data, 4);
+				snes_ppu.layer[SNES_COLOR].window1_enabled = BIT(data, 5);
+				snes_ppu.layer[SNES_COLOR].window2_invert  = BIT(data, 6);
+				snes_ppu.layer[SNES_COLOR].window2_enabled = BIT(data, 7);
 				snes_ppu.update_windows = 1;
 			}
 			break;
@@ -1212,39 +1166,39 @@ WRITE8_HANDLER( snes_w_io )
 			}
 			break;
 		case TM:		/* Main screen designation */
-			snes_ppu.main_bg_enabled[0] = data & 0x01;
-			snes_ppu.main_bg_enabled[1] = data & 0x02;
-			snes_ppu.main_bg_enabled[2] = data & 0x04;
-			snes_ppu.main_bg_enabled[3] = data & 0x08;
-			snes_ppu.main_bg_enabled[4] = data & 0x10;
+			snes_ppu.layer[SNES_BG1].main_bg_enabled = BIT(data, 0);
+			snes_ppu.layer[SNES_BG2].main_bg_enabled = BIT(data, 1);
+			snes_ppu.layer[SNES_BG3].main_bg_enabled = BIT(data, 2);
+			snes_ppu.layer[SNES_BG4].main_bg_enabled = BIT(data, 3);
+			snes_ppu.layer[SNES_OAM].main_bg_enabled = BIT(data, 4);
 			break;
 		case TS:		/* Subscreen designation */
-			snes_ppu.sub_bg_enabled[0] = data & 0x01;
-			snes_ppu.sub_bg_enabled[1] = data & 0x02;
-			snes_ppu.sub_bg_enabled[2] = data & 0x04;
-			snes_ppu.sub_bg_enabled[3] = data & 0x08;
-			snes_ppu.sub_bg_enabled[4] = data & 0x10;
+			snes_ppu.layer[SNES_BG1].sub_bg_enabled = BIT(data, 0);
+			snes_ppu.layer[SNES_BG2].sub_bg_enabled = BIT(data, 1);
+			snes_ppu.layer[SNES_BG3].sub_bg_enabled = BIT(data, 2);
+			snes_ppu.layer[SNES_BG4].sub_bg_enabled = BIT(data, 3);
+			snes_ppu.layer[SNES_OAM].sub_bg_enabled = BIT(data, 4);
 			break;
 		case TMW:		/* Window mask for main screen designation */
-			snes_ppu.layer[SNES_BG1].main_window_enabled = data & 0x01;
-			snes_ppu.layer[SNES_BG2].main_window_enabled = data & 0x02;
-			snes_ppu.layer[SNES_BG3].main_window_enabled = data & 0x04;
-			snes_ppu.layer[SNES_BG4].main_window_enabled = data & 0x08;
-			snes_ppu.layer[SNES_OAM].main_window_enabled = data & 0x10;
+			snes_ppu.layer[SNES_BG1].main_window_enabled = BIT(data, 0);
+			snes_ppu.layer[SNES_BG2].main_window_enabled = BIT(data, 1);
+			snes_ppu.layer[SNES_BG3].main_window_enabled = BIT(data, 2);
+			snes_ppu.layer[SNES_BG4].main_window_enabled = BIT(data, 3);
+			snes_ppu.layer[SNES_OAM].main_window_enabled = BIT(data, 4);
 			break;
 		case TSW:		/* Window mask for subscreen designation */
-			snes_ppu.layer[SNES_BG1].sub_window_enabled = data & 0x01;
-			snes_ppu.layer[SNES_BG2].sub_window_enabled = data & 0x02;
-			snes_ppu.layer[SNES_BG3].sub_window_enabled = data & 0x04;
-			snes_ppu.layer[SNES_BG4].sub_window_enabled = data & 0x08;
-			snes_ppu.layer[SNES_OAM].sub_window_enabled = data & 0x10;
+			snes_ppu.layer[SNES_BG1].sub_window_enabled = BIT(data, 0);
+			snes_ppu.layer[SNES_BG2].sub_window_enabled = BIT(data, 1);
+			snes_ppu.layer[SNES_BG3].sub_window_enabled = BIT(data, 2);
+			snes_ppu.layer[SNES_BG4].sub_window_enabled = BIT(data, 3);
+			snes_ppu.layer[SNES_OAM].sub_window_enabled = BIT(data, 4);
 			break;
 		case CGWSEL:	/* Initial settings for Fixed colour addition or screen addition */
 			/* FIXME: We don't support direct select for modes 3 & 4 or subscreen window stuff */
-			snes_ppu.main_color_mask = (data >> 6) & 0x03;
-			snes_ppu.sub_color_mask = (data >> 4) & 0x03;
-			snes_ppu.sub_add_mode = data & 0x02;
-			snes_ppu.direct_color  = data & 0x01;
+			snes_ppu.clip_to_black = (data >> 6) & 0x03;
+			snes_ppu.prevent_color_math = (data >> 4) & 0x03;
+			snes_ppu.sub_add_mode = BIT(data, 1);
+			snes_ppu.direct_color = BIT(data, 0);
 #ifdef SNES_DBG_REG_W
 			if ((data & 0x2) != (snes_ram[CGWSEL] & 0x2))
 				mame_printf_debug( "Add/Sub Layer: %s\n", ((data & 0x2) >> 1) ? "Subscreen" : "Fixed colour" );
@@ -1252,12 +1206,12 @@ WRITE8_HANDLER( snes_w_io )
 			break;
 		case CGADSUB:	/* Addition/Subtraction designation for each screen */
 			snes_ppu.color_modes = data & 0xc0;
-			snes_ppu.layer[SNES_BG1].color_math = data & 0x01;
-			snes_ppu.layer[SNES_BG2].color_math = data & 0x02;
-			snes_ppu.layer[SNES_BG3].color_math = data & 0x04;
-			snes_ppu.layer[SNES_BG4].color_math = data & 0x08;
-			snes_ppu.layer[SNES_OAM].color_math = data & 0x10;
-			snes_ppu.layer[SNES_COLOR].color_math = data & 0x20;
+			snes_ppu.layer[SNES_BG1].color_math = BIT(data, 0);
+			snes_ppu.layer[SNES_BG2].color_math = BIT(data, 1);
+			snes_ppu.layer[SNES_BG3].color_math = BIT(data, 2);
+			snes_ppu.layer[SNES_BG4].color_math = BIT(data, 3);
+			snes_ppu.layer[SNES_OAM].color_math = BIT(data, 4);
+			snes_ppu.layer[SNES_COLOR].color_math = BIT(data, 5);
 			break;
 		case COLDATA:	/* Fixed colour data for fixed colour addition/subtraction */
 			{
@@ -1282,8 +1236,8 @@ WRITE8_HANDLER( snes_w_io )
 			snes_ppu.interlace = (data & 0x01) ? 2 : 1;
 			snes_ppu.obj_interlace = (data & 0x02) ? 2 : 1;
 			snes_ppu.beam.last_visible_line = (data & 0x04) ? 240 : 225;
-			snes_ppu.pseudo_hires = data & 0x08;
-			snes_ppu.mode7.extbg = data & 0x40;
+			snes_ppu.pseudo_hires = BIT(data, 3);
+			snes_ppu.mode7.extbg = BIT(data, 6);
 			snes_dynamic_res_change(space->machine);
 #ifdef SNES_DBG_REG_W
 			if ((data & 0x8) != (snes_ram[SETINI] & 0x8))
@@ -1305,12 +1259,10 @@ WRITE8_HANDLER( snes_w_io )
 		case WMADDH:	/* Address to read/write to wram (high) */
 			break;
 		case OLDJOY1:	/* Old NES joystick support */
-			if (((data & 0x1) && !(snes_ram[offset] & 0x1)) || ((!(data & 0x1)) && (snes_ram[offset] & 0x1)))
+			if (((!(data & 0x1)) && (snes_ram[offset] & 0x1)))
 			{
-				joypad[0].oldrol = 0;
-				joypad[1].oldrol = 0;
-				joypad[2].oldrol = 0;
-				joypad[3].oldrol = 0;
+				state->read_idx[0] = 0;
+				state->read_idx[1] = 0;
 			}
 			break;
 		case NMITIMEN:	/* Flag for v-blank, timer int. and joy read */
@@ -1326,13 +1278,39 @@ WRITE8_HANDLER( snes_w_io )
 		case WRMPYA:	/* Multiplier A */
 			break;
 		case WRMPYB:	/* Multiplier B */
-			timer_adjust_oneshot(snes_mult_timer, cputag_clocks_to_attotime(space->machine, "maincpu", 8), 0);
+			snes_ram[WRMPYB] = data;
+//          timer_adjust_oneshot(snes_mult_timer, cputag_clocks_to_attotime(space->machine, "maincpu", 8), 0);
+			{
+				UINT32 c = snes_ram[WRMPYA] * snes_ram[WRMPYB];
+				snes_ram[RDMPYL] = c & 0xff;
+				snes_ram[RDMPYH] = (c >> 8) & 0xff;
+			}
 			break;
 		case WRDIVL:	/* Dividend (low) */
 		case WRDIVH:	/* Dividend (high) */
 			break;
 		case WRDVDD:	/* Divisor */
-			timer_adjust_oneshot(snes_div_timer, cputag_clocks_to_attotime(space->machine, "maincpu", 8), 0);
+			snes_ram[WRDVDD] = data;
+//          timer_adjust_oneshot(snes_div_timer, cputag_clocks_to_attotime(space->machine, "maincpu", 16), 0);
+			{
+				UINT16 value, dividend, remainder;
+				dividend = remainder = 0;
+				value = (snes_ram[WRDIVH] << 8) + snes_ram[WRDIVL];
+				if (snes_ram[WRDVDD] > 0)
+				{
+					dividend = value / data;
+					remainder = value % data;
+				}
+				else
+				{
+					dividend = 0xffff;
+					remainder = value;
+				}
+				snes_ram[RDDIVL] = dividend & 0xff;
+				snes_ram[RDDIVH] = (dividend >> 8) & 0xff;
+				snes_ram[RDMPYL] = remainder & 0xff;
+				snes_ram[RDMPYH] = (remainder >> 8) & 0xff;
+			}
 			break;
 		case HTIMEL:	/* H-Count timer settings (low)  */
 		case HTIMEH:	/* H-Count timer settings (high) */
@@ -1340,7 +1318,7 @@ WRITE8_HANDLER( snes_w_io )
 		case VTIMEH:	/* V-Count timer settings (high) */
 			break;
 		case MDMAEN:	/* GDMA channel designation and trigger */
-			snes_gdma( space, data );
+			snes_gdma(space, data);
 			data = 0;	/* Once DMA is done we need to reset all bits to 0 */
 			break;
 		case HDMAEN:	/* HDMA channel designation */
@@ -1986,6 +1964,84 @@ WRITE8_HANDLER( snes_w_bank7 )
 
 /*************************************
 
+    Input Callbacks
+
+*************************************/
+
+static void nss_io_read( running_machine *machine )
+{
+	snes_state *state = (snes_state *)machine->driver_data;
+	static const char *const portnames[2][4] =
+			{
+				{ "SERIAL1_DATA1_L", "SERIAL1_DATA1_H", "SERIAL1_DATA2_L", "SERIAL1_DATA2_H" },
+				{ "SERIAL2_DATA1_L", "SERIAL2_DATA1_H", "SERIAL2_DATA2_L", "SERIAL2_DATA2_H" },
+			};
+	int port;
+
+	for (port = 0; port < 2; port++)
+	{
+		state->data1[port] = input_port_read(machine, portnames[port][0]) | (input_port_read(machine, portnames[port][1]) << 8);
+		state->data2[port] = input_port_read(machine, portnames[port][2]) | (input_port_read(machine, portnames[port][3]) << 8);
+
+		// avoid sending signals that could crash games
+		// if left, no right
+		if (state->data1[port] & 0x200)
+			state->data1[port] &= ~0x100;
+		// if up, no down
+		if (state->data1[port] & 0x800)
+			state->data1[port] &= ~0x400;
+
+		state->joypad[port].buttons = state->data1[port];
+	}
+
+	// is automatic reading on? if so, copy port data1/data2 to joy1l->joy4h
+	// this actually works like reading the first 16bits from oldjoy1/2 in reverse order
+	if (snes_ram[NMITIMEN] & 1)
+	{
+		state->joy1l = (state->data1[0] & 0x00ff) >> 0;
+		state->joy1h = (state->data1[0] & 0xff00) >> 8;
+		state->joy2l = (state->data1[1] & 0x00ff) >> 0;
+		state->joy2h = (state->data1[1] & 0xff00) >> 8;
+		state->joy3l = (state->data2[0] & 0x00ff) >> 0;
+		state->joy3h = (state->data2[0] & 0xff00) >> 8;
+		state->joy4l = (state->data2[1] & 0x00ff) >> 0;
+		state->joy4h = (state->data2[1] & 0xff00) >> 8;
+
+		// make sure read_idx starts returning all 1s because the auto-read reads it :-)
+		state->read_idx[0] = 16;
+		state->read_idx[1] = 16;
+	}
+
+}
+
+static UINT8 nss_oldjoy1_read( running_machine *machine )
+{
+	snes_state *state = (snes_state *)machine->driver_data;
+	UINT8 res;
+
+	if (state->read_idx[0] >= 16)
+		res = 0x01;
+	else
+		res = (state->joypad[0].buttons >> (15 - state->read_idx[0]++)) & 0x01;
+
+	return res;
+}
+
+static UINT8 nss_oldjoy2_read( running_machine *machine )
+{
+	snes_state *state = (snes_state *)machine->driver_data;
+	UINT8 res;
+
+	if (state->read_idx[1] >= 16)
+		res = 0x01;
+	else
+		res = (state->joypad[1].buttons >> (15 - state->read_idx[1]++)) & 0x01;
+
+	return res;
+}
+
+/*************************************
+
     Driver Init
 
 *************************************/
@@ -2015,6 +2071,7 @@ static void snes_init_timers(running_machine *machine)
 
 static void snes_init_ram(running_machine *machine)
 {
+	snes_state *state = (snes_state *)machine->driver_data;
 	const address_space *cpu0space = cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM);
 	int i, j;
 
@@ -2046,7 +2103,13 @@ static void snes_init_ram(running_machine *machine)
 	snes_ppu.ppu2_version = 3;	// 5C78 chip version number, read by STAT78, only '2' & '3' encountered so far.
 	cgram_address = 0;
 	vram_read_offset = 2;
-	joy1l = joy1h = joy2l = joy2h = joy3l = joy3h = 0;
+
+	state->joy1l = state->joy1h = state->joy2l = state->joy2h = state->joy3l = state->joy3h = 0;
+	state->data1[0] = state->data2[0] = state->data1[1] = state->data2[1] = 0;
+
+	state->io_read = nss_io_read;
+	state->oldjoy1_read = nss_oldjoy1_read;
+	state->oldjoy2_read = nss_oldjoy2_read;
 
 	/* Inititialize mosaic table */
 	for (j = 0; j < 16; j++)

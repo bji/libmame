@@ -154,7 +154,7 @@ static void h8_set_ccr(h83xx_state *h8, UINT8 data)
 	if(h8->ccr & UIFLAG) h8->h8uiflag = 1;
 	if(h8->ccr & IFLAG) h8->h8iflag = 1;
 
-	h8_check_irqs(h8);
+	if (!h8->incheckirqs) h8_check_irqs(h8);
 }
 
 static INT16 h8_getreg16(h83xx_state *h8, UINT8 reg)
@@ -268,6 +268,8 @@ static CPU_RESET(h8bit)
 	h8->h8err = 0;
 	h8->pc = h8_mem_read16(h8, 0);
 
+	h8->incheckirqs = 0;
+
 	// disable timers
 	h8->h8TSTR = 0;
 	h8->FRC = 0;
@@ -341,6 +343,8 @@ static void h8_check_irqs(h83xx_state *h8)
 {
 	int lv = 0;
 
+	h8->incheckirqs = 1;
+
 	if (h8->h8iflag != 0)
 	{
 		lv = 2;
@@ -386,6 +390,8 @@ static void h8_check_irqs(h83xx_state *h8)
 			h8_GenException(h8, source);
 		}
 	}
+
+	h8->incheckirqs = 0;
 }
 
 #define H8_ADDR_MASK 0xffff
@@ -560,6 +566,33 @@ static READ8_HANDLER( h8330_itu_r )
 		break;
 	case 0xdd:		// serial Rx 0
 		val = memory_read_byte(h8->io, H8_SERIAL_0);
+		break;
+	case 0xe0:	// ADC 0 low byte
+		val = memory_read_byte(h8->io, H8_ADC_0_L);
+		break;
+	case 0xe1:	// ADC 0 high byte
+		val = memory_read_byte(h8->io, H8_ADC_0_H);
+		break;
+	case 0xe2:	// ADC 1 low byte
+		val = memory_read_byte(h8->io, H8_ADC_1_L);
+		break;
+	case 0xe3:	// ADC 1 high byte
+		val = memory_read_byte(h8->io, H8_ADC_1_H);
+		break;
+	case 0xe4:	// ADC 2 low byte
+		val = memory_read_byte(h8->io, H8_ADC_2_L);
+		break;
+	case 0xe5:	// ADC 2 high byte
+		val = memory_read_byte(h8->io, H8_ADC_2_H);
+		break;
+	case 0xe6:	// ADC 3 low byte
+		val = memory_read_byte(h8->io, H8_ADC_3_L);
+		break;
+	case 0xe7:	// ADC 3 high byte
+		val = memory_read_byte(h8->io, H8_ADC_3_H);
+		break;
+	case 0xe8:	// ADCSR: A/D control/status
+		val = 0x80;	// return conversion completed
 		break;
 	default:
 		val = h8->per_regs[reg];

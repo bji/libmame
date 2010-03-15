@@ -253,7 +253,7 @@ Z80CTC_INTERFACE( nflfoot_ctc_intf )
 };
 
 
-const z80pio_interface nflfoot_pio_intf =
+Z80PIO_INTERFACE( nflfoot_pio_intf )
 {
 	DEVCB_CPU_INPUT_LINE("ipu", INPUT_LINE_IRQ0),  /* interrupt handler */
 	DEVCB_NULL,
@@ -937,21 +937,6 @@ static WRITE8_DEVICE_HANDLER( ipu_break_changed )
 		if (data == 1)
 			z80sio_receive_data(device, 1, 0);
 	}
-}
-
-
-READ8_DEVICE_HANDLER( mcr_ipu_sio_r )
-{
-	return (offset & 2) ? z80sio_c_r(device, offset & 1) : z80sio_d_r(device, offset & 1);
-}
-
-
-WRITE8_DEVICE_HANDLER( mcr_ipu_sio_w )
-{
-	if (offset & 2)
-		z80sio_c_w(device, offset & 1, data);
-	else
-		z80sio_d_w(device, offset & 1, data);
 }
 
 
