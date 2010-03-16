@@ -271,6 +271,47 @@ int LibMame_Get_Game_Count()
 }
 
 
+int LibMame_Get_Game_Number(const char *short_name)
+{
+    /* Force get_gameinfo_helper() to ensure that all game infos are
+       created and hashed */
+    (void) get_gameinfo_helper(0, false);
+ 
+    int *pIndex = g_gameinfos_hash.Get(short_name);
+    
+    return pIndex ? *pIndex : -1;
+}
+
+
+int LibMame_Get_Game_Matches(const char *short_name, int num_matches,
+                             int *gamenums)
+{
+    /* Force get_gameinfo_helper() to ensure that all game infos are
+       created and hashed */
+    (void) get_gameinfo_helper(0, false);
+
+    const game_driver *results[num_matches];
+
+    driver_list_get_approx_matches(drivers, short_name, num_matches, results);
+
+    const game_driver **pdriver, **pend = &(results[num_matches]);
+    
+    int ret = 0;
+
+    for (pdriver = results; pdriver < pend; pdriver++) {
+        if (*pdriver == NULL) {
+            break;
+        }
+        int *index = g_gameinfos_hash.Get((*pdriver)->name);
+        if (index) {
+            gamenums[ret++] = *index;
+        }
+    }
+
+    return ret;
+}
+
+
 const char *LibMame_Get_Game_Short_Name(int gamenum)
 {
     return get_game_driver(gamenum)->name;

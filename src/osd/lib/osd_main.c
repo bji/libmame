@@ -18,6 +18,16 @@ int main(int argc, char **argv)
 
     printf("LibMame version %s\n", LibMame_Get_Version_String());
 
+    if (argc > 1) {
+        int gamenums[15];
+        int count = LibMame_Get_Game_Matches(argv[1], 15, gamenums);
+        for (int i = 0; i < count; i++) {
+            printf("%s (%s)\n", LibMame_Get_Game_Short_Name(gamenums[i]),
+                   LibMame_Get_Game_Full_Name(gamenums[i]));
+        }
+        return 0;
+    }
+
     int count = LibMame_Get_Game_Count();
 
     for (int i = 0; i < count; i++) {

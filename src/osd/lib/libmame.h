@@ -126,6 +126,31 @@ int LibMame_Get_Game_Count();
 
 
 /**
+ * Returns the game number of a game given the short name of the game, or -1
+ * if there is no such game.
+ *
+ * @return the game number of a game given the short name of the game, or -1
+ *         if there is no such game.
+ **/
+int LibMame_Get_Game_Number(const char *short_name);
+
+
+/**
+ * Returns the best matches for a given game short name.
+ *
+ * @param short_name is the short name to find matches for
+ * @param num_matches gives the maxium number of matches to find; [gamenums]
+ *                    must have at least this number of entries
+ * @param gamenums will have its first N entries set to the game numbers of
+ *        matching games (best match first), where N is the return value of
+ *        this function
+ * @return the number of matches returned; this many of the first entries of
+ *         [gamenums] will include game numbers of games which matched.
+ **/
+int LibMame_Get_Game_Matches(const char *short_name, int num_matches,
+                             int *gamenums);
+
+/**
  * Returns the short name of a game.
  *
  * @return the short name of a game.
