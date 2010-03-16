@@ -37,64 +37,69 @@ int main(int argc, char **argv)
             printf("\tClone Of: %s\n", clone_of);
         }
         printf("\tManufacturer: %s\n", LibMame_Get_Game_Manufacturer(i));
-        printf("\tWorking Status: ");
+        bool needcomma;
         int flags = LibMame_Get_Game_WorkingFlags(i);
-        bool needcomma = false;
-        if (flags & LIBMAME_WORKINGFLAGS_WRONG_COLORS) {
-            printf("Wrong Colors");
-            needcomma = true;
+        if (flags) {
+            needcomma = false;
+            printf("\tWorking Status: ");
+            if (flags & LIBMAME_WORKINGFLAGS_WRONG_COLORS) {
+                printf("Wrong Colors");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_IMPERFECT_COLORS) {
+                printf("%sImperfect Colors", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_NO_SOUND) {
+                printf("%sNo Sound", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_IMPERFECT_SOUND) {
+                printf("%sImperfect Sound", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_NO_COCKTAIL) {
+                printf("%sNo Cocktail", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_UNEMULATED_PROTECTION) {
+                printf("%sUnemulated Protection", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_NO_SAVE_STATE) {
+                printf("%sNo Save State", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_WORKINGFLAGS_NOTWORKING) {
+                printf("%sNot Working", needcomma ? ", " : "");
+            }
+            printf("\n");
         }
-        if (flags & LIBMAME_WORKINGFLAGS_IMPERFECT_COLORS) {
-            printf("%sImperfect Colors", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_WORKINGFLAGS_NO_SOUND) {
-            printf("%sNo Sound", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_WORKINGFLAGS_IMPERFECT_SOUND) {
-            printf("%sImperfect Sound", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_WORKINGFLAGS_NO_COCKTAIL) {
-            printf("%sNo Cocktail", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_WORKINGFLAGS_UNEMULATED_PROTECTION) {
-            printf("%sUnemulated Protection", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_WORKINGFLAGS_NO_SAVE_STATE) {
-            printf("%sNo Save State", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_WORKINGFLAGS_NOTWORKING) {
-            printf("%sNot Working", needcomma ? ", " : "");
-        }
-        printf("\n");
         flags = LibMame_Get_Game_OrientationFlags(i);
-        printf("\tOrientations: ");
-        needcomma = false;
-        if (flags & LIBMAME_ORIENTATIONFLAGS_FLIP_X) {
-            printf("Flip X");
-            needcomma = true;
+        if (flags) {
+            printf("\tOrientations: ");
+            needcomma = false;
+            if (flags & LIBMAME_ORIENTATIONFLAGS_FLIP_X) {
+                printf("Flip X");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_ORIENTATIONFLAGS_FLIP_Y) {
+                printf("%sFlip Y", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_90) {
+                printf("%sRotate 90", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_180) {
+                printf("%sRotate 180", needcomma ? ", " : "");
+                needcomma = true;
+            }
+            if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_270) {
+                printf("%sRotate 270", needcomma ? ", " : "");
+            }
+            printf("\n");
         }
-        if (flags & LIBMAME_ORIENTATIONFLAGS_FLIP_Y) {
-            printf("%sFlip Y", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_90) {
-            printf("%sRotate 90", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_180) {
-            printf("%sRotate 180", needcomma ? ", " : "");
-            needcomma = true;
-        }
-        if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_270) {
-            printf("%sRotate 270", needcomma ? ", " : "");
-        }
-        printf("\n");
         printf("\tScreen Type: ");
         LibMame_ScreenResolution screen_resolution =
             LibMame_Get_Game_ScreenResolution(i);

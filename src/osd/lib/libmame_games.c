@@ -11,13 +11,13 @@
  * Support for getting game info
  **/
 
+#include "HashTable.h"
 #include "emu.h"
 #include "config.h"
 #include "libmame.h"
 #include "osdcore.h"
 #include <pthread.h>
 #include <string.h>
-
 
 typedef struct GameInfo
 {
@@ -34,8 +34,10 @@ typedef struct GameInfo
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_game_count = 0;
 static GameInfo *g_gameinfos = 0;
-/* Need Hashtable hashing game short names to indexes into g_gameinfos
-   to support fast lookup of game info */
+/* Hash short names to driver indexes */
+static Hash::Table<const char *, int> g_drivers_hash;
+/* Hash short names to gameinfo indexes */
+static Hash::Table<const char *, int> g_gameinfos_hash;
 
 
 #define CONVERT_FLAG(mameflag, field, libflag) do {                 \
@@ -184,18 +186,25 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool converted)
         }
         g_gameinfos = (GameInfo *) osd_malloc
             (sizeof(GameInfo) * g_game_count);
-        GameInfo *gameinfo = g_gameinfos;
         int driver_index = 0;
+        int gameinfo_index = 0;
         while (true) {
             const game_driver *driver = drivers[driver_index];
+            GameInfo *gameinfo = &(g_gameinfos[gameinfo_index]);
             if (driver == NULL) {
                 break;
             }
+            int *pHashValue;
+            g_drivers_hash.Put(driver->name, /* returns */ pHashValue);
+            *pHashValue = driver_index;
             if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE))) {
                 gameinfo->converted = false;
                 gameinfo->driver_index = driver_index;
+                g_gameinfos_hash.Put(driver->name, /* returns */ pHashValue);
+                *pHashValue = gameinfo_index;
+                gameinfo_index++;
             }
-            driver_index++, gameinfo++;
+            driver_index++;
         }
     }
 
@@ -217,6 +226,18 @@ static const game_driver *get_game_driver(int gamenum)
 }
 
 
+static const game_driver *get_game_driver_by_name(const char *name)
+{
+    int *pIndex = g_drivers_hash.Get(name);
+    
+    if (pIndex == NULL) {
+        return NULL;
+    }
+
+    return drivers[*pIndex];
+}
+
+
 static GameInfo *get_gameinfo(int gamenum)
 {
     return get_gameinfo_helper(gamenum, true);
@@ -232,6 +253,9 @@ void LibMame_Games_Deinitialize()
         osd_free(g_gameinfos);
         g_gameinfos = 0;
     }
+
+    g_drivers_hash.Clear();
+    g_gameinfos_hash.Clear();
 
     pthread_mutex_unlock(&g_mutex);
 }
@@ -267,8 +291,21 @@ int LibMame_Get_Game_Year_Of_Release(int gamenum)
 
 const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum)
 {
-    const char *clone_of = get_game_driver(gamenum)->parent;
-    return (clone_of && *clone_of && strcmp(clone_of, "0")) ? clone_of : NULL;
+    const char *parent = get_game_driver(gamenum)->parent;
+    /* Not sure why MAME uses "0" to mean "no parent" ... */
+    if (parent && *parent && strcmp(parent, "0")) {
+        /* If the parent is a BIOS, then it's not a clone */
+        const game_driver *driver = get_game_driver_by_name(parent);
+        if (driver && (driver->flags & GAME_IS_BIOS_ROOT)) {
+            return NULL;
+        }
+        else {
+            return parent;
+        }
+    }
+    else {
+        return NULL;
+    }
 }
 
 
