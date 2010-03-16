@@ -13,19 +13,24 @@
 
 int main(int argc, char **argv)
 {
-    (void) argc;
-    (void) argv;
-
     printf("LibMame version %s\n", LibMame_Get_Version_String());
 
     if (argc > 1) {
-        int gamenums[15];
-        int count = LibMame_Get_Game_Matches(argv[1], 15, gamenums);
-        for (int i = 0; i < count; i++) {
-            printf("%s (%s)\n", LibMame_Get_Game_Short_Name(gamenums[i]),
-                   LibMame_Get_Game_Full_Name(gamenums[i]));
+        int gamenum = LibMame_Get_Game_Number(argv[1]);
+        if (gamenum == -1) {
+            int gamenums[15];
+            int count = LibMame_Get_Game_Matches(argv[1], 15, gamenums);
+            printf("Closest matches:\n");
+            for (int i = 0; i < count; i++) {
+                printf("%s (%s)\n", LibMame_Get_Game_Short_Name(gamenums[i]),
+                       LibMame_Get_Game_Full_Name(gamenums[i]));
+            }
+            return -1;
         }
-        return 0;
+        else {
+            printf("%s\n", LibMame_Get_Game_Full_Name(gamenum));
+            return 0;
+        }
     }
 
     int count = LibMame_Get_Game_Count();
@@ -128,6 +133,28 @@ int main(int argc, char **argv)
         }
         printf("\tScreen Refresh Rate: %d Hz\n", 
                LibMame_Get_Game_ScreenRefreshRate(i));
+        int samplecount = LibMame_Get_Game_SoundSamples_Count(i);
+        if (samplecount) {
+            printf("\tSound Samples: %d", samplecount);
+            int source =  LibMame_Get_Game_SoundSamplesSource(i);
+            if (source != i) {
+                printf(" (from %s)", LibMame_Get_Game_Short_Name(source));
+            }
+            if (!LibMame_Get_Game_SoundSamplesIdenticalToSource(i)) {
+                printf(" -- ");
+                for (int j = 0; j < samplecount; j++) {
+                    if (j > 0) {
+                        printf(", ");
+                    }
+                    printf("%s", LibMame_Get_Game_SoundSampleFileName(i, j));
+                }
+            }
+            printf("\n");
+        }
+        const char *srcname = LibMame_Get_Game_SourceFileName(i);
+        if (srcname) {
+            printf("\tSource File Name: %s\n", srcname);
+        }
     }
 
 #if 0

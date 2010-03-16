@@ -56,15 +56,33 @@
 
 
 /**
- * ORIENTATION FLAGS
- * - See info.c line 683
+ * These flags define the screen orientations that could supported by a game.
+ * Not all games support all orientations.
  **/
 
-
+/**
+ * Mirror along a vertical line midway aross the screen.
+ **/
 #define LIBMAME_ORIENTATIONFLAGS_FLIP_X                         0x01
+
+/**
+ * Mirror along a horizontal line midway across the screen
+ **/
 #define LIBMAME_ORIENTATIONFLAGS_FLIP_Y                         0x02
+
+/**
+ * Rotate the screen 90 degrees
+ **/
 #define LIBMAME_ORIENTATIONFLAGS_ROTATE_90                      0x04
+
+/**
+ * Rotate the screen 180 degrees
+ **/
 #define LIBMAME_ORIENTATIONFLAGS_ROTATE_180                     0x08
+
+/**
+ * Rotate the screen 270 degrees
+ **/
 #define LIBMAME_ORIENTATIONFLAGS_ROTATE_270                     0x10
 
 
@@ -86,6 +104,26 @@ typedef struct LibMame_ScreenResolution
 {
     int width, height;
 } LibMame_ScreenResolution;
+
+
+/**
+ * This describes the name and location of a sound sample.
+ **/
+typedef struct LibMame_SoundSampleDescriptor
+{
+    /**
+     * This is the name of the sample, which is a file name of a sound file as
+     * stored in a sound sample ZIP file.
+     **/
+    const char *name;
+
+    /**
+     * This is the game number of the game that has the actual sample.  Some
+     * games reference sound sample files from other games, and thus use a
+     * different source game number than their own game number.
+     **/
+    int source_gamenum;
+} LibMame_SoundSampleDescriptor;
 
 
 /**
@@ -238,6 +276,51 @@ LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum);
  * @return the original screen refresh rate, in Hz, of the game.
  **/
 int LibMame_Get_Game_ScreenRefreshRate(int gamenum);
+
+
+/**
+ * Returns the number of sound samples this game uses.
+ * 
+ * @return the number of sound samples this game uses.
+ **/
+int LibMame_Get_Game_SoundSamples_Count(int gamenum);
+
+
+/**
+ * Returns the game number of the game that has the actual sample files for
+ * this game.  Some games reference sound sample files from other games, and
+ * thus use a different source game number than their own game number.
+ *
+ * @return the game number of the game that has the actual sample files for
+ *         this game
+ **/
+int LibMame_Get_Game_SoundSamplesSource(int gamenum);
+
+
+/**
+ * Returns true if the sound samples are identical to those of the the
+ * source, false if not
+ *
+ * @return true if the sound samples are identical to those of the the
+ *         source, false if not
+ **/
+bool LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum);
+
+
+/**
+ * Returns the file name of a sound sample for a game.
+ *
+ * @return the file name of a sound sample for a game.
+ **/
+const char *LibMame_Get_Game_SoundSampleFileName(int gamenum, int samplenum);
+
+
+/**
+ * Returns the name of the MAME source file that implements the game.
+ *
+ * @return the name of the MAME source file that implements the game.
+ **/
+const char *LibMame_Get_Game_SourceFileName(int gamenum);
 
 
 #endif /* __LIBMAME_H__ */

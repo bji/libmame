@@ -78,6 +78,40 @@ public:
 };
 
 
+/**
+ * This class wraps a const char * and allows it to be used as a
+ * HashTable key.  Memory management of the wrapped pointer is up to the
+ * user of this class.
+ **/
+class StringKey
+{
+public:
+
+    StringKey()
+    {
+    }
+    
+    StringKey(const char *key)
+        : keyM(key)
+    {
+    }
+    
+    void operator >>(HashCode &hc) const
+    {
+        hc = Util::Hash(keyM, strlen(keyM));
+    }
+
+    bool operator ==(const StringKey &other) const
+    {
+        return !strcmp(keyM, other.keyM);
+    }
+
+private:
+    
+    const char *keyM;
+};
+
+
 /* HashTable template. */
 template<typename KeyT, typename ValueT>
 class Table
