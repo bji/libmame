@@ -75,6 +75,18 @@ static Hash::Table<Hash::StringKey, int> g_gameinfos_hash;
 static GameInfo *get_gameinfo_locked(int gamenum);
 static GameInfo *get_gameinfo(int gamenum);
 
+static void *osd_calloc(size_t size)
+{
+    void *ret = osd_malloc(size);
+
+    if (ret) {
+        memset(ret, 0, size);
+    }
+
+    return ret;
+}
+
+
 static void safe_strncpy(char *dest, const char *src, size_t n)
 {
     if (src == NULL) {
@@ -327,7 +339,7 @@ static void convert_chips(const machine_config *machineconfig,
         return;
     }
 
-    gameinfo->chips = (LibMame_ChipDescriptor *) osd_malloc
+    gameinfo->chips = (LibMame_ChipDescriptor *) osd_calloc
         (sizeof(LibMame_ChipDescriptor) * gameinfo->chip_count);
     
     LibMame_ChipDescriptor *descriptor = gameinfo->chips;
@@ -372,7 +384,7 @@ static void convert_dipswitches(const ioport_list *ioportlist,
     }
 
     gameinfo->dipswitches = (LibMame_DipswitchDescriptor *)
-        osd_malloc(sizeof(LibMame_DipswitchDescriptor) * 
+        osd_calloc(sizeof(LibMame_DipswitchDescriptor) * 
                    gameinfo->dipswitch_count);
 
     LibMame_DipswitchDescriptor *desc = gameinfo->dipswitches;
@@ -460,9 +472,8 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
             }
             pdriver++;
         }
-        g_gameinfos = (GameInfo *) osd_malloc
+        g_gameinfos = (GameInfo *) osd_calloc
             (sizeof(GameInfo) * g_game_count);
-        memset(g_gameinfos, 0, sizeof(GameInfo) * g_game_count);
         int driver_index = 0;
         int gameinfo_index = 0;
         while (true) {
@@ -490,6 +501,7 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
 
     if (converted && !ret->converted) {
         convert_game_info(ret);
+        gameinfo->converted = true;
     }
 
     return ret;

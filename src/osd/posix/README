@@ -1,0 +1,9 @@
+This is a version of the mame osd that implements as much of the OSD as
+possible using pure POSIX API calls.  POSIX is the portable operating system
+interface, and should be supported on all systems.
+
+The parts of the OSD which are not implementable purely in POSIX are
+not implemented but define global pointers to functions that can be set
+to provide the implementation thereof.  This is intended to be used by
+libmame, which will set them to pointers to its own functions which handle
+OSD functionality in a platform-specific way.

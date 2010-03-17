@@ -616,6 +616,10 @@ include $(SRC)/build/build.mak
 -include $(SRC)/osd/$(CROSS_BUILD_OSD)/build.mak
 include $(SRC)/tools/tools.mak
 
+ifneq ($(BUILD_LIBMAME),)
+include $(SRC)/libmame/libmame.mak
+endif
+
 # combine the various definitions to one
 CDEFS = $(DEFS)
 
