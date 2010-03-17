@@ -189,6 +189,19 @@ int main(int argc, char **argv)
             }
             printf("\n");
         }
+        int adjusterscount = LibMame_Get_Game_Adjusters_Count(i);
+        if (adjusterscount) {
+            printf("\tAdjusters: ");
+            for (int j = 0; j < adjusterscount; j++) {
+                LibMame_AdjusterDescriptor desc = 
+                    LibMame_Get_Game_Adjuster(i, j);
+                if (j > 0) {
+                    printf(", ");
+                }
+                printf("%s (%d)", desc.name, desc.default_value);
+            }
+            printf("\n");
+        }
         const char *srcname = LibMame_Get_Game_SourceFileName(i);
         if (srcname) {
             printf("\tSource File Name: %s\n", srcname);

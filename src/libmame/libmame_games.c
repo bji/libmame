@@ -43,6 +43,8 @@ typedef struct GameInfo
     LibMame_ChipDescriptor *chips;
     int dipswitch_count;
     LibMame_DipswitchDescriptor *dipswitches;
+    int adjuster_count;
+    LibMame_AdjusterDescriptor *adjusters;
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
@@ -425,6 +427,45 @@ static void convert_dipswitches(const ioport_list *ioportlist,
 }
 
 
+static void convert_adjusters(const ioport_list *ioportlist,
+                              GameInfo *gameinfo)
+{
+	const input_port_config *port;
+	const input_field_config *field;
+
+	for (port = ioportlist->first(); port; port = port->next) {
+		for (field = port->fieldlist; field; field = field->next) {
+			if (field->type != IPT_ADJUSTER) {
+                continue;
+            }
+            gameinfo->adjuster_count++;
+        }
+    }
+
+    if (gameinfo->adjuster_count == 0) {
+        return;
+    }
+
+    gameinfo->adjusters = (LibMame_AdjusterDescriptor *) osd_malloc
+        (sizeof(LibMame_AdjusterDescriptor) * gameinfo->adjuster_count);
+
+    LibMame_AdjusterDescriptor *adjuster = gameinfo->adjusters;
+
+	for (port = ioportlist->first(); port; port = port->next) {
+		for (field = port->fieldlist; field; field = field->next) {
+			if (field->type != IPT_ADJUSTER) {
+                continue;
+            }
+
+            adjuster->name = input_field_name(field);
+            adjuster->default_value = field->defvalue;
+
+            adjuster++;
+        }
+    }
+}
+
+
 static void convert_source_file_name(const game_driver *driver,
                                      GameInfo *gameinfo)
 {
@@ -465,6 +506,7 @@ static void convert_game_info(GameInfo *gameinfo)
     convert_sound_samples(machineconfig, gameinfo);
     convert_chips(machineconfig, gameinfo);
     convert_dipswitches(&ioportlist, gameinfo);
+    convert_adjusters(&ioportlist, gameinfo);
     convert_source_file_name(driver, gameinfo);
 
     machine_config_free(machineconfig);
@@ -566,19 +608,23 @@ void LibMame_Games_Deinitialize()
 
     if (g_gameinfos) {
         for (int i = 0; i < g_game_count; i++) {
-            if (g_gameinfos[i].sound_samples) {
-                osd_free(g_gameinfos[i].sound_samples);
+            GameInfo *gameinfo = &(g_gameinfos[i]);
+            if (gameinfo->sound_samples) {
+                osd_free(gameinfo->sound_samples);
             }
-            if (g_gameinfos[i].chips) {
-                osd_free(g_gameinfos[i].chips);
+            if (gameinfo->chips) {
+                osd_free(gameinfo->chips);
             }
-            if (g_gameinfos[i].dipswitches) {
-                for (int j = 0; j < g_gameinfos[i].dipswitch_count; j++) {
-                    if (g_gameinfos[i].dipswitches[j].setting_names) {
-                        osd_free(g_gameinfos[i].dipswitches[j].setting_names);
+            if (gameinfo->dipswitches) {
+                for (int j = 0; j < gameinfo->dipswitch_count; j++) {
+                    if (gameinfo->dipswitches[j].setting_names) {
+                        osd_free(gameinfo->dipswitches[j].setting_names);
                     }
                 }
-                osd_free(g_gameinfos[i].dipswitches);
+                osd_free(gameinfo->dipswitches);
+            }
+            if (gameinfo->adjusters) {
+                osd_free(gameinfo->adjusters);
             }
         }
         osd_free(g_gameinfos);
@@ -779,6 +825,19 @@ LibMame_DipswitchDescriptor LibMame_Get_Game_Dipswitch(int gamenum,
                                                        int dipswitchnum)
 {
     return get_gameinfo(gamenum)->dipswitches[dipswitchnum];
+}
+
+
+int LibMame_Get_Game_Adjusters_Count(int gamenum)
+{
+    return get_gameinfo(gamenum)->adjuster_count;
+}
+
+
+LibMame_AdjusterDescriptor LibMame_Get_Game_Adjuster(int gamenum,
+                                                     int adjusternum)
+{
+    return get_gameinfo(gamenum)->adjusters[adjusternum];
 }
 
 

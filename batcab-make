@@ -10,4 +10,10 @@
 
 NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
 
+# MAME makefiles are DUMB and have dependencies on a phony maketree target
+# that causes lots of targets to be rebuilt unnecessarily all of the time.
+# For libmame, maketree is not depended on in this way, so that needless
+# rebuilds don't happen all of the time; but since the maketree target must
+# be built, it's done here every time
+make -C `dirname $0` maketree
 make -j$((NUM_PROCESSORS*2)) -C `dirname $0` "$@"

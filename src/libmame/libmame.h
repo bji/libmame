@@ -184,6 +184,25 @@ typedef struct LibMame_DipswitchDescriptor
 
 
 /**
+ * This describes an adjuster that MAME can use to adjust a setting, typically
+ * a volume.  Adjusters always adjust a setting between a value of 0 and 100.
+ **/
+typedef struct LibMame_AdjusterDescriptor
+{
+    /**
+     * This is the name of the adjuster, which typically describes its purpose
+     **/
+    const char *name;
+
+    /**
+     * This is the default value of the adjuster.  Adjusters can be set to
+     * values between 0 and 100, inclusive.
+     **/
+    int default_value;
+} LibMame_AdjusterDescriptor;
+
+
+/**
  * Functions for managing the library.
  **/
 
@@ -411,18 +430,17 @@ int LibMame_Get_Game_Chip_Count(int gamenum);
  * Returns a description of a chip that MAME emulates for a given game.
  *
  * @param gamenum is the game number of the game
+ * @param chipnum is the chip number of the chip
  * @return a description of a chip that MAME emulates for a given game.
  **/
 LibMame_ChipDescriptor LibMame_Get_Game_Chip(int gamenum, int chipnum);
 
 
 /**
- * Returns the number of dipswitches chips that MAME emulates for a given
- * game.
+ * Returns the number of dipswitches that MAME emulates for a given game.
  *
  * @param gamenum is the game number of the game
- * @return the number of dipswitches chips that MAME emulates for a given
- *         game.
+ * @return the number of dipswitches that MAME emulates for a given game.
  **/
 int LibMame_Get_Game_Dipswitch_Count(int gamenum);
 
@@ -431,10 +449,36 @@ int LibMame_Get_Game_Dipswitch_Count(int gamenum);
  * Returns a description of a dipswitch that MAME supports for a given game.
  *
  * @param gamenum is the game number of the game
+ * @param dipswitchnum is the dipswitch number of the dipswitch
  * @return a description of a dipswitch that MAME supports for a given game.
  **/
 LibMame_DipswitchDescriptor LibMame_Get_Game_Dipswitch(int gamenum,
                                                        int dipswitchnum);
+
+
+/**
+ * Returns the number of setting adjusters that MAME supports for a given
+ * game.
+ *
+ * @param gamenum is the game number of the game
+ * @return the number of setting adjusters that MAME supports for a given
+ *         game.
+ **/
+int LibMame_Get_Game_Adjusters_Count(int gamenum);
+
+
+/**
+ * Returns a description of a setting adjuster that MAME supports for a
+ * given game.
+ *
+ * @param gamenum is the game number of the game
+ * @param adjusternum is the adjuster number of the adjuster
+ * @return a description of a setting adjuster that MAME supports for a
+ *         given game.
+ **/
+LibMame_AdjusterDescriptor LibMame_Get_Game_Adjuster(int gamenum,
+                                                     int adjusternum);
+
 
 /**
  * Returns the name of the MAME source file that implements the game.
@@ -446,10 +490,9 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
 
 
 /**
- * info.c to emulate (in order of importants, most important first):
+ * info.c to emulate (in order of importance, most important first):
 
 	print_game_input(out, game, portlist);
-	print_game_switches(out, game, portlist);
 	print_game_configs(out, game, portlist);
 	print_game_adjusters(out, game, portlist);
 	print_game_bios(out, game);
