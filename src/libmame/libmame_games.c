@@ -101,19 +101,24 @@ static void safe_strncpy(char *dest, const char *src, size_t n)
 
 static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
-    gameinfo->year_of_release = -1;
-
     const char *yearstr = driver->year;
-    while (*yearstr) {
-        if ((*yearstr >= '0') && (*yearstr <= '9')) {
-            gameinfo->year_of_release *= 10;
-            gameinfo->year_of_release += *yearstr - '0';
+
+    if (yearstr) {
+        gameinfo->year_of_release = 0;
+        while (*yearstr) {
+            if ((*yearstr >= '0') && (*yearstr <= '9')) {
+                gameinfo->year_of_release *= 10;
+                gameinfo->year_of_release += *yearstr - '0';
+            }
+            else {
+                gameinfo->year_of_release = -1;
+                break;
+            }
+            yearstr++;
         }
-        else {
-            gameinfo->year_of_release = -1;
-            break;
-        }
-        yearstr++;
+    }
+    else {
+        gameinfo->year_of_release = -1;
     }
 }
 
