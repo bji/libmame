@@ -101,6 +101,8 @@ static void safe_strncpy(char *dest, const char *src, size_t n)
 
 static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
+    gameinfo->year_of_release = -1;
+
     const char *yearstr = driver->year;
     while (*yearstr) {
         if ((*yearstr >= '0') && (*yearstr <= '9')) {
@@ -394,9 +396,12 @@ static void convert_dipswitches(const ioport_list *ioportlist,
             if (field->type != IPT_DIPSWITCH) {
                 continue;
             }
-            desc->name = 0;
-            desc->setting_count = 0;
-            
+            desc->name = input_field_name(field);
+            const input_setting_config *setting;
+            for (setting = field->settinglist; setting; 
+                 setting = setting->next) {
+                desc->setting_count++;
+            }
 
             if (desc->setting_count == 0) {
                 continue;
@@ -404,6 +409,15 @@ static void convert_dipswitches(const ioport_list *ioportlist,
 
             desc->setting_names = (const char **) osd_malloc
                 (sizeof(const char *) * desc->setting_count);
+            int index = 0;
+            for (setting = field->settinglist; setting; 
+                 setting = setting->next) {
+                desc->setting_names[index] = setting->name;
+                if (setting->value == field->defvalue) {
+                    desc->default_setting_number = index;
+                }
+                index++;
+            }
             
             desc++;
         }
@@ -440,9 +454,7 @@ static void convert_game_info(GameInfo *gameinfo)
 	machine_config *machineconfig = 
         machine_config_alloc(driver->machine_config);
     ioport_list ioportlist;
-#if 0
     input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE);
-#endif
     /* Mame's code assumes the above succeeds, we will too */
 
     convert_year(driver, gameinfo);
@@ -452,9 +464,7 @@ static void convert_game_info(GameInfo *gameinfo)
     convert_sound_channels(machineconfig, gameinfo);
     convert_sound_samples(machineconfig, gameinfo);
     convert_chips(machineconfig, gameinfo);
-#if 0
     convert_dipswitches(&ioportlist, gameinfo);
-#endif
     convert_source_file_name(driver, gameinfo);
 
     machine_config_free(machineconfig);
@@ -501,7 +511,7 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
 
     if (converted && !ret->converted) {
         convert_game_info(ret);
-        gameinfo->converted = true;
+        ret->converted = true;
     }
 
     return ret;

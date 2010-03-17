@@ -166,6 +166,29 @@ int main(int argc, char **argv)
             }
             printf("\n");
         }
+        int dipswitchcount = LibMame_Get_Game_Dipswitch_Count(i);
+        if (dipswitchcount) {
+            printf("\tDipswitches: ");
+            for (int j = 0; j < dipswitchcount; j++) {
+                LibMame_DipswitchDescriptor desc = 
+                    LibMame_Get_Game_Dipswitch(i, j);
+                if (j > 0) {
+                    printf(", ");
+                }
+                printf("[ %s = ", desc.name);
+                for (int k = 0; k < desc.setting_count; k++) {
+                    if (k > 0) {
+                        printf (", ");
+                    }
+                    if (k == desc.default_setting_number) {
+                        printf("*");
+                    }
+                    printf("%s", desc.setting_names[k]);
+                }
+                printf("]");
+            }
+            printf("\n");
+        }
         const char *srcname = LibMame_Get_Game_SourceFileName(i);
         if (srcname) {
             printf("\tSource File Name: %s\n", srcname);
