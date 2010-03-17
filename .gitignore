@@ -1,8 +1,10 @@
 libmame
 mame
+mamed
 mame64
 mame64d
-mamed
 mametiny
 mametinyd
+mametiny64
+mametiny64d
 obj
