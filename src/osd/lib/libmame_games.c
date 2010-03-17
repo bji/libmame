@@ -35,9 +35,14 @@ typedef struct GameInfo
     LibMame_ScreenType screen_type;
     LibMame_ScreenResolution screen_resolution;
     int screen_refresh_rate;
+    int sound_channel_count;
     int sound_samples_count;
     int sound_samples_source;
     const char **sound_samples;
+    int chip_count;
+    LibMame_ChipDescriptor *chips;
+    int dipswitch_count;
+    LibMame_DipswitchDescriptor *dipswitches;
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
@@ -84,7 +89,6 @@ static void safe_strncpy(char *dest, const char *src, size_t n)
 
 static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
-    gameinfo->year_of_release = 0;
     const char *yearstr = driver->year;
     while (*yearstr) {
         if ((*yearstr >= '0') && (*yearstr <= '9')) {
@@ -103,7 +107,6 @@ static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 static void convert_working_flags(const game_driver *driver,
                                   GameInfo *gameinfo)
 {
-    gameinfo->working_flags = 0;
     CONVERT_FLAG(GAME_NOT_WORKING, working_flags, 
                  LIBMAME_WORKINGFLAGS_NOTWORKING);
     CONVERT_FLAG(GAME_UNEMULATED_PROTECTION, working_flags, 
@@ -130,7 +133,6 @@ static void convert_working_flags(const game_driver *driver,
 static void convert_orientation_flags(const game_driver *driver,
                                       GameInfo *gameinfo)
 {
-    gameinfo->orientation_flags = 0;
     CONVERT_FLAG(ORIENTATION_FLIP_X, orientation_flags,
                  LIBMAME_ORIENTATIONFLAGS_FLIP_X);
     CONVERT_FLAG(ORIENTATION_FLIP_Y, orientation_flags,
@@ -147,11 +149,6 @@ static void convert_orientation_flags(const game_driver *driver,
 static void convert_screen_info(const machine_config *machineconfig,
                                 GameInfo *gameinfo)
 {
-    gameinfo->screen_type = LibMame_ScreenType_Raster;
-    gameinfo->screen_resolution.width = 0;
-    gameinfo->screen_resolution.height = 0;
-    gameinfo->screen_refresh_rate = 0;
-
     /* We assume that all screens are the same; and in any case, only report
        on the first screen, which is assumed to be the primary screen */
     const device_config *devconfig = video_screen_first(machineconfig);
@@ -180,6 +177,14 @@ static void convert_screen_info(const machine_config *machineconfig,
         gameinfo->screen_refresh_rate = 
             ATTOSECONDS_TO_HZ(screenconfig->refresh);
     }
+}
+
+
+static void convert_sound_channels(const machine_config *machineconfig,
+                                   GameInfo *gameinfo)
+{
+    gameinfo->sound_channel_count = sound_first(machineconfig) ?
+        speaker_output_count(machineconfig) : 0;
 }
 
 
@@ -277,9 +282,7 @@ static bool sound_samples_identical(const GameInfo *g1, const GameInfo *g2)
 static void convert_sound_samples(const machine_config *machineconfig,
                                   GameInfo *gameinfo)
 {
-    gameinfo->sound_samples_count = 0;
     gameinfo->sound_samples_source = -1;
-    gameinfo->sound_samples = NULL;
 
     convert_sound_samples_helper(machineconfig, gameinfo, true);
     if (gameinfo->sound_samples_count) {
@@ -300,6 +303,97 @@ static void convert_sound_samples(const machine_config *machineconfig,
                 osd_free(gameinfo->sound_samples);
                 gameinfo->sound_samples = NULL;
             }
+        }
+    }
+}
+
+
+static void convert_chips(const machine_config *machineconfig,
+                          GameInfo *gameinfo)
+{
+	const device_config *devconfig;
+
+	for (devconfig = cpu_first(machineconfig); devconfig; 
+         devconfig = cpu_next(devconfig)) {
+        gameinfo->chip_count++;
+    }
+
+	for (devconfig = sound_first(machineconfig); devconfig; 
+         devconfig = sound_next(devconfig)) {
+        gameinfo->chip_count++;
+    }
+
+    if (gameinfo->chip_count == 0) {
+        return;
+    }
+
+    gameinfo->chips = (LibMame_ChipDescriptor *) osd_malloc
+        (sizeof(LibMame_ChipDescriptor) * gameinfo->chip_count);
+    
+    LibMame_ChipDescriptor *descriptor = gameinfo->chips;
+
+	for (devconfig = cpu_first(machineconfig); devconfig; 
+         devconfig = cpu_next(devconfig)) {
+        descriptor->is_sound = false;
+        descriptor->tag = devconfig->tag();
+        descriptor->name = devconfig->name();
+        descriptor->clock_hz = devconfig->clock;
+        descriptor++;
+    }        
+    
+	for (devconfig = sound_first(machineconfig); devconfig; 
+         devconfig = sound_next(devconfig)) {
+        descriptor->is_sound = true;
+        descriptor->tag = devconfig->tag();
+        descriptor->name = devconfig->name();
+        descriptor->clock_hz = devconfig->clock;
+        descriptor++;
+    }        
+}
+
+
+static void convert_dipswitches(const ioport_list *ioportlist,
+                                GameInfo *gameinfo)
+{
+	const input_port_config *port;
+	const input_field_config *field;
+    
+	for (port = ioportlist->first(); port; port = port->next) {
+		for (field = port->fieldlist; field; field = field->next) {
+            if (field->type != IPT_DIPSWITCH) {
+                continue;
+            }
+            gameinfo->dipswitch_count++;
+        }
+    }
+
+    if (gameinfo->dipswitch_count == 0) {
+        return;
+    }
+
+    gameinfo->dipswitches = (LibMame_DipswitchDescriptor *)
+        osd_malloc(sizeof(LibMame_DipswitchDescriptor) * 
+                   gameinfo->dipswitch_count);
+
+    LibMame_DipswitchDescriptor *desc = gameinfo->dipswitches;
+
+	for (port = ioportlist->first(); port; port = port->next) {
+		for (field = port->fieldlist; field; field = field->next) {
+            if (field->type != IPT_DIPSWITCH) {
+                continue;
+            }
+            desc->name = 0;
+            desc->setting_count = 0;
+            
+
+            if (desc->setting_count == 0) {
+                continue;
+            }
+
+            desc->setting_names = (const char **) osd_malloc
+                (sizeof(const char *) * desc->setting_count);
+            
+            desc++;
         }
     }
 }
@@ -333,13 +427,22 @@ static void convert_game_info(GameInfo *gameinfo)
 
 	machine_config *machineconfig = 
         machine_config_alloc(driver->machine_config);
+    ioport_list ioportlist;
+#if 0
+    input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE);
+#endif
     /* Mame's code assumes the above succeeds, we will too */
 
     convert_year(driver, gameinfo);
     convert_working_flags(driver, gameinfo);
     convert_orientation_flags(driver, gameinfo);
     convert_screen_info(machineconfig, gameinfo);
+    convert_sound_channels(machineconfig, gameinfo);
     convert_sound_samples(machineconfig, gameinfo);
+    convert_chips(machineconfig, gameinfo);
+#if 0
+    convert_dipswitches(&ioportlist, gameinfo);
+#endif
     convert_source_file_name(driver, gameinfo);
 
     machine_config_free(machineconfig);
@@ -359,6 +462,7 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
         }
         g_gameinfos = (GameInfo *) osd_malloc
             (sizeof(GameInfo) * g_game_count);
+        memset(g_gameinfos, 0, sizeof(GameInfo) * g_game_count);
         int driver_index = 0;
         int gameinfo_index = 0;
         while (true) {
@@ -404,12 +508,6 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool converted)
 }
 
 
-static const game_driver *get_game_driver_locked(int gamenum)
-{
-    return drivers[get_gameinfo_helper_locked(gamenum, false)->driver_index];
-}
-
-
 static const game_driver *get_game_driver(int gamenum)
 {
     return drivers[get_gameinfo_helper(gamenum, false)->driver_index];
@@ -448,6 +546,17 @@ void LibMame_Games_Deinitialize()
         for (int i = 0; i < g_game_count; i++) {
             if (g_gameinfos[i].sound_samples) {
                 osd_free(g_gameinfos[i].sound_samples);
+            }
+            if (g_gameinfos[i].chips) {
+                osd_free(g_gameinfos[i].chips);
+            }
+            if (g_gameinfos[i].dipswitches) {
+                for (int j = 0; j < g_gameinfos[i].dipswitch_count; j++) {
+                    if (g_gameinfos[i].dipswitches[j].setting_names) {
+                        osd_free(g_gameinfos[i].dipswitches[j].setting_names);
+                    }
+                }
+                osd_free(g_gameinfos[i].dipswitches);
             }
         }
         osd_free(g_gameinfos);
@@ -582,9 +691,15 @@ LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum)
 }
 
 
-int LibMame_Get_Game_ScreenRefreshRate(int gamenum)
+int LibMame_Get_Game_ScreenRefreshRateHz(int gamenum)
 {
     return get_gameinfo(gamenum)->screen_refresh_rate;
+}
+
+
+int LibMame_Get_Game_SoundChannelCount(int gamenum)
+{
+    return get_gameinfo(gamenum)->sound_channel_count;
 }
 
 
@@ -617,6 +732,31 @@ const char *LibMame_Get_Game_SoundSampleFileName(int gamenum, int samplenum)
     else {
         return gameinfo->sound_samples[samplenum];
     }
+}
+
+
+int LibMame_Get_Game_Chip_Count(int gamenum)
+{
+    return get_gameinfo(gamenum)->chip_count;
+}
+
+
+LibMame_ChipDescriptor LibMame_Get_Game_Chip(int gamenum, int chipnum)
+{
+    return get_gameinfo(gamenum)->chips[chipnum];
+}
+
+
+int LibMame_Get_Game_Dipswitch_Count(int gamenum)
+{
+    return get_gameinfo(gamenum)->dipswitch_count;
+}
+
+
+LibMame_DipswitchDescriptor LibMame_Get_Game_Dipswitch(int gamenum,
+                                                       int dipswitchnum)
+{
+    return get_gameinfo(gamenum)->dipswitches[dipswitchnum];
 }
 
 

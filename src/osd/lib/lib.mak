@@ -21,9 +21,6 @@ OBJDIRS += $(OSDLIBOBJ)
 #-------------------------------------------------
 
 OSDCOREOBJS = \
-	$(OSDLIBOBJ)/HashTable.o \
-    $(OSDLIBOBJ)/libmame_dv.o \
-    $(OSDLIBOBJ)/libmame_games.o \
     $(OSDLIBOBJ)/osd_directory.o \
     $(OSDLIBOBJ)/osd_file.o \
     $(OSDLIBOBJ)/osd_iav.o \
@@ -62,9 +59,12 @@ $(LIBOSD): $(OSDOBJS)
 
 # Consider removing expatobjs and zlibobjs from here, and instead require
 # applications to link against those libraries externally.
-LIBMAMECONTENTS = $(DRVLIBS) $(LIBEMUOBJS) $(CPUOBJS) $(SOUNDOBJS) \
-                  $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) $(OSDCOREOBJS) \
-                  $(VERSIONOBJ)
+LIBMAMECONTENTS = $(DRVLIBS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
+                  $(SOUNDOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) \
+                  $(OSDCOREOBJS) $(VERSIONOBJ) \
+                  $(OSDLIBOBJ)/HashTable.o \
+                  $(OSDLIBOBJ)/libmame_dv.o \
+                  $(OSDLIBOBJ)/libmame_games.o
 
 LIBMAME_INSTALL = libmame
 
@@ -79,3 +79,11 @@ $(LIBMAME_INSTALL)/usr/include/libmame.h: $(OSDLIBSRC)/libmame.h
 .PHONY: libmame
 libmame: $(LIBMAME_INSTALL)/usr/lib/libmame.a \
          $(LIBMAME_INSTALL)/usr/include/libmame.h
+
+.PHONY: libmametest
+libmametest: maketree libmame-test
+
+libmame-test: $(OSDLIBOBJ)/libmame_test_main.o \
+              $(LIBMAME_INSTALL)/usr/lib/libmame.a
+	$(ECHO) Linking $@...
+	$(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@

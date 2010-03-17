@@ -127,6 +127,63 @@ typedef struct LibMame_SoundSampleDescriptor
 
 
 /**
+ * This describes a chip that MAME emulates.
+ **/
+typedef struct LibMame_ChipDescriptor
+{
+    /**
+     * This is true if the chip is a sound chip, false if it is a CPU chip
+     **/
+    bool is_sound;
+
+    /**
+     * This is a tag for the chip
+     **/
+    const char *tag;
+
+    /**
+     * This is the name of the chip
+     **/
+    const char *name;
+
+    /**
+     * This is the clock rate of the chip, or 0 if the clock rate is unknown
+     **/
+    int clock_hz;
+} LibMame_ChipDescriptor;
+
+
+/**
+ * This describes a dipswitch that MAME emulates.
+ **/
+typedef struct LibMame_DipswitchDescriptor
+{
+    /**
+     * This is the name of the dipswitch, which typically describes what
+     * the dipswitch does
+     **/
+    const char *name;
+
+    /**
+     * This is the number of individual settings that the dipswitch may be
+     * set to
+     **/
+    int setting_count;
+
+    /**
+     * This is the index into the setting_names array of the default setting
+     **/
+    int default_setting_number;
+
+    /**
+     * This is the names of each of the individual settings that the dipswitch
+     * may be set to, which typically describe what the setting does
+     **/
+    const char **setting_names;
+} LibMame_DipswitchDescriptor;
+
+
+/**
  * Functions for managing the library.
  **/
 
@@ -191,6 +248,7 @@ int LibMame_Get_Game_Matches(const char *short_name, int num_matches,
 /**
  * Returns the short name of a game.
  *
+ * @param gamenum is the game number of the game
  * @return the short name of a game.
  **/
 const char *LibMame_Get_Game_Short_Name(int gamenum);
@@ -199,6 +257,7 @@ const char *LibMame_Get_Game_Short_Name(int gamenum);
 /**
  * Returns the full name of a game.
  *
+ * @param gamenum is the game number of the game
  * @return the full name of a game.
  **/
 const char *LibMame_Get_Game_Full_Name(int gamenum);
@@ -207,6 +266,7 @@ const char *LibMame_Get_Game_Full_Name(int gamenum);
 /**
  * Returns the year that a game was released, or -1 if the year is unknown.
  *
+ * @param gamenum is the game number of the game
  * @return the year that a game was released, or -1 if the year is unknown.
  **/
 int LibMame_Get_Game_Year_Of_Release(int gamenum);
@@ -216,6 +276,7 @@ int LibMame_Get_Game_Year_Of_Release(int gamenum);
  * Returns the short name of the game that this game is a clone of, if the
  * game is a clone.  Returns NULL if the game is not a clone.
  *
+ * @param gamenum is the game number of the game
  * @return the short name of the game that this game is a clone of, if the
  *         game is a clone, or NULL if the game is not a clone.
  **/
@@ -225,6 +286,7 @@ const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum);
 /**
  * Returns the name of the manufacturer of the given game.
  *
+ * @param gamenum is the game number of the game
  * @return the name of the manufacturer of the given game.
  **/
 const char *LibMame_Get_Game_Manufacturer(int gamenum);
@@ -236,6 +298,7 @@ const char *LibMame_Get_Game_Manufacturer(int gamenum);
  * If 0 is returned, then the game is working perfectly, including being able
  * to save game state.
  *
+ * @param gamenum is the game number of the game
  * @return the set of flags describing the game's 'working' status, or 0 if
  *         the game is working perfectly, including being able to save game
  *         state.
@@ -248,6 +311,7 @@ int LibMame_Get_Game_WorkingFlags(int gamenum);
  * This is an or'd together set of flags from the LIBMAME_ORIENTATIONFLAGS_XXX
  * symbols.
  *
+ * @param gamenum is the game number of the game
  * @return the set of flags describing the game's supported orientations.
  **/
 int LibMame_Get_Game_OrientationFlags(int gamenum);
@@ -256,6 +320,7 @@ int LibMame_Get_Game_OrientationFlags(int gamenum);
 /**
  * Returns the type of the game's original screen.
  *
+ * @param gamenum is the game number of the game
  * @return the type of the game's original screen.
  **/
 LibMame_ScreenType LibMame_Get_Game_ScreenType(int gamenum);
@@ -265,6 +330,7 @@ LibMame_ScreenType LibMame_Get_Game_ScreenType(int gamenum);
  * Returns the original resolution of the game.  If the game is a vector
  * game, then this is an undefined value.
  *
+ * @param gamenum is the game number of the game
  * @return the original resolution of the game.
  **/
 LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum);
@@ -273,14 +339,27 @@ LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum);
 /**
  * Returns the original screen refresh rate, in Hz, of the game.
  *
+ * @param gamenum is the game number of the game
  * @return the original screen refresh rate, in Hz, of the game.
  **/
-int LibMame_Get_Game_ScreenRefreshRate(int gamenum);
+int LibMame_Get_Game_ScreenRefreshRateHz(int gamenum);
+
+
+/**
+ * Returns the number of channels of sound that the game supports:
+ * 0 means no sound, 1 means mono sound, 2 means stereo sound, anything higher
+ * than 2 means surround sound.
+ *
+ * @param gamenum is the game number of the game
+ * @return the number of channels of sound that the game supports
+ **/
+int LibMame_Get_Game_SoundChannelCount(int gamenum);
 
 
 /**
  * Returns the number of sound samples this game uses.
  * 
+ * @param gamenum is the game number of the game
  * @return the number of sound samples this game uses.
  **/
 int LibMame_Get_Game_SoundSamples_Count(int gamenum);
@@ -291,6 +370,7 @@ int LibMame_Get_Game_SoundSamples_Count(int gamenum);
  * this game.  Some games reference sound sample files from other games, and
  * thus use a different source game number than their own game number.
  *
+ * @param gamenum is the game number of the game
  * @return the game number of the game that has the actual sample files for
  *         this game
  **/
@@ -301,6 +381,7 @@ int LibMame_Get_Game_SoundSamplesSource(int gamenum);
  * Returns true if the sound samples are identical to those of the the
  * source, false if not
  *
+ * @param gamenum is the game number of the game
  * @return true if the sound samples are identical to those of the the
  *         source, false if not
  **/
@@ -310,17 +391,70 @@ bool LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum);
 /**
  * Returns the file name of a sound sample for a game.
  *
+ * @param gamenum is the game number of the game
+ * @param samplenum is the sample number of the sample
  * @return the file name of a sound sample for a game.
  **/
 const char *LibMame_Get_Game_SoundSampleFileName(int gamenum, int samplenum);
 
 
 /**
+ * Returns the number of chips that MAME emulates for a given game.
+ *
+ * @param gamenum is the game number of the game
+ * @return the number of chips that MAME emulates for a given game.
+ **/
+int LibMame_Get_Game_Chip_Count(int gamenum);
+
+
+/**
+ * Returns a description of a chip that MAME emulates for a given game.
+ *
+ * @param gamenum is the game number of the game
+ * @return a description of a chip that MAME emulates for a given game.
+ **/
+LibMame_ChipDescriptor LibMame_Get_Game_Chip(int gamenum, int chipnum);
+
+
+/**
+ * Returns the number of dipswitches chips that MAME emulates for a given
+ * game.
+ *
+ * @param gamenum is the game number of the game
+ * @return the number of dipswitches chips that MAME emulates for a given
+ *         game.
+ **/
+int LibMame_Get_Game_Dipswitch_Count(int gamenum);
+
+
+/**
+ * Returns a description of a dipswitch that MAME supports for a given game.
+ *
+ * @param gamenum is the game number of the game
+ * @return a description of a dipswitch that MAME supports for a given game.
+ **/
+LibMame_DipswitchDescriptor LibMame_Get_Game_Dipswitch(int gamenum,
+                                                       int dipswitchnum);
+
+/**
  * Returns the name of the MAME source file that implements the game.
  *
+ * @param gamenum is the game number of the game
  * @return the name of the MAME source file that implements the game.
  **/
 const char *LibMame_Get_Game_SourceFileName(int gamenum);
+
+
+/**
+ * info.c to emulate (in order of importants, most important first):
+
+	print_game_input(out, game, portlist);
+	print_game_switches(out, game, portlist);
+	print_game_configs(out, game, portlist);
+	print_game_adjusters(out, game, portlist);
+	print_game_bios(out, game);
+	print_game_rom(out, game, config);
+**/
 
 
 #endif /* __LIBMAME_H__ */
