@@ -21,6 +21,7 @@ OBJDIRS += $(OSDLIBOBJ)
 #-------------------------------------------------
 
 OSDCOREOBJS = \
+	$(OSDLIBOBJ)/HashTable.o \
     $(OSDLIBOBJ)/libmame_dv.o \
     $(OSDLIBOBJ)/libmame_games.o \
     $(OSDLIBOBJ)/osd_directory.o \
