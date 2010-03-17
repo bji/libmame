@@ -96,6 +96,32 @@ typedef enum
     LibMame_ScreenType_Vector
 } LibMame_ScreenType;
 
+/**
+ * Setting types
+ **/
+typedef enum
+{
+    /**
+     * This is a setting that is a MAME-specific, nonstandard configuration
+     * option for a game.  Changes to these settings typically only take
+     * effect when a game is re-loaded in MAME.
+     **/
+    LibMame_SettingType_Configuration,
+    /**
+     * This is a setting that was present in the original game as a
+     * dipswitch.  Changes to these settings typically only take effect in
+     * between games.
+     **/
+    LibMame_SettingType_Dipswitch,
+    /**
+     * This is a setting that may have been present in the original game or
+     * may not have been, but that affects a parameter of the game that can be
+     * adjusted in real time as a game runs.  Changes to these settings take
+     * effect immediately.
+    **/
+    LibMame_SettingType_Adjuster
+} LibMame_SettingType;
+
 
 /**
  * This is a screen size in pixels
@@ -154,52 +180,43 @@ typedef struct LibMame_ChipDescriptor
 
 
 /**
- * This describes a dipswitch that MAME emulates.
+ * This describes a setting that MAME allows to be adjusted for a game.
  **/
-typedef struct LibMame_DipswitchDescriptor
+typedef struct LibMame_SettingDescriptor
 {
     /**
-     * This is the name of the dipswitch, which typically describes what
-     * the dipswitch does
+     * This is the type of this setting
+     **/
+    LibMame_SettingType type;
+
+    /**
+     * This is the name of the setting, which typically describes what the 
+     * setting does.
      **/
     const char *name;
 
     /**
-     * This is the number of individual settings that the dipswitch may be
-     * set to
+     * This is the number of individual values that the setting may be set to,
+     * if the setting is a Configuration or Dipswitch setting.  This value is
+     * meaningless for Adjuster settings, which always range from 0 to 100
+     * inclusive.
      **/
-    int setting_count;
+    int value_count;
 
     /**
-     * This is the index into the setting_names array of the default setting
-     **/
-    int default_setting_number;
-
-    /**
-     * This is the names of each of the individual settings that the dipswitch
-     * may be set to, which typically describe what the setting does
-     **/
-    const char **setting_names;
-} LibMame_DipswitchDescriptor;
-
-
-/**
- * This describes an adjuster that MAME can use to adjust a setting, typically
- * a volume.  Adjusters always adjust a setting between a value of 0 and 100.
- **/
-typedef struct LibMame_AdjusterDescriptor
-{
-    /**
-     * This is the name of the adjuster, which typically describes its purpose
-     **/
-    const char *name;
-
-    /**
-     * This is the default value of the adjuster.  Adjusters can be set to
-     * values between 0 and 100, inclusive.
+     * If this is a Configuration or Dipswitch setting, then this gives the
+     * index into the value_names array of the default value.  If this is an
+     * Adjuster setting, then this gives the default value of the setting.
      **/
     int default_value;
-} LibMame_AdjusterDescriptor;
+
+    /**
+     * This is the names of each of the individual values that the setting
+     * may be set to, which typically describe what the setting does.  These
+     * are only relevent for Configuration and Dipswitch settings.
+     **/
+    const char **value_names;
+} LibMame_SettingDescriptor;
 
 
 /**
@@ -437,47 +454,22 @@ LibMame_ChipDescriptor LibMame_Get_Game_Chip(int gamenum, int chipnum);
 
 
 /**
- * Returns the number of dipswitches that MAME emulates for a given game.
+ * Returns the number of settings that MAME supports for a given game.
  *
  * @param gamenum is the game number of the game
- * @return the number of dipswitches that MAME emulates for a given game.
+ * @return the number of settings that MAME supports for a given game.
  **/
-int LibMame_Get_Game_Dipswitch_Count(int gamenum);
+int LibMame_Get_Game_Setting_Count(int gamenum);
 
 
 /**
- * Returns a description of a dipswitch that MAME supports for a given game.
+ * Returns a description of a setting that MAME supports for a given game.
  *
  * @param gamenum is the game number of the game
- * @param dipswitchnum is the dipswitch number of the dipswitch
- * @return a description of a dipswitch that MAME supports for a given game.
+ * @param settingnum is the setting number of the setting
+ * @return a description of a setting that MAME supports for a given game.
  **/
-LibMame_DipswitchDescriptor LibMame_Get_Game_Dipswitch(int gamenum,
-                                                       int dipswitchnum);
-
-
-/**
- * Returns the number of setting adjusters that MAME supports for a given
- * game.
- *
- * @param gamenum is the game number of the game
- * @return the number of setting adjusters that MAME supports for a given
- *         game.
- **/
-int LibMame_Get_Game_Adjusters_Count(int gamenum);
-
-
-/**
- * Returns a description of a setting adjuster that MAME supports for a
- * given game.
- *
- * @param gamenum is the game number of the game
- * @param adjusternum is the adjuster number of the adjuster
- * @return a description of a setting adjuster that MAME supports for a
- *         given game.
- **/
-LibMame_AdjusterDescriptor LibMame_Get_Game_Adjuster(int gamenum,
-                                                     int adjusternum);
+LibMame_SettingDescriptor LibMame_Get_Game_Setting(int gamenum, int settingnum);
 
 
 /**
@@ -493,8 +485,6 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
  * info.c to emulate (in order of importance, most important first):
 
 	print_game_input(out, game, portlist);
-	print_game_configs(out, game, portlist);
-	print_game_adjusters(out, game, portlist);
 	print_game_bios(out, game);
 	print_game_rom(out, game, config);
 **/

@@ -52,66 +52,77 @@ int main(int argc, char **argv)
             printf("\tClone Of: %s\n", clone_of);
         }
         printf("\tManufacturer: %s\n", LibMame_Get_Game_Manufacturer(i));
-        bool needcomma;
+        bool needindent;
         int flags = LibMame_Get_Game_WorkingFlags(i);
         if (flags) {
-            needcomma = false;
+            needindent = false;
             printf("\tWorking Status: ");
             if (flags & LIBMAME_WORKINGFLAGS_WRONG_COLORS) {
                 printf("Wrong Colors");
-                needcomma = true;
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_IMPERFECT_COLORS) {
-                printf("%sImperfect Colors", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sImperfect Colors", 
+                       needindent ? "\n\t                " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_NO_SOUND) {
-                printf("%sNo Sound", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sNo Sound",
+                       needindent ? "\n\t                " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_IMPERFECT_SOUND) {
-                printf("%sImperfect Sound", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sImperfect Sound",
+                       needindent ? "\n\t                " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_NO_COCKTAIL) {
-                printf("%sNo Cocktail", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sNo Cocktail",
+                       needindent ? "\n\t                " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_UNEMULATED_PROTECTION) {
-                printf("%sUnemulated Protection", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sUnemulated Protection",
+                       needindent ? "\n\t                " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_NO_SAVE_STATE) {
-                printf("%sNo Save State", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sNo Save State",
+                       needindent ? "\n\t                " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_WORKINGFLAGS_NOTWORKING) {
-                printf("%sNot Working", needcomma ? ", " : "");
+                printf("%sNot Working",
+                       needindent ? "\n\t                " : "");
             }
             printf("\n");
         }
         flags = LibMame_Get_Game_OrientationFlags(i);
         if (flags) {
             printf("\tOrientations: ");
-            needcomma = false;
+            needindent = false;
             if (flags & LIBMAME_ORIENTATIONFLAGS_FLIP_X) {
                 printf("Flip X");
-                needcomma = true;
+                needindent = true;
             }
             if (flags & LIBMAME_ORIENTATIONFLAGS_FLIP_Y) {
-                printf("%sFlip Y", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sFlip Y",
+                       needindent ? "\n\t             " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_90) {
-                printf("%sRotate 90", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sRotate 90",
+                       needindent ? "\n\t             " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_180) {
-                printf("%sRotate 180", needcomma ? ", " : "");
-                needcomma = true;
+                printf("%sRotate 180",
+                       needindent ? "\n\t             " : "");
+                needindent = true;
             }
             if (flags & LIBMAME_ORIENTATIONFLAGS_ROTATE_270) {
-                printf("%sRotate 270", needcomma ? ", " : "");
+                printf("%sRotate 270",
+                       needindent ? "\n\t             " : "");
             }
             printf("\n");
         }
@@ -136,18 +147,26 @@ int main(int argc, char **argv)
         printf("\tSound Channels: %d\n", LibMame_Get_Game_SoundChannelCount(i));
         int samplecount = LibMame_Get_Game_SoundSamples_Count(i);
         if (samplecount) {
-            printf("\tSound Samples: %d", samplecount);
+            printf("\tSound Samples: ");
             int source =  LibMame_Get_Game_SoundSamplesSource(i);
+            bool needindent = false;
             if (source != i) {
-                printf(" (from %s)", LibMame_Get_Game_Short_Name(source));
+                if (LibMame_Get_Game_SoundSamplesIdenticalToSource(i)) {
+                    printf("(identical to %s)", 
+                           LibMame_Get_Game_Short_Name(source));
+                }
+                else {
+                    printf("(from %s)", LibMame_Get_Game_Short_Name(source));
+                }
+                needindent = true;
             }
             if (!LibMame_Get_Game_SoundSamplesIdenticalToSource(i)) {
-                printf(" -- ");
                 for (int j = 0; j < samplecount; j++) {
-                    if (j > 0) {
-                        printf(", ");
+                    if (needindent) {
+                        printf("\n\t               ");
                     }
                     printf("%s", LibMame_Get_Game_SoundSampleFileName(i, j));
+                    needindent = true;
                 }
             }
             printf("\n");
@@ -158,47 +177,45 @@ int main(int argc, char **argv)
             for (int j = 0; j < chipcount; j++) {
                 LibMame_ChipDescriptor desc = LibMame_Get_Game_Chip(i, j);
                 if (j > 0) {
-                    printf(", ");
+                    printf("\n\t       ");
                 }
-                printf("[ %s: %s, %s, %d Hz ]", 
+                printf("%s: %s, %s, %d Hz", 
                        desc.is_sound ? "sound" : "cpu", desc.tag,
                        desc.name, desc.clock_hz);
             }
             printf("\n");
         }
-        int dipswitchcount = LibMame_Get_Game_Dipswitch_Count(i);
-        if (dipswitchcount) {
-            printf("\tDipswitches: ");
-            for (int j = 0; j < dipswitchcount; j++) {
-                LibMame_DipswitchDescriptor desc = 
-                    LibMame_Get_Game_Dipswitch(i, j);
+        int settingcount = LibMame_Get_Game_Setting_Count(i);
+        if (settingcount) {
+            printf("\tSettings: ");
+            for (int j = 0; j < settingcount; j++) {
+                LibMame_SettingDescriptor desc = LibMame_Get_Game_Setting(i, j);
                 if (j > 0) {
-                    printf(", ");
+                    printf("\n\t          ");
                 }
-                printf("[ %s = ", desc.name);
-                for (int k = 0; k < desc.setting_count; k++) {
-                    if (k > 0) {
-                        printf (", ");
+                switch (desc.type) {
+                case LibMame_SettingType_Configuration:
+                    printf("Configuration: %s = ", desc.name);
+                    break;
+                case LibMame_SettingType_Dipswitch:
+                    printf("Dipswitch: %s = ", desc.name);
+                    break;
+                case LibMame_SettingType_Adjuster:
+                    printf("Adjuster: %s = %d", desc.name, desc.default_value);
+                    break;
+                }
+
+                if (desc.type != LibMame_SettingType_Adjuster) {
+                    for (int k = 0; k < desc.value_count; k++) {
+                        if (k > 0) {
+                            printf (", ");
+                        }
+                        if (k == desc.default_value) {
+                            printf("*");
+                        }
+                        printf("%s", desc.value_names[k]);
                     }
-                    if (k == desc.default_setting_number) {
-                        printf("*");
-                    }
-                    printf("%s", desc.setting_names[k]);
                 }
-                printf("]");
-            }
-            printf("\n");
-        }
-        int adjusterscount = LibMame_Get_Game_Adjusters_Count(i);
-        if (adjusterscount) {
-            printf("\tAdjusters: ");
-            for (int j = 0; j < adjusterscount; j++) {
-                LibMame_AdjusterDescriptor desc = 
-                    LibMame_Get_Game_Adjuster(i, j);
-                if (j > 0) {
-                    printf(", ");
-                }
-                printf("%s (%d)", desc.name, desc.default_value);
             }
             printf("\n");
         }

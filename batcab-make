@@ -1,12 +1,13 @@
 #!/bin/sh
 
 # To build mame as a library, use:
-# OSD=lib ./batcab-make libmame
+# ./batcab-make libmame
 
 # You may also want to do:
-# OST=lib SUBTARGET=tiny ./batcab-make libmame
+# DEBUG=1 SYMBOLS=1 SUBTARGET=tiny ./batcab-make libmame
 # The above will build a much smaller version of libmame with many fewer
-# romsets supported but builds *alot* faster, which makes it good for testing
+# romsets supported but builds *alot* faster, which makes it good for testing.
+# Also the above builds for debug.
 
 NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
 
@@ -15,5 +16,5 @@ NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
 # For libmame, maketree is not depended on in this way, so that needless
 # rebuilds don't happen all of the time; but since the maketree target must
 # be built, it's done here every time
-make -C `dirname $0` maketree
-make -j$((NUM_PROCESSORS*2)) -C `dirname $0` "$@"
+OSD=posix BUILD_LIBMAME=1 make -C `dirname $0` maketree
+OSD=posix BUILD_LIBMAME=1 make -j$((NUM_PROCESSORS*2)) -C `dirname $0` "$@"
