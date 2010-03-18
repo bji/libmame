@@ -144,7 +144,7 @@ int main(int argc, char **argv)
         }
         printf("\tScreen Refresh Rate: %d Hz\n", 
                LibMame_Get_Game_ScreenRefreshRateHz(i));
-        printf("\tSound Channels: %d\n", LibMame_Get_Game_SoundChannelCount(i));
+        printf("\tSound Channels: %d\n", LibMame_Get_Game_SoundChannels(i));
         int samplecount = LibMame_Get_Game_SoundSamples_Count(i);
         if (samplecount) {
             printf("\tSound Samples: ");
@@ -219,6 +219,168 @@ int main(int argc, char **argv)
             }
             printf("\n");
         }
+        printf("\tMax Simultaneous Players: %d\n", 
+               LibMame_Get_Game_MaxSimultaneousPlayers(i));
+        LibMame_ControllerSetDescriptor controller_set =
+            LibMame_Get_Game_ControllerSet(i);
+        printf("\tControllers: ");
+        needindent = false;
+        if (controller_set.controller_flags & 
+            LIBMAME_CONTROLLERFLAGS_JOYSTICKHORIZONTAL) {
+            printf("Horizontal Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_JOYSTICKVERTICAL) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Vertical Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("4-Way Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("8-Way Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Analog Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Double Horizontal Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Double Vertical Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Double 4-Way Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Double 8-Way Joystick");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_SPINNER) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Spinner");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_PADDLE) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Paddle");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_TRACKBALL) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Trackball");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_LIGHTGUN) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Light Gun");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_PEDAL) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Pedal");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_PEDAL2) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Pedal 2");
+            needindent = true;
+        }
+        if (controller_set.controller_flags &
+            LIBMAME_CONTROLLERFLAGS_PEDAL3) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Pedal 3");
+            needindent = true;
+        }
+        if (controller_set.mahjong_button_flags) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Has Mahjong Buttons");
+            needindent = true;
+        }
+        if (controller_set.hanafuda_button_flags) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Has Hanafuda Buttons");
+            needindent = true;
+        }
+        if (controller_set.gambling_button_flags) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Has Gambling Buttons");
+            needindent = true;
+        }
+        for (int j = 0; j < controller_set.normal_button_count; j++) {
+            if (needindent) {
+                printf("\n\t             ");
+            }
+            printf("Button %d - %s", j + 1, 
+                   controller_set.normal_button_names[j] ?
+                   controller_set.normal_button_names[j] : "unknown");
+            needindent = true;
+        }
+        printf("\n");
         const char *srcname = LibMame_Get_Game_SourceFileName(i);
         if (srcname) {
             printf("\tSource File Name: %s\n", srcname);

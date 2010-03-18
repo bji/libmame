@@ -50,7 +50,7 @@ LIBMAMEDEPS = $(DRVLIBS) $(LIBMAMEOBJS_STD)
 
 $(LIBMAME_INSTALL)/usr/lib/libmame.a: $(LIBMAMEDEPS)
 		   $(MD) -p `dirname $@`
-		   $(ECHO) Linking $@...
+		   $(ECHO) Archiving $@...
 		   $(AR) crs $@ $(filter %mamedriv.o,$(DRVLIBS)) $(foreach object,$(foreach archive,$(filter-out %mamedriv.o,$(DRVLIBS)),$(shell ar t $(archive))),$(wildcard $(OBJ)/mame/drivers/$(object)) $(wildcard $(OBJ)/mame/machine/$(object)) $(wildcard $(OBJ)/mame/audio/$(object)) $(wildcard $(OBJ)/mame/video/$(object))) $(LIBMAMEOBJS_STD)
 
 $(LIBMAME_INSTALL)/usr/include/libmame.h: $(SRC)/libmame/libmame.h

@@ -124,6 +124,181 @@ typedef enum
 
 
 /**
+ * Controller types
+ **/
+typedef enum
+{
+    /**
+     * This is a digital 2-way horizontal joystick
+     **/
+    LibMame_ControllerType_JoystickHorizontal,
+    /**
+     * This is a digital 2-way vertical joystick
+     **/
+    LibMame_ControllerType_JoystickVertical,
+    /**
+     * This is a digital 4-way joystick
+     **/
+    LibMame_ControllerType_Joystick4Way,
+    /**
+     * This is a digital 8-way joystick
+     **/
+    LibMame_ControllerType_Joystick8Way,
+    /**
+     * This is an analog joystick
+     **/
+    LibMame_ControllerType_JoystickAnalog,
+    /**
+     * This is two digital 2-way horizontal joysticks
+     **/
+    LibMame_ControllerType_DoubleJoystickHorizontal,
+    /**
+     * This is two digital 2-way vertical joysticks
+     **/
+    LibMame_ControllerType_DoubleJoystickVertical,
+    /**
+     * This is two digital 4-way joysticks
+     **/
+    LibMame_ControllerType_DoubleJoystick4Way,
+    /**
+     * This is two digital 8-way joysticks
+     **/
+    LibMame_ControllerType_DoubleJoystick8Way,
+    /**
+     * This is an analog spinner, which spins freely and which only indicates
+     * rotation, not angle of rotation
+     **/
+    LibMame_ControllerType_Spinner,
+    /**
+     * This is an analog spinner, which spins in a limited range and which
+     * indicates angle of rotation
+     **/
+    LibMame_ControllerType_Paddle,
+    /**
+     * This is a trackball
+     **/
+    LibMame_ControllerType_Trackball,
+    /**
+     * This is a light gun
+     **/
+    LibMame_ControllerType_Lightgun,
+    /**
+     * This is a footpedal
+     **/
+    LibMame_ControllerType_Pedal,
+    /**
+     * This is a second footpedal
+     **/
+    LibMame_ControllerType_Pedal2,
+    /**
+     * This is a third footpedal
+     **/
+    LibMame_ControllerType_Pedal3
+} LibMame_ControllerType;
+
+
+/**
+ * These flags define all of the possible controller types
+ **/
+#define LIBMAME_CONTROLLERFLAGS_JOYSTICKHORIZONTAL              0x0001
+#define LIBMAME_CONTROLLERFLAGS_JOYSTICKVERTICAL                0x0002
+#define LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY                    0x0004
+#define LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY                    0x0008
+#define LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG                  0x0010
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL        0x0020
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL          0x0040
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY              0x0080
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY              0x0100
+#define LIBMAME_CONTROLLERFLAGS_SPINNER                         0x0200
+#define LIBMAME_CONTROLLERFLAGS_PADDLE                          0x0400
+#define LIBMAME_CONTROLLERFLAGS_TRACKBALL                       0x0800
+#define LIBMAME_CONTROLLERFLAGS_LIGHTGUN                        0x1000
+#define LIBMAME_CONTROLLERFLAGS_PEDAL                           0x2000
+#define LIBMAME_CONTROLLERFLAGS_PEDAL2                          0x4000
+#define LIBMAME_CONTROLLERFLAGS_PEDAL3                          0x8000
+
+
+/**
+ * These flags define all of the possible special controller buttons used for
+ * Mahjong games.
+ **/
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_A                       0x00000001
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_B                       0x00000002
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_C                       0x00000004
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_D                       0x00000008
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_E                       0x00000010
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_F                       0x00000020
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_G                       0x00000040
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_H                       0x00000080
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_I                       0x00000100
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_J                       0x00000200
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_K                       0x00000400
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_L                       0x00000800
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_M                       0x00001000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_N                       0x00002000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_O                       0x00004000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_P                       0x00008000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_Q                       0x00010000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_KAN                     0x00020000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_PON                     0x00040000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_CHI                     0x00080000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_REACH                   0x00100000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_RON                     0x00200000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_BET                     0x00400000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_LAST_CHANCE             0x00800000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_SCORE                   0x01000000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_DOUBLE_UP               0x02000000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_FLIP_FLOP               0x04000000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_BIG                     0x08000000
+#define LIBMAME_CONTROLLERFLAGS_MAHJONG_SMALL                   0x10000000
+
+/**
+ * These flags define all of the possible controller buttons used for Hanafuda
+ * games.
+ **/
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_A                      0x001
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_B                      0x002
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_C                      0x004
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_D                      0x008
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_E                      0x010
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_F                      0x020
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_G                      0x040
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_H                      0x080
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_YES                    0x100
+#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_NO                     0x200
+
+/**
+ * These flags define all of the possible controller buttons used for gambling
+ * games.
+ **/
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HIGH                   0x0000001
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_LOW                    0x0000002
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HALF                   0x0000004
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_DEAL                   0x0000008
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_D_UP                   0x0000010
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_TAKE                   0x0000020
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STAND                  0x0000040
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_BET                    0x0000080
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_KEYIN                  0x0000100
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_KEYOUT                 0x0000200
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_PAYOUT                 0x0000400
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_DOOR                   0x0000800
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_SERVICE                0x0001000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_BOOK                   0x0002000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD1                  0x0004000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD2                  0x0008000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD3                  0x0010000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD4                  0x0020000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD5                  0x0040000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_CANCEL                 0x0080000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP1                  0x0100000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP2                  0x0200000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP3                  0x0400000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP4                  0x0800000
+#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP_ALL               0x1000000
+
+
+/**
  * This is a screen size in pixels
  **/
 typedef struct LibMame_ScreenResolution
@@ -215,8 +390,48 @@ typedef struct LibMame_SettingDescriptor
      * may be set to, which typically describe what the setting does.  These
      * are only relevent for Configuration and Dipswitch settings.
      **/
-    const char **value_names;
+    const char * const *value_names;
 } LibMame_SettingDescriptor;
+
+
+/**
+ * This describes a player's control inputs for a game.  This is a set of
+ * individual controllers comprising the entire set of control inputs that a
+ * player would use to play a game.  All players are assumed to use the same
+ * controls during a multiplayer game.
+ **/
+typedef struct LibMame_ControllerSetDescriptor
+{
+    /**
+     * This is the count of normal buttons (fire, jump, etc)
+     **/
+    int normal_button_count;
+
+    /**
+     * These are the names of the normal buttons
+     **/
+    const char * const *normal_button_names;
+
+    /**
+     * These flags identify which Mahjong buttons are present
+     **/
+    int mahjong_button_flags;
+
+    /**
+     * These flags identify which hanafuda buttons are present
+     **/
+    int hanafuda_button_flags;
+
+    /**
+     * These flags identify which gambling buttons are present
+     **/
+    int gambling_button_flags;
+
+    /**
+     * These flags identify which controllers are present
+     **/
+    int controller_flags;
+} LibMame_ControllerSetDescriptor;
 
 
 /**
@@ -389,7 +604,7 @@ int LibMame_Get_Game_ScreenRefreshRateHz(int gamenum);
  * @param gamenum is the game number of the game
  * @return the number of channels of sound that the game supports
  **/
-int LibMame_Get_Game_SoundChannelCount(int gamenum);
+int LibMame_Get_Game_SoundChannels(int gamenum);
 
 
 /**
@@ -473,6 +688,21 @@ LibMame_SettingDescriptor LibMame_Get_Game_Setting(int gamenum, int settingnum);
 
 
 /**
+ * Returns the maximum number of simultaneous players of a game.  Each player
+ * is assumed to have an identical controller set as the others.
+ *
+ **/
+int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum);
+
+
+/**
+ * This returns the controller set describing the controllers for a given
+ * game.  All players are assumed to have the same controller set.
+ **/
+LibMame_ControllerSetDescriptor LibMame_Get_Game_ControllerSet(int gamenum);
+
+
+/**
  * Returns the name of the MAME source file that implements the game.
  *
  * @param gamenum is the game number of the game
@@ -484,7 +714,6 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
 /**
  * info.c to emulate (in order of importance, most important first):
 
-	print_game_input(out, game, portlist);
 	print_game_bios(out, game);
 	print_game_rom(out, game, config);
 **/
