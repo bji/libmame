@@ -1,6 +1,8 @@
 /** **************************************************************************
  * osd_iav.c
  *
+ * OSD Input, Audio, and Video function implementations.
+ *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
  *

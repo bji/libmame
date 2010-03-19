@@ -33,7 +33,8 @@ LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
                   $(OSDCOREOBJS) $(VERSIONOBJ) \
                   $(OBJ)/libmame/HashTable.o \
                   $(OBJ)/libmame/libmame_dv.o \
-                  $(OBJ)/libmame/libmame_games.o
+                  $(OBJ)/libmame/libmame_games.o \
+                  $(OBJ)/libmame/libmame_iav.o
 
 # These are all dependences of libmame, which includes the individual game
 # libraries and the regular objects
