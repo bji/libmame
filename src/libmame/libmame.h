@@ -156,6 +156,7 @@ typedef enum
     LibMame_ControllerType_Pedal3,
     LibMame_ControllerType_Positional,
     LibMame_ControllerType_PositionalVertical,
+    LibMame_ControllerType_Mouse,
     /* This is not a type, it's the number of entries in this enum */
     LibMame_ControllerTypeCount
 } LibMame_ControllerType;
@@ -628,53 +629,53 @@ typedef struct LibMame_PerPlayerControllersState
 
     /**
      * This value is the current horizontal position of the analog joystick,
-     * mapped to a range from -32768 (full left) to 32767 (full right).
+     * mapped to a range from -65536 (full left) to 65536 (full right).
      **/
     int analog_joystick_horizontal_state;
 
     /**
      * This value is the current vertical position of the analog joystick,
-     * mapped to a range from -32768 (full down) to 32767 (full up).
+     * mapped to a range from -65536 (full down) to 65536 (full up).
      **/
     int analog_joystick_vertical_state;
 
     /**
      * This value is the current position of the analog joystick when measured
-     * in the Z axis, i.e. an altitude, mapped to a range from -32768 (full
-     * down) to 32767 (full up).
+     * in the Z axis, i.e. an altitude, mapped to a range from -65536 (full
+     * down) to 65536 (full up).
      **/
     int analog_joystick_altitude_state;
 
     /**
      * This value is the change in position of the spinner since the last
-     * time it was polled, mapped to a range from -32768 (furthest possible
-     * spin left) to 32767 (furthest possible spin right).
+     * time it was polled, mapped to a range from -65536 (furthest possible
+     * spin left) to 65536 (furthest possible spin right).
      **/
     int spinner_delta;
 
     /**
      * This value is the change in position of the vertical spinner since the
-     * last time it was polled, mapped to a range from -32768 (furthest
-     * possible spin down) to 32767 (furthest possible spin up).
+     * last time it was polled, mapped to a range from -65536 (furthest
+     * possible spin down) to 65536 (furthest possible spin up).
      **/
     int spinner_vertical_delta;
 
     /**
      * This value is the current paddle position, mapped to a range from
-     * -32768 (full left) to 32767 (full right).
+     * -65536 (full left) to 65536 (full right).
      **/
     int paddle_state;
 
     /**
      * This value is the current vertical paddle position, mapped to a range
-     * from -32768 (full left) to 32767 (full right).
+     * from -65536 (full left) to 65536 (full right).
      **/
     int paddle_vertical_state;
 
     /**
      * This value is the change in position of the trackball along the
      * horizontal axis since the last time it was polled, mapped to a range
-     * from -32768 (furthest possible roll left) 32767 (furthest possible roll
+     * from -65536 (furthest possible roll left) 65536 (furthest possible roll
      * right).
      **/
     int trackball_horizontal_delta;
@@ -682,26 +683,26 @@ typedef struct LibMame_PerPlayerControllersState
     /**
      * This value is the change in position of the trackball along the
      * vertical axis since the last time it was polled, mapped to a range
-     * from -32768 (furthest possible roll down) 32767 (furthest possible roll
+     * from -65536 (furthest possible roll down) 65536 (furthest possible roll
      * up).
      **/
     int trackball_vertical_delta;
 
     /**
      * This value is the current horizontal position of the analog joystick,
-     * mapped to a range from -32767 (left edge of screen) to 32767
-     * (right edge of screen).  The value -32768 indicates off of the screen
-     * if present in either lightgun_horizontal_position_state or
+     * mapped to a range from -65536 (left edge of screen) to 65536 (right
+     * edge of screen).  Any values outside this range indicates off of the
+     * screen if present in either lightgun_horizontal_position_state or
      * lightgun_vertical_position_state.
      **/
     int lightgun_horizontal_state;
 
     /**
      * This value is the current vertical position of the analog joystick,
-     * mapped to a range from -32767 (left edge of screen) to 32767
-     * (right edge of screen).  The value -32768 indicates off of the screen
-     * if present in either lightgun_horizontal_position_state or
-     * lightgun_vertical_position_state.
+     * mapped to a range from -65536 (left edge of screen) to 65536 (right
+     * edge of screen).  Any values outside this range indicates indicates off
+     * of the screen if present in either lightgun_horizontal_position_state
+     * or lightgun_vertical_position_state.
      **/
     int lightgun_vertical_state;
 
@@ -725,16 +726,25 @@ typedef struct LibMame_PerPlayerControllersState
 
     /**
      * This is some kind of positional input that I don't know what it is.
-     * I assume that the range can be safely mapped from -32768 to 32768.
+     * The range is from -65536 to 65536.
      **/
     int positional_state;
 
     /**
      * This is some kind of vertical positional input that I don't know what
-     * it is.  I assume that the range can be safely mapped from -32768 to
-     * 32768.
+     * it is. The range is from -65536 to 65536.
      **/
     int positional_vertical_state;
+
+    /**
+     * Mouse X screen coordinate.
+     **/
+    int mouse_x_state;
+
+    /**
+     * Mouse Y screen coordinate.
+     **/
+    int mouse_y_state;
 
     /**
      * This is the current UI input.  libmame allows only one UI input at a

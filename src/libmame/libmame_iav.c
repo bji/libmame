@@ -8,7 +8,6 @@
  *
  ************************************************************************** **/
 
-#include "HashTable.h"
 #include "emu.h"
 #include "osdcore.h"
 #include "osdepend.h"
@@ -18,40 +17,14 @@
 
 /**
  * This is a packed representation of everything necessary to identify a
- * unique digital control.  We map each "key" from the huge virtual keyboard
- * device that we register with MAME to one of these, and store this in
- * a hashtable so that we can look up this information given a MAME key.
- * Then we register the keyboard device so that it has a single "key" for
- * each of these digital controls.  Finally, when devices are enumerated,
- * we hook each device up so that MAME looks for input for it from the
- * correct "key".
+ * unique digital control.
  **/
-#define DIGCTL_PLAYER_MASK                       0x000F
-#define DIGCTL_IPT_MASK                          0xFFF0
-
-#define DIGCTL_TYPE_MASK                         0x00F0
-#define DIGCTL_ITEM_MASK                         0xFF00
-#define DIGCTL_TYPE_NORMAL_BUTTON                0x0010
-#define DIGCTL_TYPE_LEFT_OR_SINGLE_JOYSTICK      0x0020
-#define DIGCTL_TYPE_RIGHT_JOYSTICK               0x0030
-#define DIGCTL_TYPE_OTHER_BUTTON                 0x0040
-#define DIGCTL_TYPE_UI_BUTTON                    0x0050
-#define DIGCTL_TYPE_MAHJONG_BUTTON               0x0060
-#define DIGCTL_TYPE_HANAFUDA_BUTTON              0x0070
-#define DIGCTL_TYPE_GAMBLING_BUTTON              0x0080
-#define DIGCTL_JOYSTICK_LEFT                     0x0100
-#define DIGCTL_JOYSTICK_RIGHT                    0x0200
-#define DIGCTL_JOYSTICK_UP                       0x0400
-#define DIGCTL_JOYSTICK_DOWN                     0x0800
-#define DIGCTL_MAKE_BUTTON(player_number, type, item_number) \
-    ((player_number) | (type) | ((item_number) << 8))
-#define DIGCTL_MAKE_JOYSTICK_DIRECTION(player_number, type, direction) \
-    ((player_number) | (type) | (direction))
-#define DIGCTL_PLAYER_NUMBER(d)       (((long) d) & DIGCTL_PLAYER_MASK)
-#define DIGCTL_TYPE(d)                (((long) d) & DIGCTL_TYPE_MASK)
-#define DIGCTL_ITEM_NUMBER(d)         ((((long) d) & DIGCTL_ITEM_MASK) >> 8)
-#define DIGCTL_JOYSTICK(d)            (((long) d) & DIGCTL_ITEM_MASK)
-
+#define DIGCTL_PLAYER_MASK              0x000F
+#define DIGCTL_IPT_MASK                 0xFFF0
+#define DIGCTL_PLAYER(d)                (((long) d) & DIGCTL_PLAYER_MASK)
+#define DIGCTL_IPT(d)                   ((((long) d) & DIGCTL_IPT_MASK) >> 8)
+#define DIGCTL_MAKE(player, ipt)        (((player) & DIGCTL_PLAYER_MASK) | \
+                                         ((ipt << 8) & DIGCTL_IPT_MASK))
 
 typedef enum
 {
@@ -60,6 +33,7 @@ typedef enum
     libmame_input_type_mahjong_button,
     libmame_input_type_hanafuda_button,
     libmame_input_type_gambling_button,
+    libmame_input_type_other_button,
     libmame_input_type_left_or_single_joystick_left,
     libmame_input_type_left_or_single_joystick_right,
     libmame_input_type_left_or_single_joystick_up,
@@ -72,6 +46,7 @@ typedef enum
     libmame_input_type_analog_joystick_vertical,
     libmame_input_type_analog_joystick_altitude,
     libmame_input_type_spinner,
+    libmame_input_type_spinner_vertical,
     libmame_input_type_paddle,
     libmame_input_type_paddle_vertical,
     libmame_input_type_trackball_horizontal,
@@ -83,11 +58,8 @@ typedef enum
     libmame_input_type_pedal3,
     libmame_input_type_positional,
     libmame_input_type_positional_vertical,
-    libmame_input_type_normal_button,
-    libmame_input_type_mahjong_button,
-    libmame_input_type_hanafuda_button,
-    libmame_input_type_gambling_button,
-    libmame_input_type_other_button,
+    libmame_input_type_mouse_x,
+    libmame_input_type_mouse_y,
     libmame_input_type_ui_button
 } libmame_input_type;
 
@@ -99,8 +71,9 @@ typedef enum
 typedef struct libmame_input_descriptor
 {
     libmame_input_type type;
-    int input_number;
+    int number;
 } libmame_input_descriptor;
+
 
 /* This maps each input IPT_ type to an input descriptor */
 static libmame_input_descriptor g_input_descriptors[] =
@@ -152,7 +125,7 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ libmame_input_type_right_joystick_left, 0 }, /* IPT_JOYSTICKRIGHT_LEFT */
 	{ libmame_input_type_right_joystick_right, 0 }, /* IPT_JOYSTICKRIGHT_RIGHT */
 	{ libmame_input_type_left_or_single_joystick_up, 0 }, /* IPT_JOYSTICKLEFT_UP */
-	{ libmame_input_type_left_or_single_joystick_downt, 0 }, /* IPT_JOYSTICKLEFT_DOWN */
+	{ libmame_input_type_left_or_single_joystick_down, 0 }, /* IPT_JOYSTICKLEFT_DOWN */
 	{ libmame_input_type_left_or_single_joystick_left, 0 }, /* IPT_JOYSTICKLEFT_LEFT */
 	{ libmame_input_type_left_or_single_joystick_right, 0 }, /* IPT_JOYSTICKLEFT_RIGHT */
 	{ libmame_input_type_normal_button, LibMame_NormalButtonType_1 }, /* IPT_BUTTON1 */
@@ -230,7 +203,7 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Hold4 }, /* IPT_POKER_HOLD4 */
 	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Hold5 }, /* IPT_POKER_HOLD5 */
 	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Cancel }, /* IPT_POKER_CANCEL */
-	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Poker_Bet }, /* IPT_POKER_BET */
+	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Bet }, /* IPT_POKER_BET */
 	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Stop1 }, /* IPT_SLOT_STOP1 */
 	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Stop2 }, /* IPT_SLOT_STOP2 */
 	{ libmame_input_type_gambling_button, LibMame_GamblingButtonType_Stop3 }, /* IPT_SLOT_STOP3 */
@@ -248,53 +221,55 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ libmame_input_type_pedal3, 0 }, /* IPT_PEDAL3 */
 	{ libmame_input_type_positional, 0 }, /* IPT_POSITIONAL */
 	{ libmame_input_type_positional_vertical, 0}, /* IPT_POSITIONAL_V */
-	{ libmame_input_spinner, 0 }, /* IPT_DIAL */
-	{ libmame_input_spinner_vertical, 0 }, /* IPT_DIAL_V */
-	{ libmame_input_spinner_trackball_horizontal, 0 }, /* IPT_TRACKBALL_X */
-	{ libmame_input_spinner_trackball_vertical, 0}, /* IPT_TRACKBALL_Y */
-	{ libmame_input_type_invalid, 0 }, /* IPT_MOUSE_X */
-	{ libmame_input_type_invalid, 0 }, /* IPT_MOUSE_Y */
-	{ }, /* IPT_ADJUSTER */
-	{ }, /* IPT_UI_CONFIGURE */
-	{ }, /* IPT_UI_ON_SCREEN_DISPLAY */
-	{ }, /* IPT_UI_DEBUG_BREAK */
-	{ }, /* IPT_UI_PAUSE */
-	{ }, /* IPT_UI_RESET_MACHINE */
-	{ }, /* IPT_UI_SOFT_RESET */
-	{ }, /* IPT_UI_SHOW_GFX */
-	{ }, /* IPT_UI_FRAMESKIP_DEC */
-	{ }, /* IPT_UI_FRAMESKIP_INC */
-	{ }, /* IPT_UI_THROTTLE */
-	{ }, /* IPT_UI_FAST_FORWARD */
-	{ }, /* IPT_UI_SHOW_FPS */
-	{ }, /* IPT_UI_SNAPSHOT */
-	{ }, /* IPT_UI_RECORD_MOVIE */
-	{ }, /* IPT_UI_TOGGLE_CHEAT */
-	{ }, /* IPT_UI_UP */
-	{ }, /* IPT_UI_DOWN */
-	{ }, /* IPT_UI_LEFT */
-	{ }, /* IPT_UI_RIGHT */
-	{ }, /* IPT_UI_HOME */
-	{ }, /* IPT_UI_END */
-	{ }, /* IPT_UI_PAGE_UP */
-	{ }, /* IPT_UI_PAGE_DOWN */
-	{ }, /* IPT_UI_SELECT */
-	{ }, /* IPT_UI_CANCEL */
-	{ }, /* IPT_UI_DISPLAY_COMMENT */
-	{ }, /* IPT_UI_CLEAR */
-	{ }, /* IPT_UI_ZOOM_IN */
-	{ }, /* IPT_UI_ZOOM_OUT */
-	{ }, /* IPT_UI_PREV_GROUP */
-	{ }, /* IPT_UI_NEXT_GROUP */
-	{ }, /* IPT_UI_ROTATE */
-	{ }, /* IPT_UI_SHOW_PROFILER */
-	{ }, /* IPT_UI_TOGGLE_UI */
-	{ }, /* IPT_UI_TOGGLE_DEBUG */
-	{ }, /* IPT_UI_PASTE */
-	{ }, /* IPT_UI_SAVE_STATE */
-	{ } /* IPT_UI_LOAD_STATE */
+	{ libmame_input_type_spinner, 0 }, /* IPT_DIAL */
+	{ libmame_input_type_spinner_vertical, 0 }, /* IPT_DIAL_V */
+	{ libmame_input_type_trackball_horizontal, 0 }, /* IPT_TRACKBALL_X */
+	{ libmame_input_type_trackball_vertical, 0}, /* IPT_TRACKBALL_Y */
+	{ libmame_input_type_mouse_x, 0 }, /* IPT_MOUSE_X */
+	{ libmame_input_type_mouse_y, 0 }, /* IPT_MOUSE_Y */
+	{ libmame_input_type_invalid, 0 }, /* IPT_ADJUSTER */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Configure }, /* IPT_UI_CONFIGURE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_On_Screen_Display }, /* IPT_UI_ON_SCREEN_DISPLAY */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Debug_Break }, /* IPT_UI_DEBUG_BREAK */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Pause }, /* IPT_UI_PAUSE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Reset_Machine }, /* IPT_UI_RESET_MACHINE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Soft_Reset }, /* IPT_UI_SOFT_RESET */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Show_Gfx }, /* IPT_UI_SHOW_GFX */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Frameskip_Dec }, /* IPT_UI_FRAMESKIP_DEC */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Frameskip_Inc }, /* IPT_UI_FRAMESKIP_INC */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Throttle }, /* IPT_UI_THROTTLE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Fast_Forward }, /* IPT_UI_FAST_FORWARD */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Show_Fps }, /* IPT_UI_SHOW_FPS */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Snapshot }, /* IPT_UI_SNAPSHOT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Record_Movie }, /* IPT_UI_RECORD_MOVIE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Toggle_Cheat }, /* IPT_UI_TOGGLE_CHEAT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Up }, /* IPT_UI_UP */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Down }, /* IPT_UI_DOWN */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Left }, /* IPT_UI_LEFT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Right }, /* IPT_UI_RIGHT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Home }, /* IPT_UI_HOME */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_End }, /* IPT_UI_END */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Page_Up }, /* IPT_UI_PAGE_UP */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Page_Down }, /* IPT_UI_PAGE_DOWN */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Select }, /* IPT_UI_SELECT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Cancel }, /* IPT_UI_CANCEL */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Display_Comment }, /* IPT_UI_DISPLAY_COMMENT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Clear }, /* IPT_UI_CLEAR */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Zoom_In }, /* IPT_UI_ZOOM_IN */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Zoom_Out }, /* IPT_UI_ZOOM_OUT */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Prev_Group }, /* IPT_UI_PREV_GROUP */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Next_Group }, /* IPT_UI_NEXT_GROUP */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Rotate }, /* IPT_UI_ROTATE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Show_Profiler }, /* IPT_UI_SHOW_PROFILER */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Toggle_Ui }, /* IPT_UI_TOGGLE_UI */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Toggle_Debug }, /* IPT_UI_TOGGLE_DEBUG */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Paste }, /* IPT_UI_PASTE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Save_State }, /* IPT_UI_SAVE_STATE */
+	{ libmame_input_type_ui_button, LibMame_UiButtonType_Load_State } /* IPT_UI_LOAD_STATE */
 };
             
+static int g_input_descriptor_count = 
+    (sizeof(g_input_descriptors) / sizeof(g_input_descriptors[0]));
 
 /**
  * This encapsulates all of the state that LibMame keeps track of during
@@ -321,8 +296,15 @@ typedef struct LibMame_RunGame_State
     int running_game_maximum_player_count;
     LibMame_AllControllersState controllers_state;
 
-    /* Hash MAME input_item_id to a DIGCTL value for each keyboard key */
-    static Hash::Table<int, input_item_id> digctl_to_key_id_hash;
+    /**
+     * This is the running machine that this state is associated with
+     **/
+    running_machine *machine;
+
+    /**
+     * This is the virtual keyboard device
+     **/
+    input_device *kbd;
 
 } LibMame_RunGame_State;
 
@@ -349,158 +331,105 @@ extern void (*mame_osd_customize_input_type_list_function)
 static LibMame_RunGame_State g_state;
 
 
-static INT32 get_digital_controller_state(void *, void *data)
+static INT32 get_controller_state(void *, void *data)
 {
-    if (DIGCTL_TYPE(data) == DIGCTL_TYPE_OTHER_BUTTON) {
-        LibMame_SharedControllersState *state = 
-            &(g_state.controllers_state.shared);
-        return (state->other_buttons_state &
-                (1 << (DIGCTL_ITEM_NUMBER(data))));
+    int player = DIGCTL_PLAYER(data);
+    int ipt_type = DIGCTL_IPT(data);
+    if (ipt_type >= g_input_descriptor_count) {
+        /* This is weird, we're being asked for something bogus */
+        return 0;
     }
-    /* Else it's a per-player state */
+    libmame_input_type input_type = g_input_descriptors[ipt_type].type;
+    int input_number = g_input_descriptors[ipt_type].number;
 
-    /* Get the controller state associated with the given digital control
-       descriptor */
-    LibMame_PerPlayerControllersState *state = 
-        &(g_state.controllers_state.per_player[DIGCTL_PLAYER_NUMBER(data)]);
+    /* Just in case we need these */
+    LibMame_PerPlayerControllersState *perplayer_state =
+        &(g_state.controllers_state.per_player[player]);
+    LibMame_SharedControllersState *shared_state =
+        &(g_state.controllers_state.shared);
 
-    /* Get the particular state according to the type of controller state
-       being asked about */
-    switch (DIGCTL_TYPE(data)) {
-    case DIGCTL_TYPE_NORMAL_BUTTON:
-        /* This logic is used here and for the other button types.  Basically
-           it is doing:
-           - Get the device item number out of the packed data
-           - Left shift this value to get the LIBMAME_CONTROLLERFLAGS_XXX
-             flag
-           - Return the state of that flag
-        **/
-        return (state->normal_buttons_state & 
-                (1 << (DIGCTL_ITEM_NUMBER(data))));
-    case DIGCTL_TYPE_LEFT_OR_SINGLE_JOYSTICK:
-        switch (DIGCTL_JOYSTICK(data)) {
-        case DIGCTL_JOYSTICK_LEFT:
-            return state->left_or_single_joystick_left_state;
-        case DIGCTL_JOYSTICK_RIGHT:
-            return state->left_or_single_joystick_right_state;
-        case DIGCTL_JOYSTICK_UP:
-            return state->left_or_single_joystick_up_state;
-        case DIGCTL_JOYSTICK_DOWN:
-            return state->left_or_single_joystick_down_state;
-        default:
-            break;
-        }
-    case DIGCTL_TYPE_RIGHT_JOYSTICK:
-        switch (DIGCTL_JOYSTICK(data)) {
-        case DIGCTL_JOYSTICK_LEFT:
-            return state->right_joystick_left_state;
-        case DIGCTL_JOYSTICK_RIGHT:
-            return state->right_joystick_right_state;
-        case DIGCTL_JOYSTICK_UP:
-            return state->right_joystick_up_state;
-        case DIGCTL_JOYSTICK_DOWN:
-            return state->right_joystick_down_state;
-        default:
-            break;
-        }
-    case DIGCTL_TYPE_UI_BUTTON:
-        /* UI input is not a flag, it is an actual value to check against */
-        return (state->ui_input_state == DIGCTL_ITEM_NUMBER(data));
-    case DIGCTL_TYPE_MAHJONG_BUTTON:
-        return (state->mahjong_buttons_state &
-                (1 << (DIGCTL_ITEM_NUMBER(data))));
-    case DIGCTL_TYPE_HANAFUDA_BUTTON:
-        return (state->hanafuda_buttons_state &
-                (1 << (DIGCTL_ITEM_NUMBER(data))));
-    case DIGCTL_TYPE_GAMBLING_BUTTON:
-        return (state->gambling_buttons_state &
-                (1 << (DIGCTL_ITEM_NUMBER(data))));
+    switch (input_type) {
+    case libmame_input_type_invalid:
+        /* This is an input type that we don't handle (yet) */
+        return 0;
+    case libmame_input_type_normal_button:
+        return (perplayer_state->normal_buttons_state & (1 << input_number));
+    case libmame_input_type_mahjong_button:
+        return (perplayer_state->mahjong_buttons_state & (1 << input_number));
+    case libmame_input_type_hanafuda_button:
+        return (perplayer_state->hanafuda_buttons_state & (1 << input_number));
+    case libmame_input_type_gambling_button:
+        return (perplayer_state->gambling_buttons_state & (1 << input_number));
+    case libmame_input_type_other_button:
+        return (shared_state->other_buttons_state & (1 << input_number));
+    case libmame_input_type_left_or_single_joystick_left:
+        return perplayer_state->left_or_single_joystick_left_state;
+    case libmame_input_type_left_or_single_joystick_right:
+        return perplayer_state->left_or_single_joystick_right_state;
+    case libmame_input_type_left_or_single_joystick_up:
+        return perplayer_state->left_or_single_joystick_up_state;
+    case libmame_input_type_left_or_single_joystick_down:
+        return perplayer_state->left_or_single_joystick_down_state;
+    case libmame_input_type_right_joystick_left:
+        return perplayer_state->right_joystick_down_state;
+    case libmame_input_type_right_joystick_right:
+        return perplayer_state->right_joystick_down_state;
+    case libmame_input_type_right_joystick_up:
+        return perplayer_state->right_joystick_down_state;
+    case libmame_input_type_right_joystick_down:
+        return perplayer_state->right_joystick_down_state;
+    case libmame_input_type_analog_joystick_horizontal:
+        return perplayer_state->analog_joystick_horizontal_state;
+    case libmame_input_type_analog_joystick_vertical:
+        return perplayer_state->analog_joystick_vertical_state;
+    case libmame_input_type_analog_joystick_altitude:
+        return perplayer_state->analog_joystick_altitude_state;
+    case libmame_input_type_spinner:
+        return perplayer_state->spinner_delta;
+    case libmame_input_type_spinner_vertical:
+        return perplayer_state->spinner_vertical_delta;
+    case libmame_input_type_paddle:
+        return perplayer_state->paddle_state;
+    case libmame_input_type_paddle_vertical:
+        return perplayer_state->paddle_vertical_state;
+    case libmame_input_type_trackball_horizontal:
+        return perplayer_state->trackball_horizontal_delta;
+    case libmame_input_type_trackball_vertical:
+        return perplayer_state->trackball_vertical_delta;
+    case libmame_input_type_lightgun_horizontal:
+        return perplayer_state->lightgun_horizontal_state;
+    case libmame_input_type_lightgun_vertical:
+        return perplayer_state->lightgun_vertical_state;
+    case libmame_input_type_pedal:
+        return perplayer_state->pedal_state;
+    case libmame_input_type_pedal2:
+        return perplayer_state->pedal_state;
+    case libmame_input_type_pedal3:
+        return perplayer_state->pedal3_state;
+    case libmame_input_type_positional:
+        return perplayer_state->positional_state;
+    case libmame_input_type_positional_vertical:
+        return perplayer_state->positional_vertical_state;
+    case libmame_input_type_mouse_x:
+        return perplayer_state->mouse_x_state;
+    case libmame_input_type_mouse_y:
+        return perplayer_state->mouse_y_state;
+    case libmame_input_type_ui_button:
+        return perplayer_state->ui_input_state;
     }
 
-    /* Weird, this is not a 'key' that we know about */
+    /* Weird, this is not an input type that we know about */
     return 0;
-}
-
-
-static void libmame_add_keyboard_button(input_device *kbd, input_item_id key_id,
-                                        int digctl)
-{
-    /* Create an input device for the keyboard that will have the callback
-       called back with the digital control descriptor and that will be
-       associated with this key for this keyboard */
-    input_device_item_add(kbd, "", (void *) digctl, key_id,
-                          &get_digital_controller_state);
-    /* And hash so that we can look up the key by the digital control when
-       customizing the inputs in libmame_osd_customize_input_type_list */
-    input_item_id *value;
-    g_state.digctl_to_key_id_hash.Put(digctl, /* returns */ value);
-    *value = key_id;
 }
 
 
 static void libmame_osd_init(running_machine *machine)
 {
     /**
-     * Create a huge virtual keyboard to cover all possible buttons.
-     **/
-    input_device *kbd = input_device_add(machine, DEVICE_CLASS_KEYBOARD, 
-                                         "libmame_virtual_keyboard", NULL);
-
-    /**
-     * The buttons that the keyboard has will be created in
+     *  Save away the machine, we'll need it in 
      * libmame_osd_customize_input_type_list
      **/
-
-
-    /* For each player ... */
-    for (int player = 0; player < 8; player++) {
-
-        /* Add buttons to the keyboard for this player.  This loops over every
-           button for the given type, and calls the add helper function, and
-           then increments key_id since that key_id was just used. */
-#define ADD_BUTTONS(count, type)                                        \
-        do {                                                            \
-            for (int button = 0; button < count; button++) {            \
-                libmame_add_keyboard_button                             \
-                    (kbd, key_id, DIGCTL_MAKE_BUTTON(player, type,      \
-                                                     button));          \
-                key_id++;                                               \
-            }                                                           \
-        } while (0)
-
-        ADD_BUTTONS(LibMame_NormalButtonTypeCount, 
-                    DIGCTL_TYPE_NORMAL_BUTTON);
-        ADD_BUTTONS(LibMame_MahjongButtonTypeCount, 
-                    DIGCTL_TYPE_MAHJONG_BUTTON);
-        ADD_BUTTONS(LibMame_HanafudaButtonTypeCount, 
-                    DIGCTL_TYPE_HANAFUDA_BUTTON);
-        ADD_BUTTONS(LibMame_GamblingButtonTypeCount, 
-                    DIGCTL_TYPE_GAMBLING_BUTTON);
-        ADD_BUTTONS(LibMame_OtherButtonTypeCount, 
-                    DIGCTL_TYPE_OTHER_BUTTON);
-
-        for (int joystick = 0; joystick < 2; joystick++) {
-            for (int direction = 0; direction < 4; direction++) {
-                libmame_add_keyboard_button
-                    (kbd, key_id, DIGCTL_MAKE_JOYSTICK_DIRECTION
-                     (player, DIGCTL_TYPE_LEFT_OR_SINGLE_JOYSTICK + joystick, 
-                      DIGCTL_JOYSTICK_LEFT + direction));
-                key_id++;
-            }
-        }
-    }
-
-    /* Other buttons */
-    for (int button = 0; button < LibMame_OtherButtonTypeCount; button++) {
-        libmame_add_keyboard_button
-            (kbd, key_id, DIGCTL_MAKE_BUTTON(0, DIGCTL_TYPE_OTHER_BUTTON,
-                                             button));
-        key_id++;
-    }
-
-    /**
-     * Create all of the possible analog controls as mice?
-     **/
+    g_state.machine = machine;
 
     /**
      * Create the display
@@ -553,19 +482,205 @@ static void libmame_osd_set_mastervolume(int attenuation)
 static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 {
     /**
-     * Examine every input.  For each one, create a new keyboard key in
-     * the keyboard device and assign the input to that.
-     **/
-
-    input_item_id key_id = ITEM_ID_FIRST_VALID;
-
-    /**
-     * Set up MAME to use a fixed key set that matches the tables that we use.
+     * For each input descriptor, create a keyboard key, or mouse axis, or
+     * lightgun???, or joystick axis for it, and change its input sequence to
+     * match the new item.  Also, set up the polling callback for it to have
+     * the data it needs to get the right controller state.
      **/
 	input_type_desc *typedesc;
+    input_device *item_device;
+    input_item_id item_id;
+
+    /**
+     * New keyboards are created as we run out of keys; the only keys we
+     * use are between ITEM_ID_A and ITEM_ID_XAXIS - 1.
+     **/
+    input_device *keyboard = 0;
+    input_item_id keyboard_item = ITEM_ID_A;
+    int keyboard_count = 0;
+    /* As to all of the rest, they are created as needed, one for each player */
+    input_device *analog_joystick[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *spinner[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *paddle[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; 
+    input_device *trackball[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *lightgun[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *pedal[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *positional[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *mouse[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    char namebuf[256];
+
 	for (typedesc = typelist; typedesc; typedesc = typedesc->next) {
-        switch (typedesc->type) {
+        item_device = NULL;
+        if (typedesc->type < g_input_descriptor_count) {
+            switch (g_input_descriptors[typedesc->type].type) {
+            case libmame_input_type_invalid:
+                break;
+            case libmame_input_type_normal_button:
+            case libmame_input_type_mahjong_button:
+            case libmame_input_type_hanafuda_button:
+            case libmame_input_type_gambling_button:
+            case libmame_input_type_other_button:
+            case libmame_input_type_left_or_single_joystick_left:
+            case libmame_input_type_left_or_single_joystick_right:
+            case libmame_input_type_left_or_single_joystick_up:
+            case libmame_input_type_left_or_single_joystick_down:
+            case libmame_input_type_right_joystick_left:
+            case libmame_input_type_right_joystick_right:
+            case libmame_input_type_right_joystick_up:
+            case libmame_input_type_right_joystick_down:
+            case libmame_input_type_ui_button:
+                if ((keyboard == NULL) || (keyboard_item > ITEM_ID_CANCEL)) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_keyboard_%d", keyboard_count++);
+                    keyboard = input_device_add
+                        (g_state.machine, DEVICE_CLASS_KEYBOARD, 
+                         namebuf, NULL);
+                    keyboard_item = ITEM_ID_A;
+                }
+                item_device = keyboard;
+                item_id = keyboard_item;
+                keyboard_item++;
+                break;
+
+            case libmame_input_type_analog_joystick_horizontal:
+            case libmame_input_type_analog_joystick_vertical:
+            case libmame_input_type_analog_joystick_altitude:
+                if (analog_joystick[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_analog_joystick_player_%d", 
+                             typedesc->player);
+                    analog_joystick[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_JOYSTICK, 
+                         namebuf, NULL);
+                }
+                item_device = analog_joystick[typedesc->player];
+                item_id = ((typedesc->type == 
+                            libmame_input_type_analog_joystick_horizontal) ?
+                           ITEM_ID_XAXIS :
+                           (typedesc->type == 
+                            libmame_input_type_analog_joystick_vertical) ?
+                           ITEM_ID_YAXIS : ITEM_ID_ZAXIS);
+                break;
+
+            case libmame_input_type_spinner:
+            case libmame_input_type_spinner_vertical:
+                if (spinner[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_spinner_player_%d", 
+                             typedesc->player);
+                    spinner[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_MOUSE, namebuf, NULL);
+                }
+                item_device = spinner[typedesc->player];
+                item_id = ((typedesc->type == libmame_input_type_spinner) ?
+                           ITEM_ID_RXAXIS : ITEM_ID_RYAXIS);
+                break;
+
+            case libmame_input_type_paddle:
+            case libmame_input_type_paddle_vertical:
+                if (paddle[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_paddle_player_%d", 
+                             typedesc->player);
+                    paddle[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_MOUSE, namebuf, NULL);
+                }
+                item_device = paddle[typedesc->player];
+                item_id = ((typedesc->type == libmame_input_type_paddle) ?
+                           ITEM_ID_XAXIS : ITEM_ID_YAXIS);
+                break;
+
+            case libmame_input_type_trackball_horizontal:
+            case libmame_input_type_trackball_vertical:
+                if (trackball[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_trackball_player_%d", 
+                             typedesc->player);
+                    trackball[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_MOUSE, namebuf, NULL);
+                }
+                item_device = trackball[typedesc->player];
+                item_id = ((typedesc->type == 
+                            libmame_input_type_trackball_horizontal) ? 
+                           ITEM_ID_RXAXIS : ITEM_ID_RYAXIS);
+                break;
+
+            case libmame_input_type_lightgun_horizontal:
+            case libmame_input_type_lightgun_vertical:
+                if (lightgun[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_lightgun_player_%d", 
+                             typedesc->player);
+                    lightgun[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_LIGHTGUN,
+                         namebuf, NULL);
+                }
+                item_device = lightgun[typedesc->player];
+                item_id = ((typedesc->type ==
+                            libmame_input_type_lightgun_horizontal) ?
+                           ITEM_ID_XAXIS : ITEM_ID_YAXIS);
+                break;
+
+            case libmame_input_type_pedal:
+            case libmame_input_type_pedal2:
+            case libmame_input_type_pedal3:
+                if (pedal[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_pedal_player_%d", 
+                             typedesc->player);
+                    pedal[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_MOUSE, namebuf, NULL);
+                }
+                item_device = pedal[typedesc->player];
+                item_id = ((typedesc->type == libmame_input_type_pedal) ?
+                           ITEM_ID_XAXIS :
+                           ((typedesc->type == libmame_input_type_pedal2) ?
+                            ITEM_ID_YAXIS : ITEM_ID_ZAXIS));
+                break;
+
+            case libmame_input_type_positional:
+            case libmame_input_type_positional_vertical:
+                if (positional[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_positional_player_%d", 
+                             typedesc->player);
+                    positional[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_MOUSE, namebuf, NULL);
+                }
+                item_device = positional[typedesc->player];
+                item_id = ((typedesc->type == libmame_input_type_positional) ?
+                           ITEM_ID_XAXIS : ITEM_ID_YAXIS);
+                break;
+
+            case libmame_input_type_mouse_x:
+            case libmame_input_type_mouse_y:
+                if (mouse[typedesc->player] == NULL) {
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_mouse_player_%d", 
+                             typedesc->player);
+                    mouse[typedesc->player] = input_device_add
+                        (g_state.machine, DEVICE_CLASS_MOUSE, namebuf, NULL);
+                }
+                item_device = mouse[typedesc->player];
+                item_id = ((typedesc->type == libmame_input_type_positional) ?
+                           ITEM_ID_XAXIS : ITEM_ID_YAXIS);
+                break;
+            }
         }
+
+        if (item_device) {
+            input_device_item_add
+                (item_device, "", 
+                 (void *) DIGCTL_MAKE(typedesc->player, typedesc->type), 
+                 item_id, &get_controller_state);
+        }
+        else {
+            /* For some reason or another, we can't handle this input, so turn
+               it off by setting it to an item_id that we never use */
+            item_id = ITEM_ID_MAXIMUM;
+        }
+
+        input_seq_set_1(&(typedesc->seq[SEQ_TYPE_STANDARD]), item_id);
     }
 }
 
