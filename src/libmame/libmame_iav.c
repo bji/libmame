@@ -18,15 +18,15 @@
 
 
 /**
- * This is a packed representation of everything necessary to identify a
- * unique digital control.
+ * This is a packed representation of everything necessary to identify the
+ * controller that MAME is asking about.
  **/
-#define DIGCTL_PLAYER_MASK              0x000F
-#define DIGCTL_IPT_MASK                 0xFFF0
-#define DIGCTL_PLAYER(d)                (((long) d) & DIGCTL_PLAYER_MASK)
-#define DIGCTL_IPT(d)                   ((((long) d) & DIGCTL_IPT_MASK) >> 8)
-#define DIGCTL_MAKE(player, ipt)        (((player) & DIGCTL_PLAYER_MASK) | \
-                                         ((ipt << 8) & DIGCTL_IPT_MASK))
+#define CBDATA_PLAYER_MASK              0x000F
+#define CBDATA_IPT_MASK                 0xFFF0
+#define CBDATA_PLAYER(d)                (((long) d) & CBDATA_PLAYER_MASK)
+#define CBDATA_IPT(d)                   ((((long) d) & CBDATA_IPT_MASK) >> 8)
+#define CBDATA_MAKE(player, ipt)        (((player) & CBDATA_PLAYER_MASK) | \
+                                         ((ipt << 8) & CBDATA_IPT_MASK))
 
 typedef enum
 {
@@ -95,7 +95,7 @@ typedef struct libmame_input_descriptor
     { libmame_input_type_##input_type, 0, input_item_id }
 
 
-/* This maps each input IPT_ type to an input descriptor */
+/* This maps each MAME IPT_ type to a libmame_input descriptor. */
 static libmame_input_descriptor g_input_descriptors[] =
 {
 	INVALID_INPUT, /* IPT_INVALID */
@@ -309,18 +309,17 @@ typedef struct LibMame_RunGame_State
     void *callback_data;
 
     /**
-     * These describe the controllers that the game uses
+     * These describe the maximum number of players, and the controllers
+     * that they use.
      **/
+    int maximum_player_count;
     LibMame_PerPlayerControllersDescriptor perplayer_controllers;
     LibMame_SharedControllersDescriptor shared_controllers;
 
     /**
-     * This is the maximum number of players that could be playing the
-     * currently running game.  It is stored here as an optimization so that
-     * we can know how many of the controller states need to be zeroed out
-     * before each controller state poll
+     * This is the controllers state used to query the controllers state via
+     * the callback provided in the callbacks structure.
      **/
-    int maximum_player_count;
     LibMame_AllControllersState controllers_state;
 
     /**
@@ -358,10 +357,17 @@ extern void (*mame_osd_customize_input_type_list_function)
 static LibMame_RunGame_State g_state;
 
 
+/**
+ * This is the callback we hook up to the input device that MAME uses
+ * to be called back to get the state of a controller input.  We also
+ * arrange that the data passed in includes enough information to identify
+ * what bit of state is being asked about; this one function handles all of
+ * the input for all controller types.
+ **/
 static INT32 get_controller_state(void *, void *data)
 {
-    int player = DIGCTL_PLAYER(data);
-    int ipt_type = DIGCTL_IPT(data);
+    int player = CBDATA_PLAYER(data);
+    int ipt_type = CBDATA_IPT(data);
     if (ipt_type >= g_input_descriptor_count) {
         /* This is weird, we're being asked for something bogus */
         return 0;
@@ -642,6 +648,19 @@ static void libmame_osd_set_mastervolume(int attenuation)
 }
 
 
+/**
+ * This function is called back by MAME when it is starting up.  It passes the
+ * descriptor that it uses internally for every possible input port, and gives
+ * us the opportunity to define what callback we will provide for fetching the
+ * state of that input port.  We ignore those input ports that are not used in
+ * the current game, and for the others, make our own custom controllers as
+ * neceessary to provide the inputs, and hook the input callbacks up to fetch
+ * the input state from the one single LibMame_AllControllersState structure
+ * that we store in the g_state object.  In this way, we completely hardware
+ * the way that MAME handles input so that the users of libmame can do
+ * whatever they want to satisfy getting inputs for the various controllers
+ * types.
+ **/
 static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 {
     /**
@@ -656,33 +675,49 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 
     /**
      * New keyboards are created as we run out of keys; the only keys we
-     * use are between ITEM_ID_A and ITEM_ID_CANCEL (inclusive).
+     * use are between ITEM_ID_A and ITEM_ID_CANCEL (inclusive).  It is
+     * important that ITEM_IDs that identify keys from a keyboard are used as
+     * MAME internally detects the ITEM_ID type and treats it specially in
+     * different circumstances, and so the ITEM_ID must "match" the
+     * input_device type that it is attached to.  For example, if we used
+     * something outside of the key range for a keyboard
+     * (e.g. ITEM_ID_RELATIVE1), then MAME would interpret the INT32 that it
+     * gets when it calls back to get the state of the input incorrectly (it
+     * would interpret it as some kind of delta value, not as a "pressed or
+     * not pressed" boolean).  The same concept holds true for joysticks,
+     * mice, etc, so those only use ITEM_ID values that make sense for their
+     * types.
      **/
-    input_device *keyboard = 0;
+    int keyboard_index = -1;
     input_item_id keyboard_item = ITEM_ID_A;
     int keyboard_count = 0;
     /* As to all of the rest, they are created as needed, one for each player */
-    input_device *analog_joystick[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    input_device *spinner[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    input_device *paddle[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; 
-    input_device *trackball[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    input_device *lightgun[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    input_device *pedal[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    input_device *positional[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    input_device *mouse[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    int analog_joystick_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    int spinner_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    int paddle_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 }; 
+    int trackball_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    int lightgun_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    int pedal_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    int positional_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    int mouse_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
     char namebuf[256];
 
 
 #define GET_ITEM_DEVICE_AND_ID(device_type, device_class)               \
     do {                                                                \
-        if (device_type [typedesc->player] == NULL) {                   \
+        if (device_type##_index [typedesc->player] == -1) {             \
             snprintf(namebuf, sizeof(namebuf),                          \
-                     "libmame_virtual_ " #device_type "_%d",            \
+                     "libmame_virtual_" #device_type "_%d",             \
                      typedesc->player);                                 \
-            device_type [typedesc->player] = input_device_add           \
+            item_device = input_device_add                              \
                 (g_state.machine, device_class, namebuf, NULL);         \
+            device_type##_index [typedesc->player] =                    \
+                input_device_get_index(g_state.machine, item_device);   \
         }                                                               \
-        item_device = device_type [typedesc->player];                   \
+        item_device = input_device_get_by_index                         \
+            (g_state.machine,                                           \
+             device_type##_index [typedesc->player],                    \
+             device_class);                                             \
         item_id = g_input_descriptors[typedesc->type].item_id;          \
     } while (0);
 
@@ -711,15 +746,19 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
             case libmame_input_type_right_joystick_up:
             case libmame_input_type_right_joystick_down:
             case libmame_input_type_Ui_button:
-                if ((keyboard == NULL) || (keyboard_item > ITEM_ID_CANCEL)) {
+                if ((keyboard_index == -1) || 
+                    (keyboard_item > ITEM_ID_CANCEL)) {
                     snprintf(namebuf, sizeof(namebuf), 
                              "libmame_virtual_keyboard_%d", keyboard_count++);
-                    keyboard = input_device_add
+                    item_device = input_device_add
                         (g_state.machine, DEVICE_CLASS_KEYBOARD, 
                          namebuf, NULL);
+                    keyboard_index = input_device_get_index
+                        (g_state.machine, item_device);
                     keyboard_item = ITEM_ID_A;
                 }
-                item_device = keyboard;
+                item_device = input_device_get_by_index
+                    (g_state.machine, keyboard_index, DEVICE_CLASS_KEYBOARD);
                 item_id = keyboard_item;
                 keyboard_item++;
                 break;
@@ -771,7 +810,7 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
         if (item_device) {
             input_device_item_add
                 (item_device, "", 
-                 (void *) DIGCTL_MAKE(typedesc->player, typedesc->type), 
+                 (void *) CBDATA_MAKE(typedesc->player, typedesc->type), 
                  item_id, &get_controller_state);
         }
         else {
@@ -800,25 +839,25 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     mame_osd_customize_input_type_list_function =
         &libmame_osd_customize_input_type_list;
 
-    /* Set up options stuff for MAME */
-
     /* Set the unfortunate globals */
     g_state.callbacks = cbs;
     g_state.callback_data = callback_data;
+
+    /* Look up the game number of players and contollers */
     g_state.maximum_player_count =
         LibMame_Get_Game_MaxSimultaneousPlayers(gamenum);
-
-    /* Look up the game contollers */
     g_state.perplayer_controllers = 
         LibMame_Get_Game_PerPlayerControllers(gamenum);
     g_state.shared_controllers = 
         LibMame_Get_Game_SharedControllers(gamenum);
 
-    /* Run the game */
-
+    /* Set up options stuff for MAME */
     /* TEMPORARY FOR TESTING */
     const char *short_name = LibMame_Get_Game_Short_Name(gamenum);
     const char *argv[] = { "libmame_test", short_name };
+
+    /* Run the game */
+    /* TEMPORARY FOR TESTING */
     (void) cli_execute(2, (char **) argv, NULL);
 
     return LibMame_RunGameStatus_Success;

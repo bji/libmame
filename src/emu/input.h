@@ -596,8 +596,19 @@ int input_device_set_joystick_map(running_machine *machine, int devindex, const 
 
 /* ----- OSD configuration and access ----- */
 
-/* add a new input device */
+/* add a new input device.  An input device is only valid until the next
+   call to input_device_add().  But you can re-acquire an input_device by its
+   index (which you can get from a call to input_device_get_index()) by
+   calling input_device_get_by_index(). */
 input_device *input_device_add(running_machine *machine, input_device_class devclass, const char *name, void *internal);
+
+/* gets the index of an input_device.  Combined with the input_device_class, 
+   this uniquely identifies the input_device. */
+int input_device_get_index(running_machine *machine, input_device *device);
+
+/* gets an input_device by index and device_class, which are known from a
+   previous call to input_device_get_index(). */
+input_device *input_device_get_by_index(running_machine *machine, int index, input_device_class devlcass);
 
 /* add a new item to an input device */
 void input_device_item_add(input_device *device, const char *name, void *internal, input_item_id itemid, item_get_state_func getstate);
