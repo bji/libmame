@@ -13,6 +13,7 @@
 #include "emu.h"
 #include "osdcore.h"
 #include "osdepend.h"
+#include "render.h"
 #include "libmame.h"
 #include <string.h>
 
@@ -598,6 +599,8 @@ static void libmame_osd_init(running_machine *machine)
     /**
      * Create the display
      **/
+    /* TEMPORARY for testing */
+    (void) render_target_alloc(g_state.machine, NULL, 0);
 }
 
 
@@ -851,11 +854,12 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     /* Set up options stuff for MAME */
     /* TEMPORARY FOR TESTING */
     const char *short_name = LibMame_Get_Game_Short_Name(gamenum);
-    const char *argv[] = { "libmame_test", short_name };
+    const char *argv[] = { "libmame_test", "-rompath", "test_roms",
+                           short_name };
 
     /* Run the game */
     /* TEMPORARY FOR TESTING */
-    (void) cli_execute(2, (char **) argv, NULL);
+    (void) cli_execute(4, (char **) argv, NULL);
 
     return LibMame_RunGameStatus_Success;
 }
