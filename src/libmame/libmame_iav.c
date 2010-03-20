@@ -8,8 +8,8 @@
  *
  ************************************************************************** **/
 
-#include "emu.h"
 #include "HashTable.h"
+#include "emu.h"
 #include "osdcore.h"
 #include "osdepend.h"
 #include "libmame.h"
@@ -75,10 +75,10 @@ typedef struct LibMame_RunGame_State
     ((player_number) | (type) | ((item_number) << 8))
 #define DIGCTL_MAKE_JOYSTICK(player_number, type, joystick) \
     ((player_number) | (type) | (joystick))
-#define DIGCTL_PLAYER_NUMBER(d)       (((int) d) & DIGCTL_PLAYER_MASK)
-#define DIGCTL_TYPE(d)                (((int) d) & DIGCTL_TYPE_MASK)
-#define DIGCTL_ITEM_NUMBER(d)         ((((int) d) & DIGCTL_ITEM_MASK) >> 8)
-#define DIGCTL_JOYSTICK(d)            (((int) d) & DIGCTL_ITEM_MASK)
+#define DIGCTL_PLAYER_NUMBER(d)       (((long) d) & DIGCTL_PLAYER_MASK)
+#define DIGCTL_TYPE(d)                (((long) d) & DIGCTL_TYPE_MASK)
+#define DIGCTL_ITEM_NUMBER(d)         ((((long) d) & DIGCTL_ITEM_MASK) >> 8)
+#define DIGCTL_JOYSTICK(d)            (((long) d) & DIGCTL_ITEM_MASK)
 
 /**
  * These are defined by the POSIX OSD implementation, and are meant to be
@@ -106,7 +106,7 @@ static INT32 get_digital_controller_state(void *, void *data)
 {
     /* Get the controller state associated with the given digital control
        descriptor */
-    LibMame_ControllerState *state = 
+    LibMame_ControllersState *state = 
         &(g_state.controllers_states[DIGCTL_PLAYER_NUMBER(data)]);
 
     /* Get the particular state according to the type of controller state
@@ -120,9 +120,10 @@ static INT32 get_digital_controller_state(void *, void *data)
              flag
            - Return the state of that flag
         **/
-        return (state->normal_buttons_state & (1 << (DIGCTL_ITEM_NUMBER(d))));
+        return (state->normal_buttons_state & 
+                (1 << (DIGCTL_ITEM_NUMBER(data))));
     case DIGCTL_TYPE_LEFT_OR_SINGLE_JOYSTICK:
-        switch (DIGCTL_JOYSTICK(d)) {
+        switch (DIGCTL_JOYSTICK(data)) {
         case DIGCTL_JOYSTICK_LEFT:
             return state->left_or_single_joystick_left_state;
         case DIGCTL_JOYSTICK_RIGHT:
@@ -135,7 +136,7 @@ static INT32 get_digital_controller_state(void *, void *data)
             break;
         }
     case DIGCTL_TYPE_RIGHT_JOYSTICK:
-        switch (DIGCTL_JOYSTICK(d)) {
+        switch (DIGCTL_JOYSTICK(data)) {
         case DIGCTL_JOYSTICK_LEFT:
             return state->right_joystick_left_state;
         case DIGCTL_JOYSTICK_RIGHT:
@@ -148,16 +149,20 @@ static INT32 get_digital_controller_state(void *, void *data)
             break;
         }
     case DIGCTL_TYPE_OTHER_BUTTON:
-        return (state->other_buttons_state & (1 << (DIGCTL_ITEM_NUMBER(d))));
+        return (state->other_buttons_state &
+                (1 << (DIGCTL_ITEM_NUMBER(data))));
     case DIGCTL_TYPE_UI_BUTTON:
         /* UI input is not a flag, it is an actual value to check against */
-        return (state->ui_input_state == DIGCTL_ITEM_NUMBER(d));
+        return (state->ui_input_state == DIGCTL_ITEM_NUMBER(data));
     case DIGCTL_TYPE_MAHJONG_BUTTON:
-        return (state->mahjong_buttons_state & (1 << (DIGCTL_ITEM_NUMBER(d))));
+        return (state->mahjong_buttons_state &
+                (1 << (DIGCTL_ITEM_NUMBER(data))));
     case DIGCTL_TYPE_HANAFUDA_BUTTON:
-        return (state->hanafuda_buttons_state & (1 << (DIGCTL_ITEM_NUMBER(d))));
+        return (state->hanafuda_buttons_state &
+                (1 << (DIGCTL_ITEM_NUMBER(data))));
     case DIGCTL_TYPE_GAMBLING_BUTTON:
-        return (state->gambling_buttons_state & (1 << (DIGCTL_ITEM_NUMBER(d))));
+        return (state->gambling_buttons_state &
+                (1 << (DIGCTL_ITEM_NUMBER(data))));
     }
 
     /* Weird, this is not a 'key' that we know about */
@@ -165,7 +170,7 @@ static INT32 get_digital_controller_state(void *, void *data)
 }
 
 
-static void libmame_add_keyboard_button(input_device *kbd, int key_id,
+static void libmame_add_keyboard_button(input_device *kbd, input_item_id key_id,
                                         int digctl)
 {
     /* Create an input device for the keyboard that will have the callback
@@ -175,7 +180,8 @@ static void libmame_add_keyboard_button(input_device *kbd, int key_id,
                           &get_digital_controller_state);
     /* And hash so that we can look up the key by the digital control when
        customizing the inputs in libmame_osd_customize_input_type_list */
-    input_item_id *value = g_state.digctl_to_key_id_hash.Put(digctl);
+    input_item_id *value;
+    g_state.digctl_to_key_id_hash.Put(digctl, /* returns */ value);
     *value = key_id;
 }
 
@@ -191,26 +197,32 @@ static void libmame_osd_init(running_machine *machine)
     input_item_id key_id = ITEM_ID_FIRST_VALID;
 
     /* For each player ... */
-    for (int player = 0; i < 8; i++) {
-        /* Do the normal buttons */
-        for (int button = 0; i < 16; i++) {
-            libmame_add_keyboard_button
-                (kbd, key_id, DIGCTL_MAKE_BUTTON
-                 (player, DIGCTL_TYPE_NORMAL_BUTTON, button));
-            /* Next key */
-            key_id++;
-        }
-        /* Do the mahjong buttons */
-        for (int button = 0; i < 16; i++) {
-            libmame_add_keyboard_button
-                (kbd, key_id, DIGCTL_MAKE_BUTTON
-                 (player, DIGCTL_TYPE_NORMAL_BUTTON, button));
-            /* Next key */
-            key_id++;
-        }
-        /* Do the hanafuda buttons */
-        /* Do the gambling buttons */
-        /* Do the other buttons */
+    for (int player = 0; player < 8; player++) {
+
+        /* Add buttons to the keyboard for this player.  This loops over every
+           button for the given type, and calls the add helper function, and
+           then increments key_id since that key_id was just used. */
+#define ADD_BUTTONS(count, type)                                        \
+        do {                                                            \
+            for (int button = 0; button < count; button++) {            \
+                libmame_add_keyboard_button                             \
+                    (kbd, key_id, DIGCTL_MAKE_BUTTON(player, type,      \
+                                                     button));          \
+                key_id++;                                               \
+            }                                                           \
+        } while (0)
+
+        ADD_BUTTONS(LibMame_NormalButtonTypeCount, 
+                    DIGCTL_TYPE_NORMAL_BUTTON);
+        ADD_BUTTONS(LibMame_MahjongButtonTypeCount, 
+                    DIGCTL_TYPE_MAHJONG_BUTTON);
+        ADD_BUTTONS(LibMame_HanafudaButtonTypeCount, 
+                    DIGCTL_TYPE_HANAFUDA_BUTTON);
+        ADD_BUTTONS(LibMame_GamblingButtonTypeCount, 
+                    DIGCTL_TYPE_GAMBLING_BUTTON);
+        ADD_BUTTONS(LibMame_OtherButtonTypeCount, 
+                    DIGCTL_TYPE_OTHER_BUTTON);
+
         /* Do the left or single handed joystick */
         /* Do the right joystick */
     }

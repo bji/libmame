@@ -91,194 +91,6 @@
 #define LIBMAME_ORIENTATIONFLAGS_ROTATE_270                     0x10
 
 
-/**
- * These flags define all of the possible controller types
- **/
-#define LIBMAME_CONTROLLERFLAGS_JOYSTICKHORIZONTAL              0x0001
-#define LIBMAME_CONTROLLERFLAGS_JOYSTICKVERTICAL                0x0002
-#define LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY                    0x0004
-#define LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY                    0x0008
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL        0x0010
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL          0x0020
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY              0x0040
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY              0x0800
-#define LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG                  0x0100
-#define LIBMAME_CONTROLLERFLAGS_SPINNER                         0x0200
-#define LIBMAME_CONTROLLERFLAGS_PADDLE                          0x0400
-#define LIBMAME_CONTROLLERFLAGS_TRACKBALL                       0x0800
-#define LIBMAME_CONTROLLERFLAGS_LIGHTGUN                        0x1000
-#define LIBMAME_CONTROLLERFLAGS_PEDAL                           0x2000
-#define LIBMAME_CONTROLLERFLAGS_PEDAL2                          0x4000
-#define LIBMAME_CONTROLLERFLAGS_PEDAL3                          0x8000
-
-/**
- * These flags define all of the possible general purpose buttons.
- **/
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_1                        0x0001
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_2                        0x0002
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_3                        0x0004
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_4                        0x0008
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_5                        0x0010
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_6                        0x0020
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_7                        0x0040
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_8                        0x0080
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_9                        0x0100
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_10                       0x0200
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_11                       0x0400
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_12                       0x0800
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_13                       0x1000
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_14                       0x2000
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_15                       0x4000
-#define LIBMAME_CONTROLLERFLAGS_BUTTON_16                       0x8000
-
-/**
- * These flags define all of the possible special controller buttons used for
- * Mahjong games.
- **/
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_A                       0x00000001
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_B                       0x00000002
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_C                       0x00000004
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_D                       0x00000008
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_E                       0x00000010
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_F                       0x00000020
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_G                       0x00000040
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_H                       0x00000080
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_I                       0x00000100
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_J                       0x00000200
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_K                       0x00000400
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_L                       0x00000800
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_M                       0x00001000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_N                       0x00002000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_O                       0x00004000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_P                       0x00008000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_Q                       0x00010000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_KAN                     0x00020000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_PON                     0x00040000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_CHI                     0x00080000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_REACH                   0x00100000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_RON                     0x00200000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_BET                     0x00400000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_LAST_CHANCE             0x00800000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_SCORE                   0x01000000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_DOUBLE_UP               0x02000000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_FLIP_FLOP               0x04000000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_BIG                     0x08000000
-#define LIBMAME_CONTROLLERFLAGS_MAHJONG_SMALL                   0x10000000
-
-/**
- * These flags define all of the possible controller buttons used for Hanafuda
- * games.
- **/
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_A                      0x001
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_B                      0x002
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_C                      0x004
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_D                      0x008
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_E                      0x010
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_F                      0x020
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_G                      0x040
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_H                      0x080
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_YES                    0x100
-#define LIBMAME_CONTROLLERFLAGS_HANAFUDA_NO                     0x200
-
-/**
- * These flags define all of the possible controller buttons used for gambling
- * games.
- **/
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HIGH                   0x0000001
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_LOW                    0x0000002
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HALF                   0x0000004
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_DEAL                   0x0000008
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_D_UP                   0x0000010
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_TAKE                   0x0000020
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STAND                  0x0000040
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_BET                    0x0000080
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_KEYIN                  0x0000100
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_KEYOUT                 0x0000200
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_PAYOUT                 0x0000400
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_DOOR                   0x0000800
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_SERVICE                0x0001000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_BOOK                   0x0002000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD1                  0x0004000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD2                  0x0008000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD3                  0x0010000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD4                  0x0020000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD5                  0x0040000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_CANCEL                 0x0080000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP1                  0x0100000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP2                  0x0200000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP3                  0x0400000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP4                  0x0800000
-#define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP_ALL               0x1000000
-
-/**
- * These flags define all of the possible non-gameplay binary inputs
- **/
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN1                     0x00001
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN2                     0x00002
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN3                     0x00004
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN4                     0x00008
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN5                     0x00010
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN6                     0x00020
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN7                     0x00040
-#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN8                     0x00080
-#define LIBMAME_CONTROLLERFLAGS_OTHER_BILL1                     0x00010
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START1                    0x00020
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START2                    0x00040
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START3                    0x00080
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START4                    0x00100
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START5                    0x00200
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START6                    0x00400
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START7                    0x00800
-#define LIBMAME_CONTROLLERFLAGS_OTHER_START8                    0x01000
-#define LIBMAME_CONTROLLERFLAGS_OTHER_SERVICE                   0x02000
-#define LIBMAME_CONTROLLERFLAGS_OTHER_TILT                      0x04000
-#define LIBMAME_CONTROLLERFLAGS_OTHER_INTERLOCK                 0x08000
-#define LIBMAME_CONTROLLERFLAGS_OTHER_VOLUME_UP                 0x10000
-#define LIBMAME_CONTROLLERFLAGS_OTHER_VOLUME_DOWN               0x20000
-
-/**
- * These values define all of the possible UI inputs.
- **/
-#define LIBMAME_CONTROLLERFLAGS_UI_CONFIGURE                    1
-#define LIBMAME_CONTROLLERFLAGS_UI_ON_SCREEN_DISPLAY            2
-#define LIBMAME_CONTROLLERFLAGS_UI_DEBUG_BREAK                  3
-#define LIBMAME_CONTROLLERFLAGS_UI_PAUSE                        4
-#define LIBMAME_CONTROLLERFLAGS_UI_RESET_MACHINE                5
-#define LIBMAME_CONTROLLERFLAGS_UI_SOFT_RESET                   6
-#define LIBMAME_CONTROLLERFLAGS_UI_SHOW_GFX                     7
-#define LIBMAME_CONTROLLERFLAGS_UI_FRAMESKIP_DEC                8
-#define LIBMAME_CONTROLLERFLAGS_UI_FRAMESKIP_INC                9
-#define LIBMAME_CONTROLLERFLAGS_UI_THROTTLE                     10
-#define LIBMAME_CONTROLLERFLAGS_UI_FAST_FORWARD                 11
-#define LIBMAME_CONTROLLERFLAGS_UI_SHOW_FPS                     12
-#define LIBMAME_CONTROLLERFLAGS_UI_SNAPSHOT                     13
-#define LIBMAME_CONTROLLERFLAGS_UI_RECORD_MOVIE                 14
-#define LIBMAME_CONTROLLERFLAGS_UI_TOGGLE_CHEAT                 15
-#define LIBMAME_CONTROLLERFLAGS_UI_UP                           16
-#define LIBMAME_CONTROLLERFLAGS_UI_DOWN                         17
-#define LIBMAME_CONTROLLERFLAGS_UI_LEFT                         18
-#define LIBMAME_CONTROLLERFLAGS_UI_RIGHT                        19
-#define LIBMAME_CONTROLLERFLAGS_UI_HOME                         20
-#define LIBMAME_CONTROLLERFLAGS_UI_END                          21
-#define LIBMAME_CONTROLLERFLAGS_UI_PAGE_UP                      22
-#define LIBMAME_CONTROLLERFLAGS_UI_PAGE_DOWN                    23
-#define LIBMAME_CONTROLLERFLAGS_UI_SELECT                       24
-#define LIBMAME_CONTROLLERFLAGS_UI_CANCEL                       25
-#define LIBMAME_CONTROLLERFLAGS_UI_DISPLAY_COMMENT              26
-#define LIBMAME_CONTROLLERFLAGS_UI_CLEAR                        27
-#define LIBMAME_CONTROLLERFLAGS_UI_ZOOM_IN                      28
-#define LIBMAME_CONTROLLERFLAGS_UI_ZOOM_OUT                     29
-#define LIBMAME_CONTROLLERFLAGS_UI_PREV_GROUP                   30
-#define LIBMAME_CONTROLLERFLAGS_UI_NEXT_GROUP                   31
-#define LIBMAME_CONTROLLERFLAGS_UI_ROTATE                       32
-#define LIBMAME_CONTROLLERFLAGS_UI_SHOW_PROFILER                33
-#define LIBMAME_CONTROLLERFLAGS_UI_TOGGLE_UI                    34
-#define LIBMAME_CONTROLLERFLAGS_UI_TOGGLE_DEBUG                 35
-#define LIBMAME_CONTROLLERFLAGS_UI_PASTE                        36
-#define LIBMAME_CONTROLLERFLAGS_UI_SAVE_STATE                   37
-#define LIBMAME_CONTROLLERFLAGS_UI_LOAD_STATE                   38
-
-
 /** **************************************************************************
  * Enumerated types
  ************************************************************************** **/
@@ -318,6 +130,229 @@ typedef enum
     **/
     LibMame_SettingType_Adjuster
 } LibMame_SettingType;
+
+/**
+ * All of the possible controller types
+ **/
+typedef enum
+{
+    LibMame_ControllerType_JoystickHorizontal,
+    LibMame_ControllerType_JoystickVertical,
+    LibMame_ControllerType_Joystick4Way,
+    LibMame_ControllerType_Joystick8Way,
+    LibMame_ControllerType_DoubleJoystickHorizontal,
+    LibMame_ControllerType_DoubleJoystickVertical,
+    LibMame_ControllerType_DoubleJoystick4Way,
+    LibMame_ControllerType_DoubleJoystick8Way,
+    LibMame_ControllerType_JoystickAnalog,
+    LibMame_ControllerType_Spinner,
+    LibMame_ControllerType_Paddle,
+    LibMame_ControllerType_Trackball,
+    LibMame_ControllerType_Lightgun,
+    LibMame_ControllerType_Pedal,
+    LibMame_ControllerType_Pedal2,
+    LibMame_ControllerType_Pedal3,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_ControllerTypeCount
+} LibMame_ControllerType;
+
+/**
+ * All of the possible general purpose buttons.
+ **/
+typedef enum
+{
+    LibMame_NormalButtonType_1,
+    LibMame_NormalButtonType_2,
+    LibMame_NormalButtonType_3,
+    LibMame_NormalButtonType_4,
+    LibMame_NormalButtonType_5,
+    LibMame_NormalButtonType_6,
+    LibMame_NormalButtonType_7,
+    LibMame_NormalButtonType_8,
+    LibMame_NormalButtonType_9,
+    LibMame_NormalButtonType_10,
+    LibMame_NormalButtonType_11,
+    LibMame_NormalButtonType_12,
+    LibMame_NormalButtonType_13,
+    LibMame_NormalButtonType_14,
+    LibMame_NormalButtonType_15,
+    LibMame_NormalButtonType_16,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_NormalButtonTypeCount
+} LibMame_NormalButtonType;
+
+/**
+ * All of the possible Mahjong buttons.
+ **/
+typedef enum
+{
+    LibMame_MahjongButtonType_A,
+    LibMame_MahjongButtonType_B,
+    LibMame_MahjongButtonType_C,
+    LibMame_MahjongButtonType_D,
+    LibMame_MahjongButtonType_E,
+    LibMame_MahjongButtonType_F,
+    LibMame_MahjongButtonType_G,
+    LibMame_MahjongButtonType_H,
+    LibMame_MahjongButtonType_I,
+    LibMame_MahjongButtonType_J,
+    LibMame_MahjongButtonType_K,
+    LibMame_MahjongButtonType_L,
+    LibMame_MahjongButtonType_M,
+    LibMame_MahjongButtonType_N,
+    LibMame_MahjongButtonType_O,
+    LibMame_MahjongButtonType_P,
+    LibMame_MahjongButtonType_Q,
+    LibMame_MahjongButtonType_Kan,
+    LibMame_MahjongButtonType_Pon,
+    LibMame_MahjongButtonType_Chi,
+    LibMame_MahjongButtonType_Reach,
+    LibMame_MahjongButtonType_Ron,
+    LibMame_MahjongButtonType_Bet,
+    LibMame_MahjongButtonType_Last_Chance,
+    LibMame_MahjongButtonType_Score,
+    LibMame_MahjongButtonType_Double_Up,
+    LibMame_MahjongButtonType_Flip_Flop,
+    LibMame_MahjongButtonType_Big,
+    LibMame_MahjongButtonType_Small,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_MahjongButtonTypeCount
+} LibMame_MahjongButtonType;
+
+/**
+ * All of the possible Hanafuda buttons.
+ **/
+typedef enum
+{
+    LibMame_HanafudaButtonType_A,
+    LibMame_HanafudaButtonType_B,
+    LibMame_HanafudaButtonType_C,
+    LibMame_HanafudaButtonType_D,
+    LibMame_HanafudaButtonType_E,
+    LibMame_HanafudaButtonType_F,
+    LibMame_HanafudaButtonType_G,
+    LibMame_HanafudaButtonType_H,
+    LibMame_HanafudaButtonType_Yes,
+    LibMame_HanafudaButtonType_No,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_HanafudaButtonTypeCount
+} LibMame_HanafudaButtonType;
+
+/**
+ * All of the possible gambling buttons.
+ **/
+typedef enum
+{
+    LibMame_GamblingButtonType_High,
+    LibMame_GamblingButtonType_Low,
+    LibMame_GamblingButtonType_Half,
+    LibMame_GamblingButtonType_Deal,
+    LibMame_GamblingButtonType_D_Up,
+    LibMame_GamblingButtonType_Take,
+    LibMame_GamblingButtonType_Stand,
+    LibMame_GamblingButtonType_Bet,
+    LibMame_GamblingButtonType_Keyin,
+    LibMame_GamblingButtonType_Keyout,
+    LibMame_GamblingButtonType_Payout,
+    LibMame_GamblingButtonType_Door,
+    LibMame_GamblingButtonType_Service,
+    LibMame_GamblingButtonType_Book,
+    LibMame_GamblingButtonType_Hold1,
+    LibMame_GamblingButtonType_Hold2,
+    LibMame_GamblingButtonType_Hold3,
+    LibMame_GamblingButtonType_Hold4,
+    LibMame_GamblingButtonType_Hold5,
+    LibMame_GamblingButtonType_Cancel,
+    LibMame_GamblingButtonType_Stop1,
+    LibMame_GamblingButtonType_Stop2,
+    LibMame_GamblingButtonType_Stop3,
+    LibMame_GamblingButtonType_Stop4,
+    LibMame_GamblingButtonType_Stop_All,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_GamblingButtonTypeCount
+} LibMame_GamblingButtonType;
+
+/**
+ * All of the possible 'other' buttons.
+ **/
+typedef enum
+{
+    LibMame_OtherButtonType_Coin1,
+    LibMame_OtherButtonType_Coin2,
+    LibMame_OtherButtonType_Coin3,
+    LibMame_OtherButtonType_Coin4,
+    LibMame_OtherButtonType_Coin5,
+    LibMame_OtherButtonType_Coin6,
+    LibMame_OtherButtonType_Coin7,
+    LibMame_OtherButtonType_Coin8,
+    LibMame_OtherButtonType_Bill1,
+    LibMame_OtherButtonType_Start1,
+    LibMame_OtherButtonType_Start2,
+    LibMame_OtherButtonType_Start3,
+    LibMame_OtherButtonType_Start4,
+    LibMame_OtherButtonType_Start5,
+    LibMame_OtherButtonType_Start6,
+    LibMame_OtherButtonType_Start7,
+    LibMame_OtherButtonType_Start8,
+    LibMame_OtherButtonType_Service,
+    LibMame_OtherButtonType_Service1,
+    LibMame_OtherButtonType_Service2,
+    LibMame_OtherButtonType_Service3,
+    LibMame_OtherButtonType_Service4,
+    LibMame_OtherButtonType_Tilt,
+    LibMame_OtherButtonType_Interlock,
+    LibMame_OtherButtonType_Volume_Up,
+    LibMame_OtherButtonType_Volume_Down,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_OtherButtonTypeCount
+} LibMame_OtherButtonType;
+
+/**
+ * All of the possible UI buttons.
+ **/
+typedef enum
+{
+    LibMame_UiButtonType_Configure,
+    LibMame_UiButtonType_On_Screen_Display,
+    LibMame_UiButtonType_Debug_Break,
+    LibMame_UiButtonType_Pause,
+    LibMame_UiButtonType_Reset_Machine,
+    LibMame_UiButtonType_Soft_Reset,
+    LibMame_UiButtonType_Show_Gfx,
+    LibMame_UiButtonType_Frameskip_Dec,
+    LibMame_UiButtonType_Frameskip_Inc,
+    LibMame_UiButtonType_Throttle,
+    LibMame_UiButtonType_Fast_Forward,
+    LibMame_UiButtonType_Show_Fps,
+    LibMame_UiButtonType_Snapshot,
+    LibMame_UiButtonType_Record_Movie,
+    LibMame_UiButtonType_Toggle_Cheat,
+    LibMame_UiButtonType_Up,
+    LibMame_UiButtonType_Down,
+    LibMame_UiButtonType_Left,
+    LibMame_UiButtonType_Right,
+    LibMame_UiButtonType_Home,
+    LibMame_UiButtonType_End,
+    LibMame_UiButtonType_Page_Up,
+    LibMame_UiButtonType_Page_Down,
+    LibMame_UiButtonType_Select,
+    LibMame_UiButtonType_Cancel,
+    LibMame_UiButtonType_Display_Comment,
+    LibMame_UiButtonType_Clear,
+    LibMame_UiButtonType_Zoom_In,
+    LibMame_UiButtonType_Zoom_Out,
+    LibMame_UiButtonType_Prev_Group,
+    LibMame_UiButtonType_Next_Group,
+    LibMame_UiButtonType_Rotate,
+    LibMame_UiButtonType_Show_Profiler,
+    LibMame_UiButtonType_Toggle_Ui,
+    LibMame_UiButtonType_Toggle_Debug,
+    LibMame_UiButtonType_Paste,
+    LibMame_UiButtonType_Save_State,
+    LibMame_UiButtonType_Load_State,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_UiButtonTypeCount
+} LibMame_UiButtonType;
 
 /**
  * Status codes that can be returned by LibMame_RunGame()
@@ -438,38 +473,44 @@ typedef struct LibMame_SettingDescriptor
 typedef struct LibMame_ControllersDescriptor
 {
     /**
-     * These are all of the general purpose buttons which are present.
+     * These are all of the general purpose buttons which are present,
+     * each is indicated in this as (1 << LibMame_NormalButtonType_XXX).
      **/
     int normal_button_flags;
 
     /**
      * These are the names of the normal buttons, or NULL if the button has
-     * no name.
+     * no name, one per button type, or NULL if the button as no name.
      **/
-    const char *normal_button_names[16];
+    const char *normal_button_names[LibMame_NormalButtonTypeCount];
 
     /**
-     * These flags identify which Mahjong buttons are present
+     * These flags identify which Mahjong buttons are present,
+     * each is indicated in this as (1 << LibMame_MahjongButtonType_XXX).
      **/
     int mahjong_button_flags;
 
     /**
-     * These flags identify which hanafuda buttons are present
+     * These flags identify which hanafuda buttons are present,
+     * each is indicated in this as (1 << LibMame_HanafudaButtonType_XXX).
      **/
     int hanafuda_button_flags;
 
     /**
-     * These flags identify which gambling buttons are present
+     * These flags identify which gambling buttons are present,
+     * each is indicated in this as (1 << LibMame_GamblingButtonType_XXX).
      **/
     int gambling_button_flags;
 
     /**
-     * These flags identify which other binary controls are present
+     * These flags identify which other binary controls are present,
+     * each is indicated in this as (1 << LibMame_OtherButtonType_XXX).
      **/
-    int other_flags;
+    int other_button_flags;
 
     /**
-     * These flags identify which controllers are present
+     * These flags identify which controllers are present,
+     * each is indicated in this as (1 << LibMame_ControllerType_XXX).
      **/
     int controller_flags;
 } LibMame_ControllersDescriptor;
@@ -486,40 +527,45 @@ typedef struct LibMame_ControllersState
     /**
      * These are the current states of each normal button; the flag for
      * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  See
-     * the LIBMAME_CONTROLLERFLAGS_BUTTON_XX constants.
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_NormalButtonType_XXX).
      **/
     int normal_buttons_state;
 
     /**
      * These are the current states of each Mahjong button; the flag for
      * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  See
-     * the LIBMAME_CONTROLLERFLAGS_MAHJONG_XX constants.
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_MahjongButtonType_XXX).
      **/
     int mahjong_buttons_state;
 
     /**
      * These are the current states of each Hanafuda button; the flag for
      * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  See
-     * the LIBMAME_CONTROLLERFLAGS_HANAFUDA_XX constants.
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_HanafudaButtonType_XXX).
      **/
     int hanafuda_buttons_state;
     
     /**
      * These are the current states of each Gambling button; the flag for
      * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  See
-     * the LIBMAME_CONTROLLERFLAGS_GAMBLING_XX constants.
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_GamblingButtonType_XXX).
      **/
     int gambling_buttons_state;
     
     /**
      * These are the current states of each other binary input; the flag for
      * an input being set here means that the input is currently triggered,
-     * not being set means that the input is currently not triggered.  See
-     * the LIBMAME_CONTROLLERFLAGS_OTHER_XX constants.
+     * not being set means that the input is currently not triggered.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_OtherButtonType_XXX).
      **/
     int other_buttons_state;
 
@@ -654,7 +700,7 @@ typedef struct LibMame_ControllersState
 
     /**
      * This is the current UI input.  libmame allows only one UI input at a
-     * time.  See the LIBMAME_CONTROLLERFLAGS_UI_XXX constants.
+     * time.  Its value is one of the LibMame_UiButtonType_XXX values.
      **/
     int ui_input_state;
 } LibMame_ControllersState;

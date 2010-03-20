@@ -11,9 +11,9 @@
  * Support for getting game info
  **/
 
+#include "HashTable.h"
 #include "emu.h"
 #include "config.h"
-#include "HashTable.h"
 #include "libmame.h"
 #include "osdcore.h"
 #include "sound/samples.h"
@@ -458,78 +458,26 @@ static void convert_controllers(const ioport_list *ioportlist,
 	const input_port_config *port;
 	const input_field_config *field;
 
-    /* Count the players and buttons */
 	for (port = ioportlist->first(); port; port = port->next) {
 		for (field = port->fieldlist; field; field = field->next) {
 			if (gameinfo->max_simultaneous_players < field->player) {
 				gameinfo->max_simultaneous_players = field->player;
             }
             switch (field->type) {
-
-#undef CASE_BUTTON
-#define CASE_BUTTON(field, iptname, flag)                               \
-            case iptname:                                               \
-                gameinfo->controller_set. field |= flag;                \
-                break
-
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON1,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_1);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON2,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_2);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON3,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_3);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON4,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_4);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON5,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_5);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON6,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_6);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON7,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_7);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON8,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_8);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON9,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_9);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON10,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_10);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON11,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_11);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON12,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_12);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON13,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_13);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON14,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_14);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON15,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_15);
-                CASE_BUTTON(normal_button_flags, IPT_BUTTON16,
-                            LIBMAME_CONTROLLERFLAGS_BUTTON_16);
-                break;
-            }
-        }
-    }
-    gameinfo->max_simultaneous_players++;
-
-    const char **normal_button_names = (const char **) 
-        gameinfo->controller_set.normal_button_names;
-
-	for (port = ioportlist->first(); port; port = port->next) {
-		for (field = port->fieldlist; field; field = field->next) {
-            switch (field->type) {
             case IPT_JOYSTICK_LEFT:
             case IPT_JOYSTICK_RIGHT:
                 switch (field->way) {
                 case 2:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_JOYSTICKHORIZONTAL;
+                        (1 << LibMame_ControllerType_JoystickHorizontal);
                     break;
                 case 4:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY;
+                        (1 << LibMame_ControllerType_Joystick4Way);
                     break;
                 default:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY;
+                        (1 << LibMame_ControllerType_Joystick8Way);
                     break;
                 }
                 break;
@@ -538,15 +486,15 @@ static void convert_controllers(const ioport_list *ioportlist,
                 switch (field->way) {
                 case 2:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_JOYSTICKVERTICAL;
+                        (1 << LibMame_ControllerType_JoystickVertical);
                     break;
                 case 4:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY;
+                        (1 << LibMame_ControllerType_Joystick4Way);
                     break;
                 default:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY;
+                        (1 << LibMame_ControllerType_Joystick8Way);
                     break;
                 }
                 break;
@@ -557,15 +505,15 @@ static void convert_controllers(const ioport_list *ioportlist,
                 switch (field->way) {
                 case 2:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL;
+                        (1 << LibMame_ControllerType_DoubleJoystickHorizontal);
                     break;
                 case 4:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY;
+                        (1 << LibMame_ControllerType_DoubleJoystick4Way);
                     break;
                 default:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY;
+                        (1 << LibMame_ControllerType_DoubleJoystick8Way);
                     break;
                 }
                 break;
@@ -576,218 +524,292 @@ static void convert_controllers(const ioport_list *ioportlist,
                 switch (field->way) {
                 case 2:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL;
+                        (1 << LibMame_ControllerType_DoubleJoystickVertical);
                     break;
                 case 4:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY;
+                        (1 << LibMame_ControllerType_DoubleJoystick4Way);
                     break;
                 default:
                     gameinfo->controller_set.controller_flags |= 
-                        LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY;
+                        (1 << LibMame_ControllerType_DoubleJoystick8Way);
                     break;
                 }
                 break;
             case IPT_PADDLE:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_PADDLE;
+                    (1 << LibMame_ControllerType_Paddle);
                 break;
             case IPT_DIAL:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_SPINNER;
+                    (1 << LibMame_ControllerType_Spinner);
                 break;
             case IPT_TRACKBALL_X:
             case IPT_TRACKBALL_Y:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_TRACKBALL;
+                    (1 << LibMame_ControllerType_Trackball);
                 break;
             case IPT_AD_STICK_X:
             case IPT_AD_STICK_Y:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG;
+                    (1 << LibMame_ControllerType_JoystickAnalog);
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_LIGHTGUN;
+                    (1 << LibMame_ControllerType_Lightgun);
                 break;
             case IPT_PEDAL:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_PEDAL;
+                    (1 << LibMame_ControllerType_Pedal);
                 break;
             case IPT_PEDAL2:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_PEDAL2;
+                    (1 << LibMame_ControllerType_Pedal2);
                 break;
             case IPT_PEDAL3:
                 gameinfo->controller_set.controller_flags |= 
-                    LIBMAME_CONTROLLERFLAGS_PEDAL3;
+                    (1 << LibMame_ControllerType_Pedal3);
                 break;
 
 #undef CASE_BUTTON
-#define CASE_BUTTON(iptname, n)                         \
-            case iptname:                               \
-                normal_button_names[n] = field->name;   \
+#define CASE_BUTTON(cs_field, iptname, enumvalue)                       \
+            case iptname:                                               \
+                gameinfo->controller_set. cs_field |=                   \
+                    (1 << enumvalue);                                   \
                 break
                 
-            CASE_BUTTON(IPT_BUTTON1, 0);
-            CASE_BUTTON(IPT_BUTTON2, 1);
-            CASE_BUTTON(IPT_BUTTON3, 2);
-            CASE_BUTTON(IPT_BUTTON4, 3);
-            CASE_BUTTON(IPT_BUTTON5, 4);
-            CASE_BUTTON(IPT_BUTTON6, 5);
-            CASE_BUTTON(IPT_BUTTON7, 6);
-            CASE_BUTTON(IPT_BUTTON8, 7);
-            CASE_BUTTON(IPT_BUTTON9, 8);
-            CASE_BUTTON(IPT_BUTTON10, 9);
-            CASE_BUTTON(IPT_BUTTON11, 10);
-            CASE_BUTTON(IPT_BUTTON12, 11);
-            CASE_BUTTON(IPT_BUTTON13, 12);
-            CASE_BUTTON(IPT_BUTTON14, 13);
-            CASE_BUTTON(IPT_BUTTON15, 14);
-            CASE_BUTTON(IPT_BUTTON16, 15);
-
-#undef CASE_BUTTON
-#define CASE_BUTTON(field, iptname, flag)                               \
+#undef CASE_BUTTON_AND_NAME
+#define CASE_BUTTON_AND_NAME(cs_field, iptname, n, enumvalue)           \
             case iptname:                                               \
-                gameinfo->controller_set. field |= flag;                \
+                gameinfo->controller_set. cs_field |=                   \
+                    (1 << enumvalue);                                   \
+                gameinfo->controller_set.normal_button_names[n] =       \
+                    field->name;                                        \
                 break
+                
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON1, 0,
+                                 LibMame_NormalButtonType_1);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON2, 1,
+                                 LibMame_NormalButtonType_2);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON3, 2,
+                                 LibMame_NormalButtonType_3);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON4, 3,
+                                 LibMame_NormalButtonType_4);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON5, 4,
+                                 LibMame_NormalButtonType_5);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON6, 5,
+                                 LibMame_NormalButtonType_6);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON7, 6,
+                                 LibMame_NormalButtonType_7);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON8, 7,
+                                 LibMame_NormalButtonType_8);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON9, 8,
+                                 LibMame_NormalButtonType_9);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON10, 9,
+                                 LibMame_NormalButtonType_10);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON11, 10,
+                                 LibMame_NormalButtonType_11);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON12, 11,
+                                 LibMame_NormalButtonType_12);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON13, 12,
+                                 LibMame_NormalButtonType_13);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON14, 13,
+                                 LibMame_NormalButtonType_14);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON15, 14,
+                                 LibMame_NormalButtonType_15);
+            CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON16, 15,
+                                 LibMame_NormalButtonType_16);
 
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_A,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_A);
+                        LibMame_MahjongButtonType_A);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_B,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_B);
+                        LibMame_MahjongButtonType_B);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_C,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_C);
+                        LibMame_MahjongButtonType_C);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_D,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_D);
+                        LibMame_MahjongButtonType_D);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_E,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_E);
+                        LibMame_MahjongButtonType_E);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_F,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_F);
+                        LibMame_MahjongButtonType_F);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_G,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_G);
+                        LibMame_MahjongButtonType_G);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_H,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_H);
+                        LibMame_MahjongButtonType_H);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_I,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_I);
+                        LibMame_MahjongButtonType_I);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_J,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_J);
+                        LibMame_MahjongButtonType_J);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_K,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_K);
+                        LibMame_MahjongButtonType_K);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_L,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_L);
+                        LibMame_MahjongButtonType_L);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_M,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_M);
+                        LibMame_MahjongButtonType_M);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_N,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_N);
+                        LibMame_MahjongButtonType_N);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_O,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_O);
+                        LibMame_MahjongButtonType_O);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_P,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_P);
+                        LibMame_MahjongButtonType_P);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_Q,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_Q);
+                        LibMame_MahjongButtonType_Q);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_KAN,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_KAN);
+                        LibMame_MahjongButtonType_Kan);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_PON,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_PON);
+                        LibMame_MahjongButtonType_Pon);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_CHI,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_CHI);
+                        LibMame_MahjongButtonType_Chi);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_REACH,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_REACH);
+                        LibMame_MahjongButtonType_Reach);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_RON,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_RON);
+                        LibMame_MahjongButtonType_Ron);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_BET,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_BET);
+                        LibMame_MahjongButtonType_Bet);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_LAST_CHANCE,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_LAST_CHANCE);
+                        LibMame_MahjongButtonType_Last_Chance);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_SCORE,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_SCORE);
+                        LibMame_MahjongButtonType_Score);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_DOUBLE_UP,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_DOUBLE_UP);
+                        LibMame_MahjongButtonType_Double_Up);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_FLIP_FLOP,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_FLIP_FLOP);
+                        LibMame_MahjongButtonType_Flip_Flop);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_BIG,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_BIG);
+                        LibMame_MahjongButtonType_Big);
             CASE_BUTTON(mahjong_button_flags, IPT_MAHJONG_SMALL,
-                        LIBMAME_CONTROLLERFLAGS_MAHJONG_SMALL);
+                        LibMame_MahjongButtonType_Small);
             
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_A,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_A);
+                        LibMame_HanafudaButtonType_A);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_B,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_B);
+                        LibMame_HanafudaButtonType_B);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_C,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_C);
+                        LibMame_HanafudaButtonType_C);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_D,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_D);
+                        LibMame_HanafudaButtonType_D);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_E,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_E);
+                        LibMame_HanafudaButtonType_E);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_F,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_F);
+                        LibMame_HanafudaButtonType_F);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_G,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_G);
+                        LibMame_HanafudaButtonType_G);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_H,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_H);
+                        LibMame_HanafudaButtonType_H);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_YES,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_YES);
+                        LibMame_HanafudaButtonType_Yes);
             CASE_BUTTON(hanafuda_button_flags, IPT_HANAFUDA_NO,
-                        LIBMAME_CONTROLLERFLAGS_HANAFUDA_NO);
+                        LibMame_HanafudaButtonType_No);
 
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_HIGH,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HIGH);
+                        LibMame_GamblingButtonType_High);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_LOW,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_LOW);
+                        LibMame_GamblingButtonType_Low);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_HALF,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HALF);
+                        LibMame_GamblingButtonType_Half);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_DEAL,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_DEAL);
+                        LibMame_GamblingButtonType_Deal);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_D_UP,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_D_UP);
+                        LibMame_GamblingButtonType_D_Up);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_TAKE,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_TAKE);
+                        LibMame_GamblingButtonType_Take);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_STAND,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_STAND);
+                        LibMame_GamblingButtonType_Stand);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_BET,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_BET);
+                        LibMame_GamblingButtonType_Bet);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_KEYIN,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_KEYIN);
+                        LibMame_GamblingButtonType_Keyin);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_KEYOUT,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_KEYOUT);
+                        LibMame_GamblingButtonType_Keyout);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_PAYOUT,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_PAYOUT);
+                        LibMame_GamblingButtonType_Payout);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_DOOR,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_DOOR);
+                        LibMame_GamblingButtonType_Door);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_SERVICE,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_SERVICE);
+                        LibMame_GamblingButtonType_Service);
             CASE_BUTTON(gambling_button_flags, IPT_GAMBLE_BOOK,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_BOOK);
+                        LibMame_GamblingButtonType_Book);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_HOLD1,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD1);
+                        LibMame_GamblingButtonType_Hold1);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_HOLD2,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD2);
+                        LibMame_GamblingButtonType_Hold2);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_HOLD3,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD3);
+                        LibMame_GamblingButtonType_Hold3);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_HOLD4,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD4);
+                        LibMame_GamblingButtonType_Hold4);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_HOLD5,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_HOLD5);
+                        LibMame_GamblingButtonType_Hold5);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_CANCEL,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_CANCEL);
+                        LibMame_GamblingButtonType_Cancel);
             CASE_BUTTON(gambling_button_flags, IPT_POKER_BET,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_BET);
+                        LibMame_GamblingButtonType_Bet);
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP1,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP1);
+                        LibMame_GamblingButtonType_Stop1);
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP2,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP2);
+                        LibMame_GamblingButtonType_Stop2);
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP3,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP3);
+                        LibMame_GamblingButtonType_Stop3);
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP4,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP4);
+                        LibMame_GamblingButtonType_Stop4);
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP_ALL,
-                        LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP_ALL);
+                        LibMame_GamblingButtonType_Stop_All);
+
+            CASE_BUTTON(other_button_flags, IPT_COIN1,
+                        LibMame_OtherButtonType_Coin1);
+            CASE_BUTTON(other_button_flags, IPT_COIN2,
+                        LibMame_OtherButtonType_Coin2);
+            CASE_BUTTON(other_button_flags, IPT_COIN3,
+                        LibMame_OtherButtonType_Coin3);
+            CASE_BUTTON(other_button_flags, IPT_COIN4,
+                        LibMame_OtherButtonType_Coin4);
+            CASE_BUTTON(other_button_flags, IPT_COIN5,
+                        LibMame_OtherButtonType_Coin5);
+            CASE_BUTTON(other_button_flags, IPT_COIN6,
+                        LibMame_OtherButtonType_Coin6);
+            CASE_BUTTON(other_button_flags, IPT_COIN7,
+                        LibMame_OtherButtonType_Coin7);
+            CASE_BUTTON(other_button_flags, IPT_COIN8,
+                        LibMame_OtherButtonType_Coin8);
+            CASE_BUTTON(other_button_flags, IPT_BILL1,
+                        LibMame_OtherButtonType_Bill1);
+            CASE_BUTTON(other_button_flags, IPT_START1,
+                        LibMame_OtherButtonType_Start1);
+            CASE_BUTTON(other_button_flags, IPT_START2,
+                        LibMame_OtherButtonType_Start2);
+            CASE_BUTTON(other_button_flags, IPT_START3,
+                        LibMame_OtherButtonType_Start3);
+            CASE_BUTTON(other_button_flags, IPT_START4,
+                        LibMame_OtherButtonType_Start4);
+            CASE_BUTTON(other_button_flags, IPT_START5,
+                        LibMame_OtherButtonType_Start5);
+            CASE_BUTTON(other_button_flags, IPT_START6,
+                        LibMame_OtherButtonType_Start6);
+            CASE_BUTTON(other_button_flags, IPT_START7,
+                        LibMame_OtherButtonType_Start7);
+            CASE_BUTTON(other_button_flags, IPT_START8,
+                        LibMame_OtherButtonType_Start8);
+            CASE_BUTTON(other_button_flags, IPT_SERVICE1,
+                        LibMame_OtherButtonType_Service1);
+            CASE_BUTTON(other_button_flags, IPT_SERVICE2,
+                        LibMame_OtherButtonType_Service2);
+            CASE_BUTTON(other_button_flags, IPT_SERVICE3,
+                        LibMame_OtherButtonType_Service3);
+            CASE_BUTTON(other_button_flags, IPT_SERVICE4,
+                        LibMame_OtherButtonType_Service4);
+            CASE_BUTTON(other_button_flags, IPT_SERVICE,
+                        LibMame_OtherButtonType_Service);
+            CASE_BUTTON(other_button_flags, IPT_TILT,
+                        LibMame_OtherButtonType_Tilt);
+            CASE_BUTTON(other_button_flags, IPT_INTERLOCK,
+                        LibMame_OtherButtonType_Interlock);
+            CASE_BUTTON(other_button_flags, IPT_VOLUME_UP,
+                        LibMame_OtherButtonType_Volume_Up);
+            CASE_BUTTON(other_button_flags, IPT_VOLUME_DOWN,
+                        LibMame_OtherButtonType_Volume_Down);
             }
         }
     }
+    gameinfo->max_simultaneous_players++;
 }
 
 

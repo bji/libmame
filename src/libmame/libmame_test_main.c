@@ -226,12 +226,12 @@ int main(int argc, char **argv)
         printf("\tControllers: ");
         needindent = false;
         if (controllers.controller_flags & 
-            LIBMAME_CONTROLLERFLAGS_JOYSTICKHORIZONTAL) {
+            (1 << LibMame_ControllerType_JoystickHorizontal)) {
             printf("Horizontal Joystick");
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_JOYSTICKVERTICAL) {
+            (1 << LibMame_ControllerType_JoystickVertical)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -239,7 +239,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY) {
+            (1 << LibMame_ControllerType_Joystick4Way)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY) {
+            (1 << LibMame_ControllerType_Joystick8Way)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG) {
+            (1 << LibMame_ControllerType_JoystickAnalog)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL) {
+            (1 << LibMame_ControllerType_DoubleJoystickHorizontal)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL) {
+            (1 << LibMame_ControllerType_DoubleJoystickVertical)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY) {
+            (1 << LibMame_ControllerType_DoubleJoystick4Way)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY) {
+            (1 << LibMame_ControllerType_DoubleJoystick8Way)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_SPINNER) {
+            (1 << LibMame_ControllerType_Spinner)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -303,7 +303,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_PADDLE) {
+            (1 << LibMame_ControllerType_Paddle)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_TRACKBALL) {
+            (1 << LibMame_ControllerType_Trackball)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_LIGHTGUN) {
+            (1 << LibMame_ControllerType_Lightgun)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_PEDAL) {
+            (1 << LibMame_ControllerType_Pedal)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -335,7 +335,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_PEDAL2) {
+            (1 << LibMame_ControllerType_Pedal2)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -343,7 +343,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         if (controllers.controller_flags &
-            LIBMAME_CONTROLLERFLAGS_PEDAL3) {
+            (1 << LibMame_ControllerType_Pedal3)) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
             needindent = true;
         }
         for (int j = 0; j < 16; j++) {
-            if (!controllers.normal_button_flags & (1 << j)) {
+            if (!(controllers.normal_button_flags & (1 << j))) {
                 continue;
             }
             if (needindent) {
