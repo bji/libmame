@@ -98,11 +98,11 @@
 #define LIBMAME_CONTROLLERFLAGS_JOYSTICKVERTICAL                0x0002
 #define LIBMAME_CONTROLLERFLAGS_JOYSTICK4WAY                    0x0004
 #define LIBMAME_CONTROLLERFLAGS_JOYSTICK8WAY                    0x0008
-#define LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG                  0x0010
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL        0x0020
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL          0x0040
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY              0x0080
-#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY              0x0100
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKHORIZONTAL        0x0010
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICKVERTICAL          0x0020
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK4WAY              0x0040
+#define LIBMAME_CONTROLLERFLAGS_DOUBLEJOYSTICK8WAY              0x0800
+#define LIBMAME_CONTROLLERFLAGS_JOYSTICKANALOG                  0x0100
 #define LIBMAME_CONTROLLERFLAGS_SPINNER                         0x0200
 #define LIBMAME_CONTROLLERFLAGS_PADDLE                          0x0400
 #define LIBMAME_CONTROLLERFLAGS_TRACKBALL                       0x0800
@@ -110,6 +110,26 @@
 #define LIBMAME_CONTROLLERFLAGS_PEDAL                           0x2000
 #define LIBMAME_CONTROLLERFLAGS_PEDAL2                          0x4000
 #define LIBMAME_CONTROLLERFLAGS_PEDAL3                          0x8000
+
+/**
+ * These flags define all of the possible general purpose buttons.
+ **/
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_1                        0x0001
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_2                        0x0002
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_3                        0x0004
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_4                        0x0008
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_5                        0x0010
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_6                        0x0020
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_7                        0x0040
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_8                        0x0080
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_9                        0x0100
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_10                       0x0200
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_11                       0x0400
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_12                       0x0800
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_13                       0x1000
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_14                       0x2000
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_15                       0x4000
+#define LIBMAME_CONTROLLERFLAGS_BUTTON_16                       0x8000
 
 /**
  * These flags define all of the possible special controller buttons used for
@@ -190,6 +210,74 @@
 #define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP4                  0x0800000
 #define LIBMAME_CONTROLLERFLAGS_GAMBLING_STOP_ALL               0x1000000
 
+/**
+ * These flags define all of the possible non-gameplay binary inputs
+ **/
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN1                     0x00001
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN2                     0x00002
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN3                     0x00004
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN4                     0x00008
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN5                     0x00010
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN6                     0x00020
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN7                     0x00040
+#define LIBMAME_CONTROLLERFLAGS_OTHER_COIN8                     0x00080
+#define LIBMAME_CONTROLLERFLAGS_OTHER_BILL1                     0x00010
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START1                    0x00020
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START2                    0x00040
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START3                    0x00080
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START4                    0x00100
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START5                    0x00200
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START6                    0x00400
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START7                    0x00800
+#define LIBMAME_CONTROLLERFLAGS_OTHER_START8                    0x01000
+#define LIBMAME_CONTROLLERFLAGS_OTHER_SERVICE                   0x02000
+#define LIBMAME_CONTROLLERFLAGS_OTHER_TILT                      0x04000
+#define LIBMAME_CONTROLLERFLAGS_OTHER_INTERLOCK                 0x08000
+#define LIBMAME_CONTROLLERFLAGS_OTHER_VOLUME_UP                 0x10000
+#define LIBMAME_CONTROLLERFLAGS_OTHER_VOLUME_DOWN               0x20000
+
+/**
+ * These values define all of the possible UI inputs.
+ **/
+#define LIBMAME_CONTROLLERFLAGS_UI_CONFIGURE                    1
+#define LIBMAME_CONTROLLERFLAGS_UI_ON_SCREEN_DISPLAY            2
+#define LIBMAME_CONTROLLERFLAGS_UI_DEBUG_BREAK                  3
+#define LIBMAME_CONTROLLERFLAGS_UI_PAUSE                        4
+#define LIBMAME_CONTROLLERFLAGS_UI_RESET_MACHINE                5
+#define LIBMAME_CONTROLLERFLAGS_UI_SOFT_RESET                   6
+#define LIBMAME_CONTROLLERFLAGS_UI_SHOW_GFX                     7
+#define LIBMAME_CONTROLLERFLAGS_UI_FRAMESKIP_DEC                8
+#define LIBMAME_CONTROLLERFLAGS_UI_FRAMESKIP_INC                9
+#define LIBMAME_CONTROLLERFLAGS_UI_THROTTLE                     10
+#define LIBMAME_CONTROLLERFLAGS_UI_FAST_FORWARD                 11
+#define LIBMAME_CONTROLLERFLAGS_UI_SHOW_FPS                     12
+#define LIBMAME_CONTROLLERFLAGS_UI_SNAPSHOT                     13
+#define LIBMAME_CONTROLLERFLAGS_UI_RECORD_MOVIE                 14
+#define LIBMAME_CONTROLLERFLAGS_UI_TOGGLE_CHEAT                 15
+#define LIBMAME_CONTROLLERFLAGS_UI_UP                           16
+#define LIBMAME_CONTROLLERFLAGS_UI_DOWN                         17
+#define LIBMAME_CONTROLLERFLAGS_UI_LEFT                         18
+#define LIBMAME_CONTROLLERFLAGS_UI_RIGHT                        19
+#define LIBMAME_CONTROLLERFLAGS_UI_HOME                         20
+#define LIBMAME_CONTROLLERFLAGS_UI_END                          21
+#define LIBMAME_CONTROLLERFLAGS_UI_PAGE_UP                      22
+#define LIBMAME_CONTROLLERFLAGS_UI_PAGE_DOWN                    23
+#define LIBMAME_CONTROLLERFLAGS_UI_SELECT                       24
+#define LIBMAME_CONTROLLERFLAGS_UI_CANCEL                       25
+#define LIBMAME_CONTROLLERFLAGS_UI_DISPLAY_COMMENT              26
+#define LIBMAME_CONTROLLERFLAGS_UI_CLEAR                        27
+#define LIBMAME_CONTROLLERFLAGS_UI_ZOOM_IN                      28
+#define LIBMAME_CONTROLLERFLAGS_UI_ZOOM_OUT                     29
+#define LIBMAME_CONTROLLERFLAGS_UI_PREV_GROUP                   30
+#define LIBMAME_CONTROLLERFLAGS_UI_NEXT_GROUP                   31
+#define LIBMAME_CONTROLLERFLAGS_UI_ROTATE                       32
+#define LIBMAME_CONTROLLERFLAGS_UI_SHOW_PROFILER                33
+#define LIBMAME_CONTROLLERFLAGS_UI_TOGGLE_UI                    34
+#define LIBMAME_CONTROLLERFLAGS_UI_TOGGLE_DEBUG                 35
+#define LIBMAME_CONTROLLERFLAGS_UI_PASTE                        36
+#define LIBMAME_CONTROLLERFLAGS_UI_SAVE_STATE                   37
+#define LIBMAME_CONTROLLERFLAGS_UI_LOAD_STATE                   38
+
 
 /** **************************************************************************
  * Enumerated types
@@ -231,79 +319,14 @@ typedef enum
     LibMame_SettingType_Adjuster
 } LibMame_SettingType;
 
-
 /**
- * Controller types
+ * Status codes that can be returned by LibMame_RunGame()
  **/
 typedef enum
 {
-    /**
-     * This is a digital 2-way horizontal joystick
-     **/
-    LibMame_ControllerType_JoystickHorizontal,
-    /**
-     * This is a digital 2-way vertical joystick
-     **/
-    LibMame_ControllerType_JoystickVertical,
-    /**
-     * This is a digital 4-way joystick
-     **/
-    LibMame_ControllerType_Joystick4Way,
-    /**
-     * This is a digital 8-way joystick
-     **/
-    LibMame_ControllerType_Joystick8Way,
-    /**
-     * This is an analog joystick
-     **/
-    LibMame_ControllerType_JoystickAnalog,
-    /**
-     * This is two digital 2-way horizontal joysticks
-     **/
-    LibMame_ControllerType_DoubleJoystickHorizontal,
-    /**
-     * This is two digital 2-way vertical joysticks
-     **/
-    LibMame_ControllerType_DoubleJoystickVertical,
-    /**
-     * This is two digital 4-way joysticks
-     **/
-    LibMame_ControllerType_DoubleJoystick4Way,
-    /**
-     * This is two digital 8-way joysticks
-     **/
-    LibMame_ControllerType_DoubleJoystick8Way,
-    /**
-     * This is an analog spinner, which spins freely and which only indicates
-     * rotation, not angle of rotation
-     **/
-    LibMame_ControllerType_Spinner,
-    /**
-     * This is an analog spinner, which spins in a limited range and which
-     * indicates angle of rotation
-     **/
-    LibMame_ControllerType_Paddle,
-    /**
-     * This is a trackball
-     **/
-    LibMame_ControllerType_Trackball,
-    /**
-     * This is a light gun
-     **/
-    LibMame_ControllerType_Lightgun,
-    /**
-     * This is a footpedal
-     **/
-    LibMame_ControllerType_Pedal,
-    /**
-     * This is a second footpedal
-     **/
-    LibMame_ControllerType_Pedal2,
-    /**
-     * This is a third footpedal
-     **/
-    LibMame_ControllerType_Pedal3
-} LibMame_ControllerType;
+    LibMame_RunGameStatus_Success,
+    LibMame_RunGameStatus_InvalidGameNum
+} LibMame_RunGameStatus;
 
 
 /** **************************************************************************
@@ -410,19 +433,20 @@ typedef struct LibMame_SettingDescriptor
  * This describes a player's control inputs for a game.  This is a set of
  * individual controllers comprising the entire set of control inputs that a
  * player would use to play a game.  All players are assumed to use the same
- * controls during a multiplayer game.
+ * type and number of controls during a multiplayer game.
  **/
-typedef struct LibMame_ControllerSetDescriptor
+typedef struct LibMame_ControllersDescriptor
 {
     /**
-     * This is the count of normal buttons (fire, jump, etc)
+     * These are all of the general purpose buttons which are present.
      **/
-    int normal_button_count;
+    int normal_button_flags;
 
     /**
-     * These are the names of the normal buttons
+     * These are the names of the normal buttons, or NULL if the button has
+     * no name.
      **/
-    const char * const *normal_button_names;
+    const char *normal_button_names[16];
 
     /**
      * These flags identify which Mahjong buttons are present
@@ -440,10 +464,211 @@ typedef struct LibMame_ControllerSetDescriptor
     int gambling_button_flags;
 
     /**
+     * These flags identify which other binary controls are present
+     **/
+    int other_flags;
+
+    /**
      * These flags identify which controllers are present
      **/
     int controller_flags;
-} LibMame_ControllerSetDescriptor;
+} LibMame_ControllersDescriptor;
+
+
+/**
+ * This describes all of the controller values that can be polled by MAME.
+ * One structure of this type for each player is passed to the xxx callback
+ * function periodically while a game is running to poll the current input.
+ * Not all values provided in this structure are used for every game.
+ **/
+typedef struct LibMame_ControllersState
+{
+    /**
+     * These are the current states of each normal button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  See
+     * the LIBMAME_CONTROLLERFLAGS_BUTTON_XX constants.
+     **/
+    int normal_buttons_state;
+
+    /**
+     * These are the current states of each Mahjong button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  See
+     * the LIBMAME_CONTROLLERFLAGS_MAHJONG_XX constants.
+     **/
+    int mahjong_buttons_state;
+
+    /**
+     * These are the current states of each Hanafuda button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  See
+     * the LIBMAME_CONTROLLERFLAGS_HANAFUDA_XX constants.
+     **/
+    int hanafuda_buttons_state;
+    
+    /**
+     * These are the current states of each Gambling button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  See
+     * the LIBMAME_CONTROLLERFLAGS_GAMBLING_XX constants.
+     **/
+    int gambling_buttons_state;
+    
+    /**
+     * These are the current states of each other binary input; the flag for
+     * an input being set here means that the input is currently triggered,
+     * not being set means that the input is currently not triggered.  See
+     * the LIBMAME_CONTROLLERFLAGS_OTHER_XX constants.
+     **/
+    int other_buttons_state;
+
+    /**
+     * This value is set if the left joystick (or single joystick if the
+     * controller has only a single joystick) is in the left, left-up, or
+     * left-down position.
+     **/
+    int left_or_single_joystick_left_state : 1;
+
+    /**
+     * This value is set if the left joystick (or single joystick if the
+     * controller has only a single joystick) is in the right, right-up, or
+     * right-down position.
+     **/
+    int left_or_single_joystick_right_state : 1;
+
+    /**
+     * This value is set if the left joystick (or single joystick if the
+     * controller has only a single joystick) is in the up, right-up, or
+     * left-up position.
+     **/
+    int left_or_single_joystick_up_state : 1;
+
+    /**
+     * This value is set if the left joystick (or single joystick if the
+     * controller has only a single joystick) is in the down, right-down, or
+     * left-down position.
+     **/
+    int left_or_single_joystick_down_state : 1;
+
+    /**
+     * This value is set if the right joystick is in the left, left-up, or
+     * left-down position.
+     **/
+    int right_joystick_left_state : 1;
+
+    /**
+     * This value is set if the right joystick is in the right, right-up, or
+     * right-down position.
+     **/
+    int right_joystick_right_state : 1;
+
+    /**
+     * This value is set if the right joystick is in the up, right-up, or
+     * left-up position.
+     **/
+    int right_joystick_up_state : 1;
+
+    /**
+     * This value is set if the right joystick is in the down, right-down, or
+     * left-down position.
+     **/
+    int right_joystick_down_state : 1;
+
+    /**
+     * This value is the current horizontal position of the analog joystick,
+     * mapped to a range from -32768 (full left) to 32767 (full right).
+     **/
+    int analog_joystick_horizontal_position_state;
+
+    /**
+     * This value is the current vertical position of the analog joystick,
+     * mapped to a range from -32768 (full down) to 32767 (full up).
+     **/
+    int analog_joystick_vertical_position_state;
+
+    /**
+     * This value is the change in position of the spinner since the last
+     * time it was polled, mapped to a range from -32768 (furthest possible
+     * spin left) to 32767 (furthest possible spin right).
+     **/
+    int spinner_delta;
+
+    /**
+     * This value is the current paddle position, mapped to a range from
+     * -32768 (full left) to 32767 (full right).
+     **/
+    int paddle_state;
+
+    /**
+     * This value is the change in position of the trackball along the
+     * horizontal axis since the last time it was polled, mapped to a range
+     * from -32768 (furthest possible roll left) 32767 (furthest possible roll
+     * right).
+     **/
+    int trackball_horizontal_delta;
+
+    /**
+     * This value is the change in position of the trackball along the
+     * vertical axis since the last time it was polled, mapped to a range
+     * from -32768 (furthest possible roll down) 32767 (furthest possible roll
+     * up).
+     **/
+    int trackball_vertical_delta;
+
+    /**
+     * This value is the current horizontal position of the analog joystick,
+     * mapped to a range from -32767 (left edge of screen) to 32767
+     * (right edge of screen).  The value -32768 indicates off of the screen
+     * if present in either lightgun_horizontal_position_state or
+     * lightgun_vertical_position_state.
+     **/
+    int lightgun_horizontal_position_state;
+
+    /**
+     * This value is the current vertical position of the analog joystick,
+     * mapped to a range from -32767 (left edge of screen) to 32767
+     * (right edge of screen).  The value -32768 indicates off of the screen
+     * if present in either lightgun_horizontal_position_state or
+     * lightgun_vertical_position_state.
+     **/
+    int lightgun_vertical_position_state;
+
+    /**
+     * This value is the current paddle position, mapped to a range from
+     * 0 (not pressed) to 65535 (fully pressed).
+     **/
+    int pedal_state;
+
+    /**
+     * This value is the current second pedal position, mapped to a range from
+     * 0 (not pressed) to 65535 (fully pressed).
+     **/
+    int pedal2_state;
+
+    /**
+     * This value is the current third pedal position, mapped to a range from
+     * 0 (not pressed) to 65535 (fully pressed).
+     **/
+    int pedal3_state;
+
+    /**
+     * This is the current UI input.  libmame allows only one UI input at a
+     * time.  See the LIBMAME_CONTROLLERFLAGS_UI_XXX constants.
+     **/
+    int ui_input_state;
+} LibMame_ControllersState;
+
+
+typedef struct LibMame_RunGameCallbacks
+{
+    void (*PollControllersStates)(LibMame_ControllersState *controllers_states,
+                                  void *callback_data);
+    void (*MakeRunningGameCalls)(void *callback_data);
+    void (*UpdateVideo)(void *callback_data);
+    void (*UpdateAudio)(void *callback_data);
+    void (*SetMasterVolume)(int attenuation, void *callback_data);
+} LibMame_RunGameCallbacks;
 
 
 /** **************************************************************************
@@ -705,20 +930,24 @@ LibMame_SettingDescriptor LibMame_Get_Game_Setting(int gamenum, int settingnum);
 
 /**
  * Returns the maximum number of simultaneous players of a game.  Each player
- * is assumed to have an identical controller set as the others.
+ * is assumed to have an identical controllers as the others.  MAME supports a
+ * maximum of 8 simultaneous players so this value will always range from 1 to
+ * 8.
  *
  * @param gamenum is the game number of the game
+ * @return the maximum number of simultaneous players of a game
  **/
 int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum);
 
 
 /**
- * This returns the controller set describing the controllers for a given
- * game.  All players are assumed to have the same controller set.
+ * This returns the controllers describing the controllers for a given game.
+ * All players are assumed to have the same controllers.
  *
  * @param gamenum is the game number of the game
+ * @return the controllers describing the controllers for a given game.
  **/
-LibMame_ControllerSetDescriptor LibMame_Get_Game_ControllerSet(int gamenum);
+LibMame_ControllersDescriptor LibMame_Get_Game_Controllers(int gamenum);
 
 
 /**
@@ -734,5 +963,11 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
  * TODO: Functions for getting descriptions of all of the ROMs that a
  * game needs (possibly also for specially identifying BIOS ROMs)
  **/
+
+LibMame_RunGameStatus LibMame_RunGame(int gamenum,
+                                      /* Some options thing xxx, */
+                                      const LibMame_RunGameCallbacks *cbs,
+                                      void *callback_data);
+
 
 #endif /* __LIBMAME_H__ */

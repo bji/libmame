@@ -11,9 +11,9 @@
  * Support for getting game info
  **/
 
-#include "HashTable.h"
 #include "emu.h"
 #include "config.h"
+#include "HashTable.h"
 #include "libmame.h"
 #include "osdcore.h"
 #include "sound/samples.h"
@@ -45,7 +45,7 @@ typedef struct GameInfo
     int setting_count;
     LibMame_SettingDescriptor *settings;
     int max_simultaneous_players;
-    LibMame_ControllerSetDescriptor controller_set;
+    LibMame_ControllersDescriptor controller_set;
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
@@ -466,40 +466,49 @@ static void convert_controllers(const ioport_list *ioportlist,
             }
             switch (field->type) {
 
-#define CASE_BUTTON(iptname, n)                                         \
+#undef CASE_BUTTON
+#define CASE_BUTTON(field, iptname, flag)                               \
             case iptname:                                               \
-                if (gameinfo->controller_set.normal_button_count < n) { \
-                    gameinfo->controller_set.normal_button_count = n;   \
-                }                                                       \
+                gameinfo->controller_set. field |= flag;                \
                 break
 
-                CASE_BUTTON(IPT_BUTTON1, 1);
-                CASE_BUTTON(IPT_BUTTON2, 2);
-                CASE_BUTTON(IPT_BUTTON3, 3);
-                CASE_BUTTON(IPT_BUTTON4, 4);
-                CASE_BUTTON(IPT_BUTTON5, 5);
-                CASE_BUTTON(IPT_BUTTON6, 6);
-                CASE_BUTTON(IPT_BUTTON7, 7);
-                CASE_BUTTON(IPT_BUTTON8, 8);
-                CASE_BUTTON(IPT_BUTTON9, 9);
-                CASE_BUTTON(IPT_BUTTON10, 10);
-                CASE_BUTTON(IPT_BUTTON11, 11);
-                CASE_BUTTON(IPT_BUTTON12, 12);
-                CASE_BUTTON(IPT_BUTTON13, 13);
-                CASE_BUTTON(IPT_BUTTON14, 14);
-                CASE_BUTTON(IPT_BUTTON15, 15);
-                CASE_BUTTON(IPT_BUTTON16, 16);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON1,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_1);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON2,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_2);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON3,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_3);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON4,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_4);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON5,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_5);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON6,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_6);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON7,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_7);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON8,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_8);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON9,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_9);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON10,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_10);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON11,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_11);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON12,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_12);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON13,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_13);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON14,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_14);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON15,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_15);
+                CASE_BUTTON(normal_button_flags, IPT_BUTTON16,
+                            LIBMAME_CONTROLLERFLAGS_BUTTON_16);
                 break;
             }
         }
     }
     gameinfo->max_simultaneous_players++;
-
-    if (gameinfo->controller_set.normal_button_count) {
-        gameinfo->controller_set.normal_button_names = (const char * const *) 
-            osd_calloc(sizeof(const char *) *
-                       gameinfo->controller_set.normal_button_count);
-    }
 
     const char **normal_button_names = (const char **) 
         gameinfo->controller_set.normal_button_names;
@@ -940,10 +949,6 @@ void LibMame_Games_Deinitialize()
                 }
                 osd_free(gameinfo->settings);
             }
-            if (gameinfo->controller_set.normal_button_names) {
-                osd_free((const char **) 
-                         gameinfo->controller_set.normal_button_names);
-            }
         }
         osd_free(g_gameinfos);
         g_gameinfos = 0;
@@ -1151,7 +1156,7 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum)
 }
 
 
-LibMame_ControllerSetDescriptor LibMame_Get_Game_ControllerSet(int gamenum)
+LibMame_ControllersDescriptor LibMame_Get_Game_Controllers(int gamenum)
 {
     return get_gameinfo(gamenum)->controller_set;
 }
