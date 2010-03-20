@@ -11,6 +11,35 @@
 #include "libmame.h"
 #include <stdio.h>
 
+static void PollAllControllersState(LibMame_AllControllersState *all_states,
+                                    void *callback_data)
+{
+    (void) all_states;
+    (void) callback_data;
+}
+
+void MakeRunningGameCalls(void *callback_data)
+{
+    (void) callback_data;
+}
+
+void UpdateVideo(void *callback_data)
+{
+    (void) callback_data;
+}
+
+void UpdateAudio(void *callback_data)
+{
+    (void) callback_data;
+}
+
+void SetMasterVolume(int attenuation, void *callback_data)
+{
+    (void) attenuation;
+    (void) callback_data;
+}
+
+
 int main(int argc, char **argv)
 {
     printf("LibMame version %s\n", LibMame_Get_Version_String());
@@ -28,7 +57,14 @@ int main(int argc, char **argv)
             return -1;
         }
         else {
-            printf("%s\n", LibMame_Get_Game_Full_Name(gamenum));
+            LibMame_RunGameCallbacks cbs = {
+                &PollAllControllersState,
+                &MakeRunningGameCalls,
+                &UpdateVideo,
+                &UpdateAudio,
+                &SetMasterVolume
+            };
+            (void) LibMame_RunGame(gamenum, &cbs, NULL);
             return 0;
         }
     }
