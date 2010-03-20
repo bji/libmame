@@ -327,11 +327,6 @@ typedef struct LibMame_RunGame_State
      **/
     running_machine *machine;
 
-    /**
-     * This is the virtual keyboard device
-     **/
-    input_device *kbd;
-
 } LibMame_RunGame_State;
 
 
@@ -839,11 +834,13 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     mame_osd_customize_input_type_list_function =
         &libmame_osd_customize_input_type_list;
 
-    /* Set the unfortunate globals */
+    /* Set the unfortunate globals.  Would greatly prefer to allocate a
+       new one of these and pass it to MAME, having it pass it back in the
+       osd_ callbacks. */
     g_state.callbacks = cbs;
     g_state.callback_data = callback_data;
 
-    /* Look up the game number of players and contollers */
+    /* Look up the game number of players and controllers */
     g_state.maximum_player_count =
         LibMame_Get_Game_MaxSimultaneousPlayers(gamenum);
     g_state.perplayer_controllers = 
