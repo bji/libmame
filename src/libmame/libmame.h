@@ -146,12 +146,16 @@ typedef enum
     LibMame_ControllerType_DoubleJoystick8Way,
     LibMame_ControllerType_JoystickAnalog,
     LibMame_ControllerType_Spinner,
+    LibMame_ControllerType_SpinnerVertical,
     LibMame_ControllerType_Paddle,
+    LibMame_ControllerType_PaddleVertical,
     LibMame_ControllerType_Trackball,
     LibMame_ControllerType_Lightgun,
     LibMame_ControllerType_Pedal,
     LibMame_ControllerType_Pedal2,
     LibMame_ControllerType_Pedal3,
+    LibMame_ControllerType_Positional,
+    LibMame_ControllerType_PositionalVertical,
     /* This is not a type, it's the number of entries in this enum */
     LibMame_ControllerTypeCount
 } LibMame_ControllerType;
@@ -470,7 +474,7 @@ typedef struct LibMame_SettingDescriptor
  * player would use to play a game.  All players are assumed to use the same
  * type and number of controls during a multiplayer game.
  **/
-typedef struct LibMame_ControllersDescriptor
+typedef struct LibMame_PerPlayerControllersDescriptor
 {
     /**
      * These are all of the general purpose buttons which are present,
@@ -503,26 +507,36 @@ typedef struct LibMame_ControllersDescriptor
     int gambling_button_flags;
 
     /**
-     * These flags identify which other binary controls are present,
-     * each is indicated in this as (1 << LibMame_OtherButtonType_XXX).
-     **/
-    int other_button_flags;
-
-    /**
      * These flags identify which controllers are present,
      * each is indicated in this as (1 << LibMame_ControllerType_XXX).
      **/
     int controller_flags;
-} LibMame_ControllersDescriptor;
+} LibMame_PerPlayerPerPlayerControllersDescriptor;
 
 
 /**
- * This describes all of the controller values that can be polled by MAME.
- * One structure of this type for each player is passed to the xxx callback
- * function periodically while a game is running to poll the current input.
- * Not all values provided in this structure are used for every game.
+ * This describes the shared controller inputs for a game.  This is a set of
+ * individual controllers comprising the entire set of control inputs that
+ * a game has that are not active play controllers.  All players share these
+ * controllers.
  **/
-typedef struct LibMame_ControllersState
+typedef struct LibMame_SharedControllersDescriptor
+{
+    /**
+     * These flags identify which other binary controls are present,
+     * each is indicated in this as (1 << LibMame_OtherButtonType_XXX).
+     **/
+    int other_button_flags;
+} LibMame_SharedControllersDescriptor;
+
+/**
+ * This describes all of the controller values that can be polled by MAME for
+ * individual players.  One structure of this type for each player is passed
+ * to the xxx callback function periodically while a game is running to poll
+ * the current input.  Not all values provided in this structure are used for
+ * every game.
+ **/
+typedef struct LibMame_PerPlayerControllersState
 {
     /**
      * These are the current states of each normal button; the flag for
@@ -560,15 +574,6 @@ typedef struct LibMame_ControllersState
      **/
     int gambling_buttons_state;
     
-    /**
-     * These are the current states of each other binary input; the flag for
-     * an input being set here means that the input is currently triggered,
-     * not being set means that the input is currently not triggered.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_OtherButtonType_XXX).
-     **/
-    int other_buttons_state;
-
     /**
      * This value is set if the left joystick (or single joystick if the
      * controller has only a single joystick) is in the left, left-up, or
@@ -625,13 +630,20 @@ typedef struct LibMame_ControllersState
      * This value is the current horizontal position of the analog joystick,
      * mapped to a range from -32768 (full left) to 32767 (full right).
      **/
-    int analog_joystick_horizontal_position_state;
+    int analog_joystick_horizontal_state;
 
     /**
      * This value is the current vertical position of the analog joystick,
      * mapped to a range from -32768 (full down) to 32767 (full up).
      **/
-    int analog_joystick_vertical_position_state;
+    int analog_joystick_vertical_state;
+
+    /**
+     * This value is the current position of the analog joystick when measured
+     * in the Z axis, i.e. an altitude, mapped to a range from -32768 (full
+     * down) to 32767 (full up).
+     **/
+    int analog_joystick_altitude_state;
 
     /**
      * This value is the change in position of the spinner since the last
@@ -641,10 +653,23 @@ typedef struct LibMame_ControllersState
     int spinner_delta;
 
     /**
+     * This value is the change in position of the vertical spinner since the
+     * last time it was polled, mapped to a range from -32768 (furthest
+     * possible spin down) to 32767 (furthest possible spin up).
+     **/
+    int spinner_vertical_delta;
+
+    /**
      * This value is the current paddle position, mapped to a range from
      * -32768 (full left) to 32767 (full right).
      **/
     int paddle_state;
+
+    /**
+     * This value is the current vertical paddle position, mapped to a range
+     * from -32768 (full left) to 32767 (full right).
+     **/
+    int paddle_vertical_state;
 
     /**
      * This value is the change in position of the trackball along the
@@ -669,7 +694,7 @@ typedef struct LibMame_ControllersState
      * if present in either lightgun_horizontal_position_state or
      * lightgun_vertical_position_state.
      **/
-    int lightgun_horizontal_position_state;
+    int lightgun_horizontal_state;
 
     /**
      * This value is the current vertical position of the analog joystick,
@@ -678,7 +703,7 @@ typedef struct LibMame_ControllersState
      * if present in either lightgun_horizontal_position_state or
      * lightgun_vertical_position_state.
      **/
-    int lightgun_vertical_position_state;
+    int lightgun_vertical_state;
 
     /**
      * This value is the current paddle position, mapped to a range from
@@ -699,17 +724,69 @@ typedef struct LibMame_ControllersState
     int pedal3_state;
 
     /**
+     * This is some kind of positional input that I don't know what it is.
+     * I assume that the range can be safely mapped from -32768 to 32768.
+     **/
+    int positional_state;
+
+    /**
+     * This is some kind of vertical positional input that I don't know what
+     * it is.  I assume that the range can be safely mapped from -32768 to
+     * 32768.
+     **/
+    int positional_vertical_state;
+
+    /**
      * This is the current UI input.  libmame allows only one UI input at a
      * time.  Its value is one of the LibMame_UiButtonType_XXX values.
      **/
     int ui_input_state;
-} LibMame_ControllersState;
+} LibMame_PerPlayerControllersState;
+
+
+/**
+ * This describes all of the controller values that can be polled by MAME for
+ * controllers that are shared by all players.  Not all values provided in
+ * this structure are used for every game.
+ **/
+typedef struct LibMame_SharedControllersState
+{
+    /**
+     * These are the current states of each other binary input; the flag for
+     * an input being set here means that the input is currently triggered,
+     * not being set means that the input is currently not triggered.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_OtherButtonType_XXX).  These are not duplicated per
+     * player but instead have only one set of buttons shared across all
+     * players.
+     **/
+    int other_buttons_state;
+} LibMame_SharedControllersState;
+
+
+/**
+ * This combines the per-player and the shared controllers state into one
+ * structure representing all states of all controllers.
+ **/
+typedef struct LibMame_AllControllersState
+{
+    /**
+     * This is the per-player controllers states, one per player.  Not all
+     * games use all players.
+     **/
+    LibMame_PerPlayerControllersState per_player[8];
+
+    /**
+     * This is the shared controllers state.
+     **/
+    LibMame_SharedControllersState shared;
+} LibMame_AllControllersState;
 
 
 typedef struct LibMame_RunGameCallbacks
 {
-    void (*PollControllersStates)(LibMame_ControllersState *controllers_states,
-                                  void *callback_data);
+    void (*PollAllControllersState)(LibMame_AllControllersState *all_states,
+                                    void *callback_data);
     void (*MakeRunningGameCalls)(void *callback_data);
     void (*UpdateVideo)(void *callback_data);
     void (*UpdateAudio)(void *callback_data);
@@ -987,13 +1064,26 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum);
 
 
 /**
- * This returns the controllers describing the controllers for a given game.
- * All players are assumed to have the same controllers.
+ * This returns a structure describing the controllers for a given game that
+ * are unique to each player.  All players are assumed to have the same
+ * controllers.
  *
  * @param gamenum is the game number of the game
- * @return the controllers describing the controllers for a given game.
+ * @return a structure describing player controllers for a given game.
  **/
-LibMame_ControllersDescriptor LibMame_Get_Game_Controllers(int gamenum);
+LibMame_PerPlayerControllersDescriptor LibMame_Get_Game_PerPlayerControllers
+    (int gamenum);
+
+
+/**
+ * This returns a structure describing the controllers for a given game that
+ * are shared across all players.
+ *
+ * @param gamenum is the game number of the game
+ * @return a structure describing the shared controllers for a given game.
+ **/
+LibMame_SharedControllersDescriptor LibMame_Get_Game_SharedControllers
+    (int gamenum);
 
 
 /**

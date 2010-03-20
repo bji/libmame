@@ -45,7 +45,8 @@ typedef struct GameInfo
     int setting_count;
     LibMame_SettingDescriptor *settings;
     int max_simultaneous_players;
-    LibMame_ControllersDescriptor controller_set;
+    LibMame_PerPlayerControllersDescriptor perplayer_controllers;
+    LibMame_SharedControllersDescriptor shared_controllers;
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
@@ -468,15 +469,15 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICK_RIGHT:
                 switch (field->way) {
                 case 2:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_JoystickHorizontal);
                     break;
                 case 4:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick4Way);
                     break;
                 default:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick8Way);
                     break;
                 }
@@ -485,15 +486,15 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICK_DOWN:
                 switch (field->way) {
                 case 2:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_JoystickVertical);
                     break;
                 case 4:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick4Way);
                     break;
                 default:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick8Way);
                     break;
                 }
@@ -504,15 +505,15 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICKLEFT_RIGHT:
                 switch (field->way) {
                 case 2:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystickHorizontal);
                     break;
                 case 4:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick4Way);
                     break;
                 default:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick8Way);
                     break;
                 }
@@ -523,71 +524,76 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICKLEFT_DOWN:
                 switch (field->way) {
                 case 2:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystickVertical);
                     break;
                 case 4:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick4Way);
                     break;
                 default:
-                    gameinfo->controller_set.controller_flags |= 
+                    gameinfo->perplayer_controllers.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick8Way);
                     break;
                 }
                 break;
             case IPT_PADDLE:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Paddle);
                 break;
             case IPT_DIAL:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Spinner);
                 break;
             case IPT_TRACKBALL_X:
             case IPT_TRACKBALL_Y:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Trackball);
                 break;
             case IPT_AD_STICK_X:
             case IPT_AD_STICK_Y:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_JoystickAnalog);
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Lightgun);
                 break;
             case IPT_PEDAL:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal);
                 break;
             case IPT_PEDAL2:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal2);
                 break;
             case IPT_PEDAL3:
-                gameinfo->controller_set.controller_flags |= 
+                gameinfo->perplayer_controllers.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal3);
                 break;
 
-#undef CASE_BUTTON
 #define CASE_BUTTON(cs_field, iptname, enumvalue)                       \
             case iptname:                                               \
-                gameinfo->controller_set. cs_field |=                   \
+                gameinfo->perplayer_controllers. cs_field |=            \
                     (1 << enumvalue);                                   \
                 break
                 
-#undef CASE_BUTTON_AND_NAME
 #define CASE_BUTTON_AND_NAME(cs_field, iptname, n, enumvalue)           \
             case iptname:                                               \
-                gameinfo->controller_set. cs_field |=                   \
+                gameinfo->perplayer_controllers. cs_field |=            \
                     (1 << enumvalue);                                   \
-                gameinfo->controller_set.normal_button_names[n] =       \
+                gameinfo->                                              \
+                    perplayer_controllers.normal_button_names[n] =      \
                     field->name;                                        \
                 break
                 
+#define CASE_OTHER_BUTTON(iptname, enumvalue)                           \
+            case iptname:                                               \
+                gameinfo->shared_controllers.other_button_flags |=      \
+                    (1 << enumvalue);                                   \
+                break
+
             CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON1, 0,
                                  LibMame_NormalButtonType_1);
             CASE_BUTTON_AND_NAME(normal_button_flags, IPT_BUTTON2, 1,
@@ -754,58 +760,33 @@ static void convert_controllers(const ioport_list *ioportlist,
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP_ALL,
                         LibMame_GamblingButtonType_Stop_All);
 
-            CASE_BUTTON(other_button_flags, IPT_COIN1,
-                        LibMame_OtherButtonType_Coin1);
-            CASE_BUTTON(other_button_flags, IPT_COIN2,
-                        LibMame_OtherButtonType_Coin2);
-            CASE_BUTTON(other_button_flags, IPT_COIN3,
-                        LibMame_OtherButtonType_Coin3);
-            CASE_BUTTON(other_button_flags, IPT_COIN4,
-                        LibMame_OtherButtonType_Coin4);
-            CASE_BUTTON(other_button_flags, IPT_COIN5,
-                        LibMame_OtherButtonType_Coin5);
-            CASE_BUTTON(other_button_flags, IPT_COIN6,
-                        LibMame_OtherButtonType_Coin6);
-            CASE_BUTTON(other_button_flags, IPT_COIN7,
-                        LibMame_OtherButtonType_Coin7);
-            CASE_BUTTON(other_button_flags, IPT_COIN8,
-                        LibMame_OtherButtonType_Coin8);
-            CASE_BUTTON(other_button_flags, IPT_BILL1,
-                        LibMame_OtherButtonType_Bill1);
-            CASE_BUTTON(other_button_flags, IPT_START1,
-                        LibMame_OtherButtonType_Start1);
-            CASE_BUTTON(other_button_flags, IPT_START2,
-                        LibMame_OtherButtonType_Start2);
-            CASE_BUTTON(other_button_flags, IPT_START3,
-                        LibMame_OtherButtonType_Start3);
-            CASE_BUTTON(other_button_flags, IPT_START4,
-                        LibMame_OtherButtonType_Start4);
-            CASE_BUTTON(other_button_flags, IPT_START5,
-                        LibMame_OtherButtonType_Start5);
-            CASE_BUTTON(other_button_flags, IPT_START6,
-                        LibMame_OtherButtonType_Start6);
-            CASE_BUTTON(other_button_flags, IPT_START7,
-                        LibMame_OtherButtonType_Start7);
-            CASE_BUTTON(other_button_flags, IPT_START8,
-                        LibMame_OtherButtonType_Start8);
-            CASE_BUTTON(other_button_flags, IPT_SERVICE1,
-                        LibMame_OtherButtonType_Service1);
-            CASE_BUTTON(other_button_flags, IPT_SERVICE2,
-                        LibMame_OtherButtonType_Service2);
-            CASE_BUTTON(other_button_flags, IPT_SERVICE3,
-                        LibMame_OtherButtonType_Service3);
-            CASE_BUTTON(other_button_flags, IPT_SERVICE4,
-                        LibMame_OtherButtonType_Service4);
-            CASE_BUTTON(other_button_flags, IPT_SERVICE,
-                        LibMame_OtherButtonType_Service);
-            CASE_BUTTON(other_button_flags, IPT_TILT,
-                        LibMame_OtherButtonType_Tilt);
-            CASE_BUTTON(other_button_flags, IPT_INTERLOCK,
-                        LibMame_OtherButtonType_Interlock);
-            CASE_BUTTON(other_button_flags, IPT_VOLUME_UP,
-                        LibMame_OtherButtonType_Volume_Up);
-            CASE_BUTTON(other_button_flags, IPT_VOLUME_DOWN,
-                        LibMame_OtherButtonType_Volume_Down);
+            CASE_OTHER_BUTTON(IPT_COIN1, LibMame_OtherButtonType_Coin1);
+            CASE_OTHER_BUTTON(IPT_COIN2, LibMame_OtherButtonType_Coin2);
+            CASE_OTHER_BUTTON(IPT_COIN3, LibMame_OtherButtonType_Coin3);
+            CASE_OTHER_BUTTON(IPT_COIN4, LibMame_OtherButtonType_Coin4);
+            CASE_OTHER_BUTTON(IPT_COIN5, LibMame_OtherButtonType_Coin5);
+            CASE_OTHER_BUTTON(IPT_COIN6, LibMame_OtherButtonType_Coin6);
+            CASE_OTHER_BUTTON(IPT_COIN7, LibMame_OtherButtonType_Coin7);
+            CASE_OTHER_BUTTON(IPT_COIN8, LibMame_OtherButtonType_Coin8);
+            CASE_OTHER_BUTTON(IPT_BILL1, LibMame_OtherButtonType_Bill1);
+            CASE_OTHER_BUTTON(IPT_START1, LibMame_OtherButtonType_Start1);
+            CASE_OTHER_BUTTON(IPT_START2, LibMame_OtherButtonType_Start2);
+            CASE_OTHER_BUTTON(IPT_START3, LibMame_OtherButtonType_Start3);
+            CASE_OTHER_BUTTON(IPT_START4, LibMame_OtherButtonType_Start4);
+            CASE_OTHER_BUTTON(IPT_START5, LibMame_OtherButtonType_Start5);
+            CASE_OTHER_BUTTON(IPT_START6, LibMame_OtherButtonType_Start6);
+            CASE_OTHER_BUTTON(IPT_START7, LibMame_OtherButtonType_Start7);
+            CASE_OTHER_BUTTON(IPT_START8, LibMame_OtherButtonType_Start8);
+            CASE_OTHER_BUTTON(IPT_SERVICE1, LibMame_OtherButtonType_Service1);
+            CASE_OTHER_BUTTON(IPT_SERVICE2, LibMame_OtherButtonType_Service2);
+            CASE_OTHER_BUTTON(IPT_SERVICE3, LibMame_OtherButtonType_Service3);
+            CASE_OTHER_BUTTON(IPT_SERVICE4, LibMame_OtherButtonType_Service4);
+            CASE_OTHER_BUTTON(IPT_SERVICE, LibMame_OtherButtonType_Service);
+            CASE_OTHER_BUTTON(IPT_TILT, LibMame_OtherButtonType_Tilt);
+            CASE_OTHER_BUTTON(IPT_INTERLOCK, LibMame_OtherButtonType_Interlock);
+            CASE_OTHER_BUTTON(IPT_VOLUME_UP, LibMame_OtherButtonType_Volume_Up);
+            CASE_OTHER_BUTTON(IPT_VOLUME_DOWN,
+                              LibMame_OtherButtonType_Volume_Down);
             }
         }
     }
@@ -1178,9 +1159,17 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum)
 }
 
 
-LibMame_ControllersDescriptor LibMame_Get_Game_Controllers(int gamenum)
+LibMame_PerPlayerControllersDescriptor LibMame_Get_Game_PerPlayerControllers
+    (int gamenum)
 {
-    return get_gameinfo(gamenum)->controller_set;
+    return get_gameinfo(gamenum)->perplayer_controllers;
+}
+
+
+LibMame_SharedControllersDescriptor LibMame_Get_Game_SharedControllers
+    (int gamenum)
+{
+    return get_gameinfo(gamenum)->shared_controllers;
 }
 
 
