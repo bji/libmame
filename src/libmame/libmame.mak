@@ -43,8 +43,10 @@ LIBMAMEDEPS = $(DRVLIBS) $(LIBMAMEOBJS_STD)
 # The complex filters below do the following:
 # - Include mamedriv.o with its full path
 # then:
-# - For each archive listed in DRVLIBS (filter-out mamedrv.o, which is
-#   bogusly put into DRVLIBS by mame.mak):
+# - For each file listed in DRVLIBS which is an object file (filter %.o),
+#   include it in libmame directly
+# - For each file listed in DRVLIBS which is a library file (filter %.a),
+#   (bogusly put into DRVLIBS by mame.mak):
 #   - Gather the list of objects in the archive.  For each object:
 #     - Find the object in driver, machine, audio, and video obj
 #       subdirectories and include it too
@@ -52,7 +54,7 @@ LIBMAMEDEPS = $(DRVLIBS) $(LIBMAMEOBJS_STD)
 $(LIBMAME_INSTALL)/usr/lib/libmame.a: $(LIBMAMEDEPS)
 		   $(MD) -p `dirname $@`
 		   $(ECHO) Archiving $@...
-		   $(AR) crs $@ $(filter %mamedriv.o,$(DRVLIBS)) $(foreach object,$(foreach archive,$(filter-out %mamedriv.o,$(DRVLIBS)),$(shell ar t $(archive))),$(wildcard $(OBJ)/mame/drivers/$(object)) $(wildcard $(OBJ)/mame/machine/$(object)) $(wildcard $(OBJ)/mame/audio/$(object)) $(wildcard $(OBJ)/mame/video/$(object))) $(LIBMAMEOBJS_STD)
+		   $(AR) crs $@ $(filter %.o,$(DRVLIBS)) $(foreach object,$(foreach archive,$(filter %.a,$(DRVLIBS)),$(shell ar t $(archive))),$(wildcard $(OBJ)/mame/drivers/$(object)) $(wildcard $(OBJ)/mame/machine/$(object)) $(wildcard $(OBJ)/mame/audio/$(object)) $(wildcard $(OBJ)/mame/video/$(object))) $(LIBMAMEOBJS_STD)
 
 $(LIBMAME_INSTALL)/usr/include/libmame.h: $(SRC)/libmame/libmame.h
 			$(MD) -p `dirname $@`
