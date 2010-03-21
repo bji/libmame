@@ -9,7 +9,13 @@
 # romsets supported but builds *alot* faster, which makes it good for testing.
 # Also the above builds for debug.
 
+# Finally you will probably be interested in the test program:
+# DEBUG=1 SYMBOLS=1 SUBTARGET=tiny ./batcab-make libmame-test
+
 NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
+if [ -n "$NUM_PROCESSORS" -o "$NUM_PROCESSORS" = 0 ]; then
+	NUM_PROCESSORS=1
+fi
 
 # MAME makefiles are DUMB and have dependencies on a phony maketree target
 # that causes lots of targets to be rebuilt unnecessarily all of the time.
