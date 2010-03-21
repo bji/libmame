@@ -353,6 +353,222 @@ extern void (*mame_osd_customize_input_type_list_function)
 static LibMame_RunGame_State g_state;
 
 
+static const char *get_ipt_name(int ipt)
+{
+#define CASE_IT(name) case name: return #name
+
+    switch (ipt) {
+        CASE_IT(IPT_UNUSED);
+        CASE_IT(IPT_END);
+        CASE_IT(IPT_UNKNOWN);
+        CASE_IT(IPT_PORT);
+        CASE_IT(IPT_DIPSWITCH);
+        CASE_IT(IPT_VBLANK);
+        CASE_IT(IPT_CONFIG);
+        CASE_IT(IPT_CATEGORY);
+        CASE_IT(IPT_START1);
+        CASE_IT(IPT_START2);
+        CASE_IT(IPT_START3);
+        CASE_IT(IPT_START4);
+        CASE_IT(IPT_START5);
+        CASE_IT(IPT_START6);
+        CASE_IT(IPT_START7);
+        CASE_IT(IPT_START8);
+        CASE_IT(IPT_COIN1);
+        CASE_IT(IPT_COIN2);
+        CASE_IT(IPT_COIN3);
+        CASE_IT(IPT_COIN4);
+        CASE_IT(IPT_COIN5);
+        CASE_IT(IPT_COIN6);
+        CASE_IT(IPT_COIN7);
+        CASE_IT(IPT_COIN8);
+        CASE_IT(IPT_BILL1);
+        CASE_IT(IPT_SERVICE1);
+        CASE_IT(IPT_SERVICE2);
+        CASE_IT(IPT_SERVICE3);
+        CASE_IT(IPT_SERVICE4);
+        CASE_IT(IPT_SERVICE);
+        CASE_IT(IPT_TILT);
+        CASE_IT(IPT_INTERLOCK);
+        CASE_IT(IPT_VOLUME_UP);
+        CASE_IT(IPT_VOLUME_DOWN);
+        CASE_IT(IPT_START);
+        CASE_IT(IPT_SELECT);
+        CASE_IT(IPT_KEYBOARD);
+        CASE_IT(IPT_JOYSTICK_UP);
+        CASE_IT(IPT_JOYSTICK_DOWN);
+        CASE_IT(IPT_JOYSTICK_LEFT);
+        CASE_IT(IPT_JOYSTICK_RIGHT);
+        CASE_IT(IPT_JOYSTICKRIGHT_UP);
+        CASE_IT(IPT_JOYSTICKRIGHT_DOWN);
+        CASE_IT(IPT_JOYSTICKRIGHT_LEFT);
+        CASE_IT(IPT_JOYSTICKRIGHT_RIGHT);
+        CASE_IT(IPT_JOYSTICKLEFT_UP);
+        CASE_IT(IPT_JOYSTICKLEFT_DOWN);
+        CASE_IT(IPT_JOYSTICKLEFT_LEFT);
+        CASE_IT(IPT_JOYSTICKLEFT_RIGHT);
+        CASE_IT(IPT_BUTTON1);
+        CASE_IT(IPT_BUTTON2);
+        CASE_IT(IPT_BUTTON3);
+        CASE_IT(IPT_BUTTON4);
+        CASE_IT(IPT_BUTTON5);
+        CASE_IT(IPT_BUTTON6);
+        CASE_IT(IPT_BUTTON7);
+        CASE_IT(IPT_BUTTON8);
+        CASE_IT(IPT_BUTTON9);
+        CASE_IT(IPT_BUTTON10);
+        CASE_IT(IPT_BUTTON11);
+        CASE_IT(IPT_BUTTON12);
+        CASE_IT(IPT_BUTTON13);
+        CASE_IT(IPT_BUTTON14);
+        CASE_IT(IPT_BUTTON15);
+        CASE_IT(IPT_BUTTON16);
+        CASE_IT(IPT_MAHJONG_A);
+        CASE_IT(IPT_MAHJONG_B);
+        CASE_IT(IPT_MAHJONG_C);
+        CASE_IT(IPT_MAHJONG_D);
+        CASE_IT(IPT_MAHJONG_E);
+        CASE_IT(IPT_MAHJONG_F);
+        CASE_IT(IPT_MAHJONG_G);
+        CASE_IT(IPT_MAHJONG_H);
+        CASE_IT(IPT_MAHJONG_I);
+        CASE_IT(IPT_MAHJONG_J);
+        CASE_IT(IPT_MAHJONG_K);
+        CASE_IT(IPT_MAHJONG_L);
+        CASE_IT(IPT_MAHJONG_M);
+        CASE_IT(IPT_MAHJONG_N);
+        CASE_IT(IPT_MAHJONG_O);
+        CASE_IT(IPT_MAHJONG_P);
+        CASE_IT(IPT_MAHJONG_Q);
+        CASE_IT(IPT_MAHJONG_KAN);
+        CASE_IT(IPT_MAHJONG_PON);
+        CASE_IT(IPT_MAHJONG_CHI);
+        CASE_IT(IPT_MAHJONG_REACH);
+        CASE_IT(IPT_MAHJONG_RON);
+        CASE_IT(IPT_MAHJONG_BET);
+        CASE_IT(IPT_MAHJONG_LAST_CHANCE);
+        CASE_IT(IPT_MAHJONG_SCORE);
+        CASE_IT(IPT_MAHJONG_DOUBLE_UP);
+        CASE_IT(IPT_MAHJONG_FLIP_FLOP);
+        CASE_IT(IPT_MAHJONG_BIG);
+        CASE_IT(IPT_MAHJONG_SMALL);
+        CASE_IT(IPT_HANAFUDA_A);
+        CASE_IT(IPT_HANAFUDA_B);
+        CASE_IT(IPT_HANAFUDA_C);
+        CASE_IT(IPT_HANAFUDA_D);
+        CASE_IT(IPT_HANAFUDA_E);
+        CASE_IT(IPT_HANAFUDA_F);
+        CASE_IT(IPT_HANAFUDA_G);
+        CASE_IT(IPT_HANAFUDA_H);
+        CASE_IT(IPT_HANAFUDA_YES);
+        CASE_IT(IPT_HANAFUDA_NO);
+        CASE_IT(IPT_GAMBLE_HIGH);
+        CASE_IT(IPT_GAMBLE_LOW);
+        CASE_IT(IPT_GAMBLE_HALF);
+        CASE_IT(IPT_GAMBLE_DEAL);
+        CASE_IT(IPT_GAMBLE_D_UP);
+        CASE_IT(IPT_GAMBLE_TAKE);
+        CASE_IT(IPT_GAMBLE_STAND);
+        CASE_IT(IPT_GAMBLE_BET);
+        CASE_IT(IPT_GAMBLE_KEYIN);
+        CASE_IT(IPT_GAMBLE_KEYOUT);
+        CASE_IT(IPT_GAMBLE_PAYOUT);
+        CASE_IT(IPT_GAMBLE_DOOR);
+        CASE_IT(IPT_GAMBLE_SERVICE);
+        CASE_IT(IPT_GAMBLE_BOOK);
+        CASE_IT(IPT_POKER_HOLD1);
+        CASE_IT(IPT_POKER_HOLD2);
+        CASE_IT(IPT_POKER_HOLD3);
+        CASE_IT(IPT_POKER_HOLD4);
+        CASE_IT(IPT_POKER_HOLD5);
+        CASE_IT(IPT_POKER_CANCEL);
+        CASE_IT(IPT_POKER_BET);
+        CASE_IT(IPT_SLOT_STOP1);
+        CASE_IT(IPT_SLOT_STOP2);
+        CASE_IT(IPT_SLOT_STOP3);
+        CASE_IT(IPT_SLOT_STOP4);
+        CASE_IT(IPT_SLOT_STOP_ALL);
+        CASE_IT(IPT_PADDLE);
+        CASE_IT(IPT_PADDLE_V);
+        CASE_IT(IPT_AD_STICK_X);
+        CASE_IT(IPT_AD_STICK_Y);
+        CASE_IT(IPT_AD_STICK_Z);
+        CASE_IT(IPT_LIGHTGUN_X);
+        CASE_IT(IPT_LIGHTGUN_Y);
+        CASE_IT(IPT_PEDAL);
+        CASE_IT(IPT_PEDAL2);
+        CASE_IT(IPT_PEDAL3);
+        CASE_IT(IPT_POSITIONAL);
+        CASE_IT(IPT_POSITIONAL_V);
+        CASE_IT(IPT_DIAL);
+        CASE_IT(IPT_DIAL_V);
+        CASE_IT(IPT_TRACKBALL_X);
+        CASE_IT(IPT_TRACKBALL_Y);
+        CASE_IT(IPT_MOUSE_X);
+        CASE_IT(IPT_MOUSE_Y);
+        CASE_IT(IPT_ADJUSTER);
+        CASE_IT(IPT_UI_CONFIGURE);
+        CASE_IT(IPT_UI_ON_SCREEN_DISPLAY);
+        CASE_IT(IPT_UI_DEBUG_BREAK);
+        CASE_IT(IPT_UI_PAUSE);
+        CASE_IT(IPT_UI_RESET_MACHINE);
+        CASE_IT(IPT_UI_SOFT_RESET);
+        CASE_IT(IPT_UI_SHOW_GFX);
+        CASE_IT(IPT_UI_FRAMESKIP_DEC);
+        CASE_IT(IPT_UI_FRAMESKIP_INC);
+        CASE_IT(IPT_UI_THROTTLE);
+        CASE_IT(IPT_UI_FAST_FORWARD);
+        CASE_IT(IPT_UI_SHOW_FPS);
+        CASE_IT(IPT_UI_SNAPSHOT);
+        CASE_IT(IPT_UI_RECORD_MOVIE);
+        CASE_IT(IPT_UI_TOGGLE_CHEAT);
+        CASE_IT(IPT_UI_UP);
+        CASE_IT(IPT_UI_DOWN);
+        CASE_IT(IPT_UI_LEFT);
+        CASE_IT(IPT_UI_RIGHT);
+        CASE_IT(IPT_UI_HOME);
+        CASE_IT(IPT_UI_END);
+        CASE_IT(IPT_UI_PAGE_UP);
+        CASE_IT(IPT_UI_PAGE_DOWN);
+        CASE_IT(IPT_UI_SELECT);
+        CASE_IT(IPT_UI_CANCEL);
+        CASE_IT(IPT_UI_DISPLAY_COMMENT);
+        CASE_IT(IPT_UI_CLEAR);
+        CASE_IT(IPT_UI_ZOOM_IN);
+        CASE_IT(IPT_UI_ZOOM_OUT);
+        CASE_IT(IPT_UI_PREV_GROUP);
+        CASE_IT(IPT_UI_NEXT_GROUP);
+        CASE_IT(IPT_UI_ROTATE);
+        CASE_IT(IPT_UI_SHOW_PROFILER);
+        CASE_IT(IPT_UI_TOGGLE_UI);
+        CASE_IT(IPT_UI_TOGGLE_DEBUG);
+        CASE_IT(IPT_UI_PASTE);
+        CASE_IT(IPT_UI_SAVE_STATE);
+        CASE_IT(IPT_UI_LOAD_STATE);
+        CASE_IT(IPT_OSD_1);
+        CASE_IT(IPT_OSD_2);
+        CASE_IT(IPT_OSD_3);
+        CASE_IT(IPT_OSD_4);
+        CASE_IT(IPT_OSD_5);
+        CASE_IT(IPT_OSD_6);
+        CASE_IT(IPT_OSD_7);
+        CASE_IT(IPT_OSD_8);
+        CASE_IT(IPT_OSD_9);
+        CASE_IT(IPT_OSD_10);
+        CASE_IT(IPT_OSD_11);
+        CASE_IT(IPT_OSD_12);
+        CASE_IT(IPT_OSD_13);
+        CASE_IT(IPT_OSD_14);
+        CASE_IT(IPT_OSD_15);
+        CASE_IT(IPT_OSD_16);
+        CASE_IT(IPT_OTHER);
+        CASE_IT(IPT_SPECIAL);
+        CASE_IT(IPT_OUTPUT);
+    }
+
+    return "UNKNOWN";
+}
+
 /**
  * This is the callback we hook up to the input device that MAME uses
  * to be called back to get the state of a controller input.  We also
@@ -364,6 +580,10 @@ static INT32 get_controller_state(void *, void *data)
 {
     int player = CBDATA_PLAYER(data);
     int ipt_type = CBDATA_IPT(data);
+
+    printf("get_controller_state for player %d, input %s\n", player,
+           get_ipt_name(ipt_type));
+
     if (ipt_type >= g_input_descriptor_count) {
         /* This is weird, we're being asked for something bogus */
         return 0;
@@ -444,7 +664,13 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_mouse_y:
         return perplayer_state->mouse_y_state;
     case libmame_input_type_Ui_button:
-        return perplayer_state->ui_input_state;
+        /* TEMPORARY TESTING just to get past their UI */
+#if 0
+        return (perplayer_state->ui_input_state == input_number);
+#else
+        return ((input_number == LibMame_UiButtonType_Left) ||
+                input_number == LibMame_UiButtonType_Right);
+#endif
     }
 
     /* Weird, this is not an input type that we know about */
@@ -806,6 +1032,7 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
         }
 
         if (item_device) {
+            printf("Registering %s\n", typedesc->token);
             input_device_item_add
                 (item_device, "", 
                  (void *) CBDATA_MAKE(typedesc->player, typedesc->type), 
