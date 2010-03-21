@@ -633,6 +633,15 @@ static void libmame_osd_update(running_machine *machine, int skip_redraw)
      * And ask the callbacks to update the video
      **/
     (*(g_state.callbacks->UpdateVideo))(g_state.callback_data);
+
+    /* TESTING */
+    static int exit_count = 0;
+    if (++exit_count == 1000) {
+		mame_schedule_exit(machine);
+    }
+    else if ((exit_count % 50) == 0) {
+        printf("exit_count is now %d\n", exit_count);
+    }
 }
 
 
@@ -676,8 +685,8 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
      **/
 	input_type_desc *typedesc;
     input_device *item_device;
-    input_item_id item_id;
-    int input_code;
+    input_item_id item_id = ITEM_ID_INVALID;
+    int input_code = 0;
 
     /**
      * New keyboards are created as we run out of keys; the only keys we
