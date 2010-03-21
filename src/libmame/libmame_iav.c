@@ -445,13 +445,7 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_mouse_y:
         return perplayer_state->mouse_y_state;
     case libmame_input_type_Ui_button:
-        /* TEMPORARY TESTING just to get past their UI */
-#if 0
         return (perplayer_state->ui_input_state == input_number);
-#else
-        return ((input_number == LibMame_UiButtonType_Left) ||
-                input_number == LibMame_UiButtonType_Right);
-#endif
     }
 
     /* Weird, this is not an input type that we know about */
@@ -606,7 +600,7 @@ static void libmame_osd_init(running_machine *machine)
     /**
      * Create the display
      **/
-    /* TEMPORARY for testing */
+    /* TEMPORARY FOR TESTING */
     (void) render_target_alloc(g_state.machine, NULL, 0);
 }
 
@@ -634,7 +628,7 @@ static void libmame_osd_update(running_machine *machine, int skip_redraw)
      **/
     (*(g_state.callbacks->UpdateVideo))(g_state.callback_data);
 
-    /* TESTING */
+    /* TEMPORARY FOR TESTING */
     static int exit_count = 0;
     if (++exit_count == 1000) {
 		mame_schedule_exit(machine);
