@@ -144,6 +144,11 @@ typedef struct LibMame_RunGame_State
      **/
     running_machine *machine;
 
+    /**
+     * This is the render target for the game
+     **/
+    render_target *target;
+
 } LibMame_RunGame_State;
 
 
@@ -479,7 +484,7 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_mouse_y:
         return perplayer_state->mouse_y_state;
     case libmame_input_type_Ui_button:
-        return (perplayer_state->ui_input_state == input_number);
+        return (shared_state->ui_input_state == input_number);
     }
 
     /* Weird, this is not an input type that we know about */
@@ -639,7 +644,7 @@ static void libmame_osd_init(running_machine *machine)
      * Create the render_target that tells MAME the rendering parameters it
      * will use.
      **/
-    render_target *target = render_target_alloc(g_state.machine, NULL, 0);
+    g_state.target = render_target_alloc(g_state.machine, NULL, 0);
 
     /* Set it up to be the same size as the game's original display, if it's
        a raster display; then any stretching to the actual display hardware
@@ -648,7 +653,7 @@ static void libmame_osd_init(running_machine *machine)
         LibMame_ScreenType_Vector) {
         LibMame_ScreenResolution res = LibMame_Get_Game_ScreenResolution
             (g_state.gamenum);
-        render_target_set_bounds(target, res.width, res.height, 0.0);
+        render_target_set_bounds(g_state.target, res.width, res.height, 0.0);
     }
 }
 
@@ -662,28 +667,27 @@ static void libmame_osd_update(running_machine *machine, int skip_redraw)
            sizeof(LibMame_PerPlayerControllersState) * 
            g_state.maximum_player_count);
     g_state.controllers_state.shared.other_buttons_state = 0;
+    g_state.controllers_state.shared.ui_input_state = 0;
 
     (*(g_state.callbacks->PollAllControllersState))
         (&(g_state.controllers_state), g_state.callback_data);
 
     /**
+     * Ask the callbacks to update the video.  For now, assume that there
+     * is only one display.  Might want to support multiple displays in the
+     * future.
+     **/
+    const render_primitive_list *list = 
+        render_target_get_primitives(g_state.target);
+    osd_lock_acquire(list->lock);
+    (*(g_state.callbacks->UpdateVideo))((LibMame_RenderPrimitive *) list->head,
+                                        g_state.callback_data);
+    osd_lock_release(list->lock);
+
+    /**
      * Give the callbacks a chance to make running game calls
      **/
     (*(g_state.callbacks->MakeRunningGameCalls))(g_state.callback_data);
-
-    /**
-     * And ask the callbacks to update the video
-     **/
-    (*(g_state.callbacks->UpdateVideo))(g_state.callback_data);
-
-    /* TESTING */
-    static int update_count = 0;
-    if (++update_count == 10000) {
-        mame_schedule_exit(machine);
-    }
-    else if ((update_count % 50) == 0) {
-        printf("update_count %d\n", update_count);
-    }
 }
 
 
@@ -694,7 +698,8 @@ static void libmame_osd_update_audio_stream(running_machine *machine,
     /**
      * Ask the callbacks to update the audio
      **/
-    (*(g_state.callbacks->UpdateAudio))(g_state.callback_data);
+    (*(g_state.callbacks->UpdateAudio))(buffer, samples_this_frame,
+                                        g_state.callback_data);
 }
 
 

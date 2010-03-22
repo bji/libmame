@@ -9,6 +9,7 @@
 #ifndef __LIBMAME_H__
 #define __LIBMAME_H__
 
+#include <stdint.h>
 
 /** **************************************************************************
  * Preprocessor definitions - constants
@@ -713,19 +714,19 @@ typedef struct LibMame_PerPlayerControllersState
 
     /**
      * This value is the current paddle position, mapped to a range from
-     * 0 (not pressed) to 65535 (fully pressed).
+     * -65536 (not pressed) to 65536 (fully pressed).
      **/
     int pedal_state;
 
     /**
      * This value is the current second pedal position, mapped to a range from
-     * 0 (not pressed) to 65535 (fully pressed).
+     * -65536 (not pressed) to 65536 (fully pressed).
      **/
     int pedal2_state;
 
     /**
      * This value is the current third pedal position, mapped to a range from
-     * 0 (not pressed) to 65535 (fully pressed).
+     * -65536 (not pressed) to 65536 (fully pressed).
      **/
     int pedal3_state;
 
@@ -750,12 +751,6 @@ typedef struct LibMame_PerPlayerControllersState
      * Mouse Y screen coordinate.
      **/
     int mouse_y_state;
-
-    /**
-     * This is the current UI input.  libmame allows only one UI input at a
-     * time.  Its value is one of the LibMame_UiButtonType_XXX values.
-     **/
-    int ui_input_state;
 } LibMame_PerPlayerControllersState;
 
 
@@ -776,6 +771,12 @@ typedef struct LibMame_SharedControllersState
      * players.
      **/
     int other_buttons_state;
+
+    /**
+     * This is the current UI input.  libmame allows only one UI input at a
+     * time.  Its value is one of the LibMame_UiButtonType_XXX values.
+     **/
+    int ui_input_state;
 } LibMame_SharedControllersState;
 
 
@@ -902,13 +903,85 @@ typedef struct LibMame_RunGameOptions
 } LibMame_RunGameOptions;
 
 
+typedef enum
+{
+    LibMame_RenderPrimitiveType_Line,
+    LibMame_RenderPrimitiveType_Quad
+} LibMame_RenderPrimitiveType;
+
+
+#define LIBMAME_RENDERFLAGS_TEXORIENT_SHIFT_MASK 0x000F
+#define LIBMAME_RENDERFLAGS_TEXFORMAT_SHIFT_MASK 0x00F0
+#define LIBMAME_RENDERFLAGS_TEXFORMAT_BLENDMODE_MASK 0x0F00
+#define LIBMAME_RENDERFLAGS_ANTIALIAS_FLAG 0x1000
+#define LIBMAME_RENDERFLAGS_SCREENTEX_FLAG 0x2000
+#define LIBMAME_RENDERFLAGS_TEXWRAP_FLAG 0x4000
+
+
+typedef struct LibMame_RenderPrimitive
+{
+    LibMame_RenderPrimitive *next;
+    LibMame_RenderPrimitiveType type;
+    struct {
+        float x0;   /* leftmost X coordinate */
+        float y0;   /* topmost Y coordinate */
+        float x1;   /* rightmost X coordinate */
+        float y1;   /* bottommost Y coordinate */
+    } bounds;
+    struct {
+        float a;    /* alpha component (0.0 = transparent, 1.0 = opaque) */
+        float r;    /* red component (0.0 = none, 1.0 = max) */
+        float g;    /* green component (0.0 = none, 1.0 = max) */
+        float b;    /* blue component (0.0 = none, 1.0 = max) */
+    } color;
+    uint32_t flags;
+    float width;    /* for line primitives */
+    struct {
+        void *base;           /* base of the data */
+        uint32_t rowpixels;   /* pixels per row */
+        uint32_t width;       /* width of the image */
+        uint32_t height;      /* height of the image */
+        const rgb_t *palette; /* palette for PALETTE16 textures,
+                                 LUTs for RGB15/RGB32 */
+        uint32_t seqid;       /* sequence ID */
+    } texture;
+    struct 
+    {
+        struct {
+            float u, v;
+        } top_left;         /* top-left UV coordinate */
+        struct {
+            float u, v;
+        } top_right;        /* top-right UV coordinate */
+        struct {
+            float u, v;
+        } bottom_left;      /* bottom-left UV coordinate */
+        struct {
+            float u, v;
+        } bottom_right;     /* bottom-right UV coordinate */
+    } quad_texuv;
+} LibMame_RenderPrimitive;
+
+
 typedef struct LibMame_RunGameCallbacks
 {
     void (*PollAllControllersState)(LibMame_AllControllersState *all_states,
                                     void *callback_data);
     void (*MakeRunningGameCalls)(void *callback_data);
-    void (*UpdateVideo)(void *callback_data);
-    void (*UpdateAudio)(void *callback_data);
+    void (*UpdateVideo)(const LibMame_RenderPrimitive *render_primitive_list,
+                        void *callback_data);
+    void (*UpdateAudio)(int16_t *buffer, int samples_this_frame,
+                        void *callback_data);
+    /**
+     * Attenuation is the attenuation in dB (a negative number). To convert
+     * from dB to a linear volume scale do the following:
+     *
+     * volume = MAX_VOLUME;
+     * while (attenuation++ < 0)
+     *     volume /= 1.122018454;      //  = (10 ^ (1/20)) = 1dB
+     * 
+     * @param attenuation is the attenuation in dB (a negative number). 
+     **/
     void (*SetMasterVolume)(int attenuation, void *callback_data);
 } LibMame_RunGameCallbacks;
 
@@ -1221,13 +1294,15 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
  **/
 void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
 
+
 /**
  * TODO: Functions for getting descriptions of all of the ROMs that a
  * game needs (possibly also for specially identifying BIOS ROMs)
  **/
 
 /**
- * Runs a game.  More documentation needed here.
+ * Runs a game.  This is a non-thread-safe call, so only one thread can be
+ * running this at a time.  More documentation needed here.
  *
  * @param gamenum is the game number of the game to run
  * @param options if non-NULL, provides the options that the game will be run

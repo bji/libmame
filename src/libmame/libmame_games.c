@@ -1029,7 +1029,7 @@ const char *LibMame_Get_Game_Full_Name(int gamenum)
 }
 
 
-int LibMame_Get_Game_Year_Of_Release(int gamenum)
+int32_t LibMame_Get_Game_Year_Of_Release(int gamenum)
 {
     return get_gameinfo(gamenum)->year_of_release;
 }

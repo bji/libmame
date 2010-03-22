@@ -15,7 +15,16 @@
 static void PollAllControllersState(LibMame_AllControllersState *all_states,
                                     void *callback_data)
 {
-    (void) all_states;
+    static int frame = 0;
+    int which = ++frame % 60;
+    if (which < 4) {
+        all_states->shared.other_buttons_state |=
+            (1 << LibMame_OtherButtonType_Coin1);
+    }
+    else if (which < 8) {
+        all_states->shared.other_buttons_state |=
+            (1 << LibMame_OtherButtonType_Start1);
+    }
     (void) callback_data;
 }
 
@@ -24,12 +33,24 @@ void MakeRunningGameCalls(void *callback_data)
     (void) callback_data;
 }
 
-void UpdateVideo(void *callback_data)
+void UpdateVideo(const LibMame_RenderPrimitive *prims, void *callback_data)
 {
+    (void) prims;
     (void) callback_data;
+
+#if 0
+    /* TESTING */
+    static int update_count = 0;
+    if (++update_count == 10000) {
+        mame_schedule_exit(machine);
+    }
+    else if ((update_count % 50) == 0) {
+        printf("update_count %d\n", update_count);
+    }
+#endif
 }
 
-void UpdateAudio(void *callback_data)
+void UpdateAudio(int16_t *buffer, int samples_this_frame, void *callback_data)
 {
     (void) callback_data;
 }
@@ -434,5 +455,5 @@ int main(int argc, char **argv)
 
     LibMame_Deinitialize();
 
-    return ret;
+    return 0;
 }
