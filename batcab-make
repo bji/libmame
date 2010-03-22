@@ -13,7 +13,7 @@
 # DEBUG=1 SYMBOLS=1 SUBTARGET=tiny ./batcab-make libmame-test
 
 NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
-if [ -n "$NUM_PROCESSORS" -o "$NUM_PROCESSORS" = 0 ]; then
+if [ -z "$NUM_PROCESSORS" -o "$NUM_PROCESSORS" = 0 ]; then
 	NUM_PROCESSORS=1
 fi
 

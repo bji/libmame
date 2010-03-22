@@ -941,8 +941,8 @@ typedef struct LibMame_RenderPrimitive
         uint32_t rowpixels;   /* pixels per row */
         uint32_t width;       /* width of the image */
         uint32_t height;      /* height of the image */
-        const rgb_t *palette; /* palette for PALETTE16 textures,
-                                 LUTs for RGB15/RGB32 */
+        const uint32_t *palette; /* palette for PALETTE16 textures,
+                                    LUTs for RGB15/RGB32 */
         uint32_t seqid;       /* sequence ID */
     } texture;
     struct 
@@ -962,6 +962,18 @@ typedef struct LibMame_RenderPrimitive
     } quad_texuv;
 } LibMame_RenderPrimitive;
 
+/**
+ * Running Game calls:
+ * mame_pause(machine, TRUE) -> LibMame_RunningGame_Pause();
+ * mame_pause(machine, FALSE) -> LibMame_RunningGame_UnPause();
+ * void mame_schedule_exit(running_machine *machine);
+ * void mame_schedule_hard_reset(running_machine *machine);
+ * void mame_schedule_soft_reset(running_machine *machine);
+ * void mame_schedule_save(running_machine *machine, const char *filename);
+ * void mame_schedule_load(running_machine *machine, const char *filename);
+ *
+ * Additionally, stuff to change settings (configs, dipswitches, actuators)
+ **/
 
 typedef struct LibMame_RunGameCallbacks
 {

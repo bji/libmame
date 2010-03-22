@@ -22,20 +22,6 @@
  ************************************************************************** **/
 
 /**
- * These are defined by the POSIX OSD implementation, and are meant to be
- * replaced when a game is run.
- **/
-extern void (*mame_osd_init_function)(running_machine *machine);
-extern void (*mame_osd_update_function)(running_machine *machine,
-                                        int skip_redraw);
-extern void (*mame_osd_update_audio_stream_function)(running_machine *machine,
-                                                     INT16 *buffer,
-                                                     int samples_this_frame);
-extern void (*mame_osd_set_mastervolume_function)(int attenuation);
-extern void (*mame_osd_customize_input_type_list_function)
-    (input_type_desc *typelist);
-
-/**
  * These are exported by other source files within libmame itself
  **/
 extern core_options *get_mame_options(const LibMame_RunGameOptions *options,
@@ -629,14 +615,13 @@ static bool controllers_have_input
 
 
 /** **************************************************************************
- * Static OSD function implementations
+ * Static MAME OSD function implementations
  ************************************************************************** **/
 
-static void libmame_osd_init(running_machine *machine)
+void osd_init(running_machine *machine)
 {
     /**
-     *  Save away the machine, we'll need it in 
-     * libmame_osd_customize_input_type_list
+     *  Save away the machine, we'll need it in osd_customize_input_type_list
      **/
     g_state.machine = machine;
 
@@ -658,7 +643,7 @@ static void libmame_osd_init(running_machine *machine)
 }
 
 
-static void libmame_osd_update(running_machine *machine, int skip_redraw)
+void osd_update(running_machine *machine, int skip_redraw)
 {
     /**
      * Poll input
@@ -691,9 +676,8 @@ static void libmame_osd_update(running_machine *machine, int skip_redraw)
 }
 
 
-static void libmame_osd_update_audio_stream(running_machine *machine,
-                                            INT16 *buffer,
-                                            int samples_this_frame)
+void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
+                             int samples_this_frame)
 {
     /**
      * Ask the callbacks to update the audio
@@ -703,7 +687,7 @@ static void libmame_osd_update_audio_stream(running_machine *machine,
 }
 
 
-static void libmame_osd_set_mastervolume(int attenuation)
+void osd_set_mastervolume(int attenuation)
 {
     (*(g_state.callbacks->SetMasterVolume))(attenuation, g_state.callback_data);
 }
@@ -722,7 +706,7 @@ static void libmame_osd_set_mastervolume(int attenuation)
  * whatever they want to satisfy getting inputs for the various controllers
  * types.
  **/
-static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
+void osd_customize_input_type_list(input_type_desc *typelist)
 {
     /**
      * For each input descriptor, create a keyboard key, or mouse axis, or
@@ -910,16 +894,6 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
                                       const LibMame_RunGameCallbacks *cbs,
                                       void *callback_data)
 {
-    /* Ensure that the OSD callbacks are set up.  This may be redundant if
-       LibMame_RunGame() was called previously, but will be a harmless no-op
-       in that case. */
-    mame_osd_init_function = &libmame_osd_init;
-    mame_osd_update_function = &libmame_osd_update;
-    mame_osd_update_audio_stream_function = &libmame_osd_update_audio_stream;
-    mame_osd_set_mastervolume_function = &libmame_osd_set_mastervolume;
-    mame_osd_customize_input_type_list_function =
-        &libmame_osd_customize_input_type_list;
-
     if (gamenum >= LibMame_Get_Game_Count()) {
         return LibMame_RunGameStatus_InvalidGameNum;
     }

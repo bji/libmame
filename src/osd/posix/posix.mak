@@ -15,7 +15,6 @@ OBJDIRS += $(OSDLIBOBJ)
 OSDCOREOBJS = \
     $(OSDLIBOBJ)/osd_directory.o \
     $(OSDLIBOBJ)/osd_file.o \
-    $(OSDLIBOBJ)/osd_iav.o \
     $(OSDLIBOBJ)/osd_lock.o \
     $(OSDLIBOBJ)/osd_misc.o \
     $(OSDLIBOBJ)/osd_util.o \
