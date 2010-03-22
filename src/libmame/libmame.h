@@ -365,7 +365,12 @@ typedef enum
 typedef enum
 {
     LibMame_RunGameStatus_Success,
-    LibMame_RunGameStatus_InvalidGameNum
+    LibMame_RunGameStatus_InvalidGameNum,
+    LibMame_RunGameStatus_FailedValidtyCheck,
+    LibMame_RunGameStatus_MissingFiles,
+    LibMame_RunGameStatus_NoSuchGame,
+    LibMame_RunGameStatus_InvalidConfig,
+    LibMame_RunGameStatus_GeneralError
 } LibMame_RunGameStatus;
 
 
@@ -799,9 +804,6 @@ typedef struct LibMame_AllControllersState
  **/
 typedef struct LibMame_RunGameOptions
 {
-    /* enable loading of configuration files, default is true */
-    bool read_config;
-
     /* search paths for files of specific types; of the form DIR1;DIR2;... */
     /* these files are only ever read by MAME */
     char rom_path[1024]; /* default is "roms" */
@@ -815,7 +817,6 @@ typedef struct LibMame_RunGameOptions
 
     /* single directories for files of specific types.  These files are read
        and written by MAME. */
-    char config_directory[256]; /* default is "cfg" */
     char nvram_directory[256]; /* default is "nvram" */
     char memcard_directory[256]; /* default is "memcard" */
     char input_directory[256]; /* default is "inp" */
@@ -842,7 +843,7 @@ typedef struct LibMame_RunGameOptions
     bool throttle;
     bool sleep;
     float speed_multiplier;
-    bool refresh_speed;
+    bool auto_refresh_speed;
 
     /* core rotation/flip options */
     bool rotate;
@@ -878,7 +879,6 @@ typedef struct LibMame_RunGameOptions
 
     /* core input options */
     bool coin_lockout;
-    char controller_config_file_name[256];
     char joystick_map[32];
     float joystick_deadzone;
     float joystick_saturation;

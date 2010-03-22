@@ -1,7 +1,7 @@
 /** **************************************************************************
- * libmame_iav.c
+ * libmame_rungame.c
  *
- * LibMame Input, Audio, and Video function implementations.
+ * LibMame RunGame implementation.
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
@@ -9,17 +9,41 @@
  ************************************************************************** **/
 
 #include "emu.h"
+#include "osdcore.h"
+#include "osdepend.h"
+#include "render.h"
+#include "libmame.h"
+#include <stddef.h>
+#include <string.h>
+
+
+/** **************************************************************************
+ * External symbol references
+ ************************************************************************** **/
 
 /**
- * This is a packed representation of everything necessary to identify the
- * controller that MAME is asking about.
+ * These are defined by the POSIX OSD implementation, and are meant to be
+ * replaced when a game is run.
  **/
-#define CBDATA_PLAYER_MASK              0x000F
-#define CBDATA_IPT_MASK                 0xFFF0
-#define CBDATA_PLAYER(d)                (((long) d) & CBDATA_PLAYER_MASK)
-#define CBDATA_IPT(d)                   ((((long) d) & CBDATA_IPT_MASK) >> 8)
-#define CBDATA_MAKE(player, ipt)        (((player) & CBDATA_PLAYER_MASK) | \
-                                         ((ipt << 8) & CBDATA_IPT_MASK))
+extern void (*mame_osd_init_function)(running_machine *machine);
+extern void (*mame_osd_update_function)(running_machine *machine,
+                                        int skip_redraw);
+extern void (*mame_osd_update_audio_stream_function)(running_machine *machine,
+                                                     INT16 *buffer,
+                                                     int samples_this_frame);
+extern void (*mame_osd_set_mastervolume_function)(int attenuation);
+extern void (*mame_osd_customize_input_type_list_function)
+    (input_type_desc *typelist);
+
+/**
+ * These are exported by other source files within libmame itself
+ **/
+extern core_options *get_mame_options(const LibMame_RunGameOptions *options);
+
+
+/** **************************************************************************
+ * Enumeration Type Definition
+ ************************************************************************** **/
 
 typedef enum
 {
@@ -58,6 +82,11 @@ typedef enum
     libmame_input_type_Ui_button
 } libmame_input_type;
 
+
+/** **************************************************************************
+ * Structured Type Definitions
+ ************************************************************************** **/
+
 /**
  * Each IPT_ input port type has a corresponding entry in a table here that
  * provides enough details about that IPT_ entry to locate its state value
@@ -74,6 +103,64 @@ typedef struct libmame_input_descriptor
 } libmame_input_descriptor;
 
 
+/**
+ * This encapsulates all of the state that LibMame keeps track of during
+ * LibMame_RunGame().
+ **/
+typedef struct LibMame_RunGame_State
+{
+    /**
+     * These are the callbacks that were provided to LibMame_RunGame.
+     **/
+    const LibMame_RunGameCallbacks *callbacks;
+
+    /**
+     * This is the callback data that was provided to LibMame_RunGame.
+     **/
+    void *callback_data;
+
+    /**
+     * This is the number of the game being played
+     **/
+    int gamenum;
+
+    /**
+     * These describe the maximum number of players, and the controllers
+     * that they use.
+     **/
+    int maximum_player_count;
+    LibMame_PerPlayerControllersDescriptor perplayer_controllers;
+    LibMame_SharedControllersDescriptor shared_controllers;
+
+    /**
+     * This is the controllers state used to query the controllers state via
+     * the callback provided in the callbacks structure.
+     **/
+    LibMame_AllControllersState controllers_state;
+
+    /**
+     * This is the running machine that this state is associated with
+     **/
+    running_machine *machine;
+
+} LibMame_RunGame_State;
+
+
+/** **************************************************************************
+ * Helper Macros
+ ************************************************************************** **/
+
+/**
+ * This is a packed representation of everything necessary to identify the
+ * controller that MAME is asking about.
+ **/
+#define CBDATA_PLAYER_MASK              0x000F
+#define CBDATA_IPT_MASK                 0xFFF0
+#define CBDATA_PLAYER(d)                (((long) d) & CBDATA_PLAYER_MASK)
+#define CBDATA_IPT(d)                   ((((long) d) & CBDATA_IPT_MASK) >> 8)
+#define CBDATA_MAKE(player, ipt)        (((player) & CBDATA_PLAYER_MASK) | \
+                                         ((ipt << 8) & CBDATA_IPT_MASK))
+
 /* These macros make the following table definition more conscise */
 #define INVALID_INPUT \
     { libmame_input_type_invalid, 0, ITEM_ID_INVALID }
@@ -87,6 +174,10 @@ typedef struct libmame_input_descriptor
 #define ANALOG_INPUT(input_type, input_item_id) \
     { libmame_input_type_##input_type, 0, input_item_id }
 
+
+/** **************************************************************************
+ * Static global variables
+ ************************************************************************** **/
 
 /* This maps each MAME IPT_ type to a libmame_input descriptor. */
 static libmame_input_descriptor g_input_descriptors[] =
@@ -284,6 +375,16 @@ static libmame_input_descriptor g_input_descriptors[] =
 static int g_input_descriptor_count = 
     (sizeof(g_input_descriptors) / sizeof(g_input_descriptors[0]));
 
+/**
+ * This global is unfortunate but necessary.  If MAME is enhanced to
+ * support callback data in its callbacks, then it will be unnecessary.
+ **/
+static LibMame_RunGame_State g_state;
+
+
+/** **************************************************************************
+ * Static helper functions
+ ************************************************************************** **/
 
 /**
  * This is the callback we hook up to the input device that MAME uses
@@ -521,6 +622,78 @@ static bool controllers_have_input
 }
 
 
+/** **************************************************************************
+ * Static OSD function implementations
+ ************************************************************************** **/
+
+static void libmame_osd_init(running_machine *machine)
+{
+    /**
+     *  Save away the machine, we'll need it in 
+     * libmame_osd_customize_input_type_list
+     **/
+    g_state.machine = machine;
+
+    /**
+     * Create the render_target that tells MAME the rendering parameters it
+     * will use.
+     **/
+    render_target *target = render_target_alloc(g_state.machine, NULL, 0);
+
+    /* Set it up to be the same size as the game's original display, if it's
+       a raster display; then any stretching to the actual display hardware
+       will be done by the update callback. */
+    if (LibMame_Get_Game_ScreenType(g_state.gamenum) != 
+        LibMame_ScreenType_Vector) {
+        LibMame_ScreenResolution res = LibMame_Get_Game_ScreenResolution
+            (g_state.gamenum);
+        render_target_set_bounds(target, res.width, res.height, 0.0);
+    }
+}
+
+
+static void libmame_osd_update(running_machine *machine, int skip_redraw)
+{
+    /**
+     * Poll input
+     **/
+    memset(g_state.controllers_state.per_player, 0, 
+           sizeof(LibMame_PerPlayerControllersState) * 
+           g_state.maximum_player_count);
+    g_state.controllers_state.shared.other_buttons_state = 0;
+
+    (*(g_state.callbacks->PollAllControllersState))
+        (&(g_state.controllers_state), g_state.callback_data);
+
+    /**
+     * Give the callbacks a chance to make running game calls
+     **/
+    (*(g_state.callbacks->MakeRunningGameCalls))(g_state.callback_data);
+
+    /**
+     * And ask the callbacks to update the video
+     **/
+    (*(g_state.callbacks->UpdateVideo))(g_state.callback_data);
+}
+
+
+static void libmame_osd_update_audio_stream(running_machine *machine,
+                                            INT16 *buffer,
+                                            int samples_this_frame)
+{
+    /**
+     * Ask the callbacks to update the audio
+     **/
+    (*(g_state.callbacks->UpdateAudio))(g_state.callback_data);
+}
+
+
+static void libmame_osd_set_mastervolume(int attenuation)
+{
+    (*(g_state.callbacks->SetMasterVolume))(attenuation, g_state.callback_data);
+}
+
+
 /**
  * This function is called back by MAME when it is starting up.  It passes the
  * descriptor that it uses internally for every possible input port, and gives
@@ -534,7 +707,7 @@ static bool controllers_have_input
  * whatever they want to satisfy getting inputs for the various controllers
  * types.
  **/
-void libmame_osd_customize_input_type_list(input_type_desc *typelist)
+static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 {
     /**
      * For each input descriptor, create a keyboard key, or mouse axis, or
@@ -710,4 +883,74 @@ void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 
         input_seq_set_1(&(typedesc->seq[SEQ_TYPE_STANDARD]), input_code);
     }
+}
+
+
+/** **************************************************************************
+ * LibMame exported function implementations
+ ************************************************************************** **/
+
+LibMame_RunGameStatus LibMame_RunGame(int gamenum,
+                                      const LibMame_RunGameOptions *options,
+                                      const LibMame_RunGameCallbacks *cbs,
+                                      void *callback_data)
+{
+    /* Ensure that the OSD callbacks are set up.  This may be redundant if
+       LibMame_RunGame() was called previously, but will be a harmless no-op
+       in that case. */
+    mame_osd_init_function = &libmame_osd_init;
+    mame_osd_update_function = &libmame_osd_update;
+    mame_osd_update_audio_stream_function = &libmame_osd_update_audio_stream;
+    mame_osd_set_mastervolume_function = &libmame_osd_set_mastervolume;
+    mame_osd_customize_input_type_list_function =
+        &libmame_osd_customize_input_type_list;
+
+    if (gamenum >= LibMame_Get_Game_Count()) {
+        return LibMame_RunGameStatus_InvalidGameNum;
+    }
+
+    /* Set the unfortunate globals.  Would greatly prefer to allocate a
+       new one of these and pass it to MAME, having it pass it back in the
+       osd_ callbacks. */
+    g_state.callbacks = cbs;
+    g_state.callback_data = callback_data;
+
+    /* Save the game number */
+    g_state.gamenum = gamenum;
+
+    /* Look up the game number of players and controllers */
+    g_state.maximum_player_count =
+        LibMame_Get_Game_MaxSimultaneousPlayers(gamenum);
+    g_state.perplayer_controllers = 
+        LibMame_Get_Game_PerPlayerControllers(gamenum);
+    g_state.shared_controllers = 
+        LibMame_Get_Game_SharedControllers(gamenum);
+
+    /* Set up options stuff for MAME */
+    core_options *mame_options = get_mame_options(options);
+
+    /* Run the game */
+    int result = mame_execute(mame_options);
+
+    /* Convert the resulting MAME code to a libmame code and return */
+    switch (result) {
+    case MAMERR_NONE:
+        return LibMame_RunGameStatus_Success;
+    case MAMERR_FAILED_VALIDITY:
+        return LibMame_RunGameStatus_FailedValidtyCheck;
+    case MAMERR_MISSING_FILES:
+        return LibMame_RunGameStatus_MissingFiles;
+    case MAMERR_FATALERROR:
+    case MAMERR_DEVICE:
+    case MAMERR_IDENT_NONROMS:
+    case MAMERR_IDENT_PARTIAL:
+    case MAMERR_IDENT_NONE:
+        return LibMame_RunGameStatus_GeneralError;
+    case MAMERR_NO_SUCH_GAME:
+        return LibMame_RunGameStatus_NoSuchGame;
+    case MAMERR_INVALID_CONFIG:
+        return LibMame_RunGameStatus_InvalidConfig;
+    }
+
+    return LibMame_RunGameStatus_GeneralError;
 }
