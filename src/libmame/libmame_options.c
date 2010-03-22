@@ -139,7 +139,8 @@ static int g_option_map_count =
  * Exported functions
  ************************************************************************** **/
 
-core_options *get_mame_options(const LibMame_RunGameOptions *options)
+core_options *get_mame_options(const LibMame_RunGameOptions *options,
+                               const char *gamename)
 {
     core_options *mame_options = mame_options_init(NULL);
 
@@ -175,6 +176,10 @@ core_options *get_mame_options(const LibMame_RunGameOptions *options)
        functionality in MAME core seems kind of wrong anyway ... */
     options_set_bool(mame_options, "readconfig", false, 
                      OPTION_PRIORITY_MAXIMUM);
+
+    /* Finally, set the game name in there */
+    options_set_string(mame_options, OPTION_GAMENAME, gamename, 
+                       OPTION_PRIORITY_MAXIMUM);
 
     return mame_options;
 }

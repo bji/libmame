@@ -10,6 +10,7 @@
 #include "emuopts.h"
 #include "libmame.h"
 #include <stdio.h>
+#include <string.h>
 
 static void PollAllControllersState(LibMame_AllControllersState *all_states,
                                     void *callback_data)
@@ -57,6 +58,11 @@ int main(int argc, char **argv)
             return -1;
         }
         else {
+            LibMame_RunGameOptions options;
+            LibMame_Set_Default_RunGameOptions(&options);
+            snprintf(options.rom_path, sizeof(options.rom_path), "test_roms");
+            snprintf(options.aviwrite_file, sizeof(options.aviwrite_file),
+                     "libmame-test.avi");
             LibMame_RunGameCallbacks cbs = {
                 &PollAllControllersState,
                 &MakeRunningGameCalls,
@@ -64,7 +70,7 @@ int main(int argc, char **argv)
                 &UpdateAudio,
                 &SetMasterVolume
             };
-            (void) LibMame_RunGame(gamenum, &cbs, NULL);
+            (void) LibMame_RunGame(gamenum, &options, &cbs, NULL);
             return 0;
         }
     }
@@ -425,20 +431,6 @@ int main(int argc, char **argv)
             printf("\tSource File Name: %s\n", srcname);
         }
     }
-
-#if 0
-    options_entry options_entries[1] = { { NULL } };
-
-    core_options *core_options = mame_options_init(options_entries);
-
-    int ret = mame_execute(core_options);
-
-    if (core_options != NULL) {
-        options_free(core_options);
-    }
-#else
-    int ret = 0;
-#endif
 
     LibMame_Deinitialize();
 

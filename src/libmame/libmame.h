@@ -1226,6 +1226,19 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
  * game needs (possibly also for specially identifying BIOS ROMs)
  **/
 
+/**
+ * Runs a game.  More documentation needed here.
+ *
+ * @param gamenum is the game number of the game to run
+ * @param options if non-NULL, provides the options that the game will be run
+ *        with.  If NULL, defaults will be used.
+ * @param cbs is the set of callback functions that will be made as the game
+ *        runs to gather input and to display output
+ * @param callback_data is a pointer that is passed into all of the callback
+ *        functions
+ * @return the status that resulted from running (or attempting to run) the
+ *         game
+ **/
 LibMame_RunGameStatus LibMame_RunGame(int gamenum,
                                       const LibMame_RunGameOptions *options,
                                       const LibMame_RunGameCallbacks *cbs,

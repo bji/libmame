@@ -261,8 +261,10 @@ int mame_execute(core_options *options)
 		firstgame = FALSE;
 
 		/* parse any INI files as the first thing */
-		options_revert(mame_options(), OPTION_PRIORITY_INI);
-		mame_parse_ini_files(mame_options(), driver);
+        if (options_get_bool(options, OPTION_READCONFIG)) {
+            options_revert(mame_options(), OPTION_PRIORITY_INI);
+            mame_parse_ini_files(mame_options(), driver);
+        }
 
 		/* create the machine structure and driver */
 		machine = global_alloc(running_machine(driver));

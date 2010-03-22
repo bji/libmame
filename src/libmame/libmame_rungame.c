@@ -38,7 +38,8 @@ extern void (*mame_osd_customize_input_type_list_function)
 /**
  * These are exported by other source files within libmame itself
  **/
-extern core_options *get_mame_options(const LibMame_RunGameOptions *options);
+extern core_options *get_mame_options(const LibMame_RunGameOptions *options,
+                                      const char *gamename);
 
 
 /** **************************************************************************
@@ -674,6 +675,15 @@ static void libmame_osd_update(running_machine *machine, int skip_redraw)
      * And ask the callbacks to update the video
      **/
     (*(g_state.callbacks->UpdateVideo))(g_state.callback_data);
+
+    /* TESTING */
+    static int update_count = 0;
+    if (++update_count == 10000) {
+        mame_schedule_exit(machine);
+    }
+    else if ((update_count % 50) == 0) {
+        printf("update_count %d\n", update_count);
+    }
 }
 
 
@@ -926,8 +936,19 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     g_state.shared_controllers = 
         LibMame_Get_Game_SharedControllers(gamenum);
 
-    /* Set up options stuff for MAME */
-    core_options *mame_options = get_mame_options(options);
+    /* Set up options stuff for MAME.  If none were supplied, use the
+       defaults. */
+    core_options *mame_options;
+    if (options == NULL) {
+        LibMame_RunGameOptions default_options;
+        LibMame_Set_Default_RunGameOptions(&default_options);
+        mame_options = get_mame_options
+            (&default_options, LibMame_Get_Game_Short_Name(gamenum));
+    }
+    else {
+        mame_options = get_mame_options
+            (options, LibMame_Get_Game_Short_Name(gamenum));
+    }
 
     /* Run the game */
     int result = mame_execute(mame_options);

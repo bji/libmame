@@ -19,6 +19,7 @@ OBJDIRS += $(OBJ)/libmame
 
 ifdef PROFILE
 CCOMFLAGS += -pg
+SUFFIXDEBUG := $(SUFFIXDEBUG)p
 # LIBS += -lc_p
 endif
 
