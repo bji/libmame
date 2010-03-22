@@ -793,6 +793,115 @@ typedef struct LibMame_AllControllersState
 } LibMame_AllControllersState;
 
 
+
+/**
+ * These are the configuration options for LibMame_RunGame
+ **/
+typedef struct LibMame_RunGameOptions
+{
+    /* enable loading of configuration files, default is true */
+    bool read_config;
+
+    /* search paths for files of specific types; of the form DIR1;DIR2;... */
+    /* these files are only ever read by MAME */
+    char rom_path[1024]; /* default is "roms" */
+    char sample_path[1024]; /* default is "samples" */
+    char art_path[1024]; /* default is "artwork" */
+    char ctrl_path[1024]; /* default is "ctrlr" */
+    char ini_path[1024]; /* defailt is ".;ini" */
+    char font_path[1024]; /* default is "." */
+    char cheat_path[1024]; /* default is "cheat" */
+    char crosshair_path[1024]; /* default is "crosshair" */
+
+    /* single directories for files of specific types.  These files are read
+       and written by MAME. */
+    char config_directory[256]; /* default is "cfg" */
+    char nvram_directory[256]; /* default is "nvram" */
+    char memcard_directory[256]; /* default is "memcard" */
+    char input_directory[256]; /* default is "inp" */
+    char state_directory[256]; /* default is "sta" */
+    char snapshot_directory[256]; /* default is "snap" */
+    char diff_directory[256]; /* default is "diff" */
+    char comment_directory[256]; /* default is "comments" */
+
+    /* state/playback options */
+    char state[1024]; /* saved state to load */
+    bool autosave; /* enable automatic save/restore at exit/startup */
+    char playback_file[256]; /* playback input file name */
+    char record_file[256]; /* record output file name */
+    char mngwrite_file[256]; /* filename to write MNG movie of current game */
+    char aviwrite_file[256]; /* filename to write AVI movie of current game */
+    char wavwrite_file[256]; /* filename to write WAV file of current game */
+    char snapsize[16];
+    char snapview[64];
+    int burnin;
+    
+    /* core performance options */
+    bool auto_frame_skip;
+    int frame_skip_level;
+    bool throttle;
+    bool sleep;
+    float speed_multiplier;
+    bool refresh_speed;
+
+    /* core rotation/flip options */
+    bool rotate;
+    bool rotate_right;
+    bool rotate_left;
+    bool auto_rotate_right;
+    bool auto_rotate_left;
+    bool flip_x;
+    bool flip_y;
+
+    /* core artwork options */
+    bool crop_artwork;
+    bool use_backdrops;
+    bool use_overlays;
+    bool use_bezels;
+
+    /* core screen options */
+    float brightness;
+    float pause_brightness;
+    float contrast;
+    float gamma;
+
+    /* core vector options */
+    bool vector_antialias;
+    float vector_beam;
+    float vector_flicker;
+
+    /* core sound options */
+    bool sound;
+    int sample_rate;
+    bool use_samples;
+    int volume_attenuation;
+
+    /* core input options */
+    bool coin_lockout;
+    char controller_config_file_name[256];
+    char joystick_map[32];
+    float joystick_deadzone;
+    float joystick_saturation;
+    bool enable_steadykey;
+    bool enable_natural_keyboard;
+    bool enable_lightgun_offscreen_reload;
+
+    /* core debugging options */
+    bool verbose_output;
+    bool emit_log;
+    bool debug;
+    bool debug_internal;
+    bool debugscript;
+    bool update_in_pause;
+
+    /* core misc options */
+    char special_bios[64];
+    bool enable_cheats;
+    bool skip_gameinfo_screens;
+
+} LibMame_RunGameOptions;
+
+
 typedef struct LibMame_RunGameCallbacks
 {
     void (*PollAllControllersState)(LibMame_AllControllersState *all_states,
@@ -1106,12 +1215,19 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
 
 
 /**
+ * Sets the LibMame_RunGameOptions structure to contain all default values.
+ *
+ * @param options is the options structure to set defaults in
+ **/
+void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
+
+/**
  * TODO: Functions for getting descriptions of all of the ROMs that a
  * game needs (possibly also for specially identifying BIOS ROMs)
  **/
 
 LibMame_RunGameStatus LibMame_RunGame(int gamenum,
-                                      /* Some options thing xxx, */
+                                      const LibMame_RunGameOptions *options,
                                       const LibMame_RunGameCallbacks *cbs,
                                       void *callback_data);
 
