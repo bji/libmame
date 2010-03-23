@@ -899,184 +899,184 @@ typedef struct LibMame_RunGameOptions
     /* search paths for files of specific types; of the form DIR1;DIR2;...
        These files are only read (not written) by MAME--------------------- */
 
-    /* path to ROMsets and hard disk images */
+    /** path to ROMsets and hard disk images **/
     char rom_path[1024];
-    /* path to samplesets */
+    /** path to samplesets **/
     char sample_path[1024];
-    /* path to artwork files */
+    /** path to artwork files **/
     char art_path[1024];
-    /* path to controller definitions */
+    /** path to controller definitions **/
     char ctrl_path[1024];
-    /* path to ini files */
+    /** path to ini files **/
     char ini_path[1024];
-    /* path to font files */
+    /** path to font files **/
     char font_path[1024];
-    /* path to cheat files */
+    /** path to cheat files **/
     char cheat_path[1024];
-    /* path to crosshair files */
+    /** path to crosshair files **/
     char crosshair_path[1024];
 
     /* single directories for files of specific types.  These files are read
        and written by MAME ------------------------------------------------ */
 
-    /* directory to save nvram contents */
+    /** directory to save nvram contents **/
     char nvram_directory[256];
-    /* directory to save memory card contents */
+    /** directory to save memory card contents **/
     char memcard_directory[256];
-    /* directory to save input device logs */
+    /** directory to save input device logs **/
     char input_directory[256];
-    /* directory to save states */
+    /** directory to save states **/
     char state_directory[256];
-    /* directory to save screenshots */
+    /** directory to save screenshots **/
     char snapshot_directory[256];
-    /* directory to save hard drive image difference files */
+    /** directory to save hard drive image difference files **/
     char diff_directory[256];
-    /* directory to save debugger comments */
+    /** directory to save debugger comments **/
     char comment_directory[256];
 
     /* state/playback options --------------------------------------------- */
 
-    /* saved state to load */
+    /** saved state to load **/
     char state[1024]; 
-    /* enable automatic save/restore at exit/startup */
+    /** enable automatic save/restore at exit/startup **/
     bool autosave; 
-    /* playback input file name */
+    /** playback input file name **/
     char playback_file[256];
-    /* record output file name */
+    /** record output file name **/
     char record_file[256];
-    /* filename to write MNG movie of current game */
+    /** filename to write MNG movie of current game **/
     char mngwrite_file[256];
-    /* filename to write AVI movie of current game */
+    /** filename to write AVI movie of current game **/
     char aviwrite_file[256];
-    /* filename to write WAV file of current game */
+    /** filename to write WAV file of current game **/
     char wavwrite_file[256];
-    /* specify snapshot/movie resolution (<width>x<height>) or 'auto' to
-       use minimal size */
+    /** specify snapshot/movie resolution (<width>x<height>) or 'auto' to
+        use minimal size **/
     char snapsize[16];
-    /* specify snapshot/movie view or 'internal' to use internal pixel-aspect
-       views */
+    /** specify snapshot/movie view or 'internal' to use internal pixel-aspect
+        views **/
     char snapview[64];
-    /* create burn-in snapshots for each screen */
+    /** create burn-in snapshots for each screen **/
     int burnin;
     
     /* core performance options ------------------------------------------- */
 
-    /* enable automatic frameskip selection */
+    /** enable automatic frameskip selection **/
     bool auto_frame_skip;
-    /* set frameskip to fixed value, 0-10 (autoframeskip must be disabled) */
+    /** set frameskip to fixed value, 0-10 (autoframeskip must be disabled) **/
     int frame_skip_level;
-    /* enable throttling to keep game running in sync with real time */
+    /** enable throttling to keep game running in sync with real time **/
     bool throttle;
-    /* enable sleeping, which gives time back to other applications when
-       idle */
+    /** enable sleeping, which gives time back to other applications when
+        idle **/
     bool sleep;
-    /* controls the speed of gameplay, relative to realtime; smaller numbers
-       are slower */
+    /** controls the speed of gameplay, relative to realtime; smaller numbers
+        are slower **/
     float speed_multiplier;
-    /* automatically adjusts the speed of gameplay to keep the refresh rate
-       lower than the screen */
+    /** automatically adjusts the speed of gameplay to keep the refresh rate
+        lower than the screen **/
     bool auto_refresh_speed;
 
     /* core rotation/flip options ----------------------------------------- */
 
-    /* rotate the game screen according to the game's orientation needs it */
+    /** rotate the game screen according to the game's orientation needs it **/
     bool rotate;
-    /* rotate screen clockwise 90 degrees */
+    /** rotate screen clockwise 90 degrees **/
     bool rotate_right;
-    /* rotate screen counterclockwise 90 degrees */
+    /** rotate screen counterclockwise 90 degrees **/
     bool rotate_left;
-    /* automatically rotate screen clockwise 90 degrees if vertical */
+    /** automatically rotate screen clockwise 90 degrees if vertical **/
     bool auto_rotate_right;
-    /* automatically rotate screen counterclockwise 90 degrees if vertical */
+    /** automatically rotate screen counterclockwise 90 degrees if vertical **/
     bool auto_rotate_left;
-    /* flip screen left-right */
+    /** flip screen left-right **/
     bool flip_x;
-    /* flip screen upside-down */
+    /** flip screen upside-down **/
     bool flip_y;
 
     /* core artwork options ----------------------------------------------- */
 
-    /* crop artwork to game screen size */
+    /** crop artwork to game screen size **/
     bool crop_artwork;
-    /* enable backdrops if artwork is enabled and available */
+    /** enable backdrops if artwork is enabled and available **/
     bool use_backdrops;
-    /* enable overlays if artwork is enabled and available */
+    /** enable overlays if artwork is enabled and available **/
     bool use_overlays;
-    /* enable bezels if artwork is enabled and available */
+    /** enable bezels if artwork is enabled and available **/
     bool use_bezels;
 
     /* core screen options ------------------------------------------------ */
 
-    /* default game screen brightness correction (0.1 - 2.0) */
+    /** default game screen brightness correction (0.1 - 2.0) **/
     float brightness;
-    /* default game screen contrast correction (0.1 - 2.0) */
+    /** default game screen contrast correction (0.1 - 2.0) **/
     float contrast;
-    /* default game screen gamma correction (0.1 - 3.0) */
+    /** default game screen gamma correction (0.1 - 3.0) **/
     float gamma;
-    /* amount to scale the screen brightness when paused (0.0 - 1.0) */
+    /** amount to scale the screen brightness when paused (0.0 - 1.0) **/
     float pause_brightness;
 
     /* core vector options ------------------------------------------------ */
 
-    /* use antialiasing when drawing vectors */
+    /** use antialiasing when drawing vectors **/
     bool vector_antialias;
-    /* set vector beam width */
+    /** set vector beam width **/
     float vector_beam;
-    /* set vector flicker effect */
+    /** set vector flicker effect **/
     float vector_flicker;
 
     /* core sound options ------------------------------------------------- */
 
-    /* enable sound output */
+    /** enable sound output **/
     bool sound;
-    /* set sound output sample rate */
+    /** set sound output sample rate **/
     int sample_rate;
-    /* enable the use of external samples if available */
+    /** enable the use of external samples if available **/
     bool use_samples;
-    /* sound volume reduction in decibels (-32 min, 0 max) */
+    /** sound volume reduction in decibels (-32 min, 0 max) **/
     int volume_attenuation;
 
     /* core input options ------------------------------------------------- */
 
-    /* enable coin lockouts to actually lock out coins */
+    /** enable coin lockouts to actually lock out coins **/
     bool coin_lockout;
-    /* explicit joystick map, or auto to auto-select */
+    /** explicit joystick map, or auto to auto-select **/
     char joystick_map[32];
-    /* center deadzone range for joystick where change is ignored (0.0 center,
-       1.0 end) */
+    /** center deadzone range for joystick where change is ignored (0.0 center,
+        1.0 end) **/
     float joystick_deadzone;
-    /* end of axis saturation range for joystick where change is ignored (0.0
-       center, 1.0 end) */
+    /** end of axis saturation range for joystick where change is ignored (0.0
+        center, 1.0 end) **/
     float joystick_saturation;
-    /* enable steadykey support */
+    /** enable steadykey support **/
     bool enable_steadykey;
-    /* specifies whether to use a natural keyboard or not */
+    /** specifies whether to use a natural keyboard or not **/
     bool enable_natural_keyboard;
-    /* convert lightgun button 2 into offscreen reload */
+    /** convert lightgun button 2 into offscreen reload **/
     bool enable_lightgun_offscreen_reload;
 
     /* core debugging options --------------------------------------------- */
 
-    /* display additional diagnostic information */
+    /** display additional diagnostic information **/
     bool verbose_output;
-    /* generate an error.log file */
+    /** generate an error.log file **/
     bool emit_log;
-    /* enable/disable debugger */
+    /** enable/disable debugger **/
     bool debug;
-    /* use the internal debugger for debugging */
+    /** use the internal debugger for debugging **/
     bool debug_internal;
-    /* script for debugger */
+    /** script for debugger **/
     bool debugscript;
-    /* keep calling video updates while in pause */
+    /** keep calling video updates while in pause **/
     bool update_in_pause;
 
     /* core misc options -------------------------------------------------- */
 
-    /* select a special system BIOS to use */
+    /** select a special system BIOS to use **/
     char special_bios[64];
-    /* enable cheat subsystem */
+    /** enable cheat subsystem **/
     bool enable_cheats;
-    /* skip displaying the information screen at startup */
+    /** skip displaying the information screen at startup **/
     bool skip_gameinfo_screens;
 
 } LibMame_RunGameOptions;
@@ -1230,7 +1230,7 @@ typedef struct LibMame_RunGameCallbacks
      * are those used by the game being played (which can be determined by
      * calling LibMame_Get_Game_AllControllers()), for each player which
      * could be playing the game (which can be determined by calling
-     * LibMame_Get_Game_MaxSimultaneousPlayers), plus all states from the
+     * LibMame_Get_Game_MaxSimultaneousPlayers()), plus all states from the
      * shared states structure.
      *
      * @param all_states is all possible controller states; the callback
