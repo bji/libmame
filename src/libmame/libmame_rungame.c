@@ -119,6 +119,11 @@ typedef struct LibMame_RunGame_State
     LibMame_AllControllersDescriptor controllers;
 
     /**
+     * Has a LibMame_RunningGame_SchedulePause() call been made?
+     **/
+    bool waiting_for_pause;
+
+    /**
      * This is the controllers state used to query the controllers state via
      * the callback provided in the callbacks structure.
      **/
@@ -616,6 +621,57 @@ static bool controllers_have_input
 }
 
 
+static void pause_callback(running_machine *machine, int is_pause)
+{
+    (void) machine;
+
+    if (g_state.waiting_for_pause && is_pause) {
+        g_state.waiting_for_pause = false;
+        (*(g_state.callbacks->Paused))(g_state.callback_data);
+        /* Unpause */
+        mame_pause(machine, FALSE);
+    }
+    /* Else, spontaneous pause by MAME internally, ignore it */
+}
+
+
+static void set_configuration_value(const char *name, uint32_t mask,
+                                    int value)
+{
+    const input_field_config *config = input_field_by_tag_and_mask
+        (g_state.machine->portlist, name, mask);
+
+    if (config != NULL) {
+        input_field_user_settings settings;
+        settings.value = value;
+        input_field_set_user_settings(config, &settings);
+    }
+}
+
+
+static void look_up_and_set_configuration_value(int gamenum,
+                                                const char *name,
+                                                uint32_t mask,
+                                                const char *value)
+{
+    int count = LibMame_Get_Game_Setting_Count(gamenum);
+    /* Find the descriptor */
+    for (int i = 0; i < count; i++) {
+        LibMame_SettingDescriptor desc = LibMame_Get_Game_Setting(gamenum, i);
+        if ((desc.mask == mask) && !strcmp(desc.name, name)) {
+            /* Found the descriptor, now find the value */
+            for (int j = 0; j < desc.value_count; j++) {
+                if (!strcmp(desc.value_names[j], value)) {
+                    set_configuration_value(name, mask, j);
+                    break;
+                }
+            }
+            break;
+        }
+    }
+}
+
+
 /** **************************************************************************
  * Static MAME OSD function implementations
  ************************************************************************** **/
@@ -642,6 +698,9 @@ void osd_init(running_machine *machine)
             (g_state.gamenum);
         render_target_set_bounds(g_state.target, res.width, res.height, 0.0);
     }
+
+    /* Add a callback so that we can know when the running game has paused */
+    add_pause_callback(machine, pause_callback);
 }
 
 
@@ -691,6 +750,9 @@ void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
 
 void osd_set_mastervolume(int attenuation)
 {
+    /**
+     * Ask the callbacks to set the master volume
+     **/
     (*(g_state.callbacks->SetMasterVolume))(attenuation, g_state.callback_data);
 }
 
@@ -927,6 +989,9 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
             (options, LibMame_Get_Game_Short_Name(gamenum));
     }
 
+    /* Not waiting for a pause */
+    g_state.waiting_for_pause = false;
+
     /* Run the game */
     int result = mame_execute(mame_options);
 
@@ -951,4 +1016,64 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     }
 
     return LibMame_RunGameStatus_GeneralError;
+}
+
+
+void LibMame_RunningGame_Pause()
+{
+    g_state.waiting_for_pause = true;
+
+    mame_pause(g_state.machine, TRUE);
+}
+
+
+void LibMame_RunningGame_Schedule_Exit()
+{
+    mame_schedule_exit(g_state.machine);
+}
+
+
+void LibMame_RunningGame_Schedule_Hard_Reset()
+{
+    mame_schedule_hard_reset(g_state.machine);
+}
+
+
+void LibMame_RunningGame_Schedule_Soft_Reset()
+{
+    mame_schedule_soft_reset(g_state.machine);
+}
+
+
+void LibMame_RunningGame_SaveState(const char *filename)
+{
+    mame_schedule_save(g_state.machine, filename);
+}
+
+
+void LibMame_RunningGame_LoadState(const char *filename)
+{
+    mame_schedule_load(g_state.machine, filename);
+}
+
+
+void LibMame_RunningGame_ChangeConfigurationValue(const char *name, 
+                                                  uint32_t mask,
+                                                  const char *value)
+{
+    look_up_and_set_configuration_value(g_state.gamenum, name, mask, value);
+}
+
+
+void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
+                                              const char *value)
+{
+    look_up_and_set_configuration_value(g_state.gamenum, name, mask, value);
+}
+
+
+void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
+                                             int value)
+{
+    set_configuration_value(name, mask, value);
 }

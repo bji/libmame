@@ -10,6 +10,7 @@
 #include "emuopts.h"
 #include "libmame.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void PollAllControllersState(LibMame_AllControllersState *all_states,
@@ -17,6 +18,10 @@ static void PollAllControllersState(LibMame_AllControllersState *all_states,
 {
     static int frame = 0;
     int which = ++frame % 60;
+    if (which == 0) {
+        all_states->shared.ui_input_state = 
+            LibMame_UiButtonType_Show_Fps;
+    }
     if (which < 4) {
         all_states->shared.other_buttons_state |=
             (1 << LibMame_OtherButtonType_Coin1);
@@ -25,11 +30,16 @@ static void PollAllControllersState(LibMame_AllControllersState *all_states,
         all_states->shared.other_buttons_state |=
             (1 << LibMame_OtherButtonType_Start1);
     }
-    (void) callback_data;
-}
-
-void MakeRunningGameCalls(void *callback_data)
-{
+    else if (which < 28) {
+        all_states->per_player[0].left_or_single_joystick_down_state = 1;
+    }
+    else if (which < 42) {
+        all_states->per_player[0].left_or_single_joystick_right_state = 1;
+    }
+    if (frame >= 500) {
+        all_states->shared.ui_input_state = 
+            LibMame_UiButtonType_Reset_Machine;
+    }
     (void) callback_data;
 }
 
@@ -61,6 +71,15 @@ void SetMasterVolume(int attenuation, void *callback_data)
     (void) callback_data;
 }
 
+void MakeRunningGameCalls(void *callback_data)
+{
+    (void) callback_data;
+}
+
+void Paused(void *callback_data)
+{
+}
+
 
 int main(int argc, char **argv)
 {
@@ -86,10 +105,11 @@ int main(int argc, char **argv)
                      "libmame-test.avi");
             LibMame_RunGameCallbacks cbs = {
                 &PollAllControllersState,
-                &MakeRunningGameCalls,
                 &UpdateVideo,
                 &UpdateAudio,
-                &SetMasterVolume
+                &SetMasterVolume,
+                &MakeRunningGameCalls,
+                &Paused
             };
             (void) LibMame_RunGame(gamenum, &options, &cbs, NULL);
             return 0;

@@ -92,6 +92,45 @@
 #define LIBMAME_ORIENTATIONFLAGS_ROTATE_270                     0x10
 
 
+/**
+ * These macros can be used to obtain values from the
+ * LibMame_RenderPrimitive structure's flags field.
+ **/
+
+/**
+ * Calculates the texture orientation of a LibMame_RenderPrimitive's flags
+ **/
+#define LIBMAME_RENDERFLAGS_TEXTURE_ORIENTATION(flags) (((flags) >>  0) & 0xF))
+
+/**
+ * Calculates the texture format of a LibMame_RenderPrimitive's flags
+ **/
+#define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)      (((flags) >>  8) & 0xF))
+
+/**
+ * Calculates the blend mode of a LibMame_RenderPrimitive's flags
+ **/
+#define LIBMAME_RENDERFLAGS_BLEND_MODE(flags)          (((flags) >> 12) & 0xF))
+
+/**
+ * Calculates the antialias value of a LibMame_RenderPrimitive's flags; zero
+ * means no antialiasing, nonzero means antialiasing
+ **/
+#define LIBMAME_RENDERFLAGS_ANTIALIAS(flags)                   ((flags) & 0x10)
+
+/**
+ * Calculates the screen texture value of a LibMame_RenderPrimitive's flags;
+ * zero means ???, nonzero means ???
+ **/
+#define LIBMAME_RENDERFLAGS_SCREEN_TEXTURE(flags)              ((flags) & 0x20)
+
+/**
+ * Calculates the texture wrap of a LibMame_RenderPrimitive's flags;
+ * zero means ???, nonzero means ???
+ **/
+#define LIBMAME_RENDERFLAGS_TEXTURE_WRAP(flags)                ((flags) & 0x40)
+
+
 /** **************************************************************************
  * Enumerated types
  ************************************************************************** **/
@@ -105,6 +144,7 @@ typedef enum
     LibMame_ScreenType_LCD,
     LibMame_ScreenType_Vector
 } LibMame_ScreenType;
+
 
 /**
  * Setting types
@@ -131,6 +171,7 @@ typedef enum
     **/
     LibMame_SettingType_Adjuster
 } LibMame_SettingType;
+
 
 /**
  * All of the possible controller types
@@ -162,6 +203,7 @@ typedef enum
     LibMame_ControllerTypeCount
 } LibMame_ControllerType;
 
+
 /**
  * All of the possible general purpose buttons.
  **/
@@ -186,6 +228,7 @@ typedef enum
     /* This is not a type, it's the number of entries in this enum */
     LibMame_NormalButtonTypeCount
 } LibMame_NormalButtonType;
+
 
 /**
  * All of the possible Mahjong buttons.
@@ -225,6 +268,7 @@ typedef enum
     LibMame_MahjongButtonTypeCount
 } LibMame_MahjongButtonType;
 
+
 /**
  * All of the possible Hanafuda buttons.
  **/
@@ -243,6 +287,7 @@ typedef enum
     /* This is not a type, it's the number of entries in this enum */
     LibMame_HanafudaButtonTypeCount
 } LibMame_HanafudaButtonType;
+
 
 /**
  * All of the possible gambling buttons.
@@ -278,6 +323,7 @@ typedef enum
     LibMame_GamblingButtonTypeCount
 } LibMame_GamblingButtonType;
 
+
 /**
  * All of the possible 'other' buttons.
  **/
@@ -312,6 +358,7 @@ typedef enum
     /* This is not a type, it's the number of entries in this enum */
     LibMame_OtherButtonTypeCount
 } LibMame_OtherButtonType;
+
 
 /**
  * All of the possible UI buttons.
@@ -359,6 +406,18 @@ typedef enum
     /* This is not a type, it's the number of entries in this enum */
     LibMame_UiButtonTypeCount
 } LibMame_UiButtonType;
+
+
+/**
+ * The possible types of render primitives passed into the update display
+ * callback
+ **/
+typedef enum
+{
+    LibMame_RenderPrimitiveType_Line,
+    LibMame_RenderPrimitiveType_Quad
+} LibMame_RenderPrimitiveType;
+
 
 /**
  * Status codes that can be returned by LibMame_RunGame()
@@ -450,6 +509,14 @@ typedef struct LibMame_SettingDescriptor
      * setting does.
      **/
     const char *name;
+
+    /**
+     * This is the mask of the setting, which is only relevent for identifying
+     * the setting in calls to LibMame_RunningGame_ChangeConfigurationValue,
+     * LibMame_RunningGame_ChangeDipswitchValue, or
+     * LibMame_RunningGame_ChangeAdjusterValue
+     **/
+    uint32_t mask;
 
     /**
      * This is the number of individual values that the setting may be set to,
@@ -924,89 +991,196 @@ typedef struct LibMame_RunGameOptions
 } LibMame_RunGameOptions;
 
 
-typedef enum
-{
-    LibMame_RenderPrimitiveType_Line,
-    LibMame_RenderPrimitiveType_Quad
-} LibMame_RenderPrimitiveType;
-
-
-#define LIBMAME_RENDERFLAGS_TEXORIENT_SHIFT_MASK 0x000F
-#define LIBMAME_RENDERFLAGS_TEXFORMAT_SHIFT_MASK 0x00F0
-#define LIBMAME_RENDERFLAGS_TEXFORMAT_BLENDMODE_MASK 0x0F00
-#define LIBMAME_RENDERFLAGS_ANTIALIAS_FLAG 0x1000
-#define LIBMAME_RENDERFLAGS_SCREENTEX_FLAG 0x2000
-#define LIBMAME_RENDERFLAGS_TEXWRAP_FLAG 0x4000
-
-
+/**
+ * This is the type of a render primitive passed to the update video callback
+ * by libmame.  It is one element of a list of render primitives, all of which
+ * must be rendered in order to produce a complete frame of video for the
+ * running game.
+ **/
 typedef struct LibMame_RenderPrimitive
 {
+    /**
+     * This is the next render primitive in this list, or NULL if there are no
+     * more render primitives after this one
+     **/
     LibMame_RenderPrimitive *next;
+
+    /**
+     * This is the type of this render primitive (vector or raster)
+     **/
     LibMame_RenderPrimitiveType type;
+
+    /**
+     * This is the bounds within the display to draw this render primitive at; 
+     * if this is a vector primitive, this gives the endpoints of the vector.
+     * If this is a raster primitive, this gives the bounds of the rectangle
+     * into which the texture should be rendered
+     **/
     struct {
         float x0;   /* leftmost X coordinate */
         float y0;   /* topmost Y coordinate */
         float x1;   /* rightmost X coordinate */
         float y1;   /* bottommost Y coordinate */
     } bounds;
+
+    /**
+     * This is the color for the primitive (relevent only to vector, or also
+     * to raster?)
+     **/
     struct {
         float a;    /* alpha component (0.0 = transparent, 1.0 = opaque) */
         float r;    /* red component (0.0 = none, 1.0 = max) */
         float g;    /* green component (0.0 = none, 1.0 = max) */
         float b;    /* blue component (0.0 = none, 1.0 = max) */
     } color;
+
+    /**
+     * These are flags describing render parameters; see the 
+     * LIBMAME_RENDERFLAGS_XXX macros
+     **/
     uint32_t flags;
-    float width;    /* for line primitives */
+
+    /**
+     * This is the width of the line to render, only relevent for vector
+     * primitives
+     **/
+    float width;
+
+    /**
+     * This is the texture to render, only relevent for raster primitives
+     **/
     struct {
+        /**
+         * This is the pointer to the beginning of the block of memory holding
+         * the texture data for this primitive.  This will likely stay
+         * consistent across multiple renderings of the same texture and
+         * caching in the display is advised.
+         **/
         void *base;           /* base of the data */
+
+        /**
+         * What is this?
+         **/
         uint32_t rowpixels;   /* pixels per row */
-        uint32_t width;       /* width of the image */
+
+        /**
+         * Width of the image
+         **/
+        uint32_t width;
+
+        /**
+         * Height of the image
+         **/
         uint32_t height;      /* height of the image */
-        const uint32_t *palette; /* palette for PALETTE16 textures,
-                                    LUTs for RGB15/RGB32 */
-        uint32_t seqid;       /* sequence ID */
+
+        /**
+         * Palette for PALETTE16 textures.  LUTs for RGB15/RGB32.  Not sure
+         * what this means.
+         **/
+        const uint32_t *palette;
+
+        /**
+         * Sequence number.  Not sure what this is for.  Is it an animation
+         * sequence number for animations composed of a sequence of tiles?
+         **/
+        uint32_t seqid;
     } texture;
+
+    /**
+     * Not sure what the following is
+     **/
     struct 
     {
+        /**
+         * Top left UV coordinate
+         **/
         struct {
             float u, v;
-        } top_left;         /* top-left UV coordinate */
+        } top_left;
+
+        /**
+         * Top right UV coordinate
+         **/
         struct {
             float u, v;
-        } top_right;        /* top-right UV coordinate */
+        } top_right;
+
+        /**
+         * Bottom left UV coordinate
+         **/
         struct {
             float u, v;
-        } bottom_left;      /* bottom-left UV coordinate */
+        } bottom_left;
+
+        /**
+         * Bottom right UV coordinate
+         **/
         struct {
             float u, v;
-        } bottom_right;     /* bottom-right UV coordinate */
+        } bottom_right;
     } quad_texuv;
 } LibMame_RenderPrimitive;
 
 
 /**
- * Running Game calls TODO:
- * mame_pause(machine, TRUE) -> LibMame_RunningGame_Pause();
- * mame_pause(machine, FALSE) -> LibMame_RunningGame_UnPause();
- * void mame_schedule_exit(running_machine *machine);
- * void mame_schedule_hard_reset(running_machine *machine);
- * void mame_schedule_soft_reset(running_machine *machine);
- * void mame_schedule_save(running_machine *machine, const char *filename);
- * void mame_schedule_load(running_machine *machine, const char *filename);
- *
- * Additionally, stuff to change settings (configs, dipswitches, actuators)
+ * This is the set of callbacks that the caller of LibMame_RunGame passes in.
+ * These provide the interface to allow MAME to supply the frames of video and
+ * audio that constitute a running game, as well as allowing MAME to gather
+ * input from players of the game, and to provide a mechanism for altering the
+ * game state as it is running
  **/
-
 typedef struct LibMame_RunGameCallbacks
 {
+    /**
+     * Called by libmame periodically to poll the current state of all
+     * controllers.  The supplied callback should expect the all_states
+     * structure to be completely zeroed out when this function is called, and
+     * should set all relevent states within the structure.  Relevent states
+     * are those used by the game being played (which can be determined by
+     * calling LibMame_Get_Game_AllControllers()), for each player which
+     * could be playing the game (which can be determined by calling
+     * LibMame_Get_Game_MaxSimultaneousPlayers), plus all states from the
+     * shared states structure.
+     *
+     * @param all_states is all possible controller states; the callback
+     *        should set the current state of relevent controllers
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
     void (*PollAllControllersState)(LibMame_AllControllersState *all_states,
                                     void *callback_data);
-    void (*MakeRunningGameCalls)(void *callback_data);
+
+    /**
+     * Called by libmame to periodically (and regularly, at the original
+     * frame rate of the game) provide the primitives that need to be rendered
+     * to display the current frame of the game.
+     *
+     * @param render_primitive_list is a list of primitives that are to be
+     *        rendered
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
     void (*UpdateVideo)(const LibMame_RenderPrimitive *render_primitive_list,
                         void *callback_data);
+
+    /**
+     * Called by libmame to periodically (and regularly, at the original
+     * frame rate of the game) provide the audio that need to be output for
+     * the current frame of the game.
+     *
+     * @param buffer is a pointer to the raw sound data (more documentation
+     *        needed about the format of this)
+     * @param samples_this_frame is the number of samples contained in
+     *        the buffer (?? more docs needed)
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
     void (*UpdateAudio)(int16_t *buffer, int samples_this_frame,
                         void *callback_data);
+
     /**
+     * Called by libmame to alter the current volume of audio output.
+     *
      * Attenuation is the attenuation in dB (a negative number). To convert
      * from dB to a linear volume scale do the following:
      *
@@ -1015,8 +1189,36 @@ typedef struct LibMame_RunGameCallbacks
      *     volume /= 1.122018454;      //  = (10 ^ (1/20)) = 1dB
      * 
      * @param attenuation is the attenuation in dB (a negative number). 
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
      **/
     void (*SetMasterVolume)(int attenuation, void *callback_data);
+
+    /**
+     * This callback is made by libmame periodically to give the thread
+     * which called LibMame_RunGame an opportunity to call any one or more
+     * of the LibMame_RunningGame_XXX function calls, which are only permitted
+     * to be called from this callback.
+     *
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
+    void (*MakeRunningGameCalls)(void *callback_data);
+
+    /**
+     * This callback is made when MAME has completed a pause operation in
+     * response to a LibMame_RunningGame_Pause() call.  The caller may take an
+     * indefinite period of time to return from this callback without
+     * affecting the paused game.  When the caller returns from this function,
+     * the game will resume.  This is the only callback that is not
+     * performance sensitive; taking too long in any of the other callbacks
+     * could degrade the performance of a running game.
+     *
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
+    void (*Paused)(void *callback_data);
+     
 } LibMame_RunGameCallbacks;
 
 
@@ -1357,6 +1559,124 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
                                       const LibMame_RunGameOptions *options,
                                       const LibMame_RunGameCallbacks *cbs,
                                       void *callback_data);
+
+
+/**
+ * Functions for altering the state of a running game
+ **/
+
+/**
+ * Requests that the currently running game be paused.  This will result in a
+ * call to the Paused callback of the callbacks structure that was passed into
+ * LibMame_RunGame() function.  The game will unpause when that Paused
+ * callback returns.  This function may only be called from within the
+ * MakeRunningGameCalls callback, and not from any other context of execution.
+ **/
+void LibMame_RunningGame_Pause();
+
+
+/**
+ * Requests that the currently running game exit as soon as possible.  This
+ * will cause the LibMame_RunGame call that ran the game to return after the
+ * game has exited.  This function may only be called from within the
+ * MakeRunningGameCalls or Paused callback, and not from any other context of
+ * execution.
+ **/
+void LibMame_RunningGame_Schedule_Exit();
+
+
+/**
+ * Requests that the currently running game execute a hard reset as soon as
+ * possible, which will completely reset the state of the game and return it
+ * to its "just powered on" state.  This function may only be called from
+ * within the MakeRunningGameCalls or Paused callback, and not from any other
+ * context of execution.
+ **/
+void LibMame_RunningGame_Schedule_Hard_Reset();
+
+
+/**
+ * Requests that the currently running game execute a soft reset as soon as
+ * possible, which will reset the state of the game without simulating a power
+ * cycle as is done with the hard reset.  This function may only be called
+ * from within the MakeRunningGameCalls or Paused callback, and not from any
+ * other context of execution.
+ **/
+void LibMame_RunningGame_Schedule_Soft_Reset();
+
+
+/**
+ * Requests that the currently running game save a snapshot of its state to
+ * the given file as soon as possible.  This function may only be called from
+ * within the MakeRunningGameCalls or Paused callback, and not from any other
+ * context of execution.
+ *
+ * @param filename is the filename to write the save state to
+ **/
+void LibMame_RunningGame_SaveState(const char *filename);
+
+
+/**
+ * Requests that the currently running game load a previously saved snapshot
+ * of its state from the given file as soon as possible, which will replace
+ * the current state.  This function may only be called from within the
+ * MakeRunningGameCalls or Paused callback, and not from any other context of
+ * execution.
+ *
+ * @param filename is the filename to read the save state from
+ **/
+void LibMame_RunningGame_SaveState(const char *filename);
+
+
+/**
+ * Sets a new value for the setting corresponding to a
+ * LibMame_SettingDescriptor of type LibMame_SettingType_Configuration.  The
+ * setting is identified by the name and mask of the
+ * LibMame_SettingDescriptor.  This function may only be called from within
+ * the MakeRunningGameCalls or Paused callback, and not from any other context
+ * of execution.
+ *
+ * @param name is the name of the configuration setting
+ * @param mask is the mask of the configuration setting
+ * @param value is the value, which must be one of the value_names of the
+ *        LibMame_SettingDescriptor for this configuration setting
+ **/
+void LibMame_RunningGame_ChangeConfigurationValue(const char *name, 
+                                                  uint32_t mask,
+                                                  const char *value);
+
+
+/**
+ * Sets a new value for the setting corresponding to a
+ * LibMame_SettingDescriptor of type LibMame_SettingType_Dipswitch.  The
+ * setting is identified by the name and mask of the
+ * LibMame_SettingDescriptor.  This function may only be called from within
+ * the MakeRunningGameCalls or Paused callback, and not from any other context
+ * of execution.
+ *
+ * @param name is the name of the dipswitch setting
+ * @param mask is the mask of the dipswitch setting
+ * @param value is the value, which must be one of the value_names of the
+ *        LibMame_SettingDescriptor for this dipswitch setting
+ **/
+void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
+                                              const char *value);
+
+
+/**
+ * Sets a new value for the setting corresponding to a
+ * LibMame_SettingDescriptor of type LibMame_SettingType_Adjuster.  The
+ * setting is identified by the name and mask of the
+ * LibMame_SettingDescriptor.  This function may only be called from within
+ * the MakeRunningGameCalls or Paused callback, and not from any other context
+ * of execution.
+ *
+ * @param name is the name of the adjuster setting
+ * @param mask is the mask of the adjuster setting
+ * @param value is the value
+ **/
+void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
+                                             int value);
 
 
 #endif /* __LIBMAME_H__ */
