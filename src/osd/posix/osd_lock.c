@@ -16,18 +16,21 @@ osd_lock *osd_lock_alloc(void)
     pthread_mutexattr_t mutexattr;
 
     if (pthread_mutexattr_init(&mutexattr) ||
-        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE)) {
+        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE))
+    {
         return NULL;
     }
 
     pthread_mutex_t *ret = (pthread_mutex_t *) 
         osd_malloc(sizeof(pthread_mutex_t));
 
-    if (ret == NULL) {
+    if (ret == NULL)
+    {
         return NULL;
     }
 
-    if (pthread_mutex_init(ret, &mutexattr)) {
+    if (pthread_mutex_init(ret, &mutexattr))
+    {
         osd_free(ret);
         return NULL;
     }
@@ -38,7 +41,8 @@ osd_lock *osd_lock_alloc(void)
 
 void osd_lock_acquire(osd_lock *lock)
 {
-    if (pthread_mutex_lock((pthread_mutex_t *) lock)) {
+    if (pthread_mutex_lock((pthread_mutex_t *) lock))
+    {
         /* Log an error here? */
         exit(-1);
     }
@@ -53,7 +57,8 @@ int osd_lock_try(osd_lock *lock)
 
 void osd_lock_release(osd_lock *lock)
 {
-    if (pthread_mutex_unlock((pthread_mutex_t *) lock)) {
+    if (pthread_mutex_unlock((pthread_mutex_t *) lock))
+    {
         /* Log an error here? */
         exit(-1);
     }

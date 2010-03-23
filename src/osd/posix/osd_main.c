@@ -40,5 +40,10 @@ void osd_set_mastervolume(int attenuation)
 
 int main(int argc, char **argv)
 {
+    /**
+     * This version of OSD is not really meant to be used in a standalone
+     * version of a MAME executable.  As a result, this will do pretty
+     * much nothing of value.
+     **/
 	return cli_execute(argc, argv, 0);
 }

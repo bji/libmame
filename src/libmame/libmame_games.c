@@ -45,8 +45,7 @@ typedef struct GameInfo
     int setting_count;
     LibMame_SettingDescriptor *settings;
     int max_simultaneous_players;
-    LibMame_PerPlayerControllersDescriptor perplayer_controllers;
-    LibMame_SharedControllersDescriptor shared_controllers;
+    LibMame_AllControllersDescriptor controllers;
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
@@ -469,15 +468,15 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICK_RIGHT:
                 switch (field->way) {
                 case 2:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_JoystickHorizontal);
                     break;
                 case 4:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick4Way);
                     break;
                 default:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick8Way);
                     break;
                 }
@@ -486,15 +485,15 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICK_DOWN:
                 switch (field->way) {
                 case 2:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_JoystickVertical);
                     break;
                 case 4:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick4Way);
                     break;
                 default:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_Joystick8Way);
                     break;
                 }
@@ -505,15 +504,15 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICKLEFT_RIGHT:
                 switch (field->way) {
                 case 2:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystickHorizontal);
                     break;
                 case 4:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick4Way);
                     break;
                 default:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick8Way);
                     break;
                 }
@@ -524,73 +523,73 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICKLEFT_DOWN:
                 switch (field->way) {
                 case 2:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystickVertical);
                     break;
                 case 4:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick4Way);
                     break;
                 default:
-                    gameinfo->perplayer_controllers.controller_flags |= 
+                    gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_DoubleJoystick8Way);
                     break;
                 }
                 break;
             case IPT_PADDLE:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Paddle);
                 break;
             case IPT_DIAL:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Spinner);
                 break;
             case IPT_TRACKBALL_X:
             case IPT_TRACKBALL_Y:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Trackball);
                 break;
             case IPT_AD_STICK_X:
             case IPT_AD_STICK_Y:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_JoystickAnalog);
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Lightgun);
                 break;
             case IPT_PEDAL:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal);
                 break;
             case IPT_PEDAL2:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal2);
                 break;
             case IPT_PEDAL3:
-                gameinfo->perplayer_controllers.controller_flags |= 
+                gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal3);
                 break;
 
 #define CASE_BUTTON(cs_field, iptname, enumvalue)                       \
             case iptname:                                               \
-                gameinfo->perplayer_controllers. cs_field |=            \
+                gameinfo->controllers.per_player. cs_field |=           \
                     (1 << enumvalue);                                   \
                 break
                 
 #define CASE_BUTTON_AND_NAME(cs_field, iptname, n, enumvalue)           \
             case iptname:                                               \
-                gameinfo->perplayer_controllers. cs_field |=            \
+                gameinfo->controllers.per_player. cs_field |=           \
                     (1 << enumvalue);                                   \
                 gameinfo->                                              \
-                    perplayer_controllers.normal_button_names[n] =      \
+                    controllers.per_player.normal_button_names[n] =     \
                     field->name;                                        \
                 break
                 
 #define CASE_OTHER_BUTTON(iptname, enumvalue)                           \
             case iptname:                                               \
-                gameinfo->shared_controllers.other_button_flags |=      \
+                gameinfo->controllers.shared.other_button_flags |=      \
                     (1 << enumvalue);                                   \
                 break
 
@@ -1159,17 +1158,9 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum)
 }
 
 
-LibMame_PerPlayerControllersDescriptor LibMame_Get_Game_PerPlayerControllers
-    (int gamenum)
+LibMame_AllControllersDescriptor LibMame_Get_Game_AllControllers(int gamenum)
 {
-    return get_gameinfo(gamenum)->perplayer_controllers;
-}
-
-
-LibMame_SharedControllersDescriptor LibMame_Get_Game_SharedControllers
-    (int gamenum)
-{
-    return get_gameinfo(gamenum)->shared_controllers;
+    return get_gameinfo(gamenum)->controllers;
 }
 
 

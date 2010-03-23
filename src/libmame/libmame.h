@@ -491,7 +491,7 @@ typedef struct LibMame_PerPlayerControllersDescriptor
 
     /**
      * These are the names of the normal buttons, or NULL if the button has
-     * no name, one per button type, or NULL if the button as no name.
+     * no name, one per button type.
      **/
     const char *normal_button_names[LibMame_NormalButtonTypeCount];
 
@@ -518,7 +518,7 @@ typedef struct LibMame_PerPlayerControllersDescriptor
      * each is indicated in this as (1 << LibMame_ControllerType_XXX).
      **/
     int controller_flags;
-} LibMame_PerPlayerPerPlayerControllersDescriptor;
+} LibMame_PerPlayerControllersDescriptor;
 
 
 /**
@@ -536,12 +536,33 @@ typedef struct LibMame_SharedControllersDescriptor
     int other_button_flags;
 } LibMame_SharedControllersDescriptor;
 
+
+/**
+ * This describes all of the controller inputs for a game.
+ **/
+typedef struct LibMame_AllControllersDescriptor
+{
+    /**
+     * This is the per-player controllers descriptors; each player is assumed
+     * to have the same controllers, so this describes the controller set that
+     * every player uses for this game
+     **/
+    LibMame_PerPlayerControllersDescriptor per_player;
+
+    /**
+     * This is the shared controllers descriptor
+     **/
+    LibMame_SharedControllersDescriptor shared;
+} LibMame_AllControllersDescriptor;
+
+
 /**
  * This describes all of the controller values that can be polled by MAME for
- * individual players.  One structure of this type for each player is passed
- * to the xxx callback function periodically while a game is running to poll
- * the current input.  Not all values provided in this structure are used for
- * every game.
+ * individual players.  One structure of this type for each player is included
+ * in the LibMame_AllControllersState structure.  Not all values provided in
+ * this structure are used for every game; see the
+ * LibMame_Get_Game_AllControllers() function for a way to get a description
+ * of the set of controllers actually used by the currently running game.
  **/
 typedef struct LibMame_PerPlayerControllersState
 {
@@ -962,8 +983,9 @@ typedef struct LibMame_RenderPrimitive
     } quad_texuv;
 } LibMame_RenderPrimitive;
 
+
 /**
- * Running Game calls:
+ * Running Game calls TODO:
  * mame_pause(machine, TRUE) -> LibMame_RunningGame_Pause();
  * mame_pause(machine, FALSE) -> LibMame_RunningGame_UnPause();
  * void mame_schedule_exit(running_machine *machine);
@@ -1268,15 +1290,12 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum);
 
 
 /**
- * This returns a structure describing the controllers for a given game that
- * are unique to each player.  All players are assumed to have the same
- * controllers.
+ * This returns a structure describing the controllers for a given game.
  *
  * @param gamenum is the game number of the game
- * @return a structure describing player controllers for a given game.
+ * @return a structure describing controllers for a given game.
  **/
-LibMame_PerPlayerControllersDescriptor LibMame_Get_Game_PerPlayerControllers
-    (int gamenum);
+LibMame_AllControllersDescriptor LibMame_Get_Game_AllControllers(int gamenum);
 
 
 /**
@@ -1298,6 +1317,15 @@ LibMame_SharedControllersDescriptor LibMame_Get_Game_SharedControllers
  **/
 const char *LibMame_Get_Game_SourceFileName(int gamenum);
 
+/**
+ * TODO: Functions for getting descriptions of all of the ROMs that a
+ * game needs (possibly also for specially identifying BIOS ROMs)
+ **/
+
+
+/**
+ * Functions for managing options
+ **/
 
 /**
  * Sets the LibMame_RunGameOptions structure to contain all default values.
@@ -1308,8 +1336,7 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
 
 
 /**
- * TODO: Functions for getting descriptions of all of the ROMs that a
- * game needs (possibly also for specially identifying BIOS ROMs)
+ * Functions for running a game
  **/
 
 /**

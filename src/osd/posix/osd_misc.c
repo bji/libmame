@@ -15,7 +15,8 @@
 #include <unistd.h>
 
 /**
- * Undo retardedness in mame sources
+ * Undo mame definition of malloc and free as macros.  That doesn't seem
+ * kosher to me and it requires these kinds of workarounds.
  **/
 #undef malloc
 #undef free
@@ -106,7 +107,8 @@ osd_directory_entry *osd_stat(const char *path)
 {
     struct stat statbuf;
     
-    if (stat(dir, /* returns */ &statbuf)) {
+    if (stat(dir, /* returns */ &statbuf))
+    {
         return NULL;
     }
 

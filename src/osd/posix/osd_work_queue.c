@@ -147,11 +147,13 @@ static void *work_queue_thread_main(void *)
     /**
      * If it's time to stop, then exit this loop.
      **/
-    while (!g_threads_stop) {
+    while (!g_threads_stop)
+    {
         /**
          * If there are items, then handle the next item
          **/
-        if (g_items) {
+        if (g_items)
+        {
             /**
              * Save a pointer to the item, as g_items may change while
              * we are working on this item
@@ -174,11 +176,14 @@ static void *work_queue_thread_main(void *)
              * work thread should see this item any more on the work item
              * list, so remove it
              **/
-            if (++item->numitemsrun == item->numitems) {
-                if (g_items->next == g_items) {
+            if (++item->numitemsrun == item->numitems)
+            {
+                if (g_items->next == g_items)
+                {
                     g_items = NULL;
                 }
-                else {
+                else
+                {
                     g_items->next->prev = g_items->prev;
                     g_items->prev->next = g_items->next;
                 }
@@ -225,11 +230,13 @@ static void *work_queue_thread_main(void *)
              * thread that completed the very last work call), then we can
              * handle its end of life stuff
              **/
-            if (is_complete) {
+            if (is_complete)
+            {
                 /**
                  * If the flag said so, then just immediately auto free it
                  **/
-                if (item->flags & WORK_ITEM_FLAG_AUTO_RELEASE) {
+                if (item->flags & WORK_ITEM_FLAG_AUTO_RELEASE)
+                {
                     osd_work_item_release(item);
                 }
                 /**
@@ -238,7 +245,8 @@ static void *work_queue_thread_main(void *)
                  * then signal the condition so that whoever is waiting will
                  * get it
                  **/
-                else {
+                else
+                {
                     item->result = result;
 
                     pthread_cond_signal(&(item->cond));
@@ -257,7 +265,8 @@ static void *work_queue_thread_main(void *)
          * g_threads_stop is set; either way we will have something new to
          * test at the top of the loop
          **/
-        else {
+        else
+        {
             pthread_cond_wait(&g_items_cond, &g_mutex);
         }
     }
@@ -265,7 +274,8 @@ static void *work_queue_thread_main(void *)
     /**
      * If this is the last work thread to exit, signal the g_threads_cond
      **/
-    if (--g_threads_count == 0) {
+    if (--g_threads_count == 0)
+    {
         pthread_cond_signal(&g_threads_cond);
     }
 
@@ -299,7 +309,8 @@ static void work_queue_destroy_threads_locked()
      * 0 signals the condition, waiting on the condition until g_threads_count
      * is zero is sufficient
      **/
-    while (g_threads_count) {
+    while (g_threads_count)
+    {
         pthread_cond_wait(&g_threads_cond, &g_mutex);
     }
 }
@@ -364,19 +375,22 @@ static int work_queue_create_threads_locked()
     /**
      * Create threads_count work threads
      **/
-    for (int i = 0; i < threads_count; i++) {
+    for (int i = 0; i < threads_count; i++)
+    {
         /**
          * The thread ID of the newly created thread is not needed
          **/
         pthread_t newthread;
-        if (pthread_create(&newthread, NULL, &work_queue_thread_main, NULL)) {
+        if (pthread_create(&newthread, NULL, &work_queue_thread_main, NULL))
+        {
             /**
              * On failure, set the flag, and stop trying to create new threads
              **/
             ret = 1;
             break;
         }
-        else {
+        else
+        {
             /**
              * On success, increment the number of threads that have been
              * created.  Note that the newly created thread will not do
@@ -391,7 +405,8 @@ static int work_queue_create_threads_locked()
     /**
      * If there was a failure, destroy all of the newly created threads
      **/
-    if (ret) {
+    if (ret)
+    {
         work_queue_destroy_threads_locked();
     }
 
@@ -404,16 +419,19 @@ osd_work_queue *osd_work_queue_alloc(int flags)
     osd_work_queue *queue = (osd_work_queue *) 
         osd_malloc(sizeof(osd_work_queue));
 
-    if (queue == NULL) {
+    if (queue == NULL)
+    {
         return NULL;
     }
 
-    if (pthread_mutex_init(&(queue->mutex), NULL)) {
+    if (pthread_mutex_init(&(queue->mutex), NULL))
+    {
         osd_free(queue);
         return NULL;
     }
 
-    if (pthread_cond_init(&(queue->cond), NULL)) {
+    if (pthread_cond_init(&(queue->cond), NULL))
+    {
         pthread_mutex_destroy(&(queue->mutex));
 
         osd_free(queue);
@@ -426,8 +444,10 @@ osd_work_queue *osd_work_queue_alloc(int flags)
        created */
     pthread_mutex_lock(&g_mutex);
 
-    if (g_queues_count == 0) {
-        if (work_queue_create_threads_locked()) {
+    if (g_queues_count == 0)
+    {
+        if (work_queue_create_threads_locked())
+        {
             pthread_mutex_unlock(&g_mutex);
             pthread_cond_destroy(&(queue->cond));
             pthread_mutex_destroy(&(queue->mutex));
@@ -463,16 +483,20 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
     /**
      * Wait until the queue has no more items.
      **/
-    while (queue->items_count) {
+    while (queue->items_count)
+    {
         /**
          * We allow special behavior here: if timeout is 0, we wait forever.
          **/
-        if (timeout == 0) {
+        if (timeout == 0)
+        {
             pthread_cond_wait(&(queue->cond), &(queue->mutex));
         }
-        else {
+        else
+        {
             osd_ticks_t now = osd_ticks();
-            if (now >= end) {
+            if (now >= end)
+            {
                 /**
                  * We would like to wait for the queue to become empty, but
                  * we're already past the end tick, so time out
@@ -522,7 +546,8 @@ void osd_work_queue_free(osd_work_queue *queue)
      **/
     pthread_mutex_lock(&g_mutex);
 
-    if (--g_queues_count == 0) {
+    if (--g_queues_count == 0)
+    {
         work_queue_destroy_threads_locked();
     }
 
@@ -537,16 +562,19 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 {
     osd_work_item *item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
 
-    if (item == NULL) {
+    if (item == NULL)
+    {
         return NULL;
     }
 
-    if (pthread_mutex_init(&(item->mutex), NULL)) {
+    if (pthread_mutex_init(&(item->mutex), NULL))
+    {
         osd_free(item);
         return NULL;
     }
 
-    if (pthread_cond_init(&(item->cond), NULL)) {
+    if (pthread_cond_init(&(item->cond), NULL))
+    {
         pthread_mutex_destroy(&(item->mutex));
         osd_free(item);
         return NULL;
@@ -570,13 +598,15 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 
     pthread_mutex_lock(&g_mutex);
 
-    if (g_items) {
+    if (g_items)
+    {
         item->prev = g_items->prev;
         item->next = g_items;
         g_items->prev->next = item;
         g_items->prev = item;
     }
-    else {
+    else
+    {
         g_items = item->prev = item->next = item;
     }
     
@@ -600,9 +630,11 @@ int osd_work_item_wait(osd_work_item *item, osd_ticks_t timeout)
      * Wait until the number of items completed is the same as the number
      * if items, which means that every one has been run
      **/
-    while (item->numitemscompleted < item->numitems) {
+    while (item->numitemscompleted < item->numitems)
+    {
         osd_ticks_t now = osd_ticks();
-        if (now >= end) {
+        if (now >= end)
+        {
             /**
              * We would like to wait for the item to be complete, but we're
              * already past the end tick, so time out

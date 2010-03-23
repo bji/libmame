@@ -116,8 +116,7 @@ typedef struct LibMame_RunGame_State
      * that they use.
      **/
     int maximum_player_count;
-    LibMame_PerPlayerControllersDescriptor perplayer_controllers;
-    LibMame_SharedControllersDescriptor shared_controllers;
+    LibMame_AllControllersDescriptor controllers;
 
     /**
      * This is the controllers state used to query the controllers state via
@@ -511,9 +510,8 @@ static bool has_right_joystick_except(int controller_flags, int exception)
 
 
 static bool controllers_have_input
-(int num_players, const LibMame_PerPlayerControllersDescriptor *per_player,
- const LibMame_SharedControllersDescriptor *shared,
- int player, int ipt_type)
+    (int num_players, const LibMame_AllControllersDescriptor *controllers,
+     int player, int ipt_type)
 {
     /* Game doesn't support this player, no need for this input */
     if (player >= num_players) {
@@ -533,78 +531,82 @@ static bool controllers_have_input
     case libmame_input_type_invalid:
         return false;
     case libmame_input_type_Normal_button:
-        return (per_player->normal_button_flags & (1 << input_number));
+        return (controllers->per_player.normal_button_flags & 
+                (1 << input_number));
     case libmame_input_type_Mahjong_button:
-        return (per_player->mahjong_button_flags & (1 << input_number));
+        return (controllers->per_player.mahjong_button_flags &
+                (1 << input_number));
     case libmame_input_type_Hanafuda_button:
-        return (per_player->hanafuda_button_flags & (1 << input_number));
+        return (controllers->per_player.hanafuda_button_flags &
+                (1 << input_number));
     case libmame_input_type_Gambling_button:
-        return (per_player->gambling_button_flags & (1 << input_number));
+        return (controllers->per_player.gambling_button_flags &
+                (1 << input_number));
     case libmame_input_type_Other_button:
-        return (shared->other_button_flags & (1 << input_number));
+        return (controllers->shared.other_button_flags & (1 << input_number));
     case libmame_input_type_left_or_single_joystick_left:
     case libmame_input_type_left_or_single_joystick_right:
         return has_left_joystick_except
-            (per_player->controller_flags,
+            (controllers->per_player.controller_flags,
              LibMame_ControllerType_JoystickVertical);
     case libmame_input_type_left_or_single_joystick_up:
     case libmame_input_type_left_or_single_joystick_down:
         return has_left_joystick_except
-            (per_player->controller_flags,
+            (controllers->per_player.controller_flags,
              LibMame_ControllerType_JoystickHorizontal);
     case libmame_input_type_right_joystick_left:
     case libmame_input_type_right_joystick_right:
         return has_right_joystick_except
-            (per_player->controller_flags,
+            (controllers->per_player.controller_flags,
              LibMame_ControllerType_DoubleJoystickVertical);
     case libmame_input_type_right_joystick_up:
     case libmame_input_type_right_joystick_down:
         return has_right_joystick_except
-            (per_player->controller_flags,
+            (controllers->per_player.controller_flags,
              LibMame_ControllerType_DoubleJoystickHorizontal);
     case libmame_input_type_analog_joystick_horizontal:
     case libmame_input_type_analog_joystick_vertical:
     case libmame_input_type_analog_joystick_altitude:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_JoystickAnalog));
     case libmame_input_type_spinner:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Spinner));
     case libmame_input_type_spinner_vertical:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_SpinnerVertical));
     case libmame_input_type_paddle:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Paddle));
     case libmame_input_type_paddle_vertical:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_PaddleVertical));
     case libmame_input_type_trackball_horizontal:
     case libmame_input_type_trackball_vertical:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Trackball));
     case libmame_input_type_lightgun_horizontal:
     case libmame_input_type_lightgun_vertical:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Lightgun));
     case libmame_input_type_pedal:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Pedal));
     case libmame_input_type_pedal2:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Pedal2));
     case libmame_input_type_pedal3:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Pedal3));
     case libmame_input_type_positional:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Positional));
     case libmame_input_type_positional_vertical:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_PositionalVertical));
     case libmame_input_type_mouse_x:
     case libmame_input_type_mouse_y:
-        return (per_player->controller_flags &
+        return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Mouse));
     case libmame_input_type_Ui_button:
         return true;
@@ -775,8 +777,7 @@ void osd_customize_input_type_list(input_type_desc *typelist)
 	for (typedesc = typelist; typedesc; typedesc = typedesc->next) {
         item_device = NULL;
         if (controllers_have_input(g_state.maximum_player_count,
-                                   &(g_state.perplayer_controllers),
-                                   &(g_state.shared_controllers),
+                                   &(g_state.controllers),
                                    typedesc->player, typedesc->type)) {
             switch (g_input_descriptors[typedesc->type].type) {
             case libmame_input_type_invalid:
@@ -910,10 +911,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     /* Look up the game number of players and controllers */
     g_state.maximum_player_count =
         LibMame_Get_Game_MaxSimultaneousPlayers(gamenum);
-    g_state.perplayer_controllers = 
-        LibMame_Get_Game_PerPlayerControllers(gamenum);
-    g_state.shared_controllers = 
-        LibMame_Get_Game_SharedControllers(gamenum);
+    g_state.controllers = LibMame_Get_Game_AllControllers(gamenum);
 
     /* Set up options stuff for MAME.  If none were supplied, use the
        defaults. */

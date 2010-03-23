@@ -284,16 +284,16 @@ int main(int argc, char **argv)
         }
         printf("\tMax Simultaneous Players: %d\n", 
                LibMame_Get_Game_MaxSimultaneousPlayers(i));
-        LibMame_PerPlayerControllersDescriptor perplayer_controllers =
-            LibMame_Get_Game_PerPlayerControllers(i);
+        LibMame_AllControllersDescriptor controllers =
+            LibMame_Get_Game_AllControllers(i);
         printf("\tControllers: ");
         needindent = false;
-        if (perplayer_controllers.controller_flags & 
+        if (controllers.per_player.controller_flags & 
             (1 << LibMame_ControllerType_JoystickHorizontal)) {
             printf("Horizontal Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_JoystickVertical)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -301,7 +301,7 @@ int main(int argc, char **argv)
             printf("Vertical Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Joystick4Way)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
             printf("4-Way Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Joystick8Way)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
             printf("8-Way Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_JoystickAnalog)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -325,7 +325,7 @@ int main(int argc, char **argv)
             printf("Analog Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_DoubleJoystickHorizontal)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -333,7 +333,7 @@ int main(int argc, char **argv)
             printf("Double Horizontal Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_DoubleJoystickVertical)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -341,7 +341,7 @@ int main(int argc, char **argv)
             printf("Double Vertical Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_DoubleJoystick4Way)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
             printf("Double 4-Way Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_DoubleJoystick8Way)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -357,7 +357,7 @@ int main(int argc, char **argv)
             printf("Double 8-Way Joystick");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Spinner)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -365,7 +365,7 @@ int main(int argc, char **argv)
             printf("Spinner");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Paddle)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -373,7 +373,7 @@ int main(int argc, char **argv)
             printf("Paddle");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Trackball)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -381,7 +381,7 @@ int main(int argc, char **argv)
             printf("Trackball");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Lightgun)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
             printf("Light Gun");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Pedal)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
             printf("Pedal");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Pedal2)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -405,7 +405,7 @@ int main(int argc, char **argv)
             printf("Pedal 2");
             needindent = true;
         }
-        if (perplayer_controllers.controller_flags &
+        if (controllers.per_player.controller_flags &
             (1 << LibMame_ControllerType_Pedal3)) {
             if (needindent) {
                 printf("\n\t             ");
@@ -413,21 +413,21 @@ int main(int argc, char **argv)
             printf("Pedal 3");
             needindent = true;
         }
-        if (perplayer_controllers.mahjong_button_flags) {
+        if (controllers.per_player.mahjong_button_flags) {
             if (needindent) {
                 printf("\n\t             ");
             }
             printf("Has Mahjong Buttons");
             needindent = true;
         }
-        if (perplayer_controllers.hanafuda_button_flags) {
+        if (controllers.per_player.hanafuda_button_flags) {
             if (needindent) {
                 printf("\n\t             ");
             }
             printf("Has Hanafuda Buttons");
             needindent = true;
         }
-        if (perplayer_controllers.gambling_button_flags) {
+        if (controllers.per_player.gambling_button_flags) {
             if (needindent) {
                 printf("\n\t             ");
             }
@@ -435,15 +435,15 @@ int main(int argc, char **argv)
             needindent = true;
         }
         for (int j = 0; j < 16; j++) {
-            if (!(perplayer_controllers.normal_button_flags & (1 << j))) {
+            if (!(controllers.per_player.normal_button_flags & (1 << j))) {
                 continue;
             }
             if (needindent) {
                 printf("\n\t             ");
             }
             printf("Button %d - %s", j + 1, 
-                   perplayer_controllers.normal_button_names[j] ?
-                   perplayer_controllers.normal_button_names[j] : "unknown");
+                   controllers.per_player.normal_button_names[j] ?
+                   controllers.per_player.normal_button_names[j] : "unknown");
             needindent = true;
         }
         printf("\n");
