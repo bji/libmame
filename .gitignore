@@ -1,11 +1,4 @@
-/libmame
-/libmame-test
-/mame
-/mamed
-/mame64
-/mame64d
-/mametiny
-/mametinyd
-/mametiny64
-/mametiny64d
+/libmame*.a
+/libmame-test*
+/mame*
 /obj

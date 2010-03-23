@@ -1,7 +1,0 @@
-This is a version of the mame osd that implements as much of the OSD as
-possible using pure POSIX API calls.  POSIX is the portable operating system
-interface, and should be supported on all systems.
-
-The parts of the OSD which are not implementable purely in POSIX are
-not implemented and expected to be implemented by the application or
-library that uses this version of the OSD.

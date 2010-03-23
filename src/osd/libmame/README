@@ -1,0 +1,14 @@
+This is a version of the mame osd that implements as much of the OSD as
+possible using pure POSIX API calls.  POSIX is the portable operating system
+interface, and should be supported on all systems.
+
+Furthermore, this version of the OSD is intended to build a library,
+libmame, *not* a standalone MAME executable (although for compatibility
+with the rest of the MAME build system, a standalone executable can be
+produced, it just doesn't do much).  libmame is a library that makes the
+functionality of MAME available as a well-structured API with a single
+external header file dependency (libmame.h).
+
+The parts of the OSD that are not implemented directly by libmame are 
+expected to be implemented by users of libmame via callbacks that are
+provided to libmame.

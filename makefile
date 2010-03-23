@@ -174,6 +174,9 @@ endif
 # uncomment next line to include the internal profiler
 # PROFILER = 1
 
+# uncomment next line to include gprof profiler support
+# GPROF = 1
+
 # uncomment the force the universal DRC to always use the C backend
 # you may need to do this if your target architecture does not have
 # a native backend
@@ -244,6 +247,12 @@ PROFILER = 1
 endif
 endif
 
+# allow gprof profiling as well, which overrides the internal PROFILER
+ifdef GPROF
+CCOMFLAGS += -pg
+PROFILER =
+# LIBS += -lc_p
+endif
 
 
 #-------------------------------------------------
@@ -292,6 +301,7 @@ endif
 PREFIXSDL =
 SUFFIX64 =
 SUFFIXDEBUG =
+SUFFIXGPROF =
 
 # Windows SDL builds get an SDL prefix
 ifeq ($(OSD),sdl)
@@ -310,6 +320,11 @@ ifdef DEBUG
 SUFFIXDEBUG = d
 endif
 
+# gprof builds get an addition 'p' suffix
+ifdef GPROF
+SUFFIXGPROF = p
+endif
+
 # the name is just 'target' if no subtarget; otherwise it is
 # the concatenation of the two (e.g., mametiny)
 ifeq ($(TARGET),$(SUBTARGET))
@@ -319,7 +334,7 @@ NAME = $(TARGET)$(SUBTARGET)
 endif
 
 # fullname is prefix+name+suffix+suffix64+suffixdebug
-FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)
+FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXGPROF)
 
 # add an EXE suffix to get the final emulator name
 EMULATOR = $(FULLNAME)$(EXE)
@@ -616,10 +631,6 @@ include $(SRC)/build/build.mak
 -include $(SRC)/osd/$(CROSS_BUILD_OSD)/build.mak
 include $(SRC)/tools/tools.mak
 
-ifneq ($(BUILD_LIBMAME),)
-include $(SRC)/libmame/libmame.mak
-endif
-
 # combine the various definitions to one
 CDEFS = $(DEFS)
 
@@ -647,10 +658,6 @@ clean: $(OSDCLEAN)
 ifdef MAP
 	$(ECHO) Deleting $(FULLNAME).map...
 	$(RM) $(FULLNAME).map
-endif
-ifdef LIBMAME_INSTALL
-	$(ECHO) Deleting $(LIBMAME_INSTALL)...
-	$(RM) -r $(LIBMAME_INSTALL)
 endif
 
 checkautodetect:

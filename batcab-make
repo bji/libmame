@@ -12,15 +12,19 @@
 # Finally you will probably be interested in the test program:
 # DEBUG=1 SYMBOLS=1 SUBTARGET=tiny ./batcab-make libmame-test
 
-NUM_PROCESSORS=`cat /proc/cpuinfo | grep ^processor | wc -l`
-if [ -z "$NUM_PROCESSORS" -o "$NUM_PROCESSORS" = 0 ]; then
-	NUM_PROCESSORS=1
+if [ -z "$CONCURRENCY" ]; then
+	CONCURRENCY=`cat /proc/cpuinfo | grep ^processor | wc -l`
+	if [ -z "$CONCURRENCY" -o "$CONCURRENCY" = 0 ]; then
+		CONCURRENCY=1
+	else
+		CONCURRENCY=$((CONCURRENCY*2))
+	fi
 fi
 
 # MAME makefiles are DUMB and have dependencies on a phony maketree target
 # that causes lots of targets to be rebuilt unnecessarily all of the time.
 # For libmame, maketree is not depended on in this way, so that needless
 # rebuilds don't happen all of the time; but since the maketree target must
-# be built, it's done here every time
-OSD=posix BUILD_LIBMAME=1 make -C `dirname $0` maketree
-OSD=posix BUILD_LIBMAME=1 make -j$((NUM_PROCESSORS*2)) -C `dirname $0` "$@"
+
+OSD=libmame make -C `dirname $0` maketree
+OSD=libmame NO_MAKETREE=1 make -j$((CONCURRENCY)) -C `dirname $0` "$@"
