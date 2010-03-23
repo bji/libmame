@@ -423,6 +423,7 @@ static void convert_settings(const ioport_list *ioportlist,
             /* IPT_CONFIG and IPT_DIPSWITCH are handled here */
 
             desc->name = input_field_name(field);
+            desc->mask = field->mask;
             const input_setting_config *setting;
             for (setting = field->settinglist; setting; 
                  setting = setting->next) {

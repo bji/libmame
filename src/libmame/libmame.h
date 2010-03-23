@@ -889,103 +889,194 @@ typedef struct LibMame_AllControllersState
 
 
 /**
- * These are the configuration options for LibMame_RunGame
+ * These are the configuration options for LibMame_RunGame.  Defaults can
+ * be loaded by calling LibMame_Set_Default_RunGameOptions, and then
+ * customizations done before calling LibMame_RunGame with the resulting
+ * options.
  **/
 typedef struct LibMame_RunGameOptions
 {
-    /* search paths for files of specific types; of the form DIR1;DIR2;... */
-    /* these files are only ever read by MAME */
-    char rom_path[1024]; /* default is "roms" */
-    char sample_path[1024]; /* default is "samples" */
-    char art_path[1024]; /* default is "artwork" */
-    char ctrl_path[1024]; /* default is "ctrlr" */
-    char ini_path[1024]; /* defailt is ".;ini" */
-    char font_path[1024]; /* default is "." */
-    char cheat_path[1024]; /* default is "cheat" */
-    char crosshair_path[1024]; /* default is "crosshair" */
+    /* search paths for files of specific types; of the form DIR1;DIR2;...
+       These files are only read (not written) by MAME--------------------- */
+
+    /* path to ROMsets and hard disk images */
+    char rom_path[1024];
+    /* path to samplesets */
+    char sample_path[1024];
+    /* path to artwork files */
+    char art_path[1024];
+    /* path to controller definitions */
+    char ctrl_path[1024];
+    /* path to ini files */
+    char ini_path[1024];
+    /* path to font files */
+    char font_path[1024];
+    /* path to cheat files */
+    char cheat_path[1024];
+    /* path to crosshair files */
+    char crosshair_path[1024];
 
     /* single directories for files of specific types.  These files are read
-       and written by MAME. */
-    char nvram_directory[256]; /* default is "nvram" */
-    char memcard_directory[256]; /* default is "memcard" */
-    char input_directory[256]; /* default is "inp" */
-    char state_directory[256]; /* default is "sta" */
-    char snapshot_directory[256]; /* default is "snap" */
-    char diff_directory[256]; /* default is "diff" */
-    char comment_directory[256]; /* default is "comments" */
+       and written by MAME ------------------------------------------------ */
 
-    /* state/playback options */
-    char state[1024]; /* saved state to load */
-    bool autosave; /* enable automatic save/restore at exit/startup */
-    char playback_file[256]; /* playback input file name */
-    char record_file[256]; /* record output file name */
-    char mngwrite_file[256]; /* filename to write MNG movie of current game */
-    char aviwrite_file[256]; /* filename to write AVI movie of current game */
-    char wavwrite_file[256]; /* filename to write WAV file of current game */
+    /* directory to save nvram contents */
+    char nvram_directory[256];
+    /* directory to save memory card contents */
+    char memcard_directory[256];
+    /* directory to save input device logs */
+    char input_directory[256];
+    /* directory to save states */
+    char state_directory[256];
+    /* directory to save screenshots */
+    char snapshot_directory[256];
+    /* directory to save hard drive image difference files */
+    char diff_directory[256];
+    /* directory to save debugger comments */
+    char comment_directory[256];
+
+    /* state/playback options --------------------------------------------- */
+
+    /* saved state to load */
+    char state[1024]; 
+    /* enable automatic save/restore at exit/startup */
+    bool autosave; 
+    /* playback input file name */
+    char playback_file[256];
+    /* record output file name */
+    char record_file[256];
+    /* filename to write MNG movie of current game */
+    char mngwrite_file[256];
+    /* filename to write AVI movie of current game */
+    char aviwrite_file[256];
+    /* filename to write WAV file of current game */
+    char wavwrite_file[256];
+    /* specify snapshot/movie resolution (<width>x<height>) or 'auto' to
+       use minimal size */
     char snapsize[16];
+    /* specify snapshot/movie view or 'internal' to use internal pixel-aspect
+       views */
     char snapview[64];
+    /* create burn-in snapshots for each screen */
     int burnin;
     
-    /* core performance options */
+    /* core performance options ------------------------------------------- */
+
+    /* enable automatic frameskip selection */
     bool auto_frame_skip;
+    /* set frameskip to fixed value, 0-10 (autoframeskip must be disabled) */
     int frame_skip_level;
+    /* enable throttling to keep game running in sync with real time */
     bool throttle;
+    /* enable sleeping, which gives time back to other applications when
+       idle */
     bool sleep;
+    /* controls the speed of gameplay, relative to realtime; smaller numbers
+       are slower */
     float speed_multiplier;
+    /* automatically adjusts the speed of gameplay to keep the refresh rate
+       lower than the screen */
     bool auto_refresh_speed;
 
-    /* core rotation/flip options */
+    /* core rotation/flip options ----------------------------------------- */
+
+    /* rotate the game screen according to the game's orientation needs it */
     bool rotate;
+    /* rotate screen clockwise 90 degrees */
     bool rotate_right;
+    /* rotate screen counterclockwise 90 degrees */
     bool rotate_left;
+    /* automatically rotate screen clockwise 90 degrees if vertical */
     bool auto_rotate_right;
+    /* automatically rotate screen counterclockwise 90 degrees if vertical */
     bool auto_rotate_left;
+    /* flip screen left-right */
     bool flip_x;
+    /* flip screen upside-down */
     bool flip_y;
 
-    /* core artwork options */
+    /* core artwork options ----------------------------------------------- */
+
+    /* crop artwork to game screen size */
     bool crop_artwork;
+    /* enable backdrops if artwork is enabled and available */
     bool use_backdrops;
+    /* enable overlays if artwork is enabled and available */
     bool use_overlays;
+    /* enable bezels if artwork is enabled and available */
     bool use_bezels;
 
-    /* core screen options */
-    float brightness;
-    float pause_brightness;
-    float contrast;
-    float gamma;
+    /* core screen options ------------------------------------------------ */
 
-    /* core vector options */
+    /* default game screen brightness correction (0.1 - 2.0) */
+    float brightness;
+    /* default game screen contrast correction (0.1 - 2.0) */
+    float contrast;
+    /* default game screen gamma correction (0.1 - 3.0) */
+    float gamma;
+    /* amount to scale the screen brightness when paused (0.0 - 1.0) */
+    float pause_brightness;
+
+    /* core vector options ------------------------------------------------ */
+
+    /* use antialiasing when drawing vectors */
     bool vector_antialias;
+    /* set vector beam width */
     float vector_beam;
+    /* set vector flicker effect */
     float vector_flicker;
 
-    /* core sound options */
+    /* core sound options ------------------------------------------------- */
+
+    /* enable sound output */
     bool sound;
+    /* set sound output sample rate */
     int sample_rate;
+    /* enable the use of external samples if available */
     bool use_samples;
+    /* sound volume reduction in decibels (-32 min, 0 max) */
     int volume_attenuation;
 
-    /* core input options */
+    /* core input options ------------------------------------------------- */
+
+    /* enable coin lockouts to actually lock out coins */
     bool coin_lockout;
+    /* explicit joystick map, or auto to auto-select */
     char joystick_map[32];
+    /* center deadzone range for joystick where change is ignored (0.0 center,
+       1.0 end) */
     float joystick_deadzone;
+    /* end of axis saturation range for joystick where change is ignored (0.0
+       center, 1.0 end) */
     float joystick_saturation;
+    /* enable steadykey support */
     bool enable_steadykey;
+    /* specifies whether to use a natural keyboard or not */
     bool enable_natural_keyboard;
+    /* convert lightgun button 2 into offscreen reload */
     bool enable_lightgun_offscreen_reload;
 
-    /* core debugging options */
+    /* core debugging options --------------------------------------------- */
+
+    /* display additional diagnostic information */
     bool verbose_output;
+    /* generate an error.log file */
     bool emit_log;
+    /* enable/disable debugger */
     bool debug;
+    /* use the internal debugger for debugging */
     bool debug_internal;
+    /* script for debugger */
     bool debugscript;
+    /* keep calling video updates while in pause */
     bool update_in_pause;
 
-    /* core misc options */
+    /* core misc options -------------------------------------------------- */
+
+    /* select a special system BIOS to use */
     char special_bios[64];
+    /* enable cheat subsystem */
     bool enable_cheats;
+    /* skip displaying the information screen at startup */
     bool skip_gameinfo_screens;
 
 } LibMame_RunGameOptions;
