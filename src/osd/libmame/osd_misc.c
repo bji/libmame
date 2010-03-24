@@ -77,7 +77,10 @@ void osd_free_executable(void *ptr, size_t size)
 void osd_break_into_debugger(const char *message)
 {
 #ifdef MAME_DEBUG
-    kill(getpid(), SIGTRAP);
+    /* Only do this if the environment tells us to */
+    if (getenv("MAME_TRAP_ENABLED")) {
+        kill(getpid(), SIGTRAP);
+    }
 #else
     (void) message;
 #endif

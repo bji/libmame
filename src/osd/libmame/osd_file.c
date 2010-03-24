@@ -21,7 +21,22 @@ struct _osd_file
 {
     FILE *posix_file;
     UINT64 current_offset; /* To avoid fseek calls */
+    bool is_devnull; /* We /dev/null some files to keep MAME from writing
+                        stuff that libmame doesn't want it to */
 };
+
+
+static bool is_devnulled(const char *path)
+{
+    /* libmame disallows the writing of .cfg files */
+    int len = strlen(path);
+
+    if ((len >= sizeof(".cfg")) && !strcmp(&(path[len - 4]), ".cfg")) {
+        return true;
+    }
+
+    return false;
+}
 
 
 /* Has the same effect as mkdir -p.  Returns 0 on success and nonzero on
@@ -58,7 +73,6 @@ static int mkdir_dash_p(const char *path)
                     return 1;
                 }
                 /* Create it */
-                printf("mkdir %s\n", dir);
                 if (mkdir(dir, 0777))
                 {
                     return 1;
@@ -96,6 +110,17 @@ static int mkdir_dash_p(const char *path)
 file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
                     UINT64 *filesize)
 {
+    /* libmame specifically disallows writing .cfg files, because it doesn't
+       use them */
+    bool is_devnull;
+
+    if (openflags & OPEN_FLAG_WRITE) {
+        is_devnull = is_devnulled(path);
+    }
+    else {
+        is_devnull = false;
+    }
+
     /* POSIX API, so use POSIX path separators */
     char posix_path[4096];
     if (convert_to_posix_path(path, posix_path, sizeof(posix_path)))
@@ -106,7 +131,7 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
     const char *mode;
 
     /* If necessary, create the paths */
-    if (openflags & OPEN_FLAG_CREATE_PATHS)
+    if ((openflags & OPEN_FLAG_CREATE_PATHS) && !is_devnull)
     {
         if (mkdir_dash_p(posix_path))
         {
@@ -137,9 +162,9 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
         mode = "rb";
     }
 
-    FILE *f;
+    FILE *f = NULL;
 
-    if ((f = fopen(posix_path, mode)) == NULL)
+    if (!is_devnull && (f = fopen(posix_path, mode)) == NULL)
     {
         switch (errno)
         {
@@ -163,7 +188,7 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
 
     struct stat statbuf;
 
-    if (fstat(fileno(f), /* returns */ &statbuf))
+    if (!is_devnull && fstat(fileno(f), /* returns */ &statbuf))
     {
         switch (errno)
         {
@@ -180,16 +205,19 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
     
     (*file)->posix_file = f;
     (*file)->current_offset = 0;
-
+    (*file)->is_devnull = is_devnull;
+    
     *filesize = statbuf.st_size;
-
+    
     return FILERR_NONE;
 }
 
 
 file_error osd_close(osd_file *file)
 {
-    (void) fclose(file->posix_file);
+    if (!file->is_devnull) {
+        (void) fclose(file->posix_file);
+    }
 
     osd_free(file);
 
@@ -200,6 +228,11 @@ file_error osd_close(osd_file *file)
 file_error osd_read(osd_file *file, void *buffer, UINT64 offset,
                     UINT32 length, UINT32 *actual)
 {
+    if (file->is_devnull) {
+        *actual = 0;
+        return FILERR_NONE;
+    }
+
     if (file->current_offset != offset)
     {
         if (fseek(file->posix_file, offset, SEEK_SET))
@@ -224,6 +257,10 @@ file_error osd_read(osd_file *file, void *buffer, UINT64 offset,
 file_error osd_write(osd_file *file, const void *buffer, UINT64 offset,
                      UINT32 length, UINT32 *actual)
 {
+    if (file->is_devnull) {
+        return FILERR_NONE;
+    }
+
     if (file->current_offset != offset)
     {
         if (fseek(file->posix_file, offset, SEEK_SET)) {

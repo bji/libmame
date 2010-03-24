@@ -43,7 +43,7 @@ OSDCOREOBJS = $(OBJ)/osd/libmame/osd_directory.o \
 # These are all of the object files that can be referenced directly
 # Consider removing expatobjs and zlibobjs from here, and instead require
 # applications to link against those libraries externally.
-LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) \
+LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
                   $(SOUNDOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) \
                   $(OSDCOREOBJS) $(VERSIONOBJ) \
                   $(OBJ)/osd/libmame/HashTable.o \
@@ -53,8 +53,9 @@ LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) \
                   $(OBJ)/osd/libmame/libmame_rungame.o
 
 # These are all dependences of libmame, which includes the individual game
-# libraries and the regular objects
-LIBMAMEDEPS = $(DRVLIBS) $(LIBMAMEOBJS_STD)
+# libraries and the regular objects, also LIBDASM because otherwise that
+# library does not get built automatically
+LIBMAMEDEPS = $(DRVLIBS) $(LIBMAMEOBJS_STD) $(LIBDASM)
 
 # The complex filters below do the following:
 # - Include mamedriv.o with its full path
@@ -72,6 +73,7 @@ LIBMAME = libmame$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXGPROF).a
 $(LIBMAME): $(MAKETREE) $(LIBMAMEDEPS)
 		    $(ECHO) Archiving $@...
 		    $(AR) crs $@ $(filter %.o,$(DRVLIBS)) $(foreach object,$(foreach archive,$(filter %.a,$(DRVLIBS)),$(shell ar t $(archive))),$(wildcard $(OBJ)/mame/drivers/$(object)) $(wildcard $(OBJ)/mame/machine/$(object)) $(wildcard $(OBJ)/mame/audio/$(object)) $(wildcard $(OBJ)/mame/video/$(object))) $(LIBMAMEOBJS_STD)
+
 
 LIBMAME_TEST = libmame-test$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)
 

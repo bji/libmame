@@ -389,6 +389,14 @@ static int g_input_descriptor_count =
  **/
 static LibMame_RunGame_State g_state;
 
+/**
+ * Additionally, MAME does not distinguish between running_machines when it
+ * calls the output callbacks.  This here constitutes a circular buffer for
+ * collecting all MAME "output channel" output.
+ **/
+static char g_output_buffer[4096];
+unsigned int g_output_buffer_head, g_output_buffer_tail;
+
 
 /** **************************************************************************
  * Static helper functions
@@ -644,6 +652,44 @@ static void pause_callback(running_machine *machine, int is_pause)
         mame_pause(machine, FALSE);
     }
     /* Else, spontaneous pause by MAME internally, ignore it */
+}
+
+
+static void output_callback(void *param, const char *format, va_list args)
+{
+    (void) param;
+
+    /* Get the text */
+    char text[4096];
+    int len = vsnprintf(text, sizeof(text), format, args);
+
+    /* Compute where in the output buffer we're going to start copying */
+    unsigned int head = g_output_buffer_head % sizeof(g_output_buffer);
+
+    /* Increment the g_output_buffer_head with the number of bytes we're
+       going to be copying */
+    g_output_buffer_head += len;
+
+    /* Compute what tail would be if the buffer were completely full */
+    int smallest_tail = g_output_buffer_head - sizeof(g_output_buffer);
+    /* If the tail is less than this, then set it to this; this means that
+       we've wrapped around and overwritten some data */
+    if (g_output_buffer_tail < smallest_tail) {
+        g_output_buffer_tail = smallest_tail;
+    }
+
+    /* Copy the data in; first part, from head to the end */
+    int tocopy = sizeof(g_output_buffer) - head;
+    if (tocopy > len) {
+        tocopy = len;
+    }
+    memcpy(&(g_output_buffer[head]), text, tocopy);
+    len -= tocopy;
+
+    /* Next part, if necessary, is the remainder */
+    if (len) {
+        memcpy(g_output_buffer, &(text[tocopy]), len);
+    }
 }
 
 
@@ -982,6 +1028,15 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     osd_customize_input_type_list_function =
         &libmame_osd_customize_input_type_list;
 
+    /* Set up MAME's "output channels" so that we accumulate it all in a
+       buffer rather than dumping it to stdout/stderr/wherever */
+    mame_set_output_channel(OUTPUT_CHANNEL_ERROR, output_callback, 0, 0, 0);
+    mame_set_output_channel(OUTPUT_CHANNEL_WARNING, output_callback, 0, 0, 0);
+    mame_set_output_channel(OUTPUT_CHANNEL_INFO, output_callback, 0, 0, 0);
+    mame_set_output_channel(OUTPUT_CHANNEL_DEBUG, output_callback, 0, 0, 0);
+    mame_set_output_channel(OUTPUT_CHANNEL_VERBOSE, output_callback, 0, 0, 0);
+    mame_set_output_channel(OUTPUT_CHANNEL_LOG, output_callback, 0, 0, 0);
+
     /* Set the unfortunate globals.  Would greatly prefer to allocate a
        new one of these and pass it to MAME, having it pass it back in the
        osd_ callbacks. */
@@ -1097,4 +1152,42 @@ void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
                                              int value)
 {
     set_configuration_value(name, mask, value);
+}
+
+
+int LibMame_Get_Accumulated_Status_Text(char *buffer, int count)
+{
+    /* The amount of data available */
+    int len = g_output_buffer_head - g_output_buffer_tail;
+    
+    /* The amount of data to copy */
+    if (len > count) {
+        len = count;
+    }
+
+    /* Now save count for returning it since we know we are going to copy
+       [len] and we'll be modifying the len variable */
+    count = len;
+
+    /* Where to start copying from */
+    int tail = g_output_buffer_tail % sizeof(g_output_buffer);
+
+    /* Now increment tail */
+    g_output_buffer_tail += len;
+
+    /* Copy in the amount from tail to the end of the buffer */
+    int tocopy = sizeof(g_output_buffer) - tail;
+    if (tocopy > len) {
+        tocopy = len;
+    }
+
+    memcpy(buffer, &(g_output_buffer[tail]), tocopy);
+
+    len -= tocopy;
+
+    if (len) {
+        memcpy(&(buffer[tocopy]), g_output_buffer, len);
+    }
+
+    return count;
 }

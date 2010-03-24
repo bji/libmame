@@ -1642,7 +1642,9 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
 
 /**
  * Runs a game.  This is a non-thread-safe call, so only one thread can be
- * running this at a time.  More documentation needed here.
+ * running this at a time.  More documentation needed here.  After this
+ * function returns, you can get any status text that MAME emitted by calling
+ * LibMame_Get_Accumulated_Status_Text().
  *
  * @param gamenum is the game number of the game to run
  * @param options if non-NULL, provides the options that the game will be run
@@ -1776,6 +1778,23 @@ void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
  **/
 void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
                                              int value);
+
+
+/**
+ * Mame status text recovery functions
+ **/
+
+/**
+ * Get MAME error, warning, info, debug, verbose, and log information that has
+ * accumulated.  Note that the returned text is not NULL-terminated.
+ *
+ * @buffer is the buffer into which to copy accumulated error text
+ * @count is the maximum number of bytes to copy
+ * @return the number of bytes copied into [buffer]; if less than [count],
+ *         there is no more accumulated error text available, otherwise,
+ *         there may be more
+ **/
+int LibMame_Get_Accumulated_Status_Text(char *buffer, int count);
 
 
 #ifdef __cplusplus
