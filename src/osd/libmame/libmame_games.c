@@ -35,7 +35,7 @@ typedef struct GameInfo
     int working_flags, orientation_flags;
     LibMame_ScreenType screen_type;
     LibMame_ScreenResolution screen_resolution;
-    int screen_refresh_rate;
+    float screen_refresh_rate;
     int sound_channel_count;
     int sound_samples_count;
     int sound_samples_source;
@@ -1085,7 +1085,7 @@ LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum)
 }
 
 
-int LibMame_Get_Game_ScreenRefreshRateHz(int gamenum)
+float LibMame_Get_Game_ScreenRefreshRateHz(int gamenum)
 {
     return get_gameinfo(gamenum)->screen_refresh_rate;
 }

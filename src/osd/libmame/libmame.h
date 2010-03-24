@@ -1484,7 +1484,7 @@ LibMame_ScreenResolution LibMame_Get_Game_ScreenResolution(int gamenum);
  * @param gamenum is the game number of the game
  * @return the original screen refresh rate, in Hz, of the game.
  **/
-int LibMame_Get_Game_ScreenRefreshRateHz(int gamenum);
+float LibMame_Get_Game_ScreenRefreshRateHz(int gamenum);
 
 
 /**
