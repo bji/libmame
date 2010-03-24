@@ -43,7 +43,7 @@ OSDCOREOBJS = $(OBJ)/osd/libmame/osd_directory.o \
 # These are all of the object files that can be referenced directly
 # Consider removing expatobjs and zlibobjs from here, and instead require
 # applications to link against those libraries externally.
-LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
+LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) \
                   $(SOUNDOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) \
                   $(OSDCOREOBJS) $(VERSIONOBJ) \
                   $(OBJ)/osd/libmame/HashTable.o \

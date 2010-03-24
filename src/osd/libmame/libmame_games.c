@@ -1110,7 +1110,7 @@ int LibMame_Get_Game_SoundSamplesSource(int gamenum)
 }
 
 
-bool LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum)
+int LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum)
 {
     return (get_gameinfo(gamenum)->sound_samples == NULL);
 }

@@ -11,6 +11,14 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#if 0 // fix emacs indentation
+}
+#endif
+#endif
+
+
 /** **************************************************************************
  * Preprocessor definitions - constants
  ************************************************************************** **/
@@ -473,9 +481,9 @@ typedef struct LibMame_SoundSampleDescriptor
 typedef struct LibMame_ChipDescriptor
 {
     /**
-     * This is true if the chip is a sound chip, false if it is a CPU chip
+     * This is nonzero if the chip is a sound chip, zero if it is a CPU chip
      **/
-    bool is_sound;
+    int is_sound;
 
     /**
      * This is a tag for the chip
@@ -939,7 +947,7 @@ typedef struct LibMame_RunGameOptions
     /** saved state to load **/
     char state[1024]; 
     /** enable automatic save/restore at exit/startup **/
-    bool autosave; 
+    int autosave; 
     /** playback input file name **/
     char playback_file[256];
     /** record output file name **/
@@ -962,48 +970,48 @@ typedef struct LibMame_RunGameOptions
     /* core performance options ------------------------------------------- */
 
     /** enable automatic frameskip selection **/
-    bool auto_frame_skip;
+    int auto_frame_skip;
     /** set frameskip to fixed value, 0-10 (autoframeskip must be disabled) **/
     int frame_skip_level;
     /** enable throttling to keep game running in sync with real time **/
-    bool throttle;
+    int throttle;
     /** enable sleeping, which gives time back to other applications when
         idle **/
-    bool sleep;
+    int sleep;
     /** controls the speed of gameplay, relative to realtime; smaller numbers
         are slower **/
     float speed_multiplier;
     /** automatically adjusts the speed of gameplay to keep the refresh rate
         lower than the screen **/
-    bool auto_refresh_speed;
+    int auto_refresh_speed;
 
     /* core rotation/flip options ----------------------------------------- */
 
     /** rotate the game screen according to the game's orientation needs it **/
-    bool rotate;
+    int rotate;
     /** rotate screen clockwise 90 degrees **/
-    bool rotate_right;
+    int rotate_right;
     /** rotate screen counterclockwise 90 degrees **/
-    bool rotate_left;
+    int rotate_left;
     /** automatically rotate screen clockwise 90 degrees if vertical **/
-    bool auto_rotate_right;
+    int auto_rotate_right;
     /** automatically rotate screen counterclockwise 90 degrees if vertical **/
-    bool auto_rotate_left;
+    int auto_rotate_left;
     /** flip screen left-right **/
-    bool flip_x;
+    int flip_x;
     /** flip screen upside-down **/
-    bool flip_y;
+    int flip_y;
 
     /* core artwork options ----------------------------------------------- */
 
     /** crop artwork to game screen size **/
-    bool crop_artwork;
+    int crop_artwork;
     /** enable backdrops if artwork is enabled and available **/
-    bool use_backdrops;
+    int use_backdrops;
     /** enable overlays if artwork is enabled and available **/
-    bool use_overlays;
+    int use_overlays;
     /** enable bezels if artwork is enabled and available **/
-    bool use_bezels;
+    int use_bezels;
 
     /* core screen options ------------------------------------------------ */
 
@@ -1019,7 +1027,7 @@ typedef struct LibMame_RunGameOptions
     /* core vector options ------------------------------------------------ */
 
     /** use antialiasing when drawing vectors **/
-    bool vector_antialias;
+    int vector_antialias;
     /** set vector beam width **/
     float vector_beam;
     /** set vector flicker effect **/
@@ -1028,18 +1036,18 @@ typedef struct LibMame_RunGameOptions
     /* core sound options ------------------------------------------------- */
 
     /** enable sound output **/
-    bool sound;
+    int sound;
     /** set sound output sample rate **/
     int sample_rate;
     /** enable the use of external samples if available **/
-    bool use_samples;
+    int use_samples;
     /** sound volume reduction in decibels (-32 min, 0 max) **/
     int volume_attenuation;
 
     /* core input options ------------------------------------------------- */
 
     /** enable coin lockouts to actually lock out coins **/
-    bool coin_lockout;
+    int coin_lockout;
     /** explicit joystick map, or auto to auto-select **/
     char joystick_map[32];
     /** center deadzone range for joystick where change is ignored (0.0 center,
@@ -1049,35 +1057,35 @@ typedef struct LibMame_RunGameOptions
         center, 1.0 end) **/
     float joystick_saturation;
     /** enable steadykey support **/
-    bool enable_steadykey;
+    int enable_steadykey;
     /** specifies whether to use a natural keyboard or not **/
-    bool enable_natural_keyboard;
+    int enable_natural_keyboard;
     /** convert lightgun button 2 into offscreen reload **/
-    bool enable_lightgun_offscreen_reload;
+    int enable_lightgun_offscreen_reload;
 
     /* core debugging options --------------------------------------------- */
 
     /** display additional diagnostic information **/
-    bool verbose_output;
+    int verbose_output;
     /** generate an error.log file **/
-    bool emit_log;
+    int emit_log;
     /** enable/disable debugger **/
-    bool debug;
+    int debug;
     /** use the internal debugger for debugging **/
-    bool debug_internal;
+    int debug_internal;
     /** script for debugger **/
-    bool debugscript;
+    int debugscript;
     /** keep calling video updates while in pause **/
-    bool update_in_pause;
+    int update_in_pause;
 
     /* core misc options -------------------------------------------------- */
 
     /** select a special system BIOS to use **/
     char special_bios[64];
     /** enable cheat subsystem **/
-    bool enable_cheats;
+    int enable_cheats;
     /** skip displaying the information screen at startup **/
-    bool skip_gameinfo_screens;
+    int skip_gameinfo_screens;
 
 } LibMame_RunGameOptions;
 
@@ -1094,7 +1102,7 @@ typedef struct LibMame_RenderPrimitive
      * This is the next render primitive in this list, or NULL if there are no
      * more render primitives after this one
      **/
-    LibMame_RenderPrimitive *next;
+    struct LibMame_RenderPrimitive *next;
 
     /**
      * This is the type of this render primitive (vector or raster)
@@ -1512,14 +1520,14 @@ int LibMame_Get_Game_SoundSamplesSource(int gamenum);
 
 
 /**
- * Returns true if the sound samples are identical to those of the the
- * source, false if not
+ * Returns nonzero if the sound samples are identical to those of the the
+ * source, zero if not
  *
  * @param gamenum is the game number of the game
- * @return true if the sound samples are identical to those of the the
- *         source, false if not
+ * @return nonzero if the sound samples are identical to those of the the
+ *         source, zero if not
  **/
-bool LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum);
+int LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum);
 
 
 /**
@@ -1769,5 +1777,9 @@ void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
 void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
                                              int value);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __LIBMAME_H__ */
