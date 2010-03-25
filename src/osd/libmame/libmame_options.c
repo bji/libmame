@@ -177,6 +177,16 @@ core_options *get_mame_options(const LibMame_RunGameOptions *options,
     options_set_bool(mame_options, "readconfig", false, 
                      OPTION_PRIORITY_MAXIMUM);
 
+    /* We always enable mice and lightguns */
+    options_set_bool(mame_options, "mouse", true, OPTION_PRIORITY_MAXIMUM);
+    options_set_bool(mame_options, "lightgun", true, OPTION_PRIORITY_MAXIMUM);
+
+    /* We always enable multiple input since we need it */
+    options_set_bool(mame_options, "multikeyboard", true,
+                     OPTION_PRIORITY_MAXIMUM);
+    options_set_bool(mame_options, "multimouse", true,
+                     OPTION_PRIORITY_MAXIMUM);
+
     /* Finally, set the game name in there */
     options_set_string(mame_options, OPTION_GAMENAME, gamename, 
                        OPTION_PRIORITY_MAXIMUM);

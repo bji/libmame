@@ -469,7 +469,7 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_spinner_vertical:
         return perplayer_state->spinner_vertical_delta;
     case libmame_input_type_paddle:
-        return perplayer_state->paddle_state;
+        return perplayer_state->paddle_state; 
     case libmame_input_type_paddle_vertical:
         return perplayer_state->paddle_vertical_state;
     case libmame_input_type_trackball_horizontal:
