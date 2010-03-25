@@ -164,7 +164,11 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
 
     FILE *f = NULL;
 
-    if (!is_devnull && (f = fopen(posix_path, mode)) == NULL)
+    if (is_devnull)
+    {
+        f = NULL;
+    }
+    else if ((f = fopen(posix_path, mode)) == NULL)
     {
         switch (errno)
         {
@@ -187,6 +191,7 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
     }
 
     struct stat statbuf;
+    statbuf.st_size = 0;
 
     if (!is_devnull && fstat(fileno(f), /* returns */ &statbuf))
     {
@@ -258,6 +263,7 @@ file_error osd_write(osd_file *file, const void *buffer, UINT64 offset,
                      UINT32 length, UINT32 *actual)
 {
     if (file->is_devnull) {
+        *actual = length;
         return FILERR_NONE;
     }
 

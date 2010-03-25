@@ -9,6 +9,7 @@
  ************************************************************************** **/
 
 #include "emu.h"
+#include "options.h"
 #include "osdcore.h"
 #include "osdepend.h"
 #include "render.h"
@@ -1070,6 +1071,9 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
 
     /* Run the game */
     int result = mame_execute(mame_options);
+
+    /* Free the options */
+    options_free(mame_options);
 
     /* Convert the resulting MAME code to a libmame code and return */
     switch (result) {

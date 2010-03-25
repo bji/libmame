@@ -68,4 +68,5 @@ void osd_lock_release(osd_lock *lock)
 void osd_lock_free(osd_lock *lock)
 {
     (void) pthread_mutex_destroy((pthread_mutex_t *) lock);
+    osd_free(lock);
 }

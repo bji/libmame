@@ -192,6 +192,9 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options)
     /* Populate it with MAME options */
 	options_add_entries(mame_defaults, mame_core_options);
 
+    /* Zero out the options, just to have a nice fresh set */
+    memset(options, 0, sizeof(LibMame_RunGameOptions));
+
     for (int i = 0; i < g_option_map_count; i++) {
         const option_map_entry *entry = &(g_option_map[i]);
         switch (entry->type) {
