@@ -451,11 +451,11 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_left_or_single_joystick_down:
         return perplayer_state->left_or_single_joystick_down_state;
     case libmame_input_type_right_joystick_left:
-        return perplayer_state->right_joystick_down_state;
+        return perplayer_state->right_joystick_left_state;
     case libmame_input_type_right_joystick_right:
-        return perplayer_state->right_joystick_down_state;
+        return perplayer_state->right_joystick_right_state;
     case libmame_input_type_right_joystick_up:
-        return perplayer_state->right_joystick_down_state;
+        return perplayer_state->right_joystick_up_state;
     case libmame_input_type_right_joystick_down:
         return perplayer_state->right_joystick_down_state;
     case libmame_input_type_analog_joystick_horizontal:
@@ -642,6 +642,26 @@ static bool controllers_have_input
 }
 
 
+static void startup_callback(running_machine *machine, int mame_phase, int pct)
+{
+    LibMame_StartupPhase phase;
+
+    switch (mame_phase) {
+    case MAME_STARTUP_LOADING_ROMS:
+        phase = LibMame_StartupPhase_LoadingRoms;
+        break;
+    case MAME_STARTUP_INITIALIZING:
+        phase = LibMame_StartupPhase_InitializingMachine;
+        break;
+    default:
+        /* Else ignore, unknown phase? */
+        return;
+    }
+
+    (*(g_state.callbacks->StartingUp))(phase, pct, g_state.callback_data);
+}
+
+
 static void pause_callback(running_machine *machine, int is_pause)
 {
     (void) machine;
@@ -758,8 +778,11 @@ static void libmame_osd_init(running_machine *machine)
         render_target_set_bounds(g_state.target, res.width, res.height, 0.0);
     }
 
+    /* Add a startup callback so that we can forward this info to users */
+    add_startup_callback(machine, &startup_callback);
+
     /* Add a callback so that we can know when the running game has paused */
-    add_pause_callback(machine, pause_callback);
+    add_pause_callback(machine, &pause_callback);
 }
 
 

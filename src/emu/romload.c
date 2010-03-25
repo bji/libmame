@@ -559,9 +559,21 @@ static void display_loading_rom_message(rom_load_data *romdata, const char *name
 	char buffer[200];
 
 	if (name != NULL)
-		sprintf(buffer, "Loading (%d%%)", (UINT32)(100 * (UINT64)romdata->romsloadedsize / (UINT64)romdata->romstotalsize));
+    {
+        int pct_complete = (UINT32)(100 * (UINT64)romdata->romsloadedsize / (UINT64)romdata->romstotalsize);
+        sprintf(buffer, "Loading (%d%%)", pct_complete);
+        /* 100% complete will be reported below, so don't report it here */
+        if (pct_complete != 100)
+        {
+            mame_startup_update(romdata->machine, MAME_STARTUP_LOADING_ROMS,
+                                pct_complete);
+        }
+    }
 	else
+    {
 		sprintf(buffer, "Loading Complete");
+        mame_startup_update(romdata->machine, MAME_STARTUP_LOADING_ROMS, 100);
+    }
 
 	ui_set_startup_text(romdata->machine, buffer, FALSE);
 }

@@ -428,6 +428,24 @@ typedef enum
 
 
 /**
+ * The possible startup stats that libmame can report about as it is starting
+ * up a game.
+ **/
+typedef enum
+{
+    /**
+     * MAME is loading ROMs.  This happens before machine initialization.
+     **/
+    LibMame_StartupPhase_LoadingRoms,
+    /**
+     * MAME is intializing internal machine state in preparation for running
+     * a game.
+     **/
+    LibMame_StartupPhase_InitializingMachine
+} LibMame_StartupPhase;
+
+
+/**
  * Status codes that can be returned by LibMame_RunGame()
  **/
 typedef enum
@@ -1230,6 +1248,20 @@ typedef struct LibMame_RenderPrimitive
  **/
 typedef struct LibMame_RunGameCallbacks
 {
+    /**
+     * Called by libmame as LibMame_RunGame initializes the game and prepares
+     * it for being run.  This includes the loading of ROMs and initializing of
+     * internal machine state.
+     *
+     * @param phase is either LibMame_StartupPhase_LoadingRoms, or
+     *        LibMame_StartupPhase_InitializingMachine
+     * @param pct_complete is the percentage completion of this phase
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
+    void (*StartingUp)(LibMame_StartupPhase phase, int pct_complete,
+                       void *callback_data);
+
     /**
      * Called by libmame periodically to poll the current state of all
      * controllers.  The supplied callback should expect the all_states

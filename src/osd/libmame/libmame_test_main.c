@@ -13,6 +13,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void StartingUp(LibMame_StartupPhase phase, int pct_complete,
+                       void *callback_data)
+{
+    (void) phase;
+    (void) pct_complete;
+    (void) callback_data;
+}
+
+
 static void PollAllControllersState(LibMame_AllControllersState *all_states,
                                     void *callback_data)
 {
@@ -104,6 +113,7 @@ int main(int argc, char **argv)
             snprintf(options.aviwrite_file, sizeof(options.aviwrite_file),
                      "libmame-test.avi");
             LibMame_RunGameCallbacks cbs = {
+                &StartingUp,
                 &PollAllControllersState,
                 &UpdateVideo,
                 &UpdateAudio,
@@ -225,7 +235,7 @@ int main(int argc, char **argv)
             printf("Vector\n");
             break;
         }
-        printf("\tScreen Refresh Rate: %d Hz\n", 
+        printf("\tScreen Refresh Rate: %.2f Hz\n", 
                LibMame_Get_Game_ScreenRefreshRateHz(i));
         printf("\tSound Channels: %d\n", LibMame_Get_Game_SoundChannels(i));
         int samplecount = LibMame_Get_Game_SoundSamples_Count(i);

@@ -105,6 +105,7 @@ struct _callback_item
 	{
 		void		(*exit)(running_machine *);
 		void		(*reset)(running_machine *);
+		void		(*startup)(running_machine *, int, int);
 		void		(*frame)(running_machine *);
 		void		(*pause)(running_machine *, int);
 		void		(*log)(running_machine *, const char *);
@@ -127,6 +128,7 @@ struct _mame_private
 	mame_file *		logfile;
 
 	/* callbacks */
+	callback_item *	startup_callback_list;
 	callback_item *	frame_callback_list;
 	callback_item *	reset_callback_list;
 	callback_item *	pause_callback_list;
@@ -308,6 +310,8 @@ int mame_execute(core_options *options)
 #endif
 			firstrun = FALSE;
 
+            mame_startup_update(machine, MAME_STARTUP_INITIALIZING, 100);
+
 			/* perform a soft reset -- this takes us to the running phase */
 			soft_reset(machine, NULL, 0);
 
@@ -408,6 +412,28 @@ int mame_get_phase(running_machine *machine)
 {
 	mame_private *mame = machine->mame_data;
 	return mame->current_phase;
+}
+
+
+/*-------------------------------------------------
+    add_startup_callback - request a callback new status during startup
+-------------------------------------------------*/
+
+void add_startup_callback(running_machine *machine, void (*callback)(running_machine *machine, int phase, int phase_pct_complete))
+{
+	mame_private *mame = machine->mame_data;
+	callback_item *cb, **cur;
+
+	assert_always(mame_get_phase(machine) == MAME_PHASE_INIT, "Can only call add_startup_callback at init time!");
+
+	/* allocate memory */
+	cb = auto_alloc(machine, callback_item);
+
+	/* add us to the end of the list */
+	cb->func.startup = callback;
+	cb->next = NULL;
+	for (cur = &mame->startup_callback_list; *cur; cur = &(*cur)->next) ;
+	*cur = cb;
 }
 
 
@@ -514,6 +540,26 @@ void mame_frame_update(running_machine *machine)
 	/* call all registered frame callbacks */
 	for (cb = machine->mame_data->frame_callback_list; cb; cb = cb->next)
 		(*cb->func.frame)(machine);
+}
+
+
+/*-------------------------------------------------
+    mame_startup_update - handle update tasks for new startup status
+-------------------------------------------------*/
+
+void mame_startup_update(running_machine *machine, int phase, int phase_pct_complete)
+{
+	callback_item *cb;
+
+	/* call all registered frame callbacks */
+	for (cb = machine->mame_data->startup_callback_list; cb; cb = cb->next)
+		(*cb->func.startup)(machine, phase, phase_pct_complete);
+
+    /* If this is ROM load at 100%, then implicitly it is also initialize at
+       0% */
+    if ((phase == MAME_STARTUP_LOADING_ROMS) && (phase_pct_complete == 100)) {
+        mame_startup_update(machine, MAME_STARTUP_INITIALIZING, 0);
+    }
 }
 
 
@@ -1430,6 +1476,7 @@ static void init_machine(running_machine *machine)
 	/* this is where decryption is done and memory maps are altered */
 	/* so this location in the init order is important */
 	ui_set_startup_text(machine, "Initializing...", TRUE);
+    mame_startup_update(machine, 1, 0);
 	if (machine->gamedrv->driver_init != NULL)
 		(*machine->gamedrv->driver_init)(machine);
 

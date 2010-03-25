@@ -52,6 +52,13 @@ enum
 	MAME_PHASE_EXIT
 };
 
+/* startup phases */
+enum
+{
+    MAME_STARTUP_LOADING_ROMS,
+    MAME_STARTUP_INITIALIZING
+};
+
 
 /* debug flags */
 #define DEBUG_FLAG_ENABLED		0x00000001		/* debugging is enabled */
@@ -343,6 +350,11 @@ core_options *mame_options(void);
 /* return the current phase */
 int mame_get_phase(running_machine *machine);
 
+/* request callback for startup status update.  The sequence of callbacks made will be:
+   phase = MAME_STARTUP_LOADING_ROMS, phase_pct_complete from 0 to 100
+   phase = MAME_STARTUP_INITIALIZING, phase_pct_complete from 0 to 100 */
+void add_startup_callback(running_machine *machine, void (*callback)(running_machine *machine, int phase, int phase_pct_complete));
+
 /* request callback on frame update */
 void add_frame_callback(running_machine *machine, void (*callback)(running_machine *));
 
@@ -357,6 +369,9 @@ void add_exit_callback(running_machine *machine, void (*callback)(running_machin
 
 /* handle update tasks for a frame boundary */
 void mame_frame_update(running_machine *machine);
+
+/* announce new startup status */
+void mame_startup_update(running_machine *machine, int phase, int phase_pct_complete);
 
 /* return true if the given machine is valid */
 int mame_is_valid_machine(running_machine *machine);
