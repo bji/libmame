@@ -12,6 +12,22 @@
 
 
 /**
+ * This implementation has been altered to fit the assumptions that MAME
+ * internals seem to be making about work queues:
+ * - Each work queue has only one thread and runs work items one at a time in
+ *   order 
+ * This makes work queues much less awesome than they could be; as it stands,
+ * a work queue will use exactly one additional processor, so a system with 4
+ * cores would still leave two cores idle.  There are only three places where
+ * MAME currently uses work queues and I bet they could all be made to work
+ * without the above assumption, in which case they'd benefit from better
+ * scaling on multi core systems.  Until that work is done, I am gimping this
+ * implementation to work under MAME's constraints.
+ **/
+#define GIMPED_IMPLEMENTATION
+
+
+/**
  * Work queues are implemented very simply; it's not clear whether or not a
  * sophisticated implementation is necessary.  The mame source current uses
  * work queues pretty sparingly, and until benchmarking is done, there is no
@@ -410,6 +426,12 @@ static int work_queue_create_threads_locked()
 #endif
 #endif
 
+#ifdef GIMPED_IMPLEMENTATION
+    /* Would use N + 1 threads, but instead just using 1 extra worker
+       thread. */
+    threads_count = 1;
+#endif
+
     /**
      * This variable will be set if the creation of any of the work threads
      * fails, and will provoke a cleanup operation
@@ -615,6 +637,23 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
                                             INT32 numitems, void *parambase,
                                             INT32 paramstep, UINT32 flags)
 {
+    /* It's worse than I thought.  The discrete.c code is totally screwy and
+       just doesn't work without precise weird implementation of
+       osd_work_queue.  So for now, just disable all threading. */
+#ifdef GIMPED_IMPLEMENTATION
+	// loop over all requested items
+	for (int itemnum = 0; itemnum < numitems; itemnum++)
+	{
+		// execute the call directly
+		(void) (*callback)(parambase, 0);
+
+		// advance the param
+		parambase = (UINT8 *)parambase + paramstep;
+	}
+    
+    return NULL;
+
+#else
     osd_work_item *item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
 
     if ((item == NULL) || !numitems)
@@ -639,10 +678,7 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 
     item->numitems = numitems;
 
-    item->numitems_per_worker = numitems / g_threads_count;
-    if (item->numitems_per_worker == 0) {
-        item->numitems_per_worker = 1;
-    }
+    item->numitems_per_worker = (numitems / g_threads_count) + 1;
 
     item->parambase = parambase;
 
@@ -677,12 +713,15 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     }
 
     /* Signal that are new items to be worked on.  Broadcast if more than
-       3/4 of the threads would wake up anyway. */
-    if (numitems > ((g_threads_count * 3) / 4)) {
+       3/4 of the threads would wake up anyway.  Only wake up as many worker
+       threads as are needed to complete all items. */
+    int num_threads_needed = (item->numitems / item->numitems_per_worker) + 1;
+
+    if (num_threads_needed > ((g_threads_count * 3) / 4)) {
         pthread_cond_broadcast(&g_items_cond);
     }
     else {
-        for (int i = 0; i < numitems; i++) {
+        for (int i = 0; i < num_threads_needed; i++) {
             pthread_cond_signal(&g_items_cond);
         }
     }
@@ -692,6 +731,7 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     /* Enforce that the caller is not allowed to reference this item when they
        say to auto release it but returning NULL in that case */
     return (flags & WORK_ITEM_FLAG_AUTO_RELEASE) ? NULL : item;
+#endif
 }
 
 
