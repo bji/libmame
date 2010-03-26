@@ -8,6 +8,7 @@
 
 #include "osdcore.h"
 #include <pthread.h>
+#include <unistd.h>
 
 
 /**
@@ -42,7 +43,13 @@
  * the count is decremented as each thread exits and when it gets to 0, the
  * g_threads_cond is signalled
  **/
-static int g_threads_count = 0;
+static int g_threads_count;
+
+/**
+ * Keep track of the thread ids so as to be able to join them, which avoids
+ * pthreads memory leaks in buggy pthreads implementations.
+ **/
+static pthread_t *g_thread_ids;
 
 /**
  * This boolean is set to false when work threads are starting up, and is not
@@ -54,7 +61,7 @@ static bool g_threads_stop;
  * This is the total number of work queues that are currently in existence;
  * when it goes to zero, the worker threads are shut down.
  **/
-static int g_queues_count = 0;
+static int g_queues_count;
 
 /**
  * This is the list of work items waiting to be handled.  Each work item may
@@ -63,7 +70,7 @@ static int g_queues_count = 0;
  * removes the work_item from the global list and either signals a condition,
  * or frees the work_item directly, depending upon the work_item's flags.
  **/
-static osd_work_item *g_items = 0;
+static osd_work_item *g_items;
 
 /**
  * This is a global mutex protecting g_threads_count, g_threads_stop,
@@ -112,6 +119,8 @@ struct _osd_work_item
     osd_work_callback callback;
 
     INT32 numitems;
+
+    INT32 numitems_per_worker;
     
     void *parambase;
 
@@ -165,18 +174,30 @@ static void *work_queue_thread_main(void *)
              **/
             pthread_mutex_lock(&(item->mutex));
 
+            /* Take a block of items to implement.  This reduces locking
+               overhead by not requiring a lock for every item. */
+
             /**
-             * Save the index of the item we are to run
+             * Save the start index of the items we are to run
              **/
             int index = item->numitemsrun;
 
             /**
-             * Increment the numitemsrun since we are running an item.  If we
+             * Increment the numitemsrun since we are running items.  If we
              * are taking the last item to run out of the item, then no other
              * work thread should see this item any more on the work item
              * list, so remove it
              **/
-            if (++item->numitemsrun == item->numitems)
+
+            int to_run = item->numitems_per_worker;
+            int available = item->numitems - item->numitemsrun;
+            if (to_run > available) {
+                to_run = available;
+            }
+
+            item->numitemsrun += to_run;
+
+            if (item->numitemsrun == item->numitems)
             {
                 if (g_items->next == g_items)
                 {
@@ -186,11 +207,20 @@ static void *work_queue_thread_main(void *)
                 {
                     g_items->next->prev = g_items->prev;
                     g_items->prev->next = g_items->next;
+                    g_items = g_items->next;
                 }
+                
+                pthread_mutex_lock(&(item->queue->mutex));
+
+                if (--item->queue->items_count == 0) {
+                    pthread_cond_signal(&(item->queue->cond));
+                }
+
+                pthread_mutex_unlock(&(item->queue->mutex));
             }
 
             /**
-             * Release all locks; we knmow that the work item won't be taken
+             * Release all locks; we know that the work item won't be taken
              * out from underneath us because it cannot be freed until the
              * last item is completed, and that can't happen until we're done
              * with it
@@ -199,44 +229,46 @@ static void *work_queue_thread_main(void *)
             pthread_mutex_unlock(&(item->mutex));
 
             /**
-             * Actually run the work item with the appropriate parameter
+             * Actually run the work item with the appropriate parameters
              **/
-            void *result = (item->callback)
-                (&(((char *) item->parambase)[index * item->paramstep]),
-                 self);
+            void *result;
+            int end = index + to_run;
+            for ( ; index < end; index++) {
+                result = (item->callback)
+                    (&(((char *) item->parambase)[index * item->paramstep]),
+                     self);
+            }
 
             /**
-             * Re-acquire the item's mutex so that we can safely update
-             * some fields
+             * Re-acquire the mutexes so that we can safely update some fields
              **/
+            pthread_mutex_lock(&g_mutex);
             pthread_mutex_lock(&(item->mutex));
-
-            /**
-             * Increment the num items completed, since we just completed an
-             * item, and note whether or not that was the last item that
-             * needed to be completed for this work item
-             **/
-            bool is_complete = (++item->numitemscompleted == item->numitems);
-
-            /**
-             * No longer need the item's mutex; if we do end up needing to
-             * modify the item below, it will be only because every other work
-             * thread is done with this item and will never touch it again.
-             **/
-            pthread_mutex_unlock(&(item->mutex));
 
             /**
              * If the work item was complete (meaning that we were the work
              * thread that completed the very last work call), then we can
              * handle its end of life stuff
              **/
-            if (is_complete)
+            item->numitemscompleted += to_run;
+            if (item->numitemscompleted == item->numitems)
             {
                 /**
                  * If the flag said so, then just immediately auto free it
                  **/
                 if (item->flags & WORK_ITEM_FLAG_AUTO_RELEASE)
                 {
+                    /**
+                     * But of course must release its lock first.
+                     **/
+                    pthread_mutex_unlock(&(item->mutex));
+
+                    /**
+                     * No one else can have a reference to it because the API
+                     * user never got a reference to it, and we've just
+                     * completed the last item so no other worker thread could
+                     * be looking at it.  So it's save to release it here.
+                     **/
                     osd_work_item_release(item);
                 }
                 /**
@@ -250,14 +282,17 @@ static void *work_queue_thread_main(void *)
                     item->result = result;
 
                     pthread_cond_signal(&(item->cond));
+
+                    pthread_mutex_unlock(&(item->mutex));
                 }
             }
-
-            /**
-             * Now re-acquire the global mutex so that we can go back to the
-             * top of the loop.
-             **/
-            pthread_mutex_lock(&g_mutex);
+            else {
+                /**
+                 * All done with the item, and there is more to be done on it;
+                 * give another worker thread a crack at it.
+                 **/
+                pthread_mutex_unlock(&(item->mutex));
+            }
         }
         /**
          * Else there are currently no items, so wait until g_items_cond is
@@ -302,6 +337,8 @@ static void work_queue_destroy_threads_locked()
      * the g_threads_stop flag is now set and will thus exit
      **/
     pthread_cond_broadcast(&g_items_cond);
+    
+    int threads_count = g_threads_count;
 
     /**
      * Wait util all of the threads have exited; because each decrements the
@@ -313,6 +350,19 @@ static void work_queue_destroy_threads_locked()
     {
         pthread_cond_wait(&g_threads_cond, &g_mutex);
     }
+
+    /**
+     * And, join them all to prevent pthreads memory leaks in buggy pthreads
+     * implementations
+     **/
+    for (int i = 0; i < threads_count; i++) {
+        void *dontcare;
+        (void) pthread_join(g_thread_ids[i], &dontcare);
+    }
+
+    osd_free(g_thread_ids);
+
+    g_thread_ids = NULL;
 }
 
 
@@ -373,13 +423,15 @@ static int work_queue_create_threads_locked()
     g_threads_stop = false;
 
     /**
+     * Create the array to hold thread ids
+     **/
+    g_thread_ids = (pthread_t *) osd_malloc(sizeof(pthread_t) * threads_count);
+
+    /**
      * Create threads_count work threads
      **/
     for (int i = 0; i < threads_count; i++)
     {
-        /**
-         * The thread ID of the newly created thread is not needed
-         **/
         pthread_t newthread;
         if (pthread_create(&newthread, NULL, &work_queue_thread_main, NULL))
         {
@@ -391,6 +443,9 @@ static int work_queue_create_threads_locked()
         }
         else
         {
+            /* Store the newly-created thread's ID in the list */
+            g_thread_ids[i] = newthread;
+            
             /**
              * On success, increment the number of threads that have been
              * created.  Note that the newly created thread will not do
@@ -562,7 +617,7 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 {
     osd_work_item *item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
 
-    if (item == NULL)
+    if ((item == NULL) || !numitems)
     {
         return NULL;
     }
@@ -583,7 +638,12 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     item->callback = callback;
 
     item->numitems = numitems;
-    
+
+    item->numitems_per_worker = numitems / g_threads_count;
+    if (item->numitems_per_worker == 0) {
+        item->numitems_per_worker = 1;
+    }
+
     item->parambase = parambase;
 
     item->paramstep = paramstep;
@@ -595,6 +655,12 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     item->numitemscompleted = 0;
 
     item->queue = queue;
+    
+    pthread_mutex_lock(&(queue->mutex));
+
+    queue->items_count += 1;
+
+    pthread_mutex_unlock(&(queue->mutex));
 
     pthread_mutex_lock(&g_mutex);
 
@@ -609,10 +675,23 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     {
         g_items = item->prev = item->next = item;
     }
+
+    /* Signal that are new items to be worked on.  Broadcast if more than
+       3/4 of the threads would wake up anyway. */
+    if (numitems > ((g_threads_count * 3) / 4)) {
+        pthread_cond_broadcast(&g_items_cond);
+    }
+    else {
+        for (int i = 0; i < numitems; i++) {
+            pthread_cond_signal(&g_items_cond);
+        }
+    }
     
     pthread_mutex_unlock(&g_mutex);
 
-    return item;
+    /* Enforce that the caller is not allowed to reference this item when they
+       say to auto release it but returning NULL in that case */
+    return (flags & WORK_ITEM_FLAG_AUTO_RELEASE) ? NULL : item;
 }
 
 

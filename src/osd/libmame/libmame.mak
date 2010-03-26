@@ -81,6 +81,10 @@ $(LIBMAME_TEST): $(MAKETREE) $(OBJ)/osd/libmame/libmame_test_main.o $(LIBMAME)
 	$(ECHO) Linking $@...
 	$(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@
 
+work_queue_test: $(MAKETREE) $(OBJ)/osd/libmame/work_queue_test.o $(LIBMAME)
+				 $(ECHO) Linking $@...
+				 $(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@
+
 
 #-------------------------------------------------
 # phony convenience targets
