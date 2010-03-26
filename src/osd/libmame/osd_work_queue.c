@@ -21,7 +21,7 @@
 
 /**
  * General structure:
- * - A pool of threads (2 * num_processors) is shared across all work queues.
+ * - A pool of threads (num_processors + 1) is shared across all work queues.
  *   This pool of threads is created when the first work queue is created,
  *   and destroyed when the last work queue is destroyed.
  * - There is a single global queue of work items, across all queues; the
@@ -390,7 +390,7 @@ static int work_queue_create_threads_locked()
      * sufficient.
      **/
 #ifdef OSDLIB_WORK_QUEUE_THREAD_COUNT
-    threads_count = OSDLIB_PROCESSOR_COUNT * 2;
+    threads_count = OSDLIB_PROCESSOR_COUNT + 1;
 #else
     /**
      * If that's not defined, then if _SC_NPROCESSORS_ONLN is defined, it
@@ -398,7 +398,7 @@ static int work_queue_create_threads_locked()
      * available, so use it
      **/
 #ifdef _SC_NPROCESSORS_ONLN
-    threads_count = sysconf(_SC_NPROCESSORS_ONLN) * 2;
+    threads_count = sysconf(_SC_NPROCESSORS_ONLN) + 1;
 #else
     /**
      * Else assume a really ancient system without proper POSIX support, and
