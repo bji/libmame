@@ -12,22 +12,6 @@
 
 
 /**
- * This implementation has been altered to fit the assumptions that MAME
- * internals seem to be making about work queues:
- * - Each work queue has only one thread and runs work items one at a time in
- *   order 
- * This makes work queues much less awesome than they could be; as it stands,
- * a work queue will use exactly one additional processor, so a system with 4
- * cores would still leave two cores idle.  There are only three places where
- * MAME currently uses work queues and I bet they could all be made to work
- * without the above assumption, in which case they'd benefit from better
- * scaling on multi core systems.  Until that work is done, I am gimping this
- * implementation to work under MAME's constraints.
- **/
-#define GIMPED_IMPLEMENTATION
-
-
-/**
  * Work queues are implemented very simply; it's not clear whether or not a
  * sophisticated implementation is necessary.  The mame source current uses
  * work queues pretty sparingly, and until benchmarking is done, there is no
@@ -225,14 +209,6 @@ static void *work_queue_thread_main(void *)
                     g_items->prev->next = g_items->next;
                     g_items = g_items->next;
                 }
-                
-                pthread_mutex_lock(&(item->queue->mutex));
-
-                if (--item->queue->items_count == 0) {
-                    pthread_cond_signal(&(item->queue->cond));
-                }
-
-                pthread_mutex_unlock(&(item->queue->mutex));
             }
 
             /**
@@ -270,6 +246,12 @@ static void *work_queue_thread_main(void *)
             if (item->numitemscompleted == item->numitems)
             {
                 /**
+                 * Get a reference to its queue before releasing the
+                 * item so that we can signal the queue if necessary
+                 **/
+                osd_work_queue *queue = item->queue;
+                
+                /**
                  * If the flag said so, then just immediately auto free it
                  **/
                 if (item->flags & WORK_ITEM_FLAG_AUTO_RELEASE)
@@ -301,6 +283,19 @@ static void *work_queue_thread_main(void *)
 
                     pthread_mutex_unlock(&(item->mutex));
                 }
+
+                /* Check the item's queue to see if all of its items have
+                   completed, and if so, signal its empty condition.  We could
+                   instead wait to signal this after the item has been
+                   released, but this seems more likely to be what users of
+                   this API would expect ... */
+                pthread_mutex_lock(&(queue->mutex));
+                
+                if (--item->queue->items_count == 0) {
+                    pthread_cond_signal(&(queue->cond));
+                }
+
+                pthread_mutex_unlock(&(queue->mutex));
             }
             else {
                 /**
@@ -424,12 +419,6 @@ static int work_queue_create_threads_locked()
     **/
     threads_count = 2;
 #endif
-#endif
-
-#ifdef GIMPED_IMPLEMENTATION
-    /* Would use N + 1 threads, but instead just using 1 extra worker
-       thread. */
-    threads_count = 1;
 #endif
 
     /**
@@ -637,23 +626,6 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
                                             INT32 numitems, void *parambase,
                                             INT32 paramstep, UINT32 flags)
 {
-    /* It's worse than I thought.  The discrete.c code is totally screwy and
-       just doesn't work without precise weird implementation of
-       osd_work_queue.  So for now, just disable all threading. */
-#ifdef GIMPED_IMPLEMENTATION
-	// loop over all requested items
-	for (int itemnum = 0; itemnum < numitems; itemnum++)
-	{
-		// execute the call directly
-		(void) (*callback)(parambase, 0);
-
-		// advance the param
-		parambase = (UINT8 *)parambase + paramstep;
-	}
-    
-    return NULL;
-
-#else
     osd_work_item *item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
 
     if ((item == NULL) || !numitems)
@@ -731,7 +703,6 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     /* Enforce that the caller is not allowed to reference this item when they
        say to auto release it but returning NULL in that case */
     return (flags & WORK_ITEM_FLAG_AUTO_RELEASE) ? NULL : item;
-#endif
 }
 
 
