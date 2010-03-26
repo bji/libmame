@@ -1379,7 +1379,7 @@ running_machine::running_machine(const game_driver *driver)
 		if (config != NULL)
 			machine_config_free((machine_config *)config);
         if (basename != NULL)
-            free(basename);
+            osd_free(basename);
 		if (mame_data != NULL)
 			auto_free(this, mame_data);
 	}
@@ -1397,7 +1397,7 @@ running_machine::~running_machine()
 	if (config != NULL)
 		machine_config_free((machine_config *)config);
     if (basename != NULL)
-        free(basename);
+        osd_free(basename);
 
 	global_machine = NULL;
 }

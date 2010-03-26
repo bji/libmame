@@ -962,10 +962,30 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
                                         item_id);
                 break;
 
+                /*
+                 * For all of the following, we use DEVICE_CLASS_LIGHTGUN,
+                 * ITEM_CLASS_ABSOLUTE for any device for which we provide
+                 * absolute values, and DEVICE_CLASS_MOUSE,
+                 * ITEM_CLASS_RELATIVE for any device for which we provide
+                 * relative values.  The { MOUSE, RELATIVE } choice makes
+                 * sense, but the { LIGHTGUN, ABSOLUTE } seems weird for
+                 * things like analog joysticks and paddles.  However,
+                 * LIGHTGUN is the device class that MAME does the least
+                 * amount of internal fiddling with when interpreting input
+                 * values, and that's what we want.  If we choose
+                 * DEVICE_CLASS_JOYSTICK then it will do deadzone stuff, and
+                 * if we choose DEVICE_CLASS_MOUSE, it will force the input to
+                 * be relative which will cause input handling to always use
+                 * 0.  It's weird, but DEVICE_CLASS_LIGHTGUN is the best
+                 * choice for any absolute control type.
+                 */
+
             case libmame_input_type_analog_joystick_horizontal:
             case libmame_input_type_analog_joystick_vertical:
             case libmame_input_type_analog_joystick_altitude:
-                GET_ITEM_DEVICE_AND_ID(analog_joystick, DEVICE_CLASS_JOYSTICK,
+                /* Yes, it's weird that LIGHTGUN is used here - see above
+                   comment */
+                GET_ITEM_DEVICE_AND_ID(analog_joystick, DEVICE_CLASS_LIGHTGUN,
                                        ITEM_CLASS_ABSOLUTE);
                 break;
 
@@ -977,7 +997,9 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 
             case libmame_input_type_paddle:
             case libmame_input_type_paddle_vertical:
-                GET_ITEM_DEVICE_AND_ID(paddle, DEVICE_CLASS_MOUSE,
+                /* Yes, it's weird that LIGHTGUN is used here - see above
+                   comment */
+                GET_ITEM_DEVICE_AND_ID(paddle, DEVICE_CLASS_LIGHTGUN,
                                        ITEM_CLASS_ABSOLUTE);
                 break;
 
@@ -989,6 +1011,7 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 
             case libmame_input_type_lightgun_horizontal:
             case libmame_input_type_lightgun_vertical:
+                /* Hey, LIGHTGUN actually makes sense here! */
                 GET_ITEM_DEVICE_AND_ID(lightgun, DEVICE_CLASS_LIGHTGUN,
                                        ITEM_CLASS_ABSOLUTE);
                 break;
@@ -996,13 +1019,17 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
             case libmame_input_type_pedal:
             case libmame_input_type_pedal2:
             case libmame_input_type_pedal3:
-                GET_ITEM_DEVICE_AND_ID(pedal, DEVICE_CLASS_MOUSE,
+                /* Yes, it's weird that LIGHTGUN is used here - see above
+                   comment */
+                GET_ITEM_DEVICE_AND_ID(pedal, DEVICE_CLASS_LIGHTGUN,
                                        ITEM_CLASS_ABSOLUTE);
                 break;
 
             case libmame_input_type_positional:
             case libmame_input_type_positional_vertical:
-                GET_ITEM_DEVICE_AND_ID(positional, DEVICE_CLASS_MOUSE,
+                /* Yes, it's weird that LIGHTGUN is used here - see above
+                   comment */
+                GET_ITEM_DEVICE_AND_ID(positional, DEVICE_CLASS_LIGHTGUN,
                                        ITEM_CLASS_ABSOLUTE);
                 break;
 
