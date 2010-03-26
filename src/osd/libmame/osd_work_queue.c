@@ -231,7 +231,7 @@ static void *work_queue_thread_main(void *)
             /**
              * Actually run the work item with the appropriate parameters
              **/
-            void *result;
+            void *result = NULL;
             int end = index + to_run;
             for ( ; index < end; index++) {
                 result = (item->callback)
