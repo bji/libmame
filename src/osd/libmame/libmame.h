@@ -1447,14 +1447,14 @@ int LibMame_Get_Game_Year_Of_Release(int gamenum);
 
 
 /**
- * Returns the short name of the game that this game is a clone of, if the
- * game is a clone.  Returns NULL if the game is not a clone.
+ * Returns the game number of the game that this game is a clone of, if the
+ * game is a clone.  Returns -1 if the game is not a clone.
  *
  * @param gamenum is the game number of the game
- * @return the short name of the game that this game is a clone of, if the
- *         game is a clone, or NULL if the game is not a clone.
+ * @return the game number of the game that this game is a clone of, if the
+ *         game is a clone, or -1 if the game is not a clone.
  **/
-const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum);
+const int LibMame_Get_Game_CloneOf(int gamenum);
 
 
 /**

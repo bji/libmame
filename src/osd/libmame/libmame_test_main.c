@@ -140,9 +140,9 @@ int main(int argc, char **argv)
         else {
             printf("%d\n", year);
         }
-        const char *clone_of = LibMame_Get_Game_CloneOf_Short_Name(i);
-        if (clone_of != NULL) {
-            printf("\tClone Of: %s\n", clone_of);
+        int clone_of = LibMame_Get_Game_CloneOf(i);
+        if (clone_of != -1) {
+            printf("\tClone Of: %s\n", LibMame_Get_Game_Short_Name(clone_of));
         }
         printf("\tManufacturer: %s\n", LibMame_Get_Game_Manufacturer(i));
         bool needindent;

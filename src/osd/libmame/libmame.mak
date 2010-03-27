@@ -93,8 +93,8 @@ work_queue_test: $(MAKETREE) $(OBJ)/osd/libmame/work_queue_test.o $(LIBMAME)
 .PHONY: libmame
 libmame: $(LIBMAME)
 
-.PHONY: libmame-test
-libmame-test: $(LIBMAME_TEST)
+.PHONY: test
+test: $(LIBMAME_TEST)
 
 
 #-------------------------------------------------
