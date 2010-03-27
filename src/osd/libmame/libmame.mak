@@ -45,7 +45,7 @@ OSDCOREOBJS = $(OBJ)/osd/libmame/osd_directory.o \
 # applications to link against those libraries externally.
 LIBMAMEOBJS_STD = $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
                   $(SOUNDOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS) \
-                  $(OSDCOREOBJS) $(VERSIONOBJ) \
+                  $(SOFTFLOATOBJS) $(OSDCOREOBJS) $(VERSIONOBJ) \
                   $(OBJ)/osd/libmame/HashTable.o \
                   $(OBJ)/osd/libmame/libmame_dv.o \
                   $(OBJ)/osd/libmame/libmame_games.o \
@@ -70,7 +70,18 @@ LIBMAMEDEPS = $(DRVLIBS) $(LIBMAMEOBJS_STD) $(LIBDASM)
 
 LIBMAME = libmame$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXGPROF).a
 
-$(LIBMAME): $(MAKETREE) $(LIBMAMEDEPS)
+# Unfortunately, the MAME makefiles are set up such that it's not really
+# possible for OSD makefiles to reference variables from other makefiles.
+# This is unfortunate as it means that I have to depend directly on
+# softfloat.o here as for some reason it's the only .o that doesn't get
+# built before the libmame target for some reason.  I actually have no
+# idea how the rest of this works properly given that all of the
+# variables that this makefile is depending on are not even defined at
+# the time that libmame.mak is included by the top level makefile.  It seems
+# to me that MAME really ought to split its makefiles into definition
+# makefiles (included first), and rules makefiles (included last).  That would
+# provide a means for this all to work, I think.
+$(LIBMAME): $(MAKETREE) $(LIBMAMEDEPS) $(OBJ)/lib/softfloat/softfloat.o
 		    $(ECHO) Archiving $@...
 		    $(AR) crs $@ $(filter %.o,$(DRVLIBS)) $(foreach object,$(foreach archive,$(filter %.a,$(DRVLIBS)),$(shell ar t $(archive))),$(wildcard $(OBJ)/mame/drivers/$(object)) $(wildcard $(OBJ)/mame/machine/$(object)) $(wildcard $(OBJ)/mame/audio/$(object)) $(wildcard $(OBJ)/mame/video/$(object))) $(LIBMAMEOBJS_STD)
 
