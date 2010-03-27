@@ -503,238 +503,6 @@ static INT32 get_controller_state(void *, void *data)
 }
 
 
-static const void emit(const libmame_input_descriptor *desc)
-{
-    switch (desc->type) {
-    case libmame_input_type_Normal_button:
-        printf("Normal button %d", desc->number);
-        break;
-    case libmame_input_type_Other_button:
-        switch (desc->number) {
-#define OCASE(n) case LibMame_OtherButtonType_##n : \
-            printf("Other button %s", #n); break
-            OCASE(Coin1);
-            OCASE(Coin2);
-            OCASE(Coin3);
-            OCASE(Coin4);
-            OCASE(Coin5);
-            OCASE(Coin6);
-            OCASE(Coin7);
-            OCASE(Coin8);
-            OCASE(Bill1);
-            OCASE(Start1);
-            OCASE(Start2);
-            OCASE(Start3);
-            OCASE(Start4);
-            OCASE(Start5);
-            OCASE(Start6);
-            OCASE(Start7);
-            OCASE(Start8);
-            OCASE(Service);
-            OCASE(Service1);
-            OCASE(Service2);
-            OCASE(Service3);
-            OCASE(Service4);
-            OCASE(Tilt);
-            OCASE(Interlock);
-            OCASE(Volume_Up);
-            OCASE(Volume_Down);
-            break;
-        }
-        break;
-    case libmame_input_type_left_or_single_joystick_left:
-        printf("left or single joystick left");
-        break;
-    case libmame_input_type_left_or_single_joystick_right:
-        printf("left or single joystick right");
-        break;
-    case libmame_input_type_left_or_single_joystick_up:
-        printf("left or single joystick up");
-        break;
-    case libmame_input_type_left_or_single_joystick_down:
-        printf("left or single joystick down");
-        break;
-    case libmame_input_type_right_joystick_left:
-        printf("right joystick left");
-        break;
-    case libmame_input_type_right_joystick_right:
-        printf("right joystick right");
-        break;
-    case libmame_input_type_right_joystick_up:
-        printf("right joystick up");
-        break;
-    case libmame_input_type_right_joystick_down:
-        printf("right joystick down");
-        break;
-    case libmame_input_type_Ui_button:
-        switch (desc->number) {
-#define UCASE(n) case LibMame_UiButtonType_##n : \
-            printf("UI button %s", #n); break
-            UCASE(Configure);
-            UCASE(On_Screen_Display);
-            UCASE(Debug_Break);
-            UCASE(Pause);
-            UCASE(Reset_Machine);
-            UCASE(Soft_Reset);
-            UCASE(Show_Gfx);
-            UCASE(Frameskip_Dec);
-            UCASE(Frameskip_Inc);
-            UCASE(Throttle);
-            UCASE(Fast_Forward);
-            UCASE(Show_Fps);
-            UCASE(Snapshot);
-            UCASE(Record_Movie);
-            UCASE(Toggle_Cheat);
-            UCASE(Up);
-            UCASE(Down);
-            UCASE(Left);
-            UCASE(Right);
-            UCASE(Home);
-            UCASE(End);
-            UCASE(Page_Up);
-            UCASE(Page_Down);
-            UCASE(Select);
-            UCASE(Cancel);
-            UCASE(Display_Comment);
-            UCASE(Clear);
-            UCASE(Zoom_In);
-            UCASE(Zoom_Out);
-            UCASE(Prev_Group);
-            UCASE(Next_Group);
-            UCASE(Rotate);
-            UCASE(Show_Profiler);
-            UCASE(Toggle_Ui);
-            UCASE(Toggle_Debug);
-            UCASE(Paste);
-            UCASE(Save_State);
-            UCASE(Load_State);
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-
-static const char *item_id_to_string(int item_id)
-{
-    switch (item_id) {
-#define ICASE(n) case n: return #n
-        ICASE(ITEM_ID_A);
-        ICASE(ITEM_ID_B);
-        ICASE(ITEM_ID_C);
-        ICASE(ITEM_ID_D);
-        ICASE(ITEM_ID_E);
-        ICASE(ITEM_ID_F);
-        ICASE(ITEM_ID_G);
-        ICASE(ITEM_ID_H);
-        ICASE(ITEM_ID_I);
-        ICASE(ITEM_ID_J);
-        ICASE(ITEM_ID_K);
-        ICASE(ITEM_ID_L);
-        ICASE(ITEM_ID_M);
-        ICASE(ITEM_ID_N);
-        ICASE(ITEM_ID_O);
-        ICASE(ITEM_ID_P);
-        ICASE(ITEM_ID_Q);
-        ICASE(ITEM_ID_R);
-        ICASE(ITEM_ID_S);
-        ICASE(ITEM_ID_T);
-        ICASE(ITEM_ID_U);
-        ICASE(ITEM_ID_V);
-        ICASE(ITEM_ID_W);
-        ICASE(ITEM_ID_X);
-        ICASE(ITEM_ID_Y);
-        ICASE(ITEM_ID_Z);
-        ICASE(ITEM_ID_0);
-        ICASE(ITEM_ID_1);
-        ICASE(ITEM_ID_2);
-        ICASE(ITEM_ID_3);
-        ICASE(ITEM_ID_4);
-        ICASE(ITEM_ID_5);
-        ICASE(ITEM_ID_6);
-        ICASE(ITEM_ID_7);
-        ICASE(ITEM_ID_8);
-        ICASE(ITEM_ID_9);
-        ICASE(ITEM_ID_F1);
-        ICASE(ITEM_ID_F2);
-        ICASE(ITEM_ID_F3);
-        ICASE(ITEM_ID_F4);
-        ICASE(ITEM_ID_F5);
-        ICASE(ITEM_ID_F6);
-        ICASE(ITEM_ID_F7);
-        ICASE(ITEM_ID_F8);
-        ICASE(ITEM_ID_F9);
-        ICASE(ITEM_ID_F10);
-        ICASE(ITEM_ID_F11);
-        ICASE(ITEM_ID_F12);
-        ICASE(ITEM_ID_F13);
-        ICASE(ITEM_ID_F14);
-        ICASE(ITEM_ID_F15);
-        ICASE(ITEM_ID_ESC);
-        ICASE(ITEM_ID_TILDE);
-        ICASE(ITEM_ID_MINUS);
-        ICASE(ITEM_ID_EQUALS);
-        ICASE(ITEM_ID_BACKSPACE);
-        ICASE(ITEM_ID_TAB);
-        ICASE(ITEM_ID_OPENBRACE);
-        ICASE(ITEM_ID_CLOSEBRACE);
-        ICASE(ITEM_ID_ENTER);
-        ICASE(ITEM_ID_COLON);
-        ICASE(ITEM_ID_QUOTE);
-        ICASE(ITEM_ID_BACKSLASH);
-        ICASE(ITEM_ID_BACKSLASH2);
-        ICASE(ITEM_ID_COMMA);
-        ICASE(ITEM_ID_STOP);
-        ICASE(ITEM_ID_SLASH);
-        ICASE(ITEM_ID_SPACE);
-        ICASE(ITEM_ID_INSERT);
-        ICASE(ITEM_ID_DEL);
-        ICASE(ITEM_ID_HOME);
-        ICASE(ITEM_ID_END);
-        ICASE(ITEM_ID_PGUP);
-        ICASE(ITEM_ID_PGDN);
-        ICASE(ITEM_ID_LEFT);
-        ICASE(ITEM_ID_RIGHT);
-        ICASE(ITEM_ID_UP);
-        ICASE(ITEM_ID_DOWN);
-        ICASE(ITEM_ID_0_PAD);
-        ICASE(ITEM_ID_1_PAD);
-        ICASE(ITEM_ID_2_PAD);
-        ICASE(ITEM_ID_3_PAD);
-        ICASE(ITEM_ID_4_PAD);
-        ICASE(ITEM_ID_5_PAD);
-        ICASE(ITEM_ID_6_PAD);
-        ICASE(ITEM_ID_7_PAD);
-        ICASE(ITEM_ID_8_PAD);
-        ICASE(ITEM_ID_9_PAD);
-        ICASE(ITEM_ID_SLASH_PAD);
-        ICASE(ITEM_ID_ASTERISK);
-        ICASE(ITEM_ID_MINUS_PAD);
-        ICASE(ITEM_ID_PLUS_PAD);
-        ICASE(ITEM_ID_DEL_PAD);
-        ICASE(ITEM_ID_ENTER_PAD);
-        ICASE(ITEM_ID_PRTSCR);
-        ICASE(ITEM_ID_PAUSE);
-        ICASE(ITEM_ID_LSHIFT);
-        ICASE(ITEM_ID_RSHIFT);
-        ICASE(ITEM_ID_LCONTROL);
-        ICASE(ITEM_ID_RCONTROL);
-        ICASE(ITEM_ID_LALT);
-        ICASE(ITEM_ID_RALT);
-        ICASE(ITEM_ID_SCRLOCK);
-        ICASE(ITEM_ID_NUMLOCK);
-        ICASE(ITEM_ID_CAPSLOCK);
-        ICASE(ITEM_ID_LWIN);
-        ICASE(ITEM_ID_RWIN);
-        ICASE(ITEM_ID_MENU);
-        ICASE(ITEM_ID_CANCEL);
-    }
-
-    return "UNKNOWN";
-}
-
-
 static bool has_left_joystick_except(int controller_flags, int exception)
 {
     if (controller_flags & (1 << exception)) {
@@ -1100,7 +868,7 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
 
     /**
      * New keyboards are created as we run out of keys; the only keys we
-     * use are between ITEM_ID_A and ITEM_ID_CANCEL (inclusive).  It is
+     * use are between ITEM_ID_A and ITEM_ID_Z (inclusive).  It is
      * important that ITEM_IDs that identify keys from a keyboard are used as
      * MAME internally detects the ITEM_ID type and treats it specially in
      * different circumstances, and so the ITEM_ID must "match" the
@@ -1111,7 +879,10 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
      * would interpret it as some kind of delta value, not as a "pressed or
      * not pressed" boolean).  The same concept holds true for joysticks,
      * mice, etc, so those only use ITEM_ID values that make sense for their
-     * types.
+     * types.  And why only use keyboard keys up to Z and not the others?
+     * Well, apparently MAME also does something very weird and interprets
+     * devices which have been mapped to key '0' (and probably other MAME
+     * default UI keys) as having input that triggers that UI event.  Dumb.
      **/
     int keyboard_index = -1;
     input_item_id keyboard_item = ITEM_ID_A;
@@ -1188,10 +959,6 @@ static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
                 item_device = input_device_get_by_index
                     (g_state.machine, keyboard_index, DEVICE_CLASS_KEYBOARD);
                 item_id = keyboard_item;
-                printf("Registering ");
-                emit(&(g_input_descriptors[typedesc->type]));
-                printf(" as %s\n", item_id_to_string(item_id));
-                fflush(stdout);
                 keyboard_item++;
                 input_code = INPUT_CODE(DEVICE_CLASS_KEYBOARD, keyboard_index,
                                         ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE,
