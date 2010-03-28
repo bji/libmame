@@ -1035,7 +1035,7 @@ int32_t LibMame_Get_Game_Year_Of_Release(int gamenum)
 }
 
 
-const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum)
+const int LibMame_Get_Game_CloneOf(int gamenum)
 {
     const char *parent = get_game_driver(gamenum)->parent;
     /* Not sure why MAME uses "0" to mean "no parent" ... */
@@ -1043,14 +1043,15 @@ const char *LibMame_Get_Game_CloneOf_Short_Name(int gamenum)
         /* If the parent is a BIOS, then it's not a clone */
         const game_driver *driver = get_game_driver_by_name(parent);
         if (driver && (driver->flags & GAME_IS_BIOS_ROOT)) {
-            return NULL;
+            return -1;
         }
         else {
-            return parent;
+            int *index = g_gameinfos_hash.Get(parent);
+            return (index == NULL) ? -1 : *index;
         }
     }
     else {
-        return NULL;
+        return -1;
     }
 }
 
