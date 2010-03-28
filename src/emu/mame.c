@@ -1476,7 +1476,7 @@ static void init_machine(running_machine *machine)
 	/* this is where decryption is done and memory maps are altered */
 	/* so this location in the init order is important */
 	ui_set_startup_text(machine, "Initializing...", TRUE);
-    mame_startup_update(machine, 1, 0);
+    mame_startup_update(machine, MAME_STARTUP_INITIALIZING, 0);
 	if (machine->gamedrv->driver_init != NULL)
 		(*machine->gamedrv->driver_init)(machine);
 
