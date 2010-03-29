@@ -417,6 +417,26 @@ typedef enum
 
 
 /**
+ * These are the possible ROM/HDD image status values.
+ **/
+typedef enum LibMame_ImageStatus_Status
+{
+    /**
+     * The image is good (true to the original game)
+     **/
+    LibMame_ImageStatus_GoodDump,
+    /**
+     * The image is bad, but is the best available image
+     **/
+    LibMame_ImageStatus_BadDump,
+    /**
+     * There is no image available for this ROM/HDD image
+     **/
+    LibMame_ImageStatus_NoDump
+} LibMame_ImageStatus;
+
+
+/**
  * The possible types of render primitives passed into the update display
  * callback
  **/
@@ -476,7 +496,7 @@ typedef struct LibMame_ScreenResolution
 /**
  * This describes the name and location of a sound sample.
  **/
-typedef struct LibMame_SoundSampleDescriptor
+typedef struct LibMame_SoundSample
 {
     /**
      * This is the name of the sample, which is a file name of a sound file as
@@ -490,13 +510,13 @@ typedef struct LibMame_SoundSampleDescriptor
      * different source game number than their own game number.
      **/
     int source_gamenum;
-} LibMame_SoundSampleDescriptor;
+} LibMame_SoundSample;
 
 
 /**
  * This describes a chip that MAME emulates.
  **/
-typedef struct LibMame_ChipDescriptor
+typedef struct LibMame_Chip
 {
     /**
      * This is nonzero if the chip is a sound chip, zero if it is a CPU chip
@@ -517,13 +537,13 @@ typedef struct LibMame_ChipDescriptor
      * This is the clock rate of the chip, or 0 if the clock rate is unknown
      **/
     int clock_hz;
-} LibMame_ChipDescriptor;
+} LibMame_Chip;
 
 
 /**
  * This describes a setting that MAME allows to be adjusted for a game.
  **/
-typedef struct LibMame_SettingDescriptor
+typedef struct LibMame_Setting
 {
     /**
      * This is the type of this setting
@@ -565,7 +585,7 @@ typedef struct LibMame_SettingDescriptor
      * are only relevent for Configuration and Dipswitch settings.
      **/
     const char * const *value_names;
-} LibMame_SettingDescriptor;
+} LibMame_Setting;
 
 
 /**
@@ -574,7 +594,7 @@ typedef struct LibMame_SettingDescriptor
  * player would use to play a game.  All players are assumed to use the same
  * type and number of controls during a multiplayer game.
  **/
-typedef struct LibMame_PerPlayerControllersDescriptor
+typedef struct LibMame_PerPlayerControllers
 {
     /**
      * These are all of the general purpose buttons which are present,
@@ -611,7 +631,7 @@ typedef struct LibMame_PerPlayerControllersDescriptor
      * each is indicated in this as (1 << LibMame_ControllerType_XXX).
      **/
     int controller_flags;
-} LibMame_PerPlayerControllersDescriptor;
+} LibMame_PerPlayerControllers;
 
 
 /**
@@ -620,33 +640,131 @@ typedef struct LibMame_PerPlayerControllersDescriptor
  * a game has that are not active play controllers.  All players share these
  * controllers.
  **/
-typedef struct LibMame_SharedControllersDescriptor
+typedef struct LibMame_SharedControllers
 {
     /**
      * These flags identify which other binary controls are present,
      * each is indicated in this as (1 << LibMame_OtherButtonType_XXX).
      **/
     int other_button_flags;
-} LibMame_SharedControllersDescriptor;
+} LibMame_SharedControllers;
 
 
 /**
  * This describes all of the controller inputs for a game.
  **/
-typedef struct LibMame_AllControllersDescriptor
+typedef struct LibMame_AllControllers
 {
     /**
      * This is the per-player controllers descriptors; each player is assumed
      * to have the same controllers, so this describes the controller set that
      * every player uses for this game
      **/
-    LibMame_PerPlayerControllersDescriptor per_player;
+    LibMame_PerPlayerControllers per_player;
 
     /**
      * This is the shared controllers descriptor
      **/
-    LibMame_SharedControllersDescriptor shared;
-} LibMame_AllControllersDescriptor;
+    LibMame_SharedControllers shared;
+} LibMame_AllControllers;
+
+
+/**
+ * This structure defines a BIOS set, which is the set of ROMS defining the
+ * BIOS of a game that may be loaded instead of other BIOS sets for the game.
+ * If a game lists multiple BIOS sets, then any one of them may be loaded for
+ * the game to produce different behaviors depending on the BIOS set.
+ **/
+typedef struct LibMame_BiosSet
+{
+    /**
+     * This is the short name of the BIOS set
+     **/
+    const char *name;
+
+    /**
+     * This is a description of the BIOS set, which should given an indication
+     * of what the BIOS does
+     **/
+    const char *description;
+    
+    /**
+     * If this is nonzero then this BIOS set is the default for the game; if
+     * this is zero then this BIOS set is not the default for the game
+     **/
+    int is_default;
+
+    /**
+     * This is the number of ROM images included in this BIOS set
+     **/
+    int rom_count;
+
+    /**
+     * These are the numbers of the game's ROMs that make up this BIOS set.
+     * To get the details of rom N, call LibMame_Get_Game_Image(gamenum, N).
+     **/
+    const int *rom_numbers;
+} LibMame_BiosSet;
+
+
+/**
+ * This structure defines a single image (ROM or HDD) that a game uses.
+ **/
+typedef struct LibMame_Image
+{
+    /**
+     * This is the name of the image.
+     **/
+    const char *name;
+
+    /**
+     * This is the status of this ROM/HDD image, which indicates whether or
+     * not the image is "good" (true to the original), or "bad" (but the best
+     * available), or "no dump", which means that this structure identifies an
+     * image which is known to be needed by the game but is there is no good
+     * image available.
+     **/
+    LibMame_ImageStatus status;
+
+    /**
+     * If this is nonzero, this image is optional for functioning of the
+     * game.  If this is zero, this game is required for the game to run.
+     **/
+    int is_optional;
+
+    /**
+     * This is the exact size, in bytes, of the image, if known, or zero if
+     * not
+     **/
+    int size_if_known;
+
+    /**
+     * If the game that this image is for is a clone of another game, and the
+     * image itself is shared with that game, rather than duplicated for this
+     * game, then this is the name of the image as it exists in the cloned
+     * game.  If not, and this image is specific to this game and not shared
+     * with a parent game, then this will be 0.
+     **/
+    const char *clone_of;
+
+    /**
+     * If this is non-NULL, it provides a CRC value to be used to validate the
+     * image.
+     **/
+    const char *crc;
+
+    /**
+     * If this is non-NULL, it provides a SHA-1 hash value to be used to
+     * validate the image.
+     **/
+    const char *sha1;
+
+    /**
+     * If this is non-NULL, it provides a MD5 hash value to be used to
+     * validate the image.
+     **/
+    const char *md5;
+} LibMame_Image;
 
 
 /**
@@ -911,7 +1029,6 @@ typedef struct LibMame_AllControllersState
      **/
     LibMame_SharedControllersState shared;
 } LibMame_AllControllersState;
-
 
 
 /**
@@ -1588,7 +1705,7 @@ int LibMame_Get_Game_Chip_Count(int gamenum);
  * @param chipnum is the chip number of the chip
  * @return a description of a chip that MAME emulates for a given game.
  **/
-LibMame_ChipDescriptor LibMame_Get_Game_Chip(int gamenum, int chipnum);
+LibMame_Chip LibMame_Get_Game_Chip(int gamenum, int chipnum);
 
 
 /**
@@ -1607,7 +1724,7 @@ int LibMame_Get_Game_Setting_Count(int gamenum);
  * @param settingnum is the setting number of the setting
  * @return a description of a setting that MAME supports for a given game.
  **/
-LibMame_SettingDescriptor LibMame_Get_Game_Setting(int gamenum, int settingnum);
+LibMame_Setting LibMame_Get_Game_Setting(int gamenum, int settingnum);
 
 
 /**
@@ -1628,7 +1745,7 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum);
  * @param gamenum is the game number of the game
  * @return a structure describing controllers for a given game.
  **/
-LibMame_AllControllersDescriptor LibMame_Get_Game_AllControllers(int gamenum);
+LibMame_AllControllers LibMame_Get_Game_AllControllers(int gamenum);
 
 
 /**
@@ -1638,8 +1755,74 @@ LibMame_AllControllersDescriptor LibMame_Get_Game_AllControllers(int gamenum);
  * @param gamenum is the game number of the game
  * @return a structure describing the shared controllers for a given game.
  **/
-LibMame_SharedControllersDescriptor LibMame_Get_Game_SharedControllers
+LibMame_SharedControllers LibMame_Get_Game_SharedControllers
     (int gamenum);
+
+
+/**
+ * This returns the number of BIOS sets that are known for a given game.  A
+ * BIOS set describes a set of BIOS roms that may be selected to enable
+ * specific functionality in a game.
+ *
+ * @param gamenum is the game number of the game
+ * @return number of BIOS sets that are known for a given game.
+ **/
+int LibMame_Get_Game_BiosSet_Count(int gamenum);
+
+
+/**
+ * This returns a BIOS set for a given game.
+ *
+ * @param gamenum is the game number of the game
+ * @param biossetnum is the number of the BIOS set
+ * @return a BIOS set for a given game.
+ **/
+LibMame_BiosSet LibMame_Get_Game_BiosSet(int gamenum, int biossetnum);
+
+
+/**
+ * This returns the number of ROM images (BIOS or game ROMs) that are known
+ * for a given game.  In general, a game needs all of the ROMs from one BIOS
+ * set, plus all ROMs not in any BIOS set, to run.
+ *
+ * @param gamenum is the game number of the game
+ * @return the number of ROM images (BIOS or game ROMs) that are known for a
+ *         given game
+ **/
+int LibMame_Get_Game_Rom_Count(int gamenum);
+
+
+/**
+ * This returns information about a ROM that is known to be used by a given
+ * game.
+ *
+ * @param gamenum is the game number of the game
+ * @param romnum is the number of the ROM to return
+ * @return information about a ROM that is known to be used by a given game
+ **/
+LibMame_Image LibMame_Get_Game_Rom(int gamenum, int romnum);
+
+
+/**
+ * This returns the number of Hard Disk Drive images (also called CHDs) for a
+ * given game.  In general, a game needs all of its CHDs to run.
+ *
+ * @param gamenum is the game number of the game
+ * @return the number of Hard Disk Drive images for a given game
+ **/
+int LibMame_Get_Game_Hdd_Count(int gamenum);
+
+
+/**
+ * This returns information about an HDD image that is known to be used by a
+ * given game.
+ *
+ * @param gamenum is the game number of the game
+ * @param romnum is the number of the HDD image to return
+ * @return information about an HDD image that is known to be used by a given
+ *         game
+ **/
+LibMame_Image LibMame_Get_Game_Hdd(int gamenum, int hddnum);
 
 
 /**
@@ -1649,11 +1832,6 @@ LibMame_SharedControllersDescriptor LibMame_Get_Game_SharedControllers
  * @return the name of the MAME source file that implements the game.
  **/
 const char *LibMame_Get_Game_SourceFileName(int gamenum);
-
-/**
- * TODO: Functions for getting descriptions of all of the ROMs that a
- * game needs (possibly also for specially identifying BIOS ROMs)
- **/
 
 
 /**
@@ -1763,16 +1941,16 @@ void LibMame_RunningGame_SaveState(const char *filename);
 
 /**
  * Sets a new value for the setting corresponding to a
- * LibMame_SettingDescriptor of type LibMame_SettingType_Configuration.  The
+ * LibMame_Setting of type LibMame_SettingType_Configuration.  The
  * setting is identified by the name and mask of the
- * LibMame_SettingDescriptor.  This function may only be called from within
+ * LibMame_Setting.  This function may only be called from within
  * the MakeRunningGameCalls or Paused callback, and not from any other context
  * of execution.
  *
  * @param name is the name of the configuration setting
  * @param mask is the mask of the configuration setting
  * @param value is the value, which must be one of the value_names of the
- *        LibMame_SettingDescriptor for this configuration setting
+ *        LibMame_Setting for this configuration setting
  **/
 void LibMame_RunningGame_ChangeConfigurationValue(const char *name, 
                                                   uint32_t mask,
@@ -1780,27 +1958,25 @@ void LibMame_RunningGame_ChangeConfigurationValue(const char *name,
 
 
 /**
- * Sets a new value for the setting corresponding to a
- * LibMame_SettingDescriptor of type LibMame_SettingType_Dipswitch.  The
- * setting is identified by the name and mask of the
- * LibMame_SettingDescriptor.  This function may only be called from within
+ * Sets a new value for the setting corresponding to a LibMame_Setting of type
+ * LibMame_SettingType_Dipswitch.  The setting is identified by the name and
+ * mask of the LibMame_Setting.  This function may only be called from within
  * the MakeRunningGameCalls or Paused callback, and not from any other context
  * of execution.
  *
  * @param name is the name of the dipswitch setting
  * @param mask is the mask of the dipswitch setting
  * @param value is the value, which must be one of the value_names of the
- *        LibMame_SettingDescriptor for this dipswitch setting
+ *        LibMame_Setting for this dipswitch setting
  **/
 void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
                                               const char *value);
 
 
 /**
- * Sets a new value for the setting corresponding to a
- * LibMame_SettingDescriptor of type LibMame_SettingType_Adjuster.  The
- * setting is identified by the name and mask of the
- * LibMame_SettingDescriptor.  This function may only be called from within
+ * Sets a new value for the setting corresponding to a LibMame_Setting of type
+ * LibMame_SettingType_Adjuster.  The setting is identified by the name and
+ * mask of the LibMame_Setting.  This function may only be called from within
  * the MakeRunningGameCalls or Paused callback, and not from any other context
  * of execution.
  *

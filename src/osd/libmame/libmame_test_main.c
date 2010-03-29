@@ -268,7 +268,7 @@ int main(int argc, char **argv)
         if (chipcount) {
             printf("\tChips: ");
             for (int j = 0; j < chipcount; j++) {
-                LibMame_ChipDescriptor desc = LibMame_Get_Game_Chip(i, j);
+                LibMame_Chip desc = LibMame_Get_Game_Chip(i, j);
                 if (j > 0) {
                     printf("\n\t       ");
                 }
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
         if (settingcount) {
             printf("\tSettings: ");
             for (int j = 0; j < settingcount; j++) {
-                LibMame_SettingDescriptor desc = LibMame_Get_Game_Setting(i, j);
+                LibMame_Setting desc = LibMame_Get_Game_Setting(i, j);
                 if (j > 0) {
                     printf("\n\t          ");
                 }
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
         }
         printf("\tMax Simultaneous Players: %d\n", 
                LibMame_Get_Game_MaxSimultaneousPlayers(i));
-        LibMame_AllControllersDescriptor controllers =
+        LibMame_AllControllers controllers =
             LibMame_Get_Game_AllControllers(i);
         printf("\tControllers: ");
         needindent = false;
@@ -477,6 +477,97 @@ int main(int argc, char **argv)
             needindent = true;
         }
         printf("\n");
+        int setcount = LibMame_Get_Game_BiosSet_Count(i);
+        if (setcount) {
+            printf("\tBIOS sets: ");
+            needindent = false;
+            for (int j = 0; j < setcount; j++) {
+                LibMame_BiosSet set = LibMame_Get_Game_BiosSet(i, j);
+                if (needindent) {
+                    printf("\t           ");
+                }
+                printf("%s%s (%s)[", set.is_default ? "*" : "",
+                       set.name, set.description);
+                bool needcomma = false;
+                for (int k = 0; k < set.rom_count; k++) {
+                    if (needcomma) {
+                        printf(", ");
+                    }
+                    printf("%s", LibMame_Get_Game_Rom(i, k).name);
+                    needcomma = true;
+                }
+                printf("]\n");
+                needindent = true;
+            }
+        }
+        int romcount = LibMame_Get_Game_Rom_Count(i);
+        printf("\tRoms: ");
+        needindent = false;
+        for (int j = 0; j < romcount; j++) {
+            LibMame_Image image = LibMame_Get_Game_Rom(i, j);
+            if (needindent) {
+                printf("\t      ");
+            }
+            printf("%s%s%s", image.name, 
+                   ((image.status == LibMame_ImageStatus_GoodDump) ? "" :
+                    (image.status == LibMame_ImageStatus_BadDump) ? " [bad]" :
+                    " [no dump]"), image.is_optional ? " (optional)" : "");
+            if (image.clone_of) {
+                printf(" (clone of %s)", image.clone_of);
+            }
+            bool needcomma = false;
+            if (image.crc) {
+                printf(" crc: %s", image.crc);
+            }
+            if (image.sha1) {
+                if (needcomma) {
+                    printf(", ");
+                }
+                printf(" sha1: %s", image.sha1);
+                needcomma = true;
+            }
+            if (image.md5) {
+                if (needcomma) {
+                    printf(", ");
+                }
+                printf(" md5: %s", image.md5);
+            }
+            needindent = true;
+        }
+        int hddcount = LibMame_Get_Game_Hdd_Count(i);
+        printf("\tHdds: ");
+        needindent = false;
+        for (int j = 0; j < hddcount; j++) {
+            LibMame_Image image = LibMame_Get_Game_Hdd(i, j);
+            if (needindent) {
+                printf("\t      ");
+            }
+            printf("%s%s%s", image.name, 
+                   ((image.status == LibMame_ImageStatus_GoodDump) ? "" :
+                    (image.status == LibMame_ImageStatus_BadDump) ? " [bad]" :
+                    " [no dump]"), image.is_optional ? " (optional)" : "");
+            if (image.clone_of) {
+                printf(" (clone of %s)", image.clone_of);
+            }
+            bool needcomma = false;
+            if (image.crc) {
+                printf(" crc: %s", image.crc);
+            }
+            if (image.sha1) {
+                if (needcomma) {
+                    printf(", ");
+                }
+                printf(" sha1: %s", image.sha1);
+                needcomma = true;
+            }
+            if (image.md5) {
+                if (needcomma) {
+                    printf(", ");
+                }
+                printf(" md5: %s", image.md5);
+            }
+            needindent = true;
+        }
         const char *srcname = LibMame_Get_Game_SourceFileName(i);
         if (srcname) {
             printf("\tSource File Name: %s\n", srcname);

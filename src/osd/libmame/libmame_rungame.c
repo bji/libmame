@@ -129,7 +129,7 @@ typedef struct LibMame_RunGame_State
      * that they use.
      **/
     int maximum_player_count;
-    LibMame_AllControllersDescriptor controllers;
+    LibMame_AllControllers controllers;
 
     /**
      * Has a LibMame_RunningGame_SchedulePause() call been made?
@@ -536,7 +536,7 @@ static bool has_right_joystick_except(int controller_flags, int exception)
 
 
 static bool controllers_have_input
-    (int num_players, const LibMame_AllControllersDescriptor *controllers,
+    (int num_players, const LibMame_AllControllers *controllers,
      int player, int ipt_type)
 {
     /* Game doesn't support this player, no need for this input */
@@ -736,7 +736,7 @@ static void look_up_and_set_configuration_value(int gamenum,
     int count = LibMame_Get_Game_Setting_Count(gamenum);
     /* Find the descriptor */
     for (int i = 0; i < count; i++) {
-        LibMame_SettingDescriptor desc = LibMame_Get_Game_Setting(gamenum, i);
+        LibMame_Setting desc = LibMame_Get_Game_Setting(gamenum, i);
         if ((desc.mask == mask) && !strcmp(desc.name, name)) {
             /* Found the descriptor, now find the value */
             for (int j = 0; j < desc.value_count; j++) {

@@ -14,6 +14,7 @@
 #include "HashTable.h"
 #include "emu.h"
 #include "config.h"
+#include "hash.h"
 #include "libmame.h"
 #include "osdcore.h"
 #include "sound/samples.h"
@@ -41,11 +42,17 @@ typedef struct GameInfo
     int sound_samples_source;
     const char **sound_samples;
     int chip_count;
-    LibMame_ChipDescriptor *chips;
+    LibMame_Chip *chips;
     int setting_count;
-    LibMame_SettingDescriptor *settings;
+    LibMame_Setting *settings;
     int max_simultaneous_players;
-    LibMame_AllControllersDescriptor controllers;
+    LibMame_AllControllers controllers;
+    int biosset_count;
+    LibMame_BiosSet *biossets;
+    int rom_count;
+    LibMame_Image *roms;
+    int hdd_count;
+    LibMame_Image *hdds;
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
@@ -349,10 +356,10 @@ static void convert_chips(const machine_config *machineconfig,
         return;
     }
 
-    gameinfo->chips = (LibMame_ChipDescriptor *) osd_calloc
-        (sizeof(LibMame_ChipDescriptor) * gameinfo->chip_count);
+    gameinfo->chips = (LibMame_Chip *) osd_calloc
+        (sizeof(LibMame_Chip) * gameinfo->chip_count);
     
-    LibMame_ChipDescriptor *descriptor = gameinfo->chips;
+    LibMame_Chip *descriptor = gameinfo->chips;
 
 	for (devconfig = cpu_first(machineconfig); devconfig; 
          devconfig = cpu_next(devconfig)) {
@@ -395,11 +402,11 @@ static void convert_settings(const ioport_list *ioportlist,
         return;
     }
 
-    gameinfo->settings = (LibMame_SettingDescriptor *)
-        osd_calloc(sizeof(LibMame_SettingDescriptor) * 
+    gameinfo->settings = (LibMame_Setting *)
+        osd_calloc(sizeof(LibMame_Setting) * 
                    gameinfo->setting_count);
 
-    LibMame_SettingDescriptor *desc = gameinfo->settings;
+    LibMame_Setting *desc = gameinfo->settings;
 
 	for (port = ioportlist->first(); port; port = port->next) {
 		for (field = port->fieldlist; field; field = field->next) {
@@ -794,6 +801,153 @@ static void convert_controllers(const ioport_list *ioportlist,
 }
 
 
+static char *copy_string(const char *string)
+{
+    int len = strlen(string);
+
+    char *ret = (char *) osd_malloc(len + 1);
+
+    strcpy(ret, string);
+
+    return ret;
+}
+
+
+static void convert_image_info(const game_driver *driver, 
+                               const machine_config *machineconfig,
+                               GameInfo *gameinfo)
+{
+    /* Could the roms and hdd images */
+
+    /* Iterate through the sources ... */
+    for (const rom_source *source = rom_first_source(driver, machineconfig); 
+         source; source = rom_next_source(driver, machineconfig, source)) {
+        /* Iterate through the regions */
+        for (const rom_entry *region = rom_first_region(driver, source); region;
+             region = rom_next_region(region)) {
+            /* iterate through ROM entries */
+            for (const rom_entry *rom = rom_first_file(region); rom;
+                 rom = rom_next_file(rom)) {
+                if (ROMREGION_ISDISKDATA(region)) {
+                    gameinfo->hdd_count++;
+                }
+                else {
+                    gameinfo->rom_count++;
+                }
+            }
+        }
+    }
+
+    /* Allocate them */
+    if (gameinfo->rom_count) {
+        gameinfo->roms = (LibMame_Image *) osd_malloc
+            (sizeof(LibMame_Image) * gameinfo->rom_count);
+    }
+    if (gameinfo->hdd_count) {
+        gameinfo->hdds = (LibMame_Image *) osd_malloc
+            (sizeof(LibMame_Image) * gameinfo->hdd_count);
+    }
+
+    /* Fill them in, and at the same time, build up the BIOS sets */
+#if 0
+    Hash::Table<StringKey, LibMame_BiosSet> htBiosSets;
+#endif
+    LibMame_Image *rom_image = gameinfo->roms, *hdd_image = gameinfo->hdds;
+    for (const rom_source *source = rom_first_source(driver, machineconfig);
+         source; source = rom_next_source(driver, machineconfig, source)) {
+        /* Iterate through the regions */
+        for (const rom_entry *region = rom_first_region(driver, source); region;
+             region = rom_next_region(region)) {
+            /* iterate through ROM entries */
+            for (const rom_entry *rom = rom_first_file(region); rom;
+                 rom = rom_next_file(rom)) {
+                LibMame_Image *image;
+                bool is_disk = ROMREGION_ISDISKDATA(region);
+                if (is_disk) {
+                    image = hdd_image;
+                    hdd_image++;
+                }
+                else {
+                    image = rom_image;
+                    rom_image++;
+                }
+                image->name = ROM_GETNAME(rom);
+                const char *hashdata = ROM_GETHASHDATA(rom);
+                image->status = (hash_data_has_info
+                                 (hashdata, HASH_INFO_BAD_DUMP) ?
+                                 LibMame_ImageStatus_BadDump :
+                                 hash_data_has_info
+                                 (hashdata, HASH_INFO_NO_DUMP) ?
+                                 LibMame_ImageStatus_NoDump :
+                                 LibMame_ImageStatus_GoodDump);
+                image->is_optional = ((is_disk && DISK_ISOPTIONAL(rom)) ||
+                                      (!is_disk && ROM_ISOPTIONAL(rom)));
+                image->size_if_known = is_disk ? 0 : rom_file_size(rom);
+                image->clone_of = 0;
+                const game_driver *clone_of = driver_get_clone(driver);
+                if (clone_of && !ROM_NOGOODDUMP(rom)) {
+                    machine_config *pconfig = machine_config_alloc
+                        (clone_of->machine_config);
+                    for (const rom_source *psource = rom_first_source
+                             (clone_of, pconfig); psource;
+                         psource = rom_next_source
+                             (clone_of, pconfig, psource)) {
+                        for (const rom_entry *pregion = 
+                                 rom_first_region(clone_of, psource); pregion;
+                             pregion = rom_next_region(pregion)) {
+                            for (const rom_entry *prom = 
+                                     rom_first_file(pregion); prom; 
+                                 prom = rom_next_file(prom)) {
+                                if (hash_data_is_equal
+                                    (ROM_GETHASHDATA(rom),
+                                     ROM_GETHASHDATA(prom), 0)) {
+                                    image->clone_of = ROM_GETNAME(prom);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                char checksum[HASH_BUF_SIZE];
+                if (hash_data_extract_printable_checksum
+                    (hashdata, HASH_CRC, checksum)) {
+                    image->crc = copy_string(checksum);
+                }
+                else {
+                    image->crc = 0;
+                }
+                if (hash_data_extract_printable_checksum
+                    (hashdata, HASH_SHA1, checksum)) {
+                    image->sha1 = copy_string(checksum);
+                }
+                else {
+                    image->sha1 = 0;
+                }
+                if (hash_data_extract_printable_checksum
+                    (hashdata, HASH_MD5, checksum)) {
+                    image->md5 = copy_string(checksum);
+                }
+                else {
+                    image->md5 = 0;
+                }
+#if 0
+                if (image->biosset) {
+                }
+#endif
+            }
+        }
+    }
+    
+
+    /* Now count the BIOS sets */
+
+    /* Allocate them */
+
+    /* Fill them in */
+    
+}
+
+
 static void convert_source_file_name(const game_driver *driver,
                                      GameInfo *gameinfo)
 {
@@ -835,6 +989,7 @@ static void convert_game_info(GameInfo *gameinfo)
     convert_chips(machineconfig, gameinfo);
     convert_settings(&ioportlist, gameinfo);
     convert_controllers(&ioportlist, gameinfo);
+    convert_image_info(driver, machineconfig, gameinfo);
     convert_source_file_name(driver, gameinfo);
 
     machine_config_free(machineconfig);
@@ -951,6 +1106,42 @@ void LibMame_Games_Deinitialize()
                     }
                 }
                 osd_free(gameinfo->settings);
+            }
+            if (gameinfo->biossets) {
+                for (int j = 0; j < gameinfo->biosset_count; j++) {
+                    osd_free((int *) (gameinfo->biossets[j].rom_numbers));
+                }
+                osd_free(gameinfo->biossets);
+            }
+            if (gameinfo->roms) {
+                for (int j = 0; j < gameinfo->rom_count; j++) {
+                    LibMame_Image *img = &(gameinfo->roms[j]);
+                    if (img->crc) {
+                        osd_free((char *) (img->crc));
+                    }
+                    if (img->sha1) {
+                        osd_free((char *) (img->sha1));
+                    }
+                    if (img->md5) {
+                        osd_free((char *) (img->md5));
+                    }
+                }
+                osd_free(gameinfo->roms);
+            }
+            if (gameinfo->hdds) {
+                for (int j = 0; j < gameinfo->hdd_count; j++) {
+                    LibMame_Image *img = &(gameinfo->hdds[j]);
+                    if (img->crc) {
+                        osd_free((char *) (img->crc));
+                    }
+                    if (img->sha1) {
+                        osd_free((char *) (img->sha1));
+                    }
+                    if (img->md5) {
+                        osd_free((char *) (img->md5));
+                    }
+                }
+                osd_free(gameinfo->hdds);
             }
         }
         osd_free(g_gameinfos);
@@ -1136,7 +1327,7 @@ int LibMame_Get_Game_Chip_Count(int gamenum)
 }
 
 
-LibMame_ChipDescriptor LibMame_Get_Game_Chip(int gamenum, int chipnum)
+LibMame_Chip LibMame_Get_Game_Chip(int gamenum, int chipnum)
 {
     return get_gameinfo(gamenum)->chips[chipnum];
 }
@@ -1148,7 +1339,7 @@ int LibMame_Get_Game_Setting_Count(int gamenum)
 }
 
 
-LibMame_SettingDescriptor LibMame_Get_Game_Setting(int gamenum, int settingnum)
+LibMame_Setting LibMame_Get_Game_Setting(int gamenum, int settingnum)
 {
     return get_gameinfo(gamenum)->settings[settingnum];
 }
@@ -1160,9 +1351,45 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum)
 }
 
 
-LibMame_AllControllersDescriptor LibMame_Get_Game_AllControllers(int gamenum)
+LibMame_AllControllers LibMame_Get_Game_AllControllers(int gamenum)
 {
     return get_gameinfo(gamenum)->controllers;
+}
+
+
+int LibMame_Get_Game_BiosSet_Count(int gamenum)
+{
+    return get_gameinfo(gamenum)->biosset_count;
+}
+
+
+LibMame_BiosSet LibMame_Get_Game_BiosSet(int gamenum, int biossetnum)
+{
+    return get_gameinfo(gamenum)->biossets[biossetnum];
+}
+
+
+int LibMame_Get_Game_Rom_Count(int gamenum)
+{
+    return get_gameinfo(gamenum)->rom_count;
+}
+
+
+LibMame_Image LibMame_Get_Game_Rom(int gamenum, int romnum)
+{
+    return get_gameinfo(gamenum)->roms[romnum];
+}
+
+
+int LibMame_Get_Game_Hdd_Count(int gamenum)
+{
+    return get_gameinfo(gamenum)->hdd_count;
+}
+
+
+LibMame_Image LibMame_Get_Game_Hdd(int gamenum, int hddnum)
+{
+    return get_gameinfo(gamenum)->hdds[hddnum];
 }
 
 
