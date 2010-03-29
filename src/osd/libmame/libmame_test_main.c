@@ -501,72 +501,80 @@ int main(int argc, char **argv)
             }
         }
         int romcount = LibMame_Get_Game_Rom_Count(i);
-        printf("\tRoms: ");
-        needindent = false;
-        for (int j = 0; j < romcount; j++) {
-            LibMame_Image image = LibMame_Get_Game_Rom(i, j);
-            if (needindent) {
-                printf("\t      ");
-            }
-            printf("%s%s%s", image.name, 
-                   ((image.status == LibMame_ImageStatus_GoodDump) ? "" :
-                    (image.status == LibMame_ImageStatus_BadDump) ? " [bad]" :
-                    " [no dump]"), image.is_optional ? " (optional)" : "");
-            if (image.clone_of) {
-                printf(" (clone of %s)", image.clone_of);
-            }
-            bool needcomma = false;
-            if (image.crc) {
-                printf(" crc: %s", image.crc);
-            }
-            if (image.sha1) {
-                if (needcomma) {
-                    printf(", ");
+        if (romcount) {
+            printf("\tRoms: ");
+            needindent = false;
+            for (int j = 0; j < romcount; j++) {
+                LibMame_Image image = LibMame_Get_Game_Rom(i, j);
+                if (needindent) {
+                    printf("\t      ");
                 }
-                printf(" sha1: %s", image.sha1);
-                needcomma = true;
-            }
-            if (image.md5) {
-                if (needcomma) {
-                    printf(", ");
+                printf("%s%s%s", image.name, 
+                       ((image.status == LibMame_ImageStatus_GoodDump) ? "" :
+                        (image.status == LibMame_ImageStatus_BadDump) ? 
+                        " [bad]" : " [no dump]"), 
+                       image.is_optional ? " (optional)" : "");
+                if (image.clone_of) {
+                    printf(" (clone of %s)", image.clone_of);
                 }
-                printf(" md5: %s", image.md5);
+                bool needcomma = false;
+                if (image.crc) {
+                    printf(" crc: %s", image.crc);
+                }
+                if (image.sha1) {
+                    if (needcomma) {
+                        printf(", ");
+                    }
+                    printf(" sha1: %s", image.sha1);
+                    needcomma = true;
+                }
+                if (image.md5) {
+                    if (needcomma) {
+                        printf(", ");
+                    }
+                    printf(" md5: %s", image.md5);
+                }
+                printf("\n");
+                needindent = true;
             }
-            needindent = true;
         }
         int hddcount = LibMame_Get_Game_Hdd_Count(i);
-        printf("\tHdds: ");
-        needindent = false;
-        for (int j = 0; j < hddcount; j++) {
-            LibMame_Image image = LibMame_Get_Game_Hdd(i, j);
-            if (needindent) {
-                printf("\t      ");
-            }
-            printf("%s%s%s", image.name, 
-                   ((image.status == LibMame_ImageStatus_GoodDump) ? "" :
-                    (image.status == LibMame_ImageStatus_BadDump) ? " [bad]" :
-                    " [no dump]"), image.is_optional ? " (optional)" : "");
-            if (image.clone_of) {
-                printf(" (clone of %s)", image.clone_of);
-            }
-            bool needcomma = false;
-            if (image.crc) {
-                printf(" crc: %s", image.crc);
-            }
-            if (image.sha1) {
-                if (needcomma) {
-                    printf(", ");
+        if (hddcount) {
+            printf("\tHdds: ");
+            needindent = false;
+            for (int j = 0; j < hddcount; j++) {
+                LibMame_Image image = LibMame_Get_Game_Hdd(i, j);
+                if (needindent) {
+                    printf("\t      ");
                 }
-                printf(" sha1: %s", image.sha1);
-                needcomma = true;
-            }
-            if (image.md5) {
-                if (needcomma) {
-                    printf(", ");
+                printf("%s%s%s", image.name, 
+                       ((image.status == LibMame_ImageStatus_GoodDump) ? "" :
+                        (image.status == LibMame_ImageStatus_BadDump) ? 
+                        " [bad]" : " [no dump]"), 
+                       image.is_optional ? " (optional)" : "");
+                if (image.clone_of) {
+                    printf(" (clone of %s)", image.clone_of);
                 }
-                printf(" md5: %s", image.md5);
+                bool needcomma = false;
+                if (image.crc) {
+                    printf(" crc: %s", image.crc);
+                }
+                if (image.sha1) {
+                    if (needcomma) {
+                        printf(", ");
+                    }
+                    printf(" sha1: %s", image.sha1);
+                    needcomma = true;
+                }
+                if (image.md5) {
+                    if (needcomma) {
+                        printf(", ");
+                    }
+                    printf(" md5: %s", image.md5);
+                }
+                printf("\n");
+                needindent = true;
             }
-            needindent = true;
         }
         const char *srcname = LibMame_Get_Game_SourceFileName(i);
         if (srcname) {
