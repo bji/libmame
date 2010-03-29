@@ -168,6 +168,7 @@ public:
     ~Table()
     {
         this->Clear();
+        osd_free(tableM);
     }
 
     /**

@@ -56,17 +56,6 @@ void UpdateVideo(const LibMame_RenderPrimitive *prims, void *callback_data)
 {
     (void) prims;
     (void) callback_data;
-
-#if 0
-    /* TESTING */
-    static int update_count = 0;
-    if (++update_count == 10000) {
-        mame_schedule_exit(machine);
-    }
-    else if ((update_count % 50) == 0) {
-        printf("update_count %d\n", update_count);
-    }
-#endif
 }
 
 void UpdateAudio(int16_t *buffer, int samples_this_frame, void *callback_data)
