@@ -486,14 +486,15 @@ int main(int argc, char **argv)
                 if (needindent) {
                     printf("\t           ");
                 }
-                printf("%s%s (%s)[", set.is_default ? "*" : "",
+                printf("%s%s (%s) [", set.is_default ? "*" : " ",
                        set.name, set.description);
                 bool needcomma = false;
                 for (int k = 0; k < set.rom_count; k++) {
                     if (needcomma) {
                         printf(", ");
                     }
-                    printf("%s", LibMame_Get_Game_Rom(i, k).name);
+                    printf("%s", LibMame_Get_Game_Rom
+                           (i, set.rom_numbers[k]).name);
                     needcomma = true;
                 }
                 printf("]\n");

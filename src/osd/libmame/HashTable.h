@@ -353,9 +353,89 @@ public:
         memset(tableM, 0, sizeof(Entry *) * this->Size());
     }
 
+    /**
+     * This is an iterator, which can iterate over the contents of a
+     * Hash::Table.  It is not thread-safe with respect to the hash table, so
+     * it is important that the caller have exclusive access to the has table
+     * while running through the iterator.
+     **/
+    class Iterator
+    {
+    public:
+
+        /**
+         * Create an iterator; it will start off at the first available
+         * element.
+         **/
+        Iterator(const Table &ht)
+            : htM(ht), indexM(0), sizeM(ht.Size()), pEntryM(0)
+        {
+            this->Advance();
+        }
+
+        /**
+         * Returns true if the iterator has a current element, false if not.
+         * 
+         * @return true if the iterator has a current element, false if not.
+         **/
+        bool FHasCurrent() const
+        {
+            return pEntryM;
+        }
+
+        /**
+         * Returns the key of the current hash table element.  This should
+         * only be called when FHasCurrent() returns true.
+         *
+         * @return the key of the current hash table element
+         **/
+        const KeyT &GetCurrentKey() const
+        {
+            return pEntryM->keyM;
+        }
+
+        /**
+         * Returns the value of the current hash table element.  This should
+         * only be called when FHasCurrent() returns true.
+         *
+         * @return the value of the current hash table element
+         **/
+        const ValueT &GetCurrentValue() const
+        {
+            return pEntryM->valueM;
+        }
+
+        /**
+         * Advanced to the next element of the hash table (or past it if it is
+         * the last element, in which case FHasCurrent() will return false).
+         **/
+        void Advance()
+        {
+            while (indexM < sizeM) {
+                if (pEntryM) {
+                    if ((pEntryM = pEntryM->pNextM)) {
+                        break;
+                    }
+                }
+                else {
+                    if ((pEntryM = htM.tableM[indexM])) {
+                        break;
+                    }
+                }
+                indexM++;
+            }
+        }
+
+    private:
+
+        const Table &htM;
+        int indexM, sizeM;
+        const Entry *pEntryM;
+    };
+
 private:
 
-    int Size()
+    int Size() const
     {
         return Util::hashTableSizesG[sizeTableIndexM];
     }

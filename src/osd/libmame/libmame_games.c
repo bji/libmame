@@ -109,6 +109,18 @@ static void safe_strncpy(char *dest, const char *src, size_t n)
 }
 
 
+static char *copy_string(const char *string)
+{
+    int len = strlen(string);
+
+    char *ret = (char *) osd_malloc(len + 1);
+
+    strcpy(ret, string);
+
+    return ret;
+}
+
+
 static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
     const char *yearstr = driver->year;
@@ -364,8 +376,8 @@ static void convert_chips(const machine_config *machineconfig,
 	for (devconfig = cpu_first(machineconfig); devconfig; 
          devconfig = cpu_next(devconfig)) {
         descriptor->is_sound = false;
-        descriptor->tag = devconfig->tag();
-        descriptor->name = devconfig->name();
+        descriptor->tag = copy_string(devconfig->tag());
+        descriptor->name = copy_string(devconfig->name());
         descriptor->clock_hz = devconfig->clock;
         descriptor++;
     }        
@@ -373,8 +385,8 @@ static void convert_chips(const machine_config *machineconfig,
 	for (devconfig = sound_first(machineconfig); devconfig; 
          devconfig = sound_next(devconfig)) {
         descriptor->is_sound = true;
-        descriptor->tag = devconfig->tag();
-        descriptor->name = devconfig->name();
+        descriptor->tag = copy_string(devconfig->tag());
+        descriptor->name = copy_string(devconfig->name());
         descriptor->clock_hz = devconfig->clock;
         descriptor++;
     }        
@@ -801,18 +813,6 @@ static void convert_controllers(const ioport_list *ioportlist,
 }
 
 
-static char *copy_string(const char *string)
-{
-    int len = strlen(string);
-
-    char *ret = (char *) osd_malloc(len + 1);
-
-    strcpy(ret, string);
-
-    return ret;
-}
-
-
 static void convert_image_info(const game_driver *driver, 
                                const machine_config *machineconfig,
                                GameInfo *gameinfo)
@@ -849,15 +849,14 @@ static void convert_image_info(const game_driver *driver,
     }
 
     /* Fill them in, and at the same time, build up the BIOS sets */
-#if 0
-    Hash::Table<StringKey, LibMame_BiosSet> htBiosSets;
-#endif
+    Hash::Table<Hash::StringKey, LibMame_BiosSet> htBiosSets;
     LibMame_Image *rom_image = gameinfo->roms, *hdd_image = gameinfo->hdds;
+    int current_rom_index = 0;
     for (const rom_source *source = rom_first_source(driver, machineconfig);
          source; source = rom_next_source(driver, machineconfig, source)) {
         /* Iterate through the regions */
-        for (const rom_entry *region = rom_first_region(driver, source); region;
-             region = rom_next_region(region)) {
+        for (const rom_entry *region = rom_first_region(driver, source); 
+             region; region = rom_next_region(region)) {
             /* iterate through ROM entries */
             for (const rom_entry *rom = rom_first_file(region); rom;
                  rom = rom_next_file(rom)) {
@@ -870,6 +869,7 @@ static void convert_image_info(const game_driver *driver,
                 else {
                     image = rom_image;
                     rom_image++;
+                    current_rom_index++;
                 }
                 image->name = ROM_GETNAME(rom);
                 const char *hashdata = ROM_GETHASHDATA(rom);
@@ -933,18 +933,57 @@ static void convert_image_info(const game_driver *driver,
                 else {
                     image->md5 = 0;
                 }
-                /* Apparently, ROMs that are marked as BIOS files */
+                /* This is really weird but it's what MAME does. */
+                if (!is_disk && ROM_GETBIOSFLAGS(rom)) {
+                    /* scan backwards through the ROM entries */
+                    for (const rom_entry *brom = rom - 1; brom != driver->rom; 
+                         brom--) {
+                        if (ROMENTRY_ISSYSTEM_BIOS(brom)) {
+                            /* This is a ROM for this BIOS set.  Look the BIOS
+                               up in the hashtable, and create if if
+                               necessary; then add this ROM to its list of
+                               ROMs */
+                            const char *bios_set_name = ROM_GETNAME(brom);
+                            LibMame_BiosSet *bios_set;
+                            if (!htBiosSets.Put(bios_set_name,
+                                                /* returns */ bios_set)) {
+                                /* New BIOS set, so set it up */
+                                bios_set->name = bios_set_name;
+                                bios_set->description = ROM_GETHASHDATA(brom);
+                                bios_set->is_default = 
+                                    (ROM_GETBIOSFLAGS(brom) == 1);
+                                bios_set->rom_count = 0;
+                                /* Allocate the maximum possible, which is
+                                   almost certainly more than needed, but is
+                                   easy */ 
+                                bios_set->rom_numbers = (const int *) 
+                                    osd_malloc(sizeof(int) * 
+                                               gameinfo->rom_count);
+                            }
+                            ((int *) (bios_set->rom_numbers))
+                                [bios_set->rom_count++] = current_rom_index - 1;
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
     
-
-    /* Now count the BIOS sets */
-
-    /* Allocate them */
-
-    /* Fill them in */
-    
+    /* Allocate the BIOS sets */
+    if ((gameinfo->biosset_count = htBiosSets.Count())) {
+        gameinfo->biossets = (LibMame_BiosSet *) osd_malloc
+            (sizeof(LibMame_BiosSet) * gameinfo->biosset_count);
+        LibMame_BiosSet *pset = gameinfo->biossets;
+        /* Fill them in */
+        Hash::Table<Hash::StringKey, LibMame_BiosSet>::Iterator 
+            iter(htBiosSets);
+        while (iter.FHasCurrent()) {
+            *pset = iter.GetCurrentValue();
+            pset++;
+            iter.Advance();
+        }
+    }
 }
 
 
@@ -1096,6 +1135,10 @@ void LibMame_Games_Deinitialize()
                 osd_free(gameinfo->sound_samples);
             }
             if (gameinfo->chips) {
+                for (int j = 0; j < gameinfo->chip_count; j++) {
+                    osd_free((char *) (gameinfo->chips[j].tag));
+                    osd_free((char *) (gameinfo->chips[j].name));
+                }
                 osd_free(gameinfo->chips);
             }
             if (gameinfo->settings) {
