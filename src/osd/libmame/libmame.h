@@ -741,11 +741,17 @@ typedef struct LibMame_Image
     /**
      * If the game that this image is for is a clone of another game, and the
      * image itself is shared with that game, rather than duplicated for this
-     * game, then this is the name of the image as it exists in the cloned
-     * game.  If not, and this image is specific to this game and not shared
-     * with a parent game, then this will be 0.
+     * game, then this is the name of the cloned game and image as it exists
+     * in the cloned game.  Note that the name of the game may be one that is
+     * not reported directly by libmame, as MAME calls some rom sets that hold
+     * only BIOS files "games" and libmame filters those out of the list of
+     * games that it presents.
+     *
+     * If this value is zero, then this image is specific to this game
+     * and not shared with a parent game.
      **/
-    const char *clone_of;
+    const char *clone_of_game;
+    const char *clone_of_rom;
 
     /**
      * If this is non-NULL, it provides a CRC value to be used to validate the

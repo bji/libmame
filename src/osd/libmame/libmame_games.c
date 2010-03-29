@@ -883,7 +883,8 @@ static void convert_image_info(const game_driver *driver,
                 image->is_optional = ((is_disk && DISK_ISOPTIONAL(rom)) ||
                                       (!is_disk && ROM_ISOPTIONAL(rom)));
                 image->size_if_known = is_disk ? 0 : rom_file_size(rom);
-                image->clone_of = 0;
+                image->clone_of_game = 0;
+                image->clone_of_rom = 0;
                 const game_driver *clone_of = driver_get_clone(driver);
                 if (clone_of && !ROM_NOGOODDUMP(rom)) {
                     machine_config *pconfig = machine_config_alloc
@@ -901,12 +902,14 @@ static void convert_image_info(const game_driver *driver,
                                 if (hash_data_is_equal
                                     (ROM_GETHASHDATA(rom),
                                      ROM_GETHASHDATA(prom), 0)) {
-                                    image->clone_of = ROM_GETNAME(prom);
+                                    image->clone_of_game = clone_of->name;
+                                    image->clone_of_rom = ROM_GETNAME(prom);
                                     break;
                                 }
                             }
                         }
                     }
+                    machine_config_free(pconfig);
                 }
                 char checksum[HASH_BUF_SIZE];
                 if (hash_data_extract_printable_checksum
@@ -930,10 +933,7 @@ static void convert_image_info(const game_driver *driver,
                 else {
                     image->md5 = 0;
                 }
-#if 0
-                if (image->biosset) {
-                }
-#endif
+                /* Apparently, ROMs that are marked as BIOS files */
             }
         }
     }

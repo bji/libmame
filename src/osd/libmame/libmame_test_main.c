@@ -514,8 +514,8 @@ int main(int argc, char **argv)
                         (image.status == LibMame_ImageStatus_BadDump) ? 
                         " [bad]" : " [no dump]"), 
                        image.is_optional ? " (optional)" : "");
-                if (image.clone_of) {
-                    printf(" (clone of %s)", image.clone_of);
+                if (image.clone_of_game) {
+                    printf(" (%s:%s)", image.clone_of_game, image.clone_of_rom);
                 }
                 bool needcomma = false;
                 if (image.crc) {
@@ -552,8 +552,8 @@ int main(int argc, char **argv)
                         (image.status == LibMame_ImageStatus_BadDump) ? 
                         " [bad]" : " [no dump]"), 
                        image.is_optional ? " (optional)" : "");
-                if (image.clone_of) {
-                    printf(" (clone of %s)", image.clone_of);
+                if (image.clone_of_game) {
+                    printf(" (%s:%s)", image.clone_of_game, image.clone_of_rom);
                 }
                 bool needcomma = false;
                 if (image.crc) {
