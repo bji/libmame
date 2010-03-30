@@ -177,9 +177,6 @@ endif
 # uncomment next line to include the internal profiler
 # PROFILER = 1
 
-# uncomment next line to include gprof profiler support
-# GPROF = 1
-
 # uncomment the force the universal DRC to always use the C backend
 # you may need to do this if your target architecture does not have
 # a native backend
@@ -250,12 +247,6 @@ PROFILER = 1
 endif
 endif
 
-# allow gprof profiling as well, which overrides the internal PROFILER
-ifdef GPROF
-CCOMFLAGS += -pg
-PROFILER =
-# LIBS += -lc_p
-endif
 
 
 #-------------------------------------------------
@@ -284,6 +275,7 @@ LD = g++
 MD = -mkdir$(EXE)
 RM = rm -f
 CP = cp -a
+STRIP = strip
 ECHO = @true
 else
 AR = @ar
@@ -291,8 +283,9 @@ CC = @gcc
 LD = @g++
 MD = -@mkdir$(EXE)
 RM = @rm -f
-ECHO = @echo
 CP = @cp -a
+STRIP = @strip
+ECHO = @echo
 endif
 
 
@@ -304,7 +297,6 @@ endif
 PREFIXSDL =
 SUFFIX64 =
 SUFFIXDEBUG =
-SUFFIXGPROF =
 
 # Windows SDL builds get an SDL prefix
 ifeq ($(OSD),sdl)
@@ -323,9 +315,9 @@ ifdef DEBUG
 SUFFIXDEBUG = d
 endif
 
-# gprof builds get an addition 'p' suffix
-ifdef GPROF
-SUFFIXGPROF = p
+# static library builds get the 's' suffix
+ifdef BUILD_STATIC_LIBMAME
+SUFFIXSTATIC = s
 endif
 
 # the name is just 'target' if no subtarget; otherwise it is
@@ -337,7 +329,7 @@ NAME = $(TARGET)$(SUBTARGET)
 endif
 
 # fullname is prefix+name+suffix+suffix64+suffixdebug
-FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXGPROF)
+FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXSTATIC)
 
 # add an EXE suffix to get the final emulator name
 EMULATOR = $(FULLNAME)$(EXE)
@@ -410,6 +402,11 @@ CCOMFLAGS =
 CONLYFLAGS =
 COBJFLAGS =
 CPPONLYFLAGS =
+
+# if bulding shared libraries (the default), need -fPIC
+ifndef BUILD_STATIC_LIBMAME
+CCOMFLAGS += -fPIC
+endif
 
 # CFLAGS is defined based on C or C++ targets
 # (remember, expansion only happens when used, so doing it here is ok)
@@ -635,6 +632,11 @@ include $(SRC)/lib/lib.mak
 include $(SRC)/build/build.mak
 -include $(SRC)/osd/$(CROSS_BUILD_OSD)/build.mak
 include $(SRC)/tools/tools.mak
+
+# Additionally, the libmame subdirectory defines rules
+# for building MAME as a library instead of as a
+# standalone executable
+include $(SRC)/libmame/libmame.mak
 
 # combine the various definitions to one
 CDEFS = $(DEFS)

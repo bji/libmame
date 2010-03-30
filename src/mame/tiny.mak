@@ -48,6 +48,7 @@ CPUS += M680X0
 # drivers referenced in tiny.c.
 #-------------------------------------------------
 
+SOUNDS += CDDA
 SOUNDS += CUSTOM
 SOUNDS += SAMPLES
 SOUNDS += DAC
@@ -68,8 +69,9 @@ SOUNDS += YM3812
 # in tiny.c
 #-------------------------------------------------
 
-DRVLIBS = \
+DRVLIBOBJS = \
 	$(MAMEOBJ)/tiny.o \
+	$(MACHINE)/pckeybrd.o \
 	$(MACHINE)/ticket.o \
 	$(DRIVERS)/carpolo.o $(MACHINE)/carpolo.o $(VIDEO)/carpolo.o \
 	$(DRIVERS)/circus.o $(AUDIO)/circus.o $(VIDEO)/circus.o \
@@ -83,8 +85,9 @@ DRVLIBS = \
 	$(AUDIO)/gorf.o \
 	$(AUDIO)/wow.o \
 	$(DRIVERS)/gaelco.o $(VIDEO)/gaelco.o $(MACHINE)/gaelcrpt.o \
-	$(DRIVERS)/wrally.o $(MACHINE)/wrally.o $(VIDEO)/wrally.o \
+	$(DRIVERS)/wrally.o $(MACHINE)/wrally.o $(VIDEO)/wrally.o
 
+DRVLIBS = $(DRVLIBOBJS)
 
 
 #-------------------------------------------------

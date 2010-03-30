@@ -322,14 +322,14 @@ DRVLIBS = \
 	$(MAMEOBJ)/misc.a \
 	$(MAMEOBJ)/shared.a \
 
-
+DRVLIBOBJS += $(MAMEOBJ)/mamedriv.o
 
 #-------------------------------------------------
 # the following files are general components and
 # shared across a number of drivers
 #-------------------------------------------------
 
-$(MAMEOBJ)/shared.a: \
+DRVLIBOBJ_SHARED = \
 	$(MACHINE)/nmk112.o \
 	$(MACHINE)/pckeybrd.o \
 	$(MACHINE)/pcshare.o \
@@ -337,29 +337,43 @@ $(MAMEOBJ)/shared.a: \
 	$(MACHINE)/ticket.o \
 	$(VIDEO)/avgdvg.o \
 
+$(MAMEOBJ)/shared.a: $(DRVLIBOBJ_SHARED)
 
+DRVLIBOBJS += $(DRVLIBOBJ_SHARED)
 
 #-------------------------------------------------
 # manufacturer-specific groupings for drivers
 #-------------------------------------------------
 
-$(MAMEOBJ)/alba.a: \
+DRVLIBOBJ_ALBA = \
 	$(DRIVERS)/albazc.o \
 	$(DRIVERS)/albazg.o \
 	$(DRIVERS)/rmhaihai.o \
 
-$(MAMEOBJ)/alliedl.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ALBA)
+
+$(MAMEOBJ)/alba.a: $(DRVLIBOBJ_ALBA)
+
+DRVLIBOBJ_ALLIEDL = \
 	$(DRIVERS)/ace.o \
 	$(DRIVERS)/clayshoo.o \
 
-$(MAMEOBJ)/alpha.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ALLIEDL)
+
+$(MAMEOBJ)/alliedl.a: $(DRVLIBOBJ_ALLIEDL)
+
+DRVLIBOBJ_ALPHA = \
 	$(DRIVERS)/alpha68k.o $(VIDEO)/alpha68k.o \
 	$(DRIVERS)/champbas.o $(VIDEO)/champbas.o \
 	$(DRIVERS)/equites.o $(VIDEO)/equites.o \
 	$(DRIVERS)/meijinsn.o \
 	$(DRIVERS)/shougi.o \
 
-$(MAMEOBJ)/amiga.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ALPHA)
+
+$(MAMEOBJ)/alpha.a: $(DRVLIBOBJ_ALPHA)
+
+DRVLIBOBJ_AMIGA = \
 	$(DRIVERS)/alg.o \
 	$(MACHINE)/amiga.o $(AUDIO)/amiga.o $(VIDEO)/amiga.o $(VIDEO)/amigaaga.o\
 	$(DRIVERS)/arcadia.o \
@@ -367,14 +381,22 @@ $(MAMEOBJ)/amiga.a: \
 	$(DRIVERS)/mquake.o \
 	$(DRIVERS)/upscope.o \
 
-$(MAMEOBJ)/aristocr.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_AMIGA)
+
+$(MAMEOBJ)/amiga.a: $(DRVLIBOBJ_AMIGA)
+
+DRVLIBOBJ_ARISTOCR = \
 	$(DRIVERS)/86lions.o \
 	$(DRIVERS)/caswin.o \
 	$(DRIVERS)/aristmk4.o \
 	$(DRIVERS)/aristmk5.o \
 	$(MACHINE)/archimds.o \
 
-$(MAMEOBJ)/atari.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ARISTOCR)
+
+$(MAMEOBJ)/aristocr.a: $(DRVLIBOBJ_ARISTOCR)
+
+DRVLIBOBJ_ATARI = \
 	$(DRIVERS)/atarigx2.o $(VIDEO)/atarigx2.o \
 	$(DRIVERS)/arcadecl.o $(VIDEO)/arcadecl.o \
 	$(DRIVERS)/asteroid.o $(MACHINE)/asteroid.o $(AUDIO)/asteroid.o $(AUDIO)/llander.o \
@@ -465,30 +487,50 @@ $(MAMEOBJ)/atari.a: \
 	$(VIDEO)/atarimo.o \
 	$(VIDEO)/atarirle.o \
 
-$(MAMEOBJ)/atlus.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ATARI)
+
+$(MAMEOBJ)/atari.a: $(DRVLIBOBJ_ATARI)
+
+DRVLIBOBJ_ATLUS = \
 	$(DRIVERS)/blmbycar.o $(VIDEO)/blmbycar.o \
 	$(DRIVERS)/ohmygod.o $(VIDEO)/ohmygod.o \
 	$(DRIVERS)/powerins.o $(VIDEO)/powerins.o \
 
-$(MAMEOBJ)/barcrest.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ATLUS)
+
+$(MAMEOBJ)/atlus.a: $(DRVLIBOBJ_ATLUS)
+
+DRVLIBOBJ_BARCREST = \
 	$(VIDEO)/awpvid.o \
 	$(MACHINE)/meters.o \
 	$(DRIVERS)/mpu4.o \
 	$(DRIVERS)/mpu5.o \
 	$(MACHINE)/steppers.o \
 
-$(MAMEOBJ)/bfm.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_BARCREST)
+
+$(MAMEOBJ)/barcrest.a: $(DRVLIBOBJ_BARCREST)
+
+DRVLIBOBJ_BFM = \
 	$(DRIVERS)/bfm_sc1.o \
 	$(DRIVERS)/bfmsys85.o \
 	$(DRIVERS)/bfcobra.o \
 	$(DRIVERS)/bfm_sc2.o $(VIDEO)/bfm_adr2.o \
 	$(MACHINE)/bfm_bd1.o $(VIDEO)/bfm_dm01.o \
 
-$(MAMEOBJ)/bmc.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_BFM)
+
+$(MAMEOBJ)/bfm.a: $(DRVLIBOBJ_BFM)
+
+DRVLIBOBJ_BMC = \
 	$(DRIVERS)/bmcbowl.o \
 	$(DRIVERS)/koftball.o \
 
-$(MAMEOBJ)/capcom.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_BMC)
+
+$(MAMEOBJ)/bmc.a: $(DRVLIBOBJ_BMC)
+
+DRVLIBOBJ_CAPCOM = \
 	$(DRIVERS)/1942.o $(VIDEO)/1942.o \
 	$(DRIVERS)/1943.o $(VIDEO)/1943.o \
 	$(DRIVERS)/bionicc.o $(VIDEO)/bionicc.o \
@@ -518,7 +560,11 @@ $(MAMEOBJ)/capcom.a: \
 	$(MACHINE)/cps2crpt.o \
 	$(MACHINE)/kabuki.o \
 
-$(MAMEOBJ)/cinemat.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_CAPCOM)
+
+$(MAMEOBJ)/capcom.a: $(DRVLIBOBJ_CAPCOM)
+
+DRVLIBOBJ_CINEMAT = \
 	$(DRIVERS)/ataxx.o \
 	$(DRIVERS)/cinemat.o $(AUDIO)/cinemat.o $(VIDEO)/cinemat.o \
 	$(DRIVERS)/cchasm.o $(MACHINE)/cchasm.o $(AUDIO)/cchasm.o $(VIDEO)/cchasm.o \
@@ -527,17 +573,29 @@ $(MAMEOBJ)/cinemat.a: \
 	$(DRIVERS)/jack.o $(VIDEO)/jack.o \
 	$(DRIVERS)/leland.o $(MACHINE)/leland.o $(AUDIO)/leland.o $(VIDEO)/leland.o \
 
-$(MAMEOBJ)/comad.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_CINEMAT)
+
+$(MAMEOBJ)/cinemat.a: $(DRVLIBOBJ_CINEMAT)
+
+DRVLIBOBJ_COMAD = \
 	$(DRIVERS)/funybubl.o $(VIDEO)/funybubl.o \
 	$(DRIVERS)/galspnbl.o $(VIDEO)/galspnbl.o \
 	$(DRIVERS)/pushman.o $(VIDEO)/pushman.o \
 	$(DRIVERS)/zerozone.o $(VIDEO)/zerozone.o \
 
-$(MAMEOBJ)/cvs.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_COMAD)
+
+$(MAMEOBJ)/comad.a: $(DRVLIBOBJ_COMAD)
+
+DRVLIBOBJ_CVS = \
 	$(DRIVERS)/cvs.o $(VIDEO)/cvs.o \
 	$(DRIVERS)/quasar.o $(VIDEO)/quasar.o \
 
-$(MAMEOBJ)/dataeast.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_CVS)
+
+$(MAMEOBJ)/cvs.a: $(DRVLIBOBJ_CVS)
+
+DRVLIBOBJ_DATAEAST = \
 	$(DRIVERS)/actfancr.o $(VIDEO)/actfancr.o \
 	$(DRIVERS)/astrof.o $(AUDIO)/astrof.o \
 	$(DRIVERS)/backfire.o \
@@ -594,18 +652,30 @@ $(MAMEOBJ)/dataeast.a: \
 	$(MACHINE)/decoprot.o \
 	$(VIDEO)/deco16ic.o \
 
-$(MAMEOBJ)/dooyong.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_DATAEAST)
+
+$(MAMEOBJ)/dataeast.a: $(DRVLIBOBJ_DATAEAST)
+
+DRVLIBOBJ_DOOYONG = \
 	$(DRIVERS)/dooyong.o $(VIDEO)/dooyong.o \
 	$(DRIVERS)/gundealr.o $(VIDEO)/gundealr.o \
 
-$(MAMEOBJ)/dynax.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_DOOYONG)
+
+$(MAMEOBJ)/dooyong.a: $(DRVLIBOBJ_DOOYONG)
+
+DRVLIBOBJ_DYNAX = \
 	$(DRIVERS)/ddenlovr.o \
 	$(DRIVERS)/dynax.o $(VIDEO)/dynax.o \
 	$(DRIVERS)/hnayayoi.o $(VIDEO)/hnayayoi.o \
 	$(DRIVERS)/realbrk.o $(VIDEO)/realbrk.o \
 	$(DRIVERS)/royalmah.o \
 
-$(MAMEOBJ)/edevices.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_DYNAX)
+
+$(MAMEOBJ)/dynax.a: $(DRVLIBOBJ_DYNAX)
+
+DRVLIBOBJ_EDEVICES = \
 	$(DRIVERS)/diverboy.o \
 	$(DRIVERS)/fantland.o $(VIDEO)/fantland.o \
 	$(DRIVERS)/mwarr.o \
@@ -615,20 +685,32 @@ $(MAMEOBJ)/edevices.a: \
 	$(DRIVERS)/twins.o \
 	$(DRIVERS)/pzletime.o \
 
-$(MAMEOBJ)/eolith.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_EDEVICES)
+
+$(MAMEOBJ)/edevices.a: $(DRVLIBOBJ_EDEVICES)
+
+DRVLIBOBJ_EOLITH = \
 	$(DRIVERS)/eolith.o $(VIDEO)/eolith.o \
 	$(DRIVERS)/eolith16.o \
 	$(DRIVERS)/eolithsp.o \
 	$(DRIVERS)/ghosteo.o \
 	$(DRIVERS)/vegaeo.o \
 
-$(MAMEOBJ)/excelent.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_EOLITH)
+
+$(MAMEOBJ)/eolith.a: $(DRVLIBOBJ_EOLITH)
+
+DRVLIBOBJ_EXCELENT = \
 	$(DRIVERS)/aquarium.o $(VIDEO)/aquarium.o \
 	$(DRIVERS)/d9final.o \
 	$(DRIVERS)/gcpinbal.o $(VIDEO)/gcpinbal.o \
 	$(DRIVERS)/vmetal.o \
 
-$(MAMEOBJ)/exidy.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_EXCELENT)
+
+$(MAMEOBJ)/excelent.a: $(DRVLIBOBJ_EXCELENT)
+
+DRVLIBOBJ_EXIDY = \
 	$(DRIVERS)/carpolo.o $(MACHINE)/carpolo.o $(VIDEO)/carpolo.o \
 	$(DRIVERS)/circus.o $(AUDIO)/circus.o $(VIDEO)/circus.o \
 	$(DRIVERS)/exidy.o $(AUDIO)/exidy.o $(VIDEO)/exidy.o \
@@ -639,15 +721,27 @@ $(MAMEOBJ)/exidy.a: \
 	$(DRIVERS)/victory.o $(VIDEO)/victory.o \
 	$(AUDIO)/targ.o \
 
-$(MAMEOBJ)/f32.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_EXIDY)
+
+$(MAMEOBJ)/exidy.a: $(DRVLIBOBJ_EXIDY)
+
+DRVLIBOBJ_F32 = \
 	$(DRIVERS)/crospang.o $(VIDEO)/crospang.o \
 	$(DRIVERS)/f-32.o \
 
-$(MAMEOBJ)/fuuki.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_F32)
+
+$(MAMEOBJ)/f32.a: $(DRVLIBOBJ_F32)
+
+DRVLIBOBJ_FUUKI = \
 	$(DRIVERS)/fuukifg2.o $(VIDEO)/fuukifg2.o \
 	$(DRIVERS)/fuukifg3.o $(VIDEO)/fuukifg3.o \
 
-$(MAMEOBJ)/gaelco.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_FUUKI)
+
+$(MAMEOBJ)/fuuki.a: $(DRVLIBOBJ_FUUKI)
+
+DRVLIBOBJ_GAELCO = \
 	$(DRIVERS)/gaelco.o $(VIDEO)/gaelco.o $(MACHINE)/gaelcrpt.o \
 	$(DRIVERS)/gaelco2.o $(MACHINE)/gaelco2.o $(VIDEO)/gaelco2.o \
 	$(DRIVERS)/gaelco3d.o $(VIDEO)/gaelco3d.o \
@@ -660,21 +754,37 @@ $(MAMEOBJ)/gaelco.a: \
 	$(DRIVERS)/wrally.o $(MACHINE)/wrally.o $(VIDEO)/wrally.o \
 	$(DRIVERS)/tokyocop.o \
 
-$(MAMEOBJ)/gameplan.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_GAELCO)
+
+$(MAMEOBJ)/gaelco.a: $(DRVLIBOBJ_GAELCO)
+
+DRVLIBOBJ_GAMEPLAN = \
 	$(DRIVERS)/enigma2.o \
 	$(DRIVERS)/gameplan.o $(VIDEO)/gameplan.o \
 	$(DRIVERS)/toratora.o \
 
-$(MAMEOBJ)/gametron.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_GAMEPLAN)
+
+$(MAMEOBJ)/gameplan.a: $(DRVLIBOBJ_GAMEPLAN)
+
+DRVLIBOBJ_GAMETRON = \
 	$(DRIVERS)/gotya.o $(AUDIO)/gotya.o $(VIDEO)/gotya.o \
 	$(DRIVERS)/sbugger.o $(VIDEO)/sbugger.o \
 	$(DRIVERS)/gatron.o $(VIDEO)/gatron.o \
 
-$(MAMEOBJ)/gottlieb.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_GAMETRON)
+
+$(MAMEOBJ)/gametron.a: $(DRVLIBOBJ_GAMETRON)
+
+DRVLIBOBJ_GOTTLIEB = \
 	$(DRIVERS)/exterm.o $(VIDEO)/exterm.o \
 	$(DRIVERS)/gottlieb.o $(AUDIO)/gottlieb.o $(VIDEO)/gottlieb.o \
 
-$(MAMEOBJ)/igs.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_GOTTLIEB)
+
+$(MAMEOBJ)/gottlieb.a: $(DRVLIBOBJ_GOTTLIEB)
+
+DRVLIBOBJ_IGS = \
 	$(DRIVERS)/cabaret.o \
 	$(DRIVERS)/ddz.o \
 	$(DRIVERS)/dunhuang.o \
@@ -692,7 +802,11 @@ $(MAMEOBJ)/igs.a: \
 	$(MACHINE)/pgmcrypt.o \
 	$(MACHINE)/pgmprot.o \
 
-$(MAMEOBJ)/irem.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_IGS)
+
+$(MAMEOBJ)/igs.a: $(DRVLIBOBJ_IGS)
+
+DRVLIBOBJ_IREM = \
 	$(DRIVERS)/m10.o $(VIDEO)/m10.o \
 	$(DRIVERS)/m14.o \
 	$(DRIVERS)/m52.o $(VIDEO)/m52.o \
@@ -712,12 +826,20 @@ $(MAMEOBJ)/irem.a: \
 	$(MACHINE)/irem_cpu.o \
 	$(AUDIO)/irem.o \
 
-$(MAMEOBJ)/itech.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_IREM)
+
+$(MAMEOBJ)/irem.a: $(DRVLIBOBJ_IREM)
+
+DRVLIBOBJ_ITECH = \
 	$(DRIVERS)/capbowl.o $(VIDEO)/capbowl.o \
 	$(DRIVERS)/itech8.o $(MACHINE)/slikshot.o $(VIDEO)/itech8.o \
 	$(DRIVERS)/itech32.o $(VIDEO)/itech32.o \
 
-$(MAMEOBJ)/jaleco.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ITECH)
+
+$(MAMEOBJ)/itech.a: $(DRVLIBOBJ_ITECH)
+
+DRVLIBOBJ_JALECO = \
 	$(DRIVERS)/aeroboto.o $(VIDEO)/aeroboto.o \
 	$(DRIVERS)/argus.o $(VIDEO)/argus.o \
 	$(VIDEO)/jalblend.o \
@@ -741,12 +863,20 @@ $(MAMEOBJ)/jaleco.a: \
 	$(DRIVERS)/stepstag.o \
 	$(DRIVERS)/tetrisp2.o $(VIDEO)/tetrisp2.o \
 
-$(MAMEOBJ)/jpm.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_JALECO)
+
+$(MAMEOBJ)/jaleco.a: $(DRVLIBOBJ_JALECO)
+
+DRVLIBOBJ_JPM = \
 	$(DRIVERS)/guab.o \
 	$(DRIVERS)/jpmsys5.o \
 	$(DRIVERS)/jpmimpct.o $(VIDEO)/jpmimpct.o \
 
-$(MAMEOBJ)/kaneko.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_JPM)
+
+$(MAMEOBJ)/jpm.a: $(DRVLIBOBJ_JPM)
+
+DRVLIBOBJ_KANEKO = \
 	$(DRIVERS)/airbustr.o $(VIDEO)/airbustr.o \
 	$(DRIVERS)/djboy.o $(VIDEO)/djboy.o \
 	$(DRIVERS)/galpanic.o $(VIDEO)/galpanic.o \
@@ -759,7 +889,11 @@ $(MAMEOBJ)/kaneko.a: \
 	$(DRIVERS)/sandscrp.o \
 	$(DRIVERS)/suprnova.o $(VIDEO)/suprnova.o \
 
-$(MAMEOBJ)/konami.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_KANEKO)
+
+$(MAMEOBJ)/kaneko.a: $(DRVLIBOBJ_KANEKO)
+
+DRVLIBOBJ_KONAMI = \
 	$(DRIVERS)/88games.o $(VIDEO)/88games.o \
 	$(DRIVERS)/ajax.o $(MACHINE)/ajax.o $(VIDEO)/ajax.o \
 	$(DRIVERS)/aliens.o $(VIDEO)/aliens.o \
@@ -851,37 +985,65 @@ $(MAMEOBJ)/konami.a: \
 	$(DRIVERS)/zr107.o \
 	$(VIDEO)/konamiic.o $(VIDEO)/konicdev.o \
 
-$(MAMEOBJ)/maygay.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_KONAMI)
+
+$(MAMEOBJ)/konami.a: $(DRVLIBOBJ_KONAMI)
+
+DRVLIBOBJ_MAYGAY = \
 	$(DRIVERS)/maygay1b.o \
 	$(DRIVERS)/maygayv1.o \
 
-$(MAMEOBJ)/meadows.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MAYGAY)
+
+$(MAMEOBJ)/maygay.a: $(DRVLIBOBJ_MAYGAY)
+
+DRVLIBOBJ_MEADOWS = \
 	$(DRIVERS)/lazercmd.o $(VIDEO)/lazercmd.o \
 	$(DRIVERS)/meadows.o $(AUDIO)/meadows.o $(VIDEO)/meadows.o \
 
-$(MAMEOBJ)/merit.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MEADOWS)
+
+$(MAMEOBJ)/meadows.a: $(DRVLIBOBJ_MEADOWS)
+
+DRVLIBOBJ_MERIT = \
 	$(DRIVERS)/mpoker.o \
 	$(DRIVERS)/merit.o \
 	$(DRIVERS)/meritm.o \
 
-$(MAMEOBJ)/metro.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MERIT)
+
+$(MAMEOBJ)/merit.a: $(DRVLIBOBJ_MERIT)
+
+DRVLIBOBJ_METRO = \
 	$(DRIVERS)/hyprduel.o $(VIDEO)/hyprduel.o \
 	$(DRIVERS)/metro.o $(VIDEO)/metro.o \
 	$(DRIVERS)/rabbit.o \
 	$(DRIVERS)/tmmjprd.o \
 
-$(MAMEOBJ)/midcoin.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_METRO)
+
+$(MAMEOBJ)/metro.a: $(DRVLIBOBJ_METRO)
+
+DRVLIBOBJ_MIDCOIN = \
 	$(DRIVERS)/wallc.o \
 	$(DRIVERS)/wink.o \
 
-$(MAMEOBJ)/midw8080.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MIDCOIN)
+
+$(MAMEOBJ)/midcoin.a: $(DRVLIBOBJ_MIDCOIN)
+
+DRVLIBOBJ_MIDW8080 = \
 	$(DRIVERS)/8080bw.o $(AUDIO)/8080bw.o $(VIDEO)/8080bw.o \
 	$(DRIVERS)/m79amb.o $(AUDIO)/m79amb.o \
 	$(DRIVERS)/mw8080bw.o $(MACHINE)/mw8080bw.o $(AUDIO)/mw8080bw.o $(VIDEO)/mw8080bw.o \
 	$(DRIVERS)/rotaryf.o \
 	$(DRIVERS)/sspeedr.o $(VIDEO)/sspeedr.o \
 
-$(MAMEOBJ)/midway.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MIDW8080)
+
+$(MAMEOBJ)/midw8080.a: $(DRVLIBOBJ_MIDW8080)
+
+DRVLIBOBJ_MIDWAY = \
 	$(DRIVERS)/astrocde.o $(VIDEO)/astrocde.o \
 	$(DRIVERS)/balsente.o $(MACHINE)/balsente.o $(VIDEO)/balsente.o \
 	$(DRIVERS)/gridlee.o $(AUDIO)/gridlee.o $(VIDEO)/gridlee.o \
@@ -904,13 +1066,21 @@ $(MAMEOBJ)/midway.a: \
 	$(AUDIO)/gorf.o \
 	$(AUDIO)/wow.o \
 
-$(MAMEOBJ)/msx.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MIDWAY)
+
+$(MAMEOBJ)/midway.a: $(DRVLIBOBJ_MIDWAY)
+
+DRVLIBOBJ_MSX = \
 	$(DRIVERS)/forte2.o \
 	$(DRIVERS)/pengadvb.o \
 	$(DRIVERS)/sangho.o \
 	$(DRIVERS)/sfkick.o \
 
-$(MAMEOBJ)/namco.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_MSX)
+
+$(MAMEOBJ)/msx.a: $(DRVLIBOBJ_MSX)
+
+DRVLIBOBJ_NAMCO = \
 	$(DRIVERS)/20pacgal.o $(VIDEO)/20pacgal.o \
 	$(DRIVERS)/baraduke.o $(VIDEO)/baraduke.o \
 	$(DRIVERS)/dambustr.o \
@@ -959,17 +1129,29 @@ $(MAMEOBJ)/namco.a: \
 	$(MACHINE)/xevious.o $(VIDEO)/xevious.o \
 	$(DRIVERS)/namcops2.o \
 
-$(MAMEOBJ)/nasco.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NAMCO)
+
+$(MAMEOBJ)/namco.a: $(DRVLIBOBJ_NAMCO)
+
+DRVLIBOBJ_NASCO = \
 	$(DRIVERS)/crgolf.o $(VIDEO)/crgolf.o \
 	$(DRIVERS)/suprgolf.o \
 
-$(MAMEOBJ)/neogeo.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NASCO)
+
+$(MAMEOBJ)/nasco.a: $(DRVLIBOBJ_NASCO)
+
+DRVLIBOBJ_NEOGEO = \
 	$(DRIVERS)/neogeo.o $(VIDEO)/neogeo.o \
 	$(MACHINE)/neoboot.o \
 	$(MACHINE)/neocrypt.o \
 	$(MACHINE)/neoprot.o \
 
-$(MAMEOBJ)/nichibut.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NEOGEO)
+
+$(MAMEOBJ)/neogeo.a: $(DRVLIBOBJ_NEOGEO)
+
+DRVLIBOBJ_NICHIBUT = \
 	$(DRIVERS)/armedf.o $(VIDEO)/armedf.o \
 	$(DRIVERS)/bigfghtr.o \
 	$(DRIVERS)/cclimber.o $(MACHINE)/cclimber.o $(AUDIO)/cclimber.o $(VIDEO)/cclimber.o \
@@ -995,7 +1177,11 @@ $(MAMEOBJ)/nichibut.a: \
 	$(DRIVERS)/wiping.o $(AUDIO)/wiping.o $(VIDEO)/wiping.o \
 	$(MACHINE)/nb1413m3.o \
 
-$(MAMEOBJ)/nintendo.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NICHIBUT)
+
+$(MAMEOBJ)/nichibut.a: $(DRVLIBOBJ_NICHIBUT)
+
+DRVLIBOBJ_NINTENDO = \
 	$(DRIVERS)/dkong.o $(AUDIO)/dkong.o $(VIDEO)/dkong.o \
 	$(DRIVERS)/cham24.o \
 	$(DRIVERS)/snesb.o \
@@ -1010,11 +1196,19 @@ $(MAMEOBJ)/nintendo.a: \
 	$(DRIVERS)/vsnes.o $(MACHINE)/vsnes.o $(VIDEO)/vsnes.o \
 	$(VIDEO)/ppu2c0x.o \
 
-$(MAMEOBJ)/nix.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NINTENDO)
+
+$(MAMEOBJ)/nintendo.a: $(DRVLIBOBJ_NINTENDO)
+
+DRVLIBOBJ_NIX = \
 	$(DRIVERS)/fitfight.o $(VIDEO)/fitfight.o \
 	$(DRIVERS)/pirates.o $(VIDEO)/pirates.o \
 
-$(MAMEOBJ)/nmk.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NIX)
+
+$(MAMEOBJ)/nix.a: $(DRVLIBOBJ_NIX)
+
+DRVLIBOBJ_NMK = \
 	$(DRIVERS)/acommand.o \
 	$(DRIVERS)/cultures.o \
 	$(DRIVERS)/ddealer.o \
@@ -1024,30 +1218,50 @@ $(MAMEOBJ)/nmk.a: \
 	$(DRIVERS)/quizdna.o $(VIDEO)/quizdna.o \
 	$(DRIVERS)/quizpani.o $(VIDEO)/quizpani.o \
 
-$(MAMEOBJ)/olympia.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_NMK)
+
+$(MAMEOBJ)/nmk.a: $(DRVLIBOBJ_NMK)
+
+DRVLIBOBJ_OLYMPIA = \
 	$(DRIVERS)/dday.o $(VIDEO)/dday.o \
 	$(DRIVERS)/monzagp.o \
 	$(DRIVERS)/portrait.o $(VIDEO)/portrait.o \
 	$(DRIVERS)/vega.o \
 
-$(MAMEOBJ)/omori.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_OLYMPIA)
+
+$(MAMEOBJ)/olympia.a: $(DRVLIBOBJ_OLYMPIA)
+
+DRVLIBOBJ_OMORI = \
 	$(DRIVERS)/battlex.o $(VIDEO)/battlex.o \
 	$(DRIVERS)/carjmbre.o $(VIDEO)/carjmbre.o \
 	$(DRIVERS)/popper.o $(VIDEO)/popper.o \
 	$(DRIVERS)/spaceg.o \
 
-$(MAMEOBJ)/orca.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_OMORI)
+
+$(MAMEOBJ)/omori.a: $(DRVLIBOBJ_OMORI)
+
+DRVLIBOBJ_ORCA = \
 	$(DRIVERS)/espial.o $(VIDEO)/espial.o \
 	$(DRIVERS)/funkybee.o $(VIDEO)/funkybee.o \
 	$(DRIVERS)/marineb.o $(VIDEO)/marineb.o \
 	$(DRIVERS)/vastar.o $(VIDEO)/vastar.o \
 	$(DRIVERS)/zodiack.o $(VIDEO)/zodiack.o \
 
-$(MAMEOBJ)/pacific.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ORCA)
+
+$(MAMEOBJ)/orca.a: $(DRVLIBOBJ_ORCA)
+
+DRVLIBOBJ_PACIFIC = \
 	$(DRIVERS)/mrflea.o $(VIDEO)/mrflea.o \
 	$(DRIVERS)/thief.o $(VIDEO)/thief.o \
 
-$(MAMEOBJ)/pacman.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_PACIFIC)
+
+$(MAMEOBJ)/pacific.a: $(DRVLIBOBJ_PACIFIC)
+
+DRVLIBOBJ_PACMAN = \
 	$(DRIVERS)/jrpacman.o \
 	$(DRIVERS)/pacman.o $(VIDEO)/pacman.o \
 	$(DRIVERS)/pengo.o \
@@ -1056,40 +1270,68 @@ $(MAMEOBJ)/pacman.a: \
 	$(MACHINE)/pacplus.o \
 	$(MACHINE)/theglobp.o \
 
-$(MAMEOBJ)/pce.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_PACMAN)
+
+$(MAMEOBJ)/pacman.a: $(DRVLIBOBJ_PACMAN)
+
+DRVLIBOBJ_PCE = \
 	$(DRIVERS)/uapce.o \
 	$(DRIVERS)/paranoia.o \
 	$(DRIVERS)/ggconnie.o \
 	$(MACHINE)/pcecommn.o $(VIDEO)/vdc.o \
 
-$(MAMEOBJ)/phoenix.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_PCE)
+
+$(MAMEOBJ)/pce.a: $(DRVLIBOBJ_PCE)
+
+DRVLIBOBJ_PHOENIX = \
 	$(DRIVERS)/naughtyb.o $(VIDEO)/naughtyb.o \
 	$(DRIVERS)/phoenix.o $(AUDIO)/phoenix.o $(VIDEO)/phoenix.o \
 	$(DRIVERS)/safarir.o \
 	$(AUDIO)/pleiads.o \
 
-$(MAMEOBJ)/playmark.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_PHOENIX)
+
+$(MAMEOBJ)/phoenix.a: $(DRVLIBOBJ_PHOENIX)
+
+DRVLIBOBJ_PLAYMARK = \
 	$(DRIVERS)/drtomy.o \
 	$(DRIVERS)/playmark.o $(VIDEO)/playmark.o \
 	$(DRIVERS)/powerbal.o \
 	$(DRIVERS)/sderby.o $(VIDEO)/sderby.o \
 	$(DRIVERS)/sslam.o $(VIDEO)/sslam.o \
 
-$(MAMEOBJ)/psikyo.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_PLAYMARK)
+
+$(MAMEOBJ)/playmark.a: $(DRVLIBOBJ_PLAYMARK)
+
+DRVLIBOBJ_PSIKYO = \
 	$(DRIVERS)/psikyo.o $(VIDEO)/psikyo.o \
 	$(DRIVERS)/psikyo4.o $(VIDEO)/psikyo4.o \
 	$(DRIVERS)/psikyosh.o $(VIDEO)/psikyosh.o \
 
-$(MAMEOBJ)/ramtek.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_PSIKYO)
+
+$(MAMEOBJ)/psikyo.a: $(DRVLIBOBJ_PSIKYO)
+
+DRVLIBOBJ_RAMTEK = \
 	$(DRIVERS)/hitme.o $(AUDIO)/hitme.o \
 	$(DRIVERS)/starcrus.o $(VIDEO)/starcrus.o \
 
-$(MAMEOBJ)/rare.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_RAMTEK)
+
+$(MAMEOBJ)/ramtek.a: $(DRVLIBOBJ_RAMTEK)
+
+DRVLIBOBJ_RARE = \
 	$(DRIVERS)/btoads.o $(VIDEO)/btoads.o \
 	$(DRIVERS)/kinst.o \
 	$(DRIVERS)/xtheball.o \
 
-$(MAMEOBJ)/sanritsu.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_RARE)
+
+$(MAMEOBJ)/rare.a: $(DRVLIBOBJ_RARE)
+
+DRVLIBOBJ_SANRITSU = \
 	$(DRIVERS)/appoooh.o $(VIDEO)/appoooh.o \
 	$(DRIVERS)/bankp.o $(VIDEO)/bankp.o \
 	$(DRIVERS)/chinsan.o \
@@ -1099,7 +1341,11 @@ $(MAMEOBJ)/sanritsu.a: \
 	$(DRIVERS)/mermaid.o $(VIDEO)/mermaid.o \
 	$(DRIVERS)/mjkjidai.o $(VIDEO)/mjkjidai.o \
 
-$(MAMEOBJ)/sega.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SANRITSU)
+
+$(MAMEOBJ)/sanritsu.a: $(DRVLIBOBJ_SANRITSU)
+
+DRVLIBOBJ_SEGA = \
 	$(DRIVERS)/aladbl.o \
 	$(DRIVERS)/angelkds.o $(VIDEO)/angelkds.o \
 	$(DRIVERS)/bingoc.o \
@@ -1166,7 +1412,11 @@ $(MAMEOBJ)/sega.a: \
 	$(VIDEO)/segaic24.o \
 	$(VIDEO)/stvvdp1.o $(VIDEO)/stvvdp2.o \
 
-$(MAMEOBJ)/seibu.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SEGA)
+
+$(MAMEOBJ)/sega.a: $(DRVLIBOBJ_SEGA)
+
+DRVLIBOBJ_SEIBU = \
 	$(DRIVERS)/cshooter.o \
 	$(DRIVERS)/dcon.o $(VIDEO)/dcon.o \
 	$(DRIVERS)/deadang.o $(VIDEO)/deadang.o \
@@ -1192,7 +1442,11 @@ $(MAMEOBJ)/seibu.a: \
 	$(DRIVERS)/toki.o $(VIDEO)/toki.o \
 	$(DRIVERS)/feversoc.o \
 
-$(MAMEOBJ)/seta.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SEIBU)
+
+$(MAMEOBJ)/seibu.a: $(DRVLIBOBJ_SEIBU)
+
+DRVLIBOBJ_SETA = \
 	$(DRIVERS)/aleck64.o $(MACHINE)/n64.o $(VIDEO)/n64.o \
 	$(DRIVERS)/darkhors.o \
 	$(DRIVERS)/hanaawas.o $(VIDEO)/hanaawas.o \
@@ -1207,14 +1461,22 @@ $(MAMEOBJ)/seta.a: \
 	$(DRIVERS)/ssv.o $(VIDEO)/ssv.o \
 	$(DRIVERS)/st0016.o $(VIDEO)/st0016.o \
 
-$(MAMEOBJ)/sigma.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SETA)
+
+$(MAMEOBJ)/seta.a: $(DRVLIBOBJ_SETA)
+
+DRVLIBOBJ_SIGMA = \
 	$(DRIVERS)/nyny.o \
 	$(DRIVERS)/r2dtank.o \
 	$(DRIVERS)/sigmab52.o \
 	$(DRIVERS)/spiders.o $(AUDIO)/spiders.o \
 	$(DRIVERS)/sub.o \
 
-$(MAMEOBJ)/snk.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SIGMA)
+
+$(MAMEOBJ)/sigma.a: $(DRVLIBOBJ_SIGMA)
+
+DRVLIBOBJ_SNK = \
 	$(DRIVERS)/bbusters.o $(VIDEO)/bbusters.o \
 	$(DRIVERS)/dmndrby.o \
 	$(DRIVERS)/hng64.o $(VIDEO)/hng64.o \
@@ -1226,19 +1488,31 @@ $(MAMEOBJ)/snk.a: \
 	$(DRIVERS)/snk.o $(VIDEO)/snk.o \
 	$(DRIVERS)/snk68.o $(VIDEO)/snk68.o \
 
-$(MAMEOBJ)/stern.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SNK)
+
+$(MAMEOBJ)/snk.a: $(DRVLIBOBJ_SNK)
+
+DRVLIBOBJ_STERN = \
 	$(DRIVERS)/astinvad.o \
 	$(DRIVERS)/berzerk.o \
 	$(DRIVERS)/cliffhgr.o $(AUDIO)/cliffhgr.o \
 	$(DRIVERS)/mazerbla.o \
 	$(DRIVERS)/supdrapo.o \
 
-$(MAMEOBJ)/subsino.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_STERN)
+
+$(MAMEOBJ)/stern.a: $(DRVLIBOBJ_STERN)
+
+DRVLIBOBJ_SUBSINO = \
 	$(DRIVERS)/bishjan.o \
 	$(DRIVERS)/lastfght.o \
 	$(DRIVERS)/subsino.o \
 
-$(MAMEOBJ)/sun.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SUBSINO)
+
+$(MAMEOBJ)/subsino.a: $(DRVLIBOBJ_SUBSINO)
+
+DRVLIBOBJ_SUN = \
 	$(DRIVERS)/arabian.o $(VIDEO)/arabian.o \
 	$(DRIVERS)/ikki.o $(VIDEO)/ikki.o \
 	$(DRIVERS)/kangaroo.o $(VIDEO)/kangaroo.o \
@@ -1248,13 +1522,21 @@ $(MAMEOBJ)/sun.a: \
 	$(DRIVERS)/shangha3.o $(VIDEO)/shangha3.o \
 	$(DRIVERS)/strnskil.o $(VIDEO)/strnskil.o \
 
-$(MAMEOBJ)/suna.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SUN)
+
+$(MAMEOBJ)/sun.a: $(DRVLIBOBJ_SUN)
+
+DRVLIBOBJ_SUNA = \
 	$(DRIVERS)/goindol.o $(VIDEO)/goindol.o \
 	$(DRIVERS)/suna8.o $(AUDIO)/suna8.o $(VIDEO)/suna8.o \
 	$(DRIVERS)/suna16.o $(VIDEO)/suna16.o \
 	$(DRIVERS)/go2000.o \
 
-$(MAMEOBJ)/taito.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_SUNA)
+
+$(MAMEOBJ)/suna.a: $(DRVLIBOBJ_SUNA)
+
+DRVLIBOBJ_TAITO = \
 	$(DRIVERS)/40love.o $(VIDEO)/40love.o \
 	$(DRIVERS)/arkanoid.o $(MACHINE)/arkanoid.o $(VIDEO)/arkanoid.o\
 	$(DRIVERS)/ashnojoe.o $(VIDEO)/ashnojoe.o \
@@ -1335,24 +1617,40 @@ $(MAMEOBJ)/taito.a: \
 	$(VIDEO)/taitoic.o \
 	$(AUDIO)/taito_zm.o \
 
-$(MAMEOBJ)/tatsumi.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TAITO)
+
+$(MAMEOBJ)/taito.a: $(DRVLIBOBJ_TAITO)
+
+DRVLIBOBJ_TATSUMI = \
 	$(DRIVERS)/kingdrby.o \
 	$(DRIVERS)/tx1.o $(MACHINE)/tx1.o $(AUDIO)/tx1.o $(VIDEO)/tx1.o \
 	$(DRIVERS)/lockon.o $(VIDEO)/lockon.o \
 	$(DRIVERS)/tatsumi.o $(MACHINE)/tatsumi.o $(VIDEO)/tatsumi.o \
 
-$(MAMEOBJ)/tch.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TATSUMI)
+
+$(MAMEOBJ)/tatsumi.a: $(DRVLIBOBJ_TATSUMI)
+
+DRVLIBOBJ_TCH = \
 	$(DRIVERS)/kickgoal.o $(VIDEO)/kickgoal.o \
 	$(DRIVERS)/littlerb.o \
 	$(DRIVERS)/speedspn.o $(VIDEO)/speedspn.o \
 	$(DRIVERS)/wheelfir.o \
 
-$(MAMEOBJ)/tecfri.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TCH)
+
+$(MAMEOBJ)/tch.a: $(DRVLIBOBJ_TCH)
+
+DRVLIBOBJ_TECFRI = \
 	$(DRIVERS)/holeland.o $(VIDEO)/holeland.o \
 	$(DRIVERS)/sauro.o $(VIDEO)/sauro.o \
 	$(DRIVERS)/speedbal.o $(VIDEO)/speedbal.o \
 
-$(MAMEOBJ)/technos.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TECFRI)
+
+$(MAMEOBJ)/tecfri.a: $(DRVLIBOBJ_TECFRI)
+
+DRVLIBOBJ_TECHNOS = \
 	$(DRIVERS)/battlane.o $(VIDEO)/battlane.o \
 	$(DRIVERS)/blockout.o $(VIDEO)/blockout.o \
 	$(DRIVERS)/bogeyman.o $(VIDEO)/bogeyman.o \
@@ -1373,7 +1671,11 @@ $(MAMEOBJ)/technos.a: \
 	$(DRIVERS)/wwfwfest.o $(VIDEO)/wwfwfest.o \
 	$(DRIVERS)/xain.o $(VIDEO)/xain.o \
 
-$(MAMEOBJ)/tehkan.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TECHNOS)
+
+$(MAMEOBJ)/technos.a: $(DRVLIBOBJ_TECHNOS)
+
+DRVLIBOBJ_TEHKAN = \
 	$(DRIVERS)/bombjack.o $(VIDEO)/bombjack.o \
 	$(DRIVERS)/gaiden.o $(VIDEO)/gaiden.o \
 	$(DRIVERS)/lvcards.o $(VIDEO)/lvcards.o \
@@ -1389,11 +1691,19 @@ $(MAMEOBJ)/tehkan.a: \
 	$(DRIVERS)/wc90.o $(VIDEO)/wc90.o \
 	$(DRIVERS)/wc90b.o $(VIDEO)/wc90b.o \
 
-$(MAMEOBJ)/thepit.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TEHKAN)
+
+$(MAMEOBJ)/tehkan.a: $(DRVLIBOBJ_TEHKAN)
+
+DRVLIBOBJ_THEPIT = \
 	$(DRIVERS)/thepit.o $(VIDEO)/thepit.o \
 	$(DRIVERS)/timelimt.o $(VIDEO)/timelimt.o \
 
-$(MAMEOBJ)/toaplan.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_THEPIT)
+
+$(MAMEOBJ)/thepit.a: $(DRVLIBOBJ_THEPIT)
+
+DRVLIBOBJ_TOAPLAN = \
 	$(DRIVERS)/mjsister.o \
 	$(DRIVERS)/slapfght.o $(MACHINE)/slapfght.o $(VIDEO)/slapfght.o \
 	$(DRIVERS)/snowbros.o $(VIDEO)/kan_pand.o $(VIDEO)/kan_panb.o \
@@ -1402,15 +1712,27 @@ $(MAMEOBJ)/toaplan.a: \
 	$(DRIVERS)/twincobr.o $(MACHINE)/twincobr.o $(VIDEO)/twincobr.o \
 	$(DRIVERS)/wardner.o \
 
-$(MAMEOBJ)/tong.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TOAPLAN)
+
+$(MAMEOBJ)/toaplan.a: $(DRVLIBOBJ_TOAPLAN)
+
+DRVLIBOBJ_TONG = \
 	$(DRIVERS)/beezer.o $(MACHINE)/beezer.o $(VIDEO)/beezer.o \
 
-$(MAMEOBJ)/unico.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_TONG)
+
+$(MAMEOBJ)/tong.a: $(DRVLIBOBJ_TONG)
+
+DRVLIBOBJ_UNICO = \
 	$(DRIVERS)/drgnmst.o $(VIDEO)/drgnmst.o \
 	$(DRIVERS)/silkroad.o $(VIDEO)/silkroad.o \
 	$(DRIVERS)/unico.o $(VIDEO)/unico.o \
 
-$(MAMEOBJ)/univers.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_UNICO)
+
+$(MAMEOBJ)/unico.a: $(DRVLIBOBJ_UNICO)
+
+DRVLIBOBJ_UNIVERS = \
 	$(DRIVERS)/cheekyms.o $(VIDEO)/cheekyms.o \
 	$(DRIVERS)/cosmic.o $(VIDEO)/cosmic.o \
 	$(DRIVERS)/docastle.o $(MACHINE)/docastle.o $(VIDEO)/docastle.o \
@@ -1419,26 +1741,46 @@ $(MAMEOBJ)/univers.a: \
 	$(DRIVERS)/redclash.o $(VIDEO)/redclash.o \
 	$(DRIVERS)/superdq.o
 
-$(MAMEOBJ)/upl.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_UNIVERS)
+
+$(MAMEOBJ)/univers.a: $(DRVLIBOBJ_UNIVERS)
+
+DRVLIBOBJ_UPL = \
 	$(DRIVERS)/mouser.o $(VIDEO)/mouser.o \
 	$(DRIVERS)/ninjakd2.o $(VIDEO)/ninjakd2.o \
 	$(DRIVERS)/nova2001.o $(VIDEO)/nova2001.o \
 	$(DRIVERS)/xxmissio.o $(VIDEO)/xxmissio.o \
 
-$(MAMEOBJ)/valadon.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_UPL)
+
+$(MAMEOBJ)/upl.a: $(DRVLIBOBJ_UPL)
+
+DRVLIBOBJ_VALADON = \
 	$(DRIVERS)/bagman.o $(MACHINE)/bagman.o $(VIDEO)/bagman.o \
 	$(DRIVERS)/tankbust.o $(VIDEO)/tankbust.o \
 
-$(MAMEOBJ)/veltmjr.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_VALADON)
+
+$(MAMEOBJ)/valadon.a: $(DRVLIBOBJ_VALADON)
+
+DRVLIBOBJ_VELTMJR = \
 	$(DRIVERS)/cardline.o \
 	$(DRIVERS)/witch.o \
 
-$(MAMEOBJ)/venture.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_VELTMJR)
+
+$(MAMEOBJ)/veltmjr.a: $(DRVLIBOBJ_VELTMJR)
+
+DRVLIBOBJ_VENTURE = \
 	$(DRIVERS)/looping.o \
 	$(DRIVERS)/spcforce.o $(VIDEO)/spcforce.o \
 	$(DRIVERS)/suprridr.o $(VIDEO)/suprridr.o \
 
-$(MAMEOBJ)/vsystem.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_VENTURE)
+
+$(MAMEOBJ)/venture.a: $(DRVLIBOBJ_VENTURE)
+
+DRVLIBOBJ_VSYSTEM = \
 	$(DRIVERS)/aerofgt.o $(VIDEO)/aerofgt.o \
 	$(DRIVERS)/crshrace.o $(VIDEO)/crshrace.o \
 	$(DRIVERS)/f1gp.o $(VIDEO)/f1gp.o \
@@ -1454,13 +1796,21 @@ $(MAMEOBJ)/vsystem.a: \
 	$(DRIVERS)/taotaido.o $(VIDEO)/taotaido.o \
 	$(DRIVERS)/welltris.o $(VIDEO)/welltris.o \
 
-$(MAMEOBJ)/yunsung.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_VSYSTEM)
+
+$(MAMEOBJ)/vsystem.a: $(DRVLIBOBJ_VSYSTEM)
+
+DRVLIBOBJ_YUNSUNG = \
 	$(DRIVERS)/nmg5.o \
 	$(DRIVERS)/paradise.o $(VIDEO)/paradise.o \
 	$(DRIVERS)/yunsung8.o $(VIDEO)/yunsung8.o \
 	$(DRIVERS)/yunsun16.o $(VIDEO)/yunsun16.o \
 
-$(MAMEOBJ)/zaccaria.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_YUNSUNG)
+
+$(MAMEOBJ)/yunsung.a: $(DRVLIBOBJ_YUNSUNG)
+
+DRVLIBOBJ_ZACCARIA = \
 	$(DRIVERS)/galaxia.o \
 	$(DRIVERS)/laserbat.o $(AUDIO)/laserbat.o \
 	$(DRIVERS)/zac2650.o $(VIDEO)/zac2650.o \
@@ -1471,7 +1821,11 @@ $(MAMEOBJ)/zaccaria.a: \
 # remaining drivers
 #-------------------------------------------------
 
-$(MAMEOBJ)/misc.a: \
+DRVLIBOBJS += $(DRVLIBOBJ_ZACCARIA)
+
+$(MAMEOBJ)/zaccaria.a: $(DRVLIBOBJ_ZACCARIA)
+
+DRVLIBOBJ_MISC = \
 	$(DRIVERS)/39in1.o \
 	$(DRIVERS)/1945kiii.o \
 	$(DRIVERS)/2mindril.o \
@@ -1656,6 +2010,8 @@ $(MAMEOBJ)/misc.a: \
 	$(DRIVERS)/vroulet.o \
 	$(DRIVERS)/wldarrow.o \
 	$(DRIVERS)/xyonix.o $(VIDEO)/xyonix.o \
+
+DRVLIBOBJS += $(DRVLIBOBJ_MISC)
 
 #-------------------------------------------------
 # layout dependencies

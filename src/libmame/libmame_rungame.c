@@ -23,18 +23,6 @@
  ************************************************************************** **/
 
 /**
- * These are exported by osd_stubs
- **/
-extern void (*osd_init_function)(running_machine *machine);
-extern void (*osd_update_function)(running_machine *machine, int skip_redraw);
-extern void (*osd_update_audio_stream_function)(running_machine *machine,
-                                                INT16 *buffer,
-                                                int samples_this_frame);
-extern void (*osd_set_mastervolume_function)(int attenuation);
-extern void (*osd_customize_input_type_list_function)
-    (input_type_desc *typelist);
-
-/**
  * These are exported by other source files within libmame itself
  **/
 extern core_options *get_mame_options(const LibMame_RunGameOptions *options,
@@ -752,10 +740,10 @@ static void look_up_and_set_configuration_value(int gamenum,
 
 
 /** **************************************************************************
- * Static MAME OSD function implementations
+ * libmame OSD function implementations
  ************************************************************************** **/
 
-static void libmame_osd_init(running_machine *machine)
+void osd_init(running_machine *machine)
 {
     /**
      *  Save away the machine, we'll need it in osd_customize_input_type_list
@@ -786,7 +774,7 @@ static void libmame_osd_init(running_machine *machine)
 }
 
 
-static void libmame_osd_update(running_machine *machine, int skip_redraw)
+void osd_update(running_machine *machine, int skip_redraw)
 {
     /**
      * Poll input
@@ -819,9 +807,8 @@ static void libmame_osd_update(running_machine *machine, int skip_redraw)
 }
 
 
-static void libmame_osd_update_audio_stream(running_machine *machine,
-                                            INT16 *buffer,
-                                            int samples_this_frame)
+void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
+                             int samples_this_frame)
 {
     /**
      * Ask the callbacks to update the audio
@@ -831,7 +818,7 @@ static void libmame_osd_update_audio_stream(running_machine *machine,
 }
 
 
-static void libmame_osd_set_mastervolume(int attenuation)
+void osd_set_mastervolume(int attenuation)
 {
     /**
      * Ask the callbacks to set the master volume
@@ -853,7 +840,7 @@ static void libmame_osd_set_mastervolume(int attenuation)
  * whatever they want to satisfy getting inputs for the various controllers
  * types.
  **/
-static void libmame_osd_customize_input_type_list(input_type_desc *typelist)
+void osd_customize_input_type_list(input_type_desc *typelist)
 {
     /**
      * For each input descriptor, create a keyboard key, or mouse axis, or
@@ -1073,14 +1060,6 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     if (gamenum >= LibMame_Get_Game_Count()) {
         return LibMame_RunGameStatus_InvalidGameNum;
     }
-
-    /* Set the OSD implementation function pointers */
-    osd_init_function = &libmame_osd_init;
-    osd_update_function = &libmame_osd_update;
-    osd_update_audio_stream_function = &libmame_osd_update_audio_stream;
-    osd_set_mastervolume_function = &libmame_osd_set_mastervolume;
-    osd_customize_input_type_list_function =
-        &libmame_osd_customize_input_type_list;
 
     /* Set up MAME's "output channels" so that we accumulate it all in a
        buffer rather than dumping it to stdout/stderr/wherever */
