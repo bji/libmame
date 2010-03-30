@@ -603,8 +603,10 @@ SOFTFLOAT = $(OBJ)/libsoftfloat.a
 # include files which define additional targets
 #-------------------------------------------------
 
+.PHONY: default
 default: maketree buildtools emulator
 
+.PHONY: all
 all: default tools
 
 
@@ -643,14 +645,19 @@ CDEFS = $(DEFS)
 # primary targets
 #-------------------------------------------------
 
+.PHONY: emulator
 emulator: maketree $(BUILD) $(EMULATOR)
 
+.PHONY: buildtools
 buildtools: maketree $(BUILD)
 
+.PHONY: tools
 tools: maketree $(TOOLS)
 
+.PHONY: maketree
 maketree: $(sort $(OBJDIRS))
 
+.PHONY: clean
 clean: $(OSDCLEAN)
 	$(ECHO) Deleting object tree $(OBJ)...
 	$(RM) -r $(OBJ)
@@ -663,6 +670,7 @@ ifdef MAP
 	$(RM) $(FULLNAME).map
 endif
 
+.PHONY: checkautodetect
 checkautodetect:
 	$(ECHO) TARGETOS=$(TARGETOS) 
 	$(ECHO) PTR64=$(PTR64) 
