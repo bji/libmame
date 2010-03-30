@@ -679,12 +679,13 @@ static void output_callback(void *param, const char *format, va_list args)
        going to be copying */
     g_output_buffer_head += len;
 
-    /* Compute what tail would be if the buffer were completely full */
-    int smallest_tail = g_output_buffer_head - sizeof(g_output_buffer);
-    /* If the tail is less than this, then set it to this; this means that
-       we've wrapped around and overwritten some data */
-    if (g_output_buffer_tail < smallest_tail) {
-        g_output_buffer_tail = smallest_tail;
+    /* If the tail is below the bottom, increment it; this means there was a
+       wrap-around */
+    if (g_output_buffer_head > sizeof(g_output_buffer)) {
+        int smallest_tail = g_output_buffer_head - sizeof(g_output_buffer);
+        if (g_output_buffer_tail < smallest_tail) {
+            g_output_buffer_tail = smallest_tail;
+        }
     }
 
     /* Copy the data in; first part, from head to the end */
