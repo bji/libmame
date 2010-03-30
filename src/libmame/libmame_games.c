@@ -11,7 +11,7 @@
  * Support for getting game info
  **/
 
-#include "HashTable.h"
+#include "hashtable.h"
 #include "emu.h"
 #include "config.h"
 #include "hash.h"

@@ -1,5 +1,5 @@
 /** **************************************************************************
- * HashTable.c
+ * hashtable.c
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
@@ -7,7 +7,7 @@
  ************************************************************************** **/
 
 
-#include "HashTable.h"
+#include "hashtable.h"
 
 namespace Hash
 {

@@ -1,5 +1,3 @@
-/libmame*.a
-/libmame-test*
 /mame*
 /obj
 /work_queue_test*

@@ -17,7 +17,7 @@ OBJDIRS += $(OBJ)/libmame
 LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
               $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(UTILOBJS) \
               $(EXPATOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
-              $(OBJ)/libmame/HashTable.o \
+              $(OBJ)/libmame/hashtable.o \
               $(OBJ)/libmame/libmame_dv.o \
               $(OBJ)/libmame/libmame_games.o \
               $(OBJ)/libmame/libmame_options.o \
