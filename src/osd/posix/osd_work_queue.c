@@ -291,7 +291,7 @@ static void *work_queue_thread_main(void *)
                    this API would expect ... */
                 pthread_mutex_lock(&(queue->mutex));
                 
-                if (--item->queue->items_count == 0) {
+                if (--queue->items_count == 0) {
                     pthread_cond_signal(&(queue->cond));
                 }
 
