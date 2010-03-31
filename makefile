@@ -320,6 +320,11 @@ ifdef BUILD_STATIC_LIBMAME
 SUFFIXSTATIC = s
 endif
 
+# profiling libaries get an additional 'p' suffix
+ifdef PROFILE
+SUFFIXPROFILE = p
+endif
+
 # the name is just 'target' if no subtarget; otherwise it is
 # the concatenation of the two (e.g., mametiny)
 ifeq ($(TARGET),$(SUBTARGET))
@@ -329,7 +334,7 @@ NAME = $(TARGET)$(SUBTARGET)
 endif
 
 # fullname is prefix+name+suffix+suffix64+suffixdebug
-FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXSTATIC)
+FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXSTATIC)$(SUFFIXPROFILE)
 
 # add an EXE suffix to get the final emulator name
 EMULATOR = $(FULLNAME)$(EXE)
