@@ -379,14 +379,14 @@ public:
          * 
          * @return true if the iterator has a current element, false if not.
          **/
-        bool FHasCurrent() const
+        bool HasCurrent() const
         {
             return pEntryM;
         }
 
         /**
          * Returns the key of the current hash table element.  This should
-         * only be called when FHasCurrent() returns true.
+         * only be called when HasCurrent() returns true.
          *
          * @return the key of the current hash table element
          **/
@@ -397,7 +397,7 @@ public:
 
         /**
          * Returns the value of the current hash table element.  This should
-         * only be called when FHasCurrent() returns true.
+         * only be called when HasCurrent() returns true.
          *
          * @return the value of the current hash table element
          **/
@@ -408,7 +408,7 @@ public:
 
         /**
          * Advanced to the next element of the hash table (or past it if it is
-         * the last element, in which case FHasCurrent() will return false).
+         * the last element, in which case HasCurrent() will return false).
          **/
         void Advance()
         {
