@@ -1675,11 +1675,11 @@ int LibMame_Get_Game_SoundSamplesSource(int gamenum);
 
 
 /**
- * Returns nonzero if the sound samples are identical to those of the the
+ * Returns nonzero if the sound samples are identical to those of the
  * source, zero if not
  *
  * @param gamenum is the game number of the game
- * @return nonzero if the sound samples are identical to those of the the
+ * @return nonzero if the sound samples are identical to those of the
  *         source, zero if not
  **/
 int LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum);
@@ -1752,17 +1752,6 @@ int LibMame_Get_Game_MaxSimultaneousPlayers(int gamenum);
  * @return a structure describing controllers for a given game.
  **/
 LibMame_AllControllers LibMame_Get_Game_AllControllers(int gamenum);
-
-
-/**
- * This returns a structure describing the controllers for a given game that
- * are shared across all players.
- *
- * @param gamenum is the game number of the game
- * @return a structure describing the shared controllers for a given game.
- **/
-LibMame_SharedControllers LibMame_Get_Game_SharedControllers
-    (int gamenum);
 
 
 /**
