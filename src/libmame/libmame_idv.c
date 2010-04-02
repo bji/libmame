@@ -24,6 +24,16 @@ const char *LibMame_Get_Version_String()
 }
 
 
+LibMame_InitializeStatus LibMame_Initialize()
+{
+    /**
+     * Currently does nothing, it's in the API so that the API doesn't have to
+     * change if/when it is needed.
+     **/
+    return LibMame_InitializeStatus_Success;
+}
+
+
 void LibMame_Deinitialize()
 {
     LibMame_Games_Deinitialize();

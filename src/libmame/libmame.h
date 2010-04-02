@@ -4,11 +4,134 @@
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
  *
+ * LibMame provides a single API for (almost) all functionality of the MAME
+ * engine.  It provides the following types of functions:
+ *
+ * 1. Functions for querying the set of games supported by this version of
+ *    LibMame, and many descriptive details about each game:
+ *    - LibMame_Get_Version_String
+ *    - LibMame_Get_Game_Count
+ *    - LibMame_Get_Game_Number
+ *    - LibMame_Get_Game_Matches
+ *    - LibMame_Get_Game_Short_Name
+ *    - LibMame_Get_Game_Full_Name
+ *    - LibMame_Get_Game_Year_Of_Release
+ *    - LibMame_Get_Game_CloneOf
+ *    - LibMame_Get_Game_Manufacturer
+ *    - LibMame_Get_Game_WorkingFlags
+ *    - LibMame_Get_Game_OrientationFlags
+ *    - LibMame_Get_Game_ScreenType
+ *    - LibMame_Get_Game_ScreenResolution
+ *    - LibMame_Get_Game_ScreenRefreshRateHz
+ *    - LibMame_Get_Game_SoundChannels
+ *    - LibMame_Get_Game_SoundSamples_Count
+ *    - LibMame_Get_Game_SoundSamplesSource
+ *    - LibMame_Get_Game_SoundSampleFileName
+ *    - LibMame_Get_Game_Chip_Count
+ *    - LibMame_Get_Game_Chip
+ *    - LibMame_Get_Game_Setting_Count
+ *    - LibMame_Get_Game_Setting
+ *    - LibMame_Get_Game_MaxSimultaneousPlayers
+ *    - LibMame_Get_Game_AllControllers
+ *    - LibMame_Get_Game_BiosSet_Count
+ *    - LibMame_Get_Game_BiosSet
+ *    - LibMame_Get_Game_Rom_Count
+ *    - LibMame_Get_Game_Rom
+ *    - LibMame_Get_Game_Hdd_Count
+ *    - LibMame_Get_Game_Hdd
+ *    - LibMame_Get_Game_SourceFileName
+ *
+ * 2. A function for running a MAME game (only one MAME game may be run
+ *    concurrently within the same process due to limitations in the MAME
+ *    engine).  MAME will emulate the game and will interact with the rest
+ *    of the system (for displaying frames of the game, playing sound, and
+ *    getting controller input) via callbacks.
+ *    - LibMame_RunGame
+ *
+ * 3. Functions for manipulating a running MAME game, including pausing,
+ *    resetting, and manipulating configuration values of various kinds.
+ *    - LibMame_RunningGame_Pause
+ *    - LibMame_RunningGame_Schedule_Exit
+ *    - LibMame_RunningGame_Schedule_Hard_Reset
+ *    - LibMame_RunningGame_Schedule_Soft_Reset
+ *    - LibMame_RunningGame_SaveState
+ *    - LibMame_RunningGame_LoadState
+ *    - LibMame_RunningGame_ChangeConfigurationValue
+ *    - LibMame_RunningGame_ChangeDipswitchValue
+ *    - LibMame_RunningGame_ChangeAdjusterValue
+ *
+ * 4. Miscellaneous functions necessary for supporting the other libmame
+ *    functionality:
+ *    - LibMame_Initialize
+ *    - LibMame_Deinitialize
+ *    - LibMame_Set_Default_RunGameOptions
+ *
+ *
+ * In general, applications using libmame will follow this pattern:
+ *
+ * 1. Call LibMame_Initialize.
+ *
+ * 2. Collect game information for display using the LibMame_Get_Game_XXX
+ *    functions.
+ *
+ * 3. Look up the number of the game that the user wants to play using
+ *    LibMame_Get_Game_Number.
+ *
+ * 4. Set options for running the game by first calling 
+ *    LibMame_Set_Default_RunGameOptions, and then customizing the resulting
+ *    options according to user preference.
+ *
+ * 5. Set up internal state for managing the display, sound, and controller
+ *    input for the game about to be run.
+ *    
+ *    The target display frame rate can be found by calling 
+ *    LibMame_Get_Game_ScreenRefreshRateHz, if needed, and the size at which
+ *    the game will be rendered is known by calling
+ *    LibMame_Get_Game_ScreenResolution (the application may scale the
+ *    resulting graphics and apply whatever effects it wants to to the
+ *    results, but the display callback itself will be made with rendering
+ *    primitives set to display at the game's native resolution).
+ *
+ *    The set of controllers that the game will require inputs on can be
+ *    found by calling LibMame_Get_Game_AllControllers (and the maximum number
+ *    of players for whom controller input is needed is available from
+ *    LibMame_Get_Game_MaxSimultaneousPlayers).  The application will
+ *    typically use this information to decide how to map whatever controllers
+ *    it knows about to the inputs that the game is expecting, usually via
+ *    user preference (managed by the application).
+ *
+ * 6. Call LibMame_RunGame to run the game, passing in pointers to callback
+ *    functions that will handle the rendering of audio and video and
+ *    collecting controller input.
+ *
+ * 7. As the game is running, according to user input, call the
+ *    LibMame_RunningGame_XXX functions (but only from the 
+ *    MakeRunningGameCallbacks (or in certain cases, Paused) callbacks, which
+ *    means that user commands must typically be noted and then applied at the
+ *    next call to MakeRunningGameCallbacks).
+ *
+ * 8. When the game completes (i.e. the LibMame_RunningGame_Schedule_Exit
+ *    callback is made by the application), LibMame_RunGame will return, and
+ *    the application may then repeat steps 5, 6, and 7 if it wishes.
+ *
+ * 9. When the application is completely finished calling any LibMame
+ *    functions, before it exits, it must then call LibMame_Deinitialize.
+ *
+ * Please keep in mind that although the API is structured as if it were
+ * possible to run multiple MAME games simultaneously from the same
+ * application, there is a limit in the MAME engine that prevents more than
+ * one game from running at a time.  This limit may someday be lifted, in
+ * which case this API will already be ready to take advantage of that, but
+ * until the limit is lifted, remember that LibMame_RunGame may only be called
+ * from one thread at a time within a single application.
+ * 
  ************************************************************************** **/
+
 
 #ifndef __LIBMAME_H__
 #define __LIBMAME_H__
 
+#include <stdarg.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -17,6 +140,13 @@ extern "C" {
 }
 #endif
 #endif
+
+
+/** **************************************************************************
+ * Opaque type definitions
+ ************************************************************************** **/
+
+typedef struct LibMame_RunningGame LibMame_RunningGame;
 
 
 /** **************************************************************************
@@ -142,6 +272,17 @@ extern "C" {
 /** **************************************************************************
  * Enumerated types
  ************************************************************************** **/
+
+/**
+ * Status codes that can be returned by LibMame_Initialize()
+ **/
+typedef enum
+{
+    LibMame_InitializeStatus_Success,
+    LibMame_InitializeStatus_OutOfMemory,
+    LibMame_InitializeStatus_GeneralFailure
+} LibMame_InitializeStatus;
+
 
 /**
  * Screen types
@@ -1372,17 +1513,38 @@ typedef struct LibMame_RenderPrimitive
 typedef struct LibMame_RunGameCallbacks
 {
     /**
+     * Called by libmame whenever there is textual status reported by a
+     * running game.  In general, this text may be ignored, but some
+     * applications may prefer to show this text to the user.
+     *
+     * @param format is the format text, as in vsprintf
+     * @param args are the args, as in vsprintf
+     * @param callback_data the data pointer that was passed to
+     *        LibMame_RunGame
+     **/
+    void (*StatusText)(const char *format, va_list args, void *callback_data);
+
+    /**
      * Called by libmame as LibMame_RunGame initializes the game and prepares
      * it for being run.  This includes the loading of ROMs and initializing of
-     * internal machine state.
+     * internal machine state.  Additionally lets the callbacks know the
+     * handle of the running game, so that it may be used for the 
+     * LibMame_RunningGame_XXX calls for this game.
      *
      * @param phase is either LibMame_StartupPhase_LoadingRoms, or
      *        LibMame_StartupPhase_InitializingMachine
      * @param pct_complete is the percentage completion of this phase
+     * @param running_game is an opaque pointer which identifies the game
+     *        being run, and that is used in subsequent calls to
+     *        LibMame_RunningGame_XXX functions.  The application should, if
+     *        it intends to run more than one game simultaneously (currently
+     *        not possible due to internal MAME limitations), save this value
+     *        in a way that associates it with the callback data.
      * @param callback_data the data pointer that was passed to
      *        LibMame_RunGame
      **/
     void (*StartingUp)(LibMame_StartupPhase phase, int pct_complete,
+                       LibMame_RunningGame *running_game,
                        void *callback_data);
 
     /**
@@ -1483,6 +1645,15 @@ typedef struct LibMame_RunGameCallbacks
 /**
  * Functions for managing the library.
  **/
+
+/**
+ * Initializes libmame, preparing any resources that the library needs for
+ * operation.  This function must be called before any other LibMame function
+ * is called, and also must be called after any call to LibMame_Deinitialize
+ * before any other LibMame function can be called.
+ **/
+LibMame_InitializeStatus LibMame_Initialize();
+
 
 /**
  * Deinitializes libmame, releasing any resources that the library has
@@ -1675,17 +1846,6 @@ int LibMame_Get_Game_SoundSamplesSource(int gamenum);
 
 
 /**
- * Returns nonzero if the sound samples are identical to those of the
- * source, zero if not
- *
- * @param gamenum is the game number of the game
- * @return nonzero if the sound samples are identical to those of the
- *         source, zero if not
- **/
-int LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum);
-
-
-/**
  * Returns the file name of a sound sample for a game.
  *
  * @param gamenum is the game number of the game
@@ -1846,10 +2006,9 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
  **/
 
 /**
- * Runs a game.  This is a non-thread-safe call, so only one thread can be
- * running this at a time.  More documentation needed here.  After this
- * function returns, you can get any status text that MAME emitted by calling
- * LibMame_Get_Accumulated_Status_Text().
+ * Runs a game.  Currently, this is a non-thread-safe call, so only one thread
+ * can be running this at a time.  The game will be run until it is instructed
+ * to exit by a call to LibMame_RunningGame_ScheduleExit().
  *
  * @param gamenum is the game number of the game to run
  * @param options if non-NULL, provides the options that the game will be run
@@ -1877,8 +2036,11 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
  * LibMame_RunGame() function.  The game will unpause when that Paused
  * callback returns.  This function may only be called from within the
  * MakeRunningGameCalls callback, and not from any other context of execution.
+ *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  **/
-void LibMame_RunningGame_Pause();
+void LibMame_RunningGame_Pause(LibMame_RunningGame *game);
 
 
 /**
@@ -1887,8 +2049,11 @@ void LibMame_RunningGame_Pause();
  * game has exited.  This function may only be called from within the
  * MakeRunningGameCalls or Paused callback, and not from any other context of
  * execution.
+ *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  **/
-void LibMame_RunningGame_Schedule_Exit();
+void LibMame_RunningGame_Schedule_Exit(LibMame_RunningGame *game);
 
 
 /**
@@ -1897,8 +2062,11 @@ void LibMame_RunningGame_Schedule_Exit();
  * to its "just powered on" state.  This function may only be called from
  * within the MakeRunningGameCalls or Paused callback, and not from any other
  * context of execution.
+ *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  **/
-void LibMame_RunningGame_Schedule_Hard_Reset();
+void LibMame_RunningGame_Schedule_Hard_Reset(LibMame_RunningGame *game);
 
 
 /**
@@ -1907,8 +2075,11 @@ void LibMame_RunningGame_Schedule_Hard_Reset();
  * cycle as is done with the hard reset.  This function may only be called
  * from within the MakeRunningGameCalls or Paused callback, and not from any
  * other context of execution.
+ *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  **/
-void LibMame_RunningGame_Schedule_Soft_Reset();
+void LibMame_RunningGame_Schedule_Soft_Reset(LibMame_RunningGame *game);
 
 
 /**
@@ -1917,9 +2088,12 @@ void LibMame_RunningGame_Schedule_Soft_Reset();
  * within the MakeRunningGameCalls or Paused callback, and not from any other
  * context of execution.
  *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  * @param filename is the filename to write the save state to
  **/
-void LibMame_RunningGame_SaveState(const char *filename);
+void LibMame_RunningGame_SaveState(LibMame_RunningGame *game,
+                                   const char *filename);
 
 
 /**
@@ -1929,9 +2103,12 @@ void LibMame_RunningGame_SaveState(const char *filename);
  * MakeRunningGameCalls or Paused callback, and not from any other context of
  * execution.
  *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  * @param filename is the filename to read the save state from
  **/
-void LibMame_RunningGame_SaveState(const char *filename);
+void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
+                                   const char *filename);
 
 
 /**
@@ -1942,12 +2119,15 @@ void LibMame_RunningGame_SaveState(const char *filename);
  * the MakeRunningGameCalls or Paused callback, and not from any other context
  * of execution.
  *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  * @param name is the name of the configuration setting
  * @param mask is the mask of the configuration setting
  * @param value is the value, which must be one of the value_names of the
  *        LibMame_Setting for this configuration setting
  **/
-void LibMame_RunningGame_ChangeConfigurationValue(const char *name, 
+void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
+                                                  const char *name, 
                                                   uint32_t mask,
                                                   const char *value);
 
@@ -1959,12 +2139,15 @@ void LibMame_RunningGame_ChangeConfigurationValue(const char *name,
  * the MakeRunningGameCalls or Paused callback, and not from any other context
  * of execution.
  *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  * @param name is the name of the dipswitch setting
  * @param mask is the mask of the dipswitch setting
  * @param value is the value, which must be one of the value_names of the
  *        LibMame_Setting for this dipswitch setting
  **/
-void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
+void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
+                                              const char *name, uint32_t mask,
                                               const char *value);
 
 
@@ -1975,29 +2158,15 @@ void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
  * the MakeRunningGameCalls or Paused callback, and not from any other context
  * of execution.
  *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
  * @param name is the name of the adjuster setting
  * @param mask is the mask of the adjuster setting
  * @param value is the value
  **/
-void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
+void LibMame_RunningGame_ChangeAdjusterValue(LibMame_RunningGame *game,
+                                             const char *name, uint32_t mask,
                                              int value);
-
-
-/**
- * Mame status text recovery functions
- **/
-
-/**
- * Get MAME error, warning, info, debug, verbose, and log information that has
- * accumulated.  Note that the returned text is not NULL-terminated.
- *
- * @buffer is the buffer into which to copy accumulated error text
- * @count is the maximum number of bytes to copy
- * @return the number of bytes copied into [buffer]; if less than [count],
- *         there is no more accumulated error text available, otherwise,
- *         there may be more
- **/
-int LibMame_Get_Accumulated_Status_Text(char *buffer, int count);
 
 
 #ifdef __cplusplus

@@ -18,7 +18,7 @@ LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
               $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(UTILOBJS) \
               $(EXPATOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
               $(OBJ)/libmame/hashtable.o \
-              $(OBJ)/libmame/libmame_dv.o \
+              $(OBJ)/libmame/libmame_idv.o \
               $(OBJ)/libmame/libmame_games.o \
               $(OBJ)/libmame/libmame_options.o \
               $(OBJ)/libmame/libmame_rungame.o

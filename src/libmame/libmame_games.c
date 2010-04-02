@@ -978,7 +978,7 @@ static void convert_image_info(const game_driver *driver,
         /* Fill them in */
         Hash::Table<Hash::StringKey, LibMame_BiosSet>::Iterator 
             iter(htBiosSets);
-        while (iter.FHasCurrent()) {
+        while (iter.HasCurrent()) {
             *pset = iter.GetCurrentValue();
             pset++;
             iter.Advance();
@@ -1342,12 +1342,6 @@ int LibMame_Get_Game_SoundSamplesSource(int gamenum)
 
 {
     return get_gameinfo(gamenum)->sound_samples_source;
-}
-
-
-int LibMame_Get_Game_SoundSamplesIdenticalToSource(int gamenum)
-{
-    return (get_gameinfo(gamenum)->sound_samples == NULL);
 }
 
 

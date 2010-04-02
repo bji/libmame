@@ -378,14 +378,6 @@ static int g_input_descriptor_count =
  **/
 static LibMame_RunGame_State g_state;
 
-/**
- * Additionally, MAME does not distinguish between running_machines when it
- * calls the output callbacks.  This here constitutes a circular buffer for
- * collecting all MAME "output channel" output.
- **/
-static char g_output_buffer[4096];
-unsigned int g_output_buffer_head, g_output_buffer_tail;
-
 
 /** **************************************************************************
  * Static helper functions
@@ -646,7 +638,10 @@ static void startup_callback(running_machine *machine, int mame_phase, int pct)
         return;
     }
 
-    (*(g_state.callbacks->StartingUp))(phase, pct, g_state.callback_data);
+    /* Currently, only one running game at a time is supported, so just pass
+       in a bogus value */
+    (*(g_state.callbacks->StartingUp))(phase, pct, (LibMame_RunningGame *) 0x1,
+                                       g_state.callback_data);
 }
 
 
@@ -668,44 +663,16 @@ static void output_callback(void *param, const char *format, va_list args)
 {
     (void) param;
 
-    /* Get the text */
-    char text[4096];
-    int len = vsnprintf(text, sizeof(text), format, args);
-
-    /* Compute where in the output buffer we're going to start copying */
-    unsigned int head = g_output_buffer_head % sizeof(g_output_buffer);
-
-    /* Increment the g_output_buffer_head with the number of bytes we're
-       going to be copying */
-    g_output_buffer_head += len;
-
-    /* If the tail is below the bottom, increment it; this means there was a
-       wrap-around */
-    if (g_output_buffer_head > sizeof(g_output_buffer)) {
-        int smallest_tail = g_output_buffer_head - sizeof(g_output_buffer);
-        if (g_output_buffer_tail < smallest_tail) {
-            g_output_buffer_tail = smallest_tail;
-        }
-    }
-
-    /* Copy the data in; first part, from head to the end */
-    int tocopy = sizeof(g_output_buffer) - head;
-    if (tocopy > len) {
-        tocopy = len;
-    }
-    memcpy(&(g_output_buffer[head]), text, tocopy);
-    len -= tocopy;
-
-    /* Next part, if necessary, is the remainder */
-    if (len) {
-        memcpy(g_output_buffer, &(text[tocopy]), len);
-    }
+    (*(g_state.callbacks->StatusText))(format, args, g_state.callback_data);
 }
 
 
-static void set_configuration_value(const char *name, uint32_t mask,
+static void set_configuration_value(LibMame_RunningGame *game,
+                                    const char *name, uint32_t mask,
                                     int value)
 {
+    (void) game;
+
     const input_field_config *config = input_field_by_tag_and_mask
         (g_state.machine->portlist, name, mask);
 
@@ -717,7 +684,8 @@ static void set_configuration_value(const char *name, uint32_t mask,
 }
 
 
-static void look_up_and_set_configuration_value(int gamenum,
+static void look_up_and_set_configuration_value(LibMame_RunningGame *game,
+                                                int gamenum,
                                                 const char *name,
                                                 uint32_t mask,
                                                 const char *value)
@@ -730,7 +698,7 @@ static void look_up_and_set_configuration_value(int gamenum,
             /* Found the descriptor, now find the value */
             for (int j = 0; j < desc.value_count; j++) {
                 if (!strcmp(desc.value_names[j], value)) {
-                    set_configuration_value(name, mask, j);
+                    set_configuration_value(game, name, mask, j);
                     break;
                 }
             }
@@ -1132,99 +1100,80 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
 }
 
 
-void LibMame_RunningGame_Pause()
+void LibMame_RunningGame_Pause(LibMame_RunningGame *game)
 {
+    (void) game;
+
     g_state.waiting_for_pause = true;
 
     mame_pause(g_state.machine, TRUE);
 }
 
 
-void LibMame_RunningGame_Schedule_Exit()
+void LibMame_RunningGame_Schedule_Exit(LibMame_RunningGame *game)
 {
+    (void) game;
+
     mame_schedule_exit(g_state.machine);
 }
 
 
-void LibMame_RunningGame_Schedule_Hard_Reset()
+void LibMame_RunningGame_Schedule_Hard_Reset(LibMame_RunningGame *game)
 {
+    (void) game;
+
     mame_schedule_hard_reset(g_state.machine);
 }
 
 
-void LibMame_RunningGame_Schedule_Soft_Reset()
+void LibMame_RunningGame_Schedule_Soft_Reset(LibMame_RunningGame *game)
 {
+    (void) game;
+
     mame_schedule_soft_reset(g_state.machine);
 }
 
 
-void LibMame_RunningGame_SaveState(const char *filename)
+void LibMame_RunningGame_SaveState(LibMame_RunningGame *game, 
+                                   const char *filename)
 {
+    (void) game;
+
     mame_schedule_save(g_state.machine, filename);
 }
 
 
-void LibMame_RunningGame_LoadState(const char *filename)
+void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
+                                   const char *filename)
 {
+    (void) game;
+
     mame_schedule_load(g_state.machine, filename);
 }
 
 
-void LibMame_RunningGame_ChangeConfigurationValue(const char *name, 
+void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
+                                                  const char *name, 
                                                   uint32_t mask,
                                                   const char *value)
 {
-    look_up_and_set_configuration_value(g_state.gamenum, name, mask, value);
+    look_up_and_set_configuration_value
+        (game, g_state.gamenum, name, mask, value);
 }
 
 
-void LibMame_RunningGame_ChangeDipswitchValue(const char *name, uint32_t mask,
+void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
+                                              const char *name, uint32_t mask,
                                               const char *value)
 {
-    look_up_and_set_configuration_value(g_state.gamenum, name, mask, value);
+    look_up_and_set_configuration_value
+        (game, g_state.gamenum, name, mask, value);
 }
 
 
-void LibMame_RunningGame_ChangeAdjusterValue(const char *name, uint32_t mask,
+void LibMame_RunningGame_ChangeAdjusterValue(LibMame_RunningGame *game,
+                                             const char *name, uint32_t mask,
                                              int value)
 {
-    set_configuration_value(name, mask, value);
-}
-
-
-int LibMame_Get_Accumulated_Status_Text(char *buffer, int count)
-{
-    /* The amount of data available */
-    int len = g_output_buffer_head - g_output_buffer_tail;
-    
-    /* The amount of data to copy */
-    if (len > count) {
-        len = count;
-    }
-
-    /* Now save count for returning it since we know we are going to copy
-       [len] and we'll be modifying the len variable */
-    count = len;
-
-    /* Where to start copying from */
-    int tail = g_output_buffer_tail % sizeof(g_output_buffer);
-
-    /* Now increment tail */
-    g_output_buffer_tail += len;
-
-    /* Copy in the amount from tail to the end of the buffer */
-    int tocopy = sizeof(g_output_buffer) - tail;
-    if (tocopy > len) {
-        tocopy = len;
-    }
-
-    memcpy(buffer, &(g_output_buffer[tail]), tocopy);
-
-    len -= tocopy;
-
-    if (len) {
-        memcpy(&(buffer[tocopy]), g_output_buffer, len);
-    }
-
-    return count;
+    set_configuration_value(game, name, mask, value);
 }
