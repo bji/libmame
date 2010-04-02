@@ -472,7 +472,7 @@ typedef enum
 {
     LibMame_RunGameStatus_Success,
     LibMame_RunGameStatus_InvalidGameNum,
-    LibMame_RunGameStatus_FailedValidtyCheck,
+    LibMame_RunGameStatus_FailedValidityCheck,
     LibMame_RunGameStatus_MissingFiles,
     LibMame_RunGameStatus_NoSuchGame,
     LibMame_RunGameStatus_InvalidConfig,

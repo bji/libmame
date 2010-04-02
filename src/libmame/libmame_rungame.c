@@ -836,7 +836,7 @@ void osd_set_mastervolume(int attenuation)
  * the current game, and for the others, make our own custom controllers as
  * neceessary to provide the inputs, and hook the input callbacks up to fetch
  * the input state from the one single LibMame_AllControllersState structure
- * that we store in the g_state object.  In this way, we completely hardware
+ * that we store in the g_state object.  In this way, we completely hardwire
  * the way that MAME handles input so that the users of libmame can do
  * whatever they want to satisfy getting inputs for the various controllers
  * types.
@@ -870,7 +870,7 @@ void osd_customize_input_type_list(input_type_desc *typelist)
      * types.  And why only use keyboard keys up to Z and not the others?
      * Well, apparently MAME also does something very weird and interprets
      * devices which have been mapped to key '0' (and probably other MAME
-     * default UI keys) as having input that triggers that UI event.  Dumb.
+     * default UI keys) as having input that triggers that UI event.
      **/
     int keyboard_index = -1;
     input_item_id keyboard_item = ITEM_ID_A;
@@ -1113,7 +1113,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     case MAMERR_NONE:
         return LibMame_RunGameStatus_Success;
     case MAMERR_FAILED_VALIDITY:
-        return LibMame_RunGameStatus_FailedValidtyCheck;
+        return LibMame_RunGameStatus_FailedValidityCheck;
     case MAMERR_MISSING_FILES:
         return LibMame_RunGameStatus_MissingFiles;
     case MAMERR_FATALERROR:

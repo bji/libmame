@@ -1,7 +1,7 @@
 /** **************************************************************************
  * osd_util.h
  *
- * Copyright Nicola Salmoria and the MAME Team.
+ * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
  *
  ************************************************************************** **/

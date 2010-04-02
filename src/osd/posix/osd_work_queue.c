@@ -174,8 +174,8 @@ static void *work_queue_thread_main(void *)
              **/
             pthread_mutex_lock(&(item->mutex));
 
-            /* Take a block of items to implement.  This reduces locking
-               overhead by not requiring a lock for every item. */
+            /* Take a block of items to run.  This reduces locking overhead by
+               not requiring a lock for every item. */
 
             /**
              * Save the start index of the items we are to run
@@ -265,7 +265,7 @@ static void *work_queue_thread_main(void *)
                      * No one else can have a reference to it because the API
                      * user never got a reference to it, and we've just
                      * completed the last item so no other worker thread could
-                     * be looking at it.  So it's save to release it here.
+                     * be looking at it.  So it's safe to release it here.
                      **/
                     osd_work_item_release(item);
                 }
@@ -353,7 +353,7 @@ static void work_queue_destroy_threads_locked()
 
     /**
      * Wait util all of the threads have exited; because each decrements the
-     * g_threads_count, and because the last one that decrements the cound to
+     * g_threads_count, and because the last one that decrements the count to
      * 0 signals the condition, waiting on the condition until g_threads_count
      * is zero is sufficient
      **/
@@ -386,8 +386,8 @@ static int work_queue_create_threads_locked()
     int threads_count;
 
     /**
-     * The number of threads to run is determined to be twice the number of
-     * processors in the system.  This is a guess as to how to most
+     * The number of threads to run is determined to be the number of
+     * processors in the system plus one.  This is a guess as to how to most
      * effectively keep the processors busy.  I/O bound work queues may
      * benefit from more threads, and purely processor-bound work queues only
      * need one thread per CPU, but this compromise will likely work well in

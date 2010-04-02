@@ -140,8 +140,8 @@ file_error osd_open(const char *path, UINT32 openflags, osd_file **file,
     }
 
     /* In POSIX, it is nonsensical to open a file write-only; so we consider
-       OPEN_FLAG_WRITE to imply OPEN_FLAG_READ.  Additionally, the non-POSIX
-       "b" flag is used as a concession for Windows platforms. */
+       OPEN_FLAG_WRITE to imply OPEN_FLAG_READ.  Additionally, the "b" flag is
+       used as a concession for Windows platforms. */
     if (openflags & OPEN_FLAG_WRITE)
     {
         if (openflags & OPEN_FLAG_CREATE)

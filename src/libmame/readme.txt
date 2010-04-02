@@ -12,7 +12,3 @@ in libmame.h.
 
 This is intended to allow MAME to be built as a library that any application can
 link against to get access to the full functionality of the MAME engine.
-
-The application linking against libmame must provide callbacks which 
-implement the equivalent functionality of the OSD functions listed above; but
-not as OSD functions, instead as callback functions (see libmame.h).
