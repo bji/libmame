@@ -28,7 +28,7 @@ LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
 # rules
 #------------------------------------------------
 
-ifdef BUILD_STATIC_LIBMAME
+ifdef BUILD_LIBMAME_STATIC
 
 # TODO: Figure out how to successfully strip the unneeded symbols from
 # libmame.o

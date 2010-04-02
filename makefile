@@ -206,7 +206,9 @@ BUILD_EXPAT = 1
 BUILD_ZLIB = 1
 
 # uncomment next line to enable building of libmame, which produces
-# a library interface to MAME instead of a standalone MAME executable
+# a library interface to MAME instead of a standalone MAME executable;
+# but you must build the 'libmame' target to get libmame libraries, e.g.
+# make BUILD_LIBMAME=1 libmame
 # BUILD_LIBMAME = 1
 
 # uncomment next line to enable building of libmame as a static library
@@ -300,7 +302,7 @@ endif
 
 
 #-------------------------------------------------
-# Force OSD implementation for libmame
+# Force OSD implementation and default target for libmame
 #-------------------------------------------------
 
 # If building libmame, then OSD=posix is a
@@ -338,7 +340,7 @@ SUFFIXDEBUG = d
 endif
 
 # static library builds get the 's' suffix
-ifdef BUILD_STATIC_LIBMAME
+ifdef BUILD_LIBMAME_STATIC
 SUFFIXSTATIC = s
 endif
 
