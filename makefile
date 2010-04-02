@@ -205,6 +205,16 @@ BUILD_EXPAT = 1
 # uncomment next line to build zlib as part of MAME build
 BUILD_ZLIB = 1
 
+# uncomment next line to enable building of libmame, which produces
+# a library interface to MAME instead of a standalone MAME executable
+# BUILD_LIBMAME = 1
+
+# uncomment next line to enable building of libmame as a static library
+# in addition to as a dynamic library.  This uses quite a bit more disk
+# space and compile time, and would typically only be enabled for a final
+# build
+# BUILD_LIBMAME_STATIC = 1
+
 # uncomment next line to include the symbols
 # SYMBOLS = 1
 
@@ -286,6 +296,18 @@ RM = @rm -f
 CP = @cp -a
 STRIP = @strip
 ECHO = @echo
+endif
+
+
+#-------------------------------------------------
+# Force OSD implementation for libmame
+#-------------------------------------------------
+
+# If building libmame, then OSD=posix is a
+# requirement.  libmame only works with the posix
+# OSD
+ifdef BUILD_LIBMAME
+OSD = posix
 endif
 
 
@@ -408,9 +430,11 @@ CONLYFLAGS =
 COBJFLAGS =
 CPPONLYFLAGS =
 
+ifdef BUILD_LIBMAME
 # if bulding shared libraries (the default), need -fPIC
-ifndef BUILD_STATIC_LIBMAME
+ifndef BUILD_LIBMAME_STATIC
 CCOMFLAGS += -fPIC
+endif
 endif
 
 # CFLAGS is defined based on C or C++ targets
@@ -638,10 +662,9 @@ include $(SRC)/build/build.mak
 -include $(SRC)/osd/$(CROSS_BUILD_OSD)/build.mak
 include $(SRC)/tools/tools.mak
 
-# Additionally, the libmame subdirectory defines rules
-# for building MAME as a library instead of as a
-# standalone executable
+ifdef BUILD_LIBMAME
 include $(SRC)/libmame/libmame.mak
+endif
 
 # combine the various definitions to one
 CDEFS = $(DEFS)

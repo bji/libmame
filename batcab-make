@@ -21,4 +21,4 @@ if [ -z "$CONCURRENCY" ]; then
 	fi
 fi
 
-OSD=posix make -j$((CONCURRENCY)) -C `dirname $0` "$@"
+BUILD_LIBMAME=1 make -j$((CONCURRENCY)) -C `dirname $0` "$@"
