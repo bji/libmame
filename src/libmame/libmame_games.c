@@ -1269,7 +1269,7 @@ int32_t LibMame_Get_Game_Year_Of_Release(int gamenum)
 }
 
 
-const int LibMame_Get_Game_CloneOf(int gamenum)
+int LibMame_Get_Game_CloneOf(int gamenum)
 {
     const char *parent = get_game_driver(gamenum)->parent;
     /* Not sure why MAME uses "0" to mean "no parent" ... */
