@@ -3,6 +3,24 @@
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
+ * 
+ ************************************************************************** **/
+
+
+#ifndef __LIBMAME_H__
+#define __LIBMAME_H__
+
+#include <stdarg.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#if 0 // fix emacs indentation
+}
+#endif
+#endif
+
+/*! \file libmame.h
  *
  * LibMame provides a single API for (almost) all functionality of the MAME
  * engine.  It provides the following types of functions:
@@ -124,22 +142,7 @@
  * which case this API will already be ready to take advantage of that, but
  * until the limit is lifted, remember that LibMame_RunGame may only be called
  * from one thread at a time within a single application.
- * 
- ************************************************************************** **/
-
-
-#ifndef __LIBMAME_H__
-#define __LIBMAME_H__
-
-#include <stdarg.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#if 0 // fix emacs indentation
-}
-#endif
-#endif
+ */
 
 
 /** **************************************************************************
