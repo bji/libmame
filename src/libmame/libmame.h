@@ -1748,7 +1748,7 @@ int LibMame_Get_Game_Year_Of_Release(int gamenum);
  * @return the game number of the game that this game is a clone of, if the
  *         game is a clone, or -1 if the game is not a clone.
  **/
-const int LibMame_Get_Game_CloneOf(int gamenum);
+int LibMame_Get_Game_CloneOf(int gamenum);
 
 
 /**
