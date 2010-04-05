@@ -203,8 +203,8 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
 
 
 /**
- * These flags define the screen orientations that could supported by a game.
- * Not all games support all orientations.
+ * These flags define the screen orientation of the game as it was originally
+ * displayed.
  **/
 
 /**
@@ -1778,12 +1778,12 @@ int LibMame_Get_Game_WorkingFlags(int gamenum);
 
 
 /**
- * Returns the set of flags describing the game's supported orientations.
- * This is an or'd together set of flags from the LIBMAME_ORIENTATIONFLAGS_XXX
- * symbols.
+ * Returns the set of flags describing the game's original orientation as it
+ * was originally played.  This is an or'd together set of flags from the
+ * LIBMAME_ORIENTATIONFLAGS_XXX symbols.
  *
  * @param gamenum is the game number of the game
- * @return the set of flags describing the game's supported orientations.
+ * @return the set of flags describing the game's original orientation
  **/
 int LibMame_Get_Game_OrientationFlags(int gamenum);
 
