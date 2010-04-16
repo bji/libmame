@@ -208,32 +208,6 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
  **/
 
 /**
- * Mirror along a vertical line midway aross the screen.
- **/
-#define LIBMAME_ORIENTATIONFLAGS_FLIP_X                         0x01
-
-/**
- * Mirror along a horizontal line midway across the screen
- **/
-#define LIBMAME_ORIENTATIONFLAGS_FLIP_Y                         0x02
-
-/**
- * Rotate the screen 90 degrees
- **/
-#define LIBMAME_ORIENTATIONFLAGS_ROTATE_90                      0x04
-
-/**
- * Rotate the screen 180 degrees
- **/
-#define LIBMAME_ORIENTATIONFLAGS_ROTATE_180                     0x08
-
-/**
- * Rotate the screen 270 degrees
- **/
-#define LIBMAME_ORIENTATIONFLAGS_ROTATE_270                     0x10
-
-
-/**
  * These macros can be used to obtain values from the
  * LibMame_RenderPrimitive structure's flags field.
  **/
@@ -296,6 +270,31 @@ typedef enum
     LibMame_ScreenType_LCD,
     LibMame_ScreenType_Vector
 } LibMame_ScreenType;
+
+
+/**
+ * Types of orientation for games; this is the orientation of the screen
+ * relative to the displayed image.
+ **/
+typedef enum
+{
+    /**
+     * Normal orientation
+     **/
+    LibMame_OrientationType_Normal,
+    /**
+     * 90 degrees rotation
+     **/
+    LibMame_OrientationType_90,
+    /**
+     * 180 degrees rotation
+     **/
+    LibMame_OrientationType_180,
+    /**
+     * 270 degrees rotation
+     **/
+    LibMame_OrientationType_270
+} LibMame_OrientationType;
 
 
 /**
@@ -1778,14 +1777,13 @@ int LibMame_Get_Game_WorkingFlags(int gamenum);
 
 
 /**
- * Returns the set of flags describing the game's original orientation as it
- * was originally played.  This is an or'd together set of flags from the
- * LIBMAME_ORIENTATIONFLAGS_XXX symbols.
+ * Returns a value describing the game's original orientation as it was
+ * originally played.
  *
  * @param gamenum is the game number of the game
- * @return the set of flags describing the game's original orientation
+ * @return a value describing the game's original orientation
  **/
-int LibMame_Get_Game_OrientationFlags(int gamenum);
+LibMame_OrientationType LibMame_Get_Game_Orientation(int gamenum);
 
 
 /**

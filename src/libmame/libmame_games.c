@@ -33,7 +33,8 @@ typedef struct GameInfo
     int driver_index;
     int gameinfo_index;
     int year_of_release;
-    int working_flags, orientation_flags;
+    int working_flags;
+    LibMame_OrientationType orientation;
     LibMame_ScreenType screen_type;
     LibMame_ScreenResolution screen_resolution;
     float screen_refresh_rate;
@@ -171,19 +172,23 @@ static void convert_working_flags(const game_driver *driver,
 }
 
 
-static void convert_orientation_flags(const game_driver *driver,
-                                      GameInfo *gameinfo)
+static void convert_orientation(const game_driver *driver,
+                                GameInfo *gameinfo)
 {
-    CONVERT_FLAG(ORIENTATION_FLIP_X, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_FLIP_X);
-    CONVERT_FLAG(ORIENTATION_FLIP_Y, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_FLIP_Y);
-    CONVERT_FLAG(ROT90, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_ROTATE_90);
-    CONVERT_FLAG(ROT180, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_ROTATE_180);
-    CONVERT_FLAG(ROT270, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_ROTATE_270);
+    switch (driver->flags & ORIENTATION_MASK) {
+    case ROT270:
+        gameinfo->orientation = LibMame_OrientationType_270;
+        break;
+    case ROT180:
+        gameinfo->orientation = LibMame_OrientationType_180;
+        break;
+    case ROT90:
+        gameinfo->orientation = LibMame_OrientationType_90;
+        break;
+    default:
+        gameinfo->orientation = LibMame_OrientationType_Normal;
+        break;
+    }
 }
 
 
@@ -1021,7 +1026,7 @@ static void convert_game_info(GameInfo *gameinfo)
 
     convert_year(driver, gameinfo);
     convert_working_flags(driver, gameinfo);
-    convert_orientation_flags(driver, gameinfo);
+    convert_orientation(driver, gameinfo);
     convert_screen_info(machineconfig, gameinfo);
     convert_sound_channels(machineconfig, gameinfo);
     convert_sound_samples(machineconfig, gameinfo);
@@ -1302,9 +1307,9 @@ int LibMame_Get_Game_WorkingFlags(int gamenum)
 }
 
 
-int LibMame_Get_Game_OrientationFlags(int gamenum)
+LibMame_OrientationType LibMame_Get_Game_Orientation(int gamenum)
 {
-    return get_gameinfo(gamenum)->orientation_flags;
+    return get_gameinfo(gamenum)->orientation;
 }
 
 
