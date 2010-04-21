@@ -2041,7 +2041,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
  * @param game is the game that is to be paused; this game is known because it
  *        was passed into the StartingUp() callback function.
  **/
-void LibMame_RunningGame_Pause(LibMame_RunningGame *game);
+void LibMame_RunningGame_Schedule_Pause(LibMame_RunningGame *game);
 
 
 /**

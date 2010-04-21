@@ -1100,7 +1100,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
 }
 
 
-void LibMame_RunningGame_Pause(LibMame_RunningGame *game)
+void LibMame_RunningGame_Schedule_Pause(LibMame_RunningGame *game)
 {
     (void) game;
 
