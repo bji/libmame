@@ -41,14 +41,8 @@ typedef enum
     libmame_input_type_Hanafuda_button,
     libmame_input_type_Gambling_button,
     libmame_input_type_Other_button,
-    libmame_input_type_left_or_single_joystick_left,
-    libmame_input_type_left_or_single_joystick_right,
-    libmame_input_type_left_or_single_joystick_up,
-    libmame_input_type_left_or_single_joystick_down,
-    libmame_input_type_right_joystick_left,
-    libmame_input_type_right_joystick_right,
-    libmame_input_type_right_joystick_up,
-    libmame_input_type_right_joystick_down,
+    libmame_input_type_left_or_single_joystick,
+    libmame_input_type_right_joystick,
     libmame_input_type_analog_joystick_horizontal,
     libmame_input_type_analog_joystick_vertical,
     libmame_input_type_analog_joystick_altitude,
@@ -165,9 +159,9 @@ typedef struct LibMame_RunGame_State
     { libmame_input_type_##button_type##_button,                \
       LibMame_##button_type##ButtonType_##button_name,          \
       ITEM_ID_INVALID }
-#define JOYSTICK_INPUT(joystick_type, direction) \
-    { libmame_input_type_##joystick_type##_joystick_##direction,    \
-      0, ITEM_ID_INVALID }
+#define JOYSTICK_INPUT(joystick_type, direction)        \
+    { libmame_input_type_##joystick_type##_joystick,    \
+      direction, ITEM_ID_INVALID }
 #define ANALOG_INPUT(input_type, input_item_id) \
     { libmame_input_type_##input_type, 0, input_item_id }
 
@@ -217,18 +211,30 @@ static libmame_input_descriptor g_input_descriptors[] =
 	INVALID_INPUT, /* IPT_START */
 	INVALID_INPUT, /* IPT_SELECT */
 	INVALID_INPUT, /* IPT_KEYBOARD */
-	JOYSTICK_INPUT(left_or_single, up), /* IPT_JOYSTICK_UP */
-	JOYSTICK_INPUT(left_or_single, down), /* IPT_JOYSTICK_DOWN */
-	JOYSTICK_INPUT(left_or_single, left), /* IPT_JOYSTICK_LEFT */
-	JOYSTICK_INPUT(left_or_single, right), /* IPT_JOYSTICK_RIGHT */
-	JOYSTICK_INPUT(right, up), /* IPT_JOYSTICKRIGHT_UP */
-	JOYSTICK_INPUT(right, down), /* IPT_JOYSTICKRIGHT_DOWN */
-	JOYSTICK_INPUT(right, left), /* IPT_JOYSTICKRIGHT_LEFT */
-	JOYSTICK_INPUT(right, right), /* IPT_JOYSTICKRIGHT_RIGHT */
-	JOYSTICK_INPUT(left_or_single, up), /* IPT_JOYSTICKLEFT_UP */
-	JOYSTICK_INPUT(left_or_single, down), /* IPT_JOYSTICKLEFT_DOWN */
-	JOYSTICK_INPUT(left_or_single, left), /* IPT_JOYSTICKLEFT_LEFT */
-	JOYSTICK_INPUT(left_or_single, right), /* IPT_JOYSTICKLEFT_RIGHT */
+    /* IPT_JOYSTICK_UP */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Up),
+    /* IPT_JOYSTICK_DOWN */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Down),
+    /* IPT_JOYSTICK_LEFT */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Left),
+    /* IPT_JOYSTICK_RIGHT */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Right),
+    /* IPT_JOYSTICKRIGHT_UP */
+	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Up),
+    /* IPT_JOYSTICKRIGHT_DOWN */
+	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Down),
+    /* IPT_JOYSTICKRIGHT_LEFT */
+	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Left),
+    /* IPT_JOYSTICKRIGHT_RIGHT */
+	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Right),
+    /* IPT_JOYSTICKLEFT_UP */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Up),
+    /* IPT_JOYSTICKLEFT_DOWN */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Down),
+    /* IPT_JOYSTICKLEFT_LEFT */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Left),
+    /* IPT_JOYSTICKLEFT_RIGHT */
+	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Right),
 	BUTTON_INPUT(Normal, 1), /* IPT_BUTTON1 */
 	BUTTON_INPUT(Normal, 2), /* IPT_BUTTON2 */
 	BUTTON_INPUT(Normal, 3), /* IPT_BUTTON3 */
@@ -422,22 +428,11 @@ static INT32 get_controller_state(void *, void *data)
         return (perplayer_state->gambling_buttons_state & (1 << input_number));
     case libmame_input_type_Other_button:
         return (shared_state->other_buttons_state & (1 << input_number));
-    case libmame_input_type_left_or_single_joystick_left:
-        return perplayer_state->left_or_single_joystick_left_state;
-    case libmame_input_type_left_or_single_joystick_right:
-        return perplayer_state->left_or_single_joystick_right_state;
-    case libmame_input_type_left_or_single_joystick_up:
-        return perplayer_state->left_or_single_joystick_up_state;
-    case libmame_input_type_left_or_single_joystick_down:
-        return perplayer_state->left_or_single_joystick_down_state;
-    case libmame_input_type_right_joystick_left:
-        return perplayer_state->right_joystick_left_state;
-    case libmame_input_type_right_joystick_right:
-        return perplayer_state->right_joystick_right_state;
-    case libmame_input_type_right_joystick_up:
-        return perplayer_state->right_joystick_up_state;
-    case libmame_input_type_right_joystick_down:
-        return perplayer_state->right_joystick_down_state;
+    case libmame_input_type_left_or_single_joystick:
+        return (perplayer_state->left_or_single_joystick_state & 
+                (1 << input_number));
+    case libmame_input_type_right_joystick:
+        return (perplayer_state->right_joystick_state & (1 << input_number));
     case libmame_input_type_analog_joystick_horizontal:
         return perplayer_state->analog_joystick_horizontal_state;
     case libmame_input_type_analog_joystick_vertical:
@@ -550,26 +545,32 @@ static bool controllers_have_input
                 (1 << input_number));
     case libmame_input_type_Other_button:
         return (controllers->shared.other_button_flags & (1 << input_number));
-    case libmame_input_type_left_or_single_joystick_left:
-    case libmame_input_type_left_or_single_joystick_right:
-        return has_left_joystick_except
-            (controllers->per_player.controller_flags,
-             LibMame_ControllerType_JoystickVertical);
-    case libmame_input_type_left_or_single_joystick_up:
-    case libmame_input_type_left_or_single_joystick_down:
-        return has_left_joystick_except
-            (controllers->per_player.controller_flags,
-             LibMame_ControllerType_JoystickHorizontal);
-    case libmame_input_type_right_joystick_left:
-    case libmame_input_type_right_joystick_right:
-        return has_right_joystick_except
-            (controllers->per_player.controller_flags,
-             LibMame_ControllerType_DoubleJoystickVertical);
-    case libmame_input_type_right_joystick_up:
-    case libmame_input_type_right_joystick_down:
-        return has_right_joystick_except
-            (controllers->per_player.controller_flags,
-             LibMame_ControllerType_DoubleJoystickHorizontal);
+    case libmame_input_type_left_or_single_joystick:
+        switch (input_number) {
+        case LibMame_JoystickDirection_Up:
+        case LibMame_JoystickDirection_Down:
+            return has_left_joystick_except
+                (controllers->per_player.controller_flags,
+                 LibMame_ControllerType_JoystickHorizontal);
+        case LibMame_JoystickDirection_Left:
+        case LibMame_JoystickDirection_Right:
+            return has_left_joystick_except
+                (controllers->per_player.controller_flags,
+                 LibMame_ControllerType_JoystickVertical);
+        }
+    case libmame_input_type_right_joystick:
+        switch (input_number) {
+        case LibMame_JoystickDirection_Up:
+        case LibMame_JoystickDirection_Down:
+            return has_right_joystick_except
+                (controllers->per_player.controller_flags,
+                 LibMame_ControllerType_DoubleJoystickHorizontal);
+        case LibMame_JoystickDirection_Left:
+        case LibMame_JoystickDirection_Right:
+            return has_right_joystick_except
+                (controllers->per_player.controller_flags,
+                 LibMame_ControllerType_DoubleJoystickVertical);
+        }
     case libmame_input_type_analog_joystick_horizontal:
     case libmame_input_type_analog_joystick_vertical:
     case libmame_input_type_analog_joystick_altitude:
@@ -892,14 +893,8 @@ void osd_customize_input_type_list(input_type_desc *typelist)
             case libmame_input_type_Hanafuda_button:
             case libmame_input_type_Gambling_button:
             case libmame_input_type_Other_button:
-            case libmame_input_type_left_or_single_joystick_left:
-            case libmame_input_type_left_or_single_joystick_right:
-            case libmame_input_type_left_or_single_joystick_up:
-            case libmame_input_type_left_or_single_joystick_down:
-            case libmame_input_type_right_joystick_left:
-            case libmame_input_type_right_joystick_right:
-            case libmame_input_type_right_joystick_up:
-            case libmame_input_type_right_joystick_down:
+            case libmame_input_type_left_or_single_joystick:
+            case libmame_input_type_right_joystick:
             case libmame_input_type_Ui_button:
                 if ((keyboard_index == -1) || 
                     (keyboard_item > ITEM_ID_Z)) {

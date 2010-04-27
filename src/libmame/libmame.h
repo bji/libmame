@@ -216,29 +216,24 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
  * Calculates the texture orientation of a LibMame_RenderPrimitive's flags
  **/
 #define LIBMAME_RENDERFLAGS_TEXTURE_ORIENTATION(flags) (((flags) >>  0) & 0xF))
-
 /**
  * Calculates the texture format of a LibMame_RenderPrimitive's flags
  **/
 #define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)      (((flags) >>  8) & 0xF))
-
 /**
  * Calculates the blend mode of a LibMame_RenderPrimitive's flags
  **/
 #define LIBMAME_RENDERFLAGS_BLEND_MODE(flags)          (((flags) >> 12) & 0xF))
-
 /**
  * Calculates the antialias value of a LibMame_RenderPrimitive's flags; zero
  * means no antialiasing, nonzero means antialiasing
  **/
 #define LIBMAME_RENDERFLAGS_ANTIALIAS(flags)                   ((flags) & 0x10)
-
 /**
  * Calculates the screen texture value of a LibMame_RenderPrimitive's flags;
  * zero means ???, nonzero means ???
  **/
 #define LIBMAME_RENDERFLAGS_SCREEN_TEXTURE(flags)              ((flags) & 0x20)
-
 /**
  * Calculates the texture wrap of a LibMame_RenderPrimitive's flags;
  * zero means ???, nonzero means ???
@@ -557,6 +552,20 @@ typedef enum
     /* This is not a type, it's the number of entries in this enum */
     LibMame_UiButtonTypeCount
 } LibMame_UiButtonType;
+
+
+/**
+ * All of the possible joystick directions
+ **/
+typedef enum
+{
+    LibMame_JoystickDirection_Left,
+    LibMame_JoystickDirection_Right,
+    LibMame_JoystickDirection_Up,
+    LibMame_JoystickDirection_Down,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_JoystickDirectionCount
+} LibMame_JoystickDirection;
 
 
 /**
@@ -963,56 +972,22 @@ typedef struct LibMame_PerPlayerControllersState
     int gambling_buttons_state;
     
     /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the left, left-up, or
-     * left-down position.
+     * These are the current states of the left (or single) joystick; the flag
+     * for a joystick diretion being set here means that the joystick is
+     * currently pushed in that direction.  Each direction is represented by
+     * a flag within this value, by the bit numbered
+     * (1 << LibMame_JoystickDirection_XXX).
      **/
-    int left_or_single_joystick_left_state : 1;
+    int left_or_single_joystick_state;
 
     /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the right, right-up, or
-     * right-down position.
+     * These are the current states of the right joystick; the flag for a
+     * joystick diretion being set here means that the joystick is currently
+     * pushed in that direction.  Each direction is represented by
+     * a flag within this value, by the bit numbered
+     * (1 << LibMame_JoystickDirection_XXX).
      **/
-    int left_or_single_joystick_right_state : 1;
-
-    /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the up, right-up, or
-     * left-up position.
-     **/
-    int left_or_single_joystick_up_state : 1;
-
-    /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the down, right-down, or
-     * left-down position.
-     **/
-    int left_or_single_joystick_down_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the left, left-up, or
-     * left-down position.
-     **/
-    int right_joystick_left_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the right, right-up, or
-     * right-down position.
-     **/
-    int right_joystick_right_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the up, right-up, or
-     * left-up position.
-     **/
-    int right_joystick_up_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the down, right-down, or
-     * left-down position.
-     **/
-    int right_joystick_down_state : 1;
+    int right_joystick_state;
 
     /**
      * This value is the current horizontal position of the analog joystick,
