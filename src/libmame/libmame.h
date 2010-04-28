@@ -324,17 +324,35 @@ typedef enum
  **/
 typedef enum
 {
+    /**
+     * Note that for any given game, the JoystickXXX values are mutually
+     * exclusive, meaning that only one can be set at a time.  Additionally,
+     * if any DoubleJoystickXXX value is set, then the JoystickXXX values
+     * are ignored.
+     **/
     LibMame_ControllerType_JoystickHorizontal,
     LibMame_ControllerType_JoystickVertical,
     LibMame_ControllerType_Joystick4Way,
     LibMame_ControllerType_Joystick8Way,
+    /**
+     * Note that for any given game, the DoubleJoystickXXX values are mutually
+     * exclusive, meaning that only one can be set at a time.
+     **/
     LibMame_ControllerType_DoubleJoystickHorizontal,
     LibMame_ControllerType_DoubleJoystickVertical,
     LibMame_ControllerType_DoubleJoystick4Way,
     LibMame_ControllerType_DoubleJoystick8Way,
     LibMame_ControllerType_JoystickAnalog,
+    /**
+     * Note that for any given game, the SpinnerXXX values are mutually
+     * exclusive, meaning that only one can be set at a time.
+     **/
     LibMame_ControllerType_Spinner,
     LibMame_ControllerType_SpinnerVertical,
+    /**
+     * Note that for any given game, the PaddleXXX values are mutually
+     * exclusive, meaning that only one can be set at a time.
+     **/
     LibMame_ControllerType_Paddle,
     LibMame_ControllerType_PaddleVertical,
     LibMame_ControllerType_Trackball,
@@ -342,6 +360,10 @@ typedef enum
     LibMame_ControllerType_Pedal,
     LibMame_ControllerType_Pedal2,
     LibMame_ControllerType_Pedal3,
+    /**
+     * Note that for any given game, the Positional values are mutually
+     * exclusive, meaning that only one can be set at a time.
+     **/
     LibMame_ControllerType_Positional,
     LibMame_ControllerType_PositionalVertical,
     LibMame_ControllerType_Mouse,
