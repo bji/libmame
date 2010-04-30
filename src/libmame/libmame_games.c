@@ -485,6 +485,15 @@ static void convert_controllers(const ioport_list *ioportlist,
 
 	for (port = ioportlist->first(); port; port = port->next) {
 		for (field = port->fieldlist; field; field = field->next) {
+            if (field->flags & FIELD_FLAG_UNUSED) {
+                continue;
+            }
+            // Skip cocktail ports, for the time being; at some point in the
+            // future this code should store the cocktail port specifications
+            // in a different set of perplayer configs.
+            if (field->flags & FIELD_FLAG_COCKTAIL) {
+                continue;
+            }
 			if (gameinfo->max_simultaneous_players < field->player) {
 				gameinfo->max_simultaneous_players = field->player;
             }
