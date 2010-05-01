@@ -320,53 +320,42 @@ typedef enum
 
 
 /**
+ * All of the possible joystick directions
+ **/
+typedef enum
+{
+    LibMame_JoystickDirection_Left,
+    LibMame_JoystickDirection_Right,
+    LibMame_JoystickDirection_Up,
+    LibMame_JoystickDirection_Down,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_JoystickDirectionCount
+} LibMame_JoystickDirection;
+
+
+/**
  * All of the possible controller types
  **/
 typedef enum
 {
-    /**
-     * Note that for any given game, the JoystickXXX values are mutually
-     * exclusive, meaning that only one can be set at a time.  Additionally,
-     * if any DoubleJoystickXXX value is set, then the JoystickXXX values
-     * are ignored.
-     **/
-    LibMame_ControllerType_JoystickHorizontal,
-    LibMame_ControllerType_JoystickVertical,
-    LibMame_ControllerType_Joystick4Way,
-    LibMame_ControllerType_Joystick8Way,
-    /**
-     * Note that for any given game, the DoubleJoystickXXX values are mutually
-     * exclusive, meaning that only one can be set at a time.
-     **/
-    LibMame_ControllerType_DoubleJoystickHorizontal,
-    LibMame_ControllerType_DoubleJoystickVertical,
-    LibMame_ControllerType_DoubleJoystick4Way,
-    LibMame_ControllerType_DoubleJoystick8Way,
-    LibMame_ControllerType_JoystickAnalog,
-    /**
-     * Note that for any given game, the SpinnerXXX values are mutually
-     * exclusive, meaning that only one can be set at a time.
-     **/
+    LibMame_ControllerType_LeftHorizontalJoystick,
+    LibMame_ControllerType_LeftVerticalJoystick,
+    LibMame_ControllerType_Left4WayJoystick,
+    LibMame_ControllerType_Left8WayJoystick,
+    LibMame_ControllerType_RightHorizontalJoystick,
+    LibMame_ControllerType_RightVerticalJoystick,
+    LibMame_ControllerType_Right4WayJoystick,
+    LibMame_ControllerType_Right8WayJoystick,
+    LibMame_ControllerType_AnalogJoystick,
     LibMame_ControllerType_Spinner,
-    LibMame_ControllerType_SpinnerVertical,
-    /**
-     * Note that for any given game, the PaddleXXX values are mutually
-     * exclusive, meaning that only one can be set at a time.
-     **/
+    LibMame_ControllerType_VerticalSpinner,
     LibMame_ControllerType_Paddle,
-    LibMame_ControllerType_PaddleVertical,
+    LibMame_ControllerType_VerticalPaddle,
     LibMame_ControllerType_Trackball,
     LibMame_ControllerType_Lightgun,
     LibMame_ControllerType_Pedal,
     LibMame_ControllerType_Pedal2,
     LibMame_ControllerType_Pedal3,
-    /**
-     * Note that for any given game, the Positional values are mutually
-     * exclusive, meaning that only one can be set at a time.
-     **/
-    LibMame_ControllerType_Positional,
-    LibMame_ControllerType_PositionalVertical,
-    LibMame_ControllerType_Mouse,
     /* This is not a type, it's the number of entries in this enum */
     LibMame_ControllerTypeCount
 } LibMame_ControllerType;
@@ -577,20 +566,6 @@ typedef enum
 
 
 /**
- * All of the possible joystick directions
- **/
-typedef enum
-{
-    LibMame_JoystickDirection_Left,
-    LibMame_JoystickDirection_Right,
-    LibMame_JoystickDirection_Up,
-    LibMame_JoystickDirection_Down,
-    /* This is not a type, it's the number of entries in this enum */
-    LibMame_JoystickDirectionCount
-} LibMame_JoystickDirection;
-
-
-/**
  * These are the possible ROM/HDD image status values.
  **/
 typedef enum LibMame_ImageStatus_Status
@@ -771,6 +746,12 @@ typedef struct LibMame_Setting
 typedef struct LibMame_PerPlayerControllers
 {
     /**
+     * These flags identify which controllers are present,
+     * each is indicated in this as (1 << LibMame_ControllerType_XXX).
+     **/
+    int controller_flags;
+
+    /**
      * These are all of the general purpose buttons which are present,
      * each is indicated in this as (1 << LibMame_NormalButtonType_XXX).
      **/
@@ -799,12 +780,6 @@ typedef struct LibMame_PerPlayerControllers
      * each is indicated in this as (1 << LibMame_GamblingButtonType_XXX).
      **/
     int gambling_button_flags;
-
-    /**
-     * These flags identify which controllers are present,
-     * each is indicated in this as (1 << LibMame_ControllerType_XXX).
-     **/
-    int controller_flags;
 } LibMame_PerPlayerControllers;
 
 
@@ -958,49 +933,13 @@ typedef struct LibMame_Image
 typedef struct LibMame_PerPlayerControllersState
 {
     /**
-     * These are the current states of each normal button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_NormalButtonType_XXX).
-     **/
-    int normal_buttons_state;
-
-    /**
-     * These are the current states of each Mahjong button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_MahjongButtonType_XXX).
-     **/
-    int mahjong_buttons_state;
-
-    /**
-     * These are the current states of each Hanafuda button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_HanafudaButtonType_XXX).
-     **/
-    int hanafuda_buttons_state;
-    
-    /**
-     * These are the current states of each Gambling button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_GamblingButtonType_XXX).
-     **/
-    int gambling_buttons_state;
-    
-    /**
      * These are the current states of the left (or single) joystick; the flag
      * for a joystick diretion being set here means that the joystick is
      * currently pushed in that direction.  Each direction is represented by
      * a flag within this value, by the bit numbered
      * (1 << LibMame_JoystickDirection_XXX).
      **/
-    int left_or_single_joystick_state;
+    int left_joystick_state;
 
     /**
      * These are the current states of the right joystick; the flag for a
@@ -1109,26 +1048,40 @@ typedef struct LibMame_PerPlayerControllersState
     int pedal3_state;
 
     /**
-     * This is some kind of positional input that I don't know what it is.
-     * The range is from -65536 to 65536.
+     * These are the current states of each normal button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_NormalButtonType_XXX).
      **/
-    int positional_state;
+    int normal_buttons_state;
 
     /**
-     * This is some kind of vertical positional input that I don't know what
-     * it is. The range is from -65536 to 65536.
+     * These are the current states of each Mahjong button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_MahjongButtonType_XXX).
      **/
-    int positional_vertical_state;
+    int mahjong_buttons_state;
 
     /**
-     * Mouse X screen coordinate.
+     * These are the current states of each Hanafuda button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_HanafudaButtonType_XXX).
      **/
-    int mouse_x_state;
-
+    int hanafuda_buttons_state;
+    
     /**
-     * Mouse Y screen coordinate.
+     * These are the current states of each Gambling button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_GamblingButtonType_XXX).
      **/
-    int mouse_y_state;
+    int gambling_buttons_state;
 } LibMame_PerPlayerControllersState;
 
 
