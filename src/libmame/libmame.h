@@ -981,7 +981,7 @@ typedef struct LibMame_PerPlayerControllersState
      * last time it was polled, mapped to a range from -65536 (furthest
      * possible spin down) to 65536 (furthest possible spin up).
      **/
-    int spinner_vertical_delta;
+    int vertical_spinner_delta;
 
     /**
      * This value is the current paddle position, mapped to a range from
@@ -993,7 +993,7 @@ typedef struct LibMame_PerPlayerControllersState
      * This value is the current vertical paddle position, mapped to a range
      * from -65536 (full left) to 65536 (full right).
      **/
-    int paddle_vertical_state;
+    int vertical_paddle_state;
 
     /**
      * This value is the change in position of the trackball along the

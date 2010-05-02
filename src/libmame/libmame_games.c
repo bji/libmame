@@ -500,73 +500,73 @@ static void convert_controllers(const ioport_list *ioportlist,
             switch (field->type) {
             case IPT_JOYSTICK_LEFT:
             case IPT_JOYSTICK_RIGHT:
-                switch (field->way) {
-                case 2:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_JoystickHorizontal);
-                    break;
-                case 4:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick4Way);
-                    break;
-                default:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick8Way);
-                    break;
-                }
-                break;
-            case IPT_JOYSTICK_UP:
-            case IPT_JOYSTICK_DOWN:
-                switch (field->way) {
-                case 2:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_JoystickVertical);
-                    break;
-                case 4:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick4Way);
-                    break;
-                default:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick8Way);
-                    break;
-                }
-                break;
-            case IPT_JOYSTICKRIGHT_LEFT:
-            case IPT_JOYSTICKRIGHT_RIGHT:
             case IPT_JOYSTICKLEFT_LEFT:
             case IPT_JOYSTICKLEFT_RIGHT:
                 switch (field->way) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystickHorizontal);
+                        (1 << LibMame_ControllerType_LeftHorizontalJoystick);
                     break;
                 case 4:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick4Way);
+                        (1 << LibMame_ControllerType_Left4WayJoystick);
                     break;
                 default:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick8Way);
+                        (1 << LibMame_ControllerType_Left8WayJoystick);
                     break;
                 }
                 break;
-            case IPT_JOYSTICKRIGHT_UP:
-            case IPT_JOYSTICKRIGHT_DOWN:
+            case IPT_JOYSTICK_UP:
+            case IPT_JOYSTICK_DOWN:
             case IPT_JOYSTICKLEFT_UP:
             case IPT_JOYSTICKLEFT_DOWN:
                 switch (field->way) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystickVertical);
+                        (1 << LibMame_ControllerType_LeftVerticalJoystick);
                     break;
                 case 4:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick4Way);
+                        (1 << LibMame_ControllerType_Left4WayJoystick);
                     break;
                 default:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick8Way);
+                        (1 << LibMame_ControllerType_Left8WayJoystick);
+                    break;
+                }
+                break;
+            case IPT_JOYSTICKRIGHT_LEFT:
+            case IPT_JOYSTICKRIGHT_RIGHT:
+                switch (field->way) {
+                case 2:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_RightHorizontalJoystick);
+                    break;
+                case 4:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right4WayJoystick);
+                    break;
+                default:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right8WayJoystick);
+                    break;
+                }
+                break;
+            case IPT_JOYSTICKRIGHT_UP:
+            case IPT_JOYSTICKRIGHT_DOWN:
+                switch (field->way) {
+                case 2:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_RightVerticalJoystick);
+                    break;
+                case 4:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right4WayJoystick);
+                    break;
+                default:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right8WayJoystick);
                     break;
                 }
                 break;
@@ -586,7 +586,7 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_AD_STICK_X:
             case IPT_AD_STICK_Y:
                 gameinfo->controllers.per_player.controller_flags |= 
-                    (1 << LibMame_ControllerType_JoystickAnalog);
+                    (1 << LibMame_ControllerType_AnalogJoystick);
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:

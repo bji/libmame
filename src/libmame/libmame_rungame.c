@@ -41,15 +41,15 @@ typedef enum
     libmame_input_type_Hanafuda_button,
     libmame_input_type_Gambling_button,
     libmame_input_type_Other_button,
-    libmame_input_type_left_or_single_joystick,
+    libmame_input_type_left_joystick,
     libmame_input_type_right_joystick,
     libmame_input_type_analog_joystick_horizontal,
     libmame_input_type_analog_joystick_vertical,
     libmame_input_type_analog_joystick_altitude,
     libmame_input_type_spinner,
-    libmame_input_type_spinner_vertical,
+    libmame_input_type_vertical_spinner,
     libmame_input_type_paddle,
-    libmame_input_type_paddle_vertical,
+    libmame_input_type_vertical_paddle,
     libmame_input_type_trackball_horizontal,
     libmame_input_type_trackball_vertical,
     libmame_input_type_lightgun_horizontal,
@@ -57,10 +57,6 @@ typedef enum
     libmame_input_type_pedal,
     libmame_input_type_pedal2,
     libmame_input_type_pedal3,
-    libmame_input_type_positional,
-    libmame_input_type_positional_vertical,
-    libmame_input_type_mouse_x,
-    libmame_input_type_mouse_y,
     libmame_input_type_Ui_button
 } libmame_input_type;
 
@@ -212,13 +208,13 @@ static libmame_input_descriptor g_input_descriptors[] =
 	INVALID_INPUT, /* IPT_SELECT */
 	INVALID_INPUT, /* IPT_KEYBOARD */
     /* IPT_JOYSTICK_UP */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Up),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up),
     /* IPT_JOYSTICK_DOWN */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Down),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down),
     /* IPT_JOYSTICK_LEFT */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Left),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left),
     /* IPT_JOYSTICK_RIGHT */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Right),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right),
     /* IPT_JOYSTICKRIGHT_UP */
 	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Up),
     /* IPT_JOYSTICKRIGHT_DOWN */
@@ -228,13 +224,13 @@ static libmame_input_descriptor g_input_descriptors[] =
     /* IPT_JOYSTICKRIGHT_RIGHT */
 	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Right),
     /* IPT_JOYSTICKLEFT_UP */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Up),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up),
     /* IPT_JOYSTICKLEFT_DOWN */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Down),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down),
     /* IPT_JOYSTICKLEFT_LEFT */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Left),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left),
     /* IPT_JOYSTICKLEFT_RIGHT */
-	JOYSTICK_INPUT(left_or_single, LibMame_JoystickDirection_Right),
+	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right),
 	BUTTON_INPUT(Normal, 1), /* IPT_BUTTON1 */
 	BUTTON_INPUT(Normal, 2), /* IPT_BUTTON2 */
 	BUTTON_INPUT(Normal, 3), /* IPT_BUTTON3 */
@@ -317,7 +313,7 @@ static libmame_input_descriptor g_input_descriptors[] =
 	BUTTON_INPUT(Gambling, Stop4), /* IPT_SLOT_STOP4 */
 	BUTTON_INPUT(Gambling, Stop_All), /* IPT_SLOT_STOP_ALL */
 	ANALOG_INPUT(paddle, ITEM_ID_XAXIS), /* IPT_PADDLE */
-	ANALOG_INPUT(paddle_vertical, ITEM_ID_YAXIS), /* IPT_PADDLE_V */
+	ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_PADDLE_V */
   ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS), /* IPT_AD_STICK_X */
 	ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS), /* IPT_AD_STICK_Y */
 	ANALOG_INPUT(analog_joystick_altitude, ITEM_ID_ZAXIS), /* IPT_AD_STICK_Z */
@@ -326,14 +322,14 @@ static libmame_input_descriptor g_input_descriptors[] =
 	ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_PEDAL */
 	ANALOG_INPUT(pedal2, ITEM_ID_YAXIS), /* IPT_PEDAL2 */
 	ANALOG_INPUT(pedal3, ITEM_ID_ZAXIS), /* IPT_PEDAL3 */
-	ANALOG_INPUT(positional, ITEM_ID_XAXIS), /* IPT_POSITIONAL */
-	ANALOG_INPUT(positional_vertical, ITEM_ID_YAXIS), /* IPT_POSITIONAL_V */
+    INVALID_INPUT, /* IPT_POSITIONAL */
+    INVALID_INPUT, /* IPT_POSITIONAL_V */
 	ANALOG_INPUT(spinner, ITEM_ID_RXAXIS), /* IPT_DIAL */
-	ANALOG_INPUT(spinner_vertical, ITEM_ID_RYAXIS), /* IPT_DIAL_V */
+	ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS), /* IPT_DIAL_V */
 	ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS), /* IPT_TRACKBALL_X */
 	ANALOG_INPUT(trackball_vertical, ITEM_ID_RYAXIS), /* IPT_TRACKBALL_Y */
-	ANALOG_INPUT(mouse_x, ITEM_ID_XAXIS), /* IPT_MOUSE_X */
-	ANALOG_INPUT(mouse_y, ITEM_ID_YAXIS), /* IPT_MOUSE_Y */
+    INVALID_INPUT, /* IPT_MOUSE_X */
+    INVALID_INPUT, /* IPT_MOUSE_Y */
 	INVALID_INPUT, /* IPT_ADJUSTER */
 	BUTTON_INPUT(Ui, Configure), /* IPT_UI_CONFIGURE */
 	BUTTON_INPUT(Ui, On_Screen_Display), /* IPT_UI_ON_SCREEN_DISPLAY */
@@ -428,9 +424,8 @@ static INT32 get_controller_state(void *, void *data)
         return (perplayer_state->gambling_buttons_state & (1 << input_number));
     case libmame_input_type_Other_button:
         return (shared_state->other_buttons_state & (1 << input_number));
-    case libmame_input_type_left_or_single_joystick:
-        return (perplayer_state->left_or_single_joystick_state & 
-                (1 << input_number));
+    case libmame_input_type_left_joystick:
+        return (perplayer_state->left_joystick_state & (1 << input_number));
     case libmame_input_type_right_joystick:
         return (perplayer_state->right_joystick_state & (1 << input_number));
     case libmame_input_type_analog_joystick_horizontal:
@@ -441,12 +436,12 @@ static INT32 get_controller_state(void *, void *data)
         return perplayer_state->analog_joystick_altitude_state;
     case libmame_input_type_spinner:
         return perplayer_state->spinner_delta;
-    case libmame_input_type_spinner_vertical:
-        return perplayer_state->spinner_vertical_delta;
+    case libmame_input_type_vertical_spinner:
+        return perplayer_state->vertical_spinner_delta;
     case libmame_input_type_paddle:
         return perplayer_state->paddle_state; 
-    case libmame_input_type_paddle_vertical:
-        return perplayer_state->paddle_vertical_state;
+    case libmame_input_type_vertical_paddle:
+        return perplayer_state->vertical_paddle_state;
     case libmame_input_type_trackball_horizontal:
         return perplayer_state->trackball_horizontal_delta;
     case libmame_input_type_trackball_vertical:
@@ -461,14 +456,6 @@ static INT32 get_controller_state(void *, void *data)
         return perplayer_state->pedal2_state;
     case libmame_input_type_pedal3:
         return perplayer_state->pedal3_state;
-    case libmame_input_type_positional:
-        return perplayer_state->positional_state;
-    case libmame_input_type_positional_vertical:
-        return perplayer_state->positional_vertical_state;
-    case libmame_input_type_mouse_x:
-        return perplayer_state->mouse_x_state;
-    case libmame_input_type_mouse_y:
-        return perplayer_state->mouse_y_state;
     case libmame_input_type_Ui_button:
         return (shared_state->ui_input_state == input_number);
     }
@@ -485,14 +472,10 @@ static bool has_left_joystick_except(int controller_flags, int exception)
     }
 
     return (controller_flags &
-            ((1 << LibMame_ControllerType_JoystickHorizontal) |
-             (1 << LibMame_ControllerType_JoystickVertical) |
-             (1 << LibMame_ControllerType_Joystick4Way) |
-             (1 << LibMame_ControllerType_Joystick8Way) |
-             (1 << LibMame_ControllerType_DoubleJoystickHorizontal) |
-             (1 << LibMame_ControllerType_DoubleJoystickVertical) |
-             (1 << LibMame_ControllerType_DoubleJoystick4Way) |
-             (1 << LibMame_ControllerType_DoubleJoystick8Way)));
+            ((1 << LibMame_ControllerType_LeftHorizontalJoystick) |
+             (1 << LibMame_ControllerType_LeftVerticalJoystick) |
+             (1 << LibMame_ControllerType_Left4WayJoystick) |
+             (1 << LibMame_ControllerType_Left8WayJoystick)));
 }
 
 
@@ -503,10 +486,10 @@ static bool has_right_joystick_except(int controller_flags, int exception)
     }
 
     return (controller_flags &
-            ((1 << LibMame_ControllerType_DoubleJoystickHorizontal) |
-             (1 << LibMame_ControllerType_DoubleJoystickVertical) |
-             (1 << LibMame_ControllerType_DoubleJoystick4Way) |
-             (1 << LibMame_ControllerType_DoubleJoystick8Way)));
+            ((1 << LibMame_ControllerType_RightHorizontalJoystick) |
+             (1 << LibMame_ControllerType_RightVerticalJoystick) |
+             (1 << LibMame_ControllerType_Right4WayJoystick) |
+             (1 << LibMame_ControllerType_Right8WayJoystick)));
 }
 
 
@@ -545,18 +528,18 @@ static bool controllers_have_input
                 (1 << input_number));
     case libmame_input_type_Other_button:
         return (controllers->shared.other_button_flags & (1 << input_number));
-    case libmame_input_type_left_or_single_joystick:
+    case libmame_input_type_left_joystick:
         switch (input_number) {
         case LibMame_JoystickDirection_Up:
         case LibMame_JoystickDirection_Down:
             return has_left_joystick_except
                 (controllers->per_player.controller_flags,
-                 LibMame_ControllerType_JoystickHorizontal);
+                 LibMame_ControllerType_LeftHorizontalJoystick);
         case LibMame_JoystickDirection_Left:
         case LibMame_JoystickDirection_Right:
             return has_left_joystick_except
                 (controllers->per_player.controller_flags,
-                 LibMame_ControllerType_JoystickVertical);
+                 LibMame_ControllerType_LeftVerticalJoystick);
         }
     case libmame_input_type_right_joystick:
         switch (input_number) {
@@ -564,30 +547,30 @@ static bool controllers_have_input
         case LibMame_JoystickDirection_Down:
             return has_right_joystick_except
                 (controllers->per_player.controller_flags,
-                 LibMame_ControllerType_DoubleJoystickHorizontal);
+                 LibMame_ControllerType_RightHorizontalJoystick);
         case LibMame_JoystickDirection_Left:
         case LibMame_JoystickDirection_Right:
             return has_right_joystick_except
                 (controllers->per_player.controller_flags,
-                 LibMame_ControllerType_DoubleJoystickVertical);
+                 LibMame_ControllerType_RightVerticalJoystick);
         }
     case libmame_input_type_analog_joystick_horizontal:
     case libmame_input_type_analog_joystick_vertical:
     case libmame_input_type_analog_joystick_altitude:
         return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_JoystickAnalog));
+                (1 << LibMame_ControllerType_AnalogJoystick));
     case libmame_input_type_spinner:
         return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Spinner));
-    case libmame_input_type_spinner_vertical:
+    case libmame_input_type_vertical_spinner:
         return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_SpinnerVertical));
+                (1 << LibMame_ControllerType_VerticalSpinner));
     case libmame_input_type_paddle:
         return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Paddle));
-    case libmame_input_type_paddle_vertical:
+    case libmame_input_type_vertical_paddle:
         return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_PaddleVertical));
+                (1 << LibMame_ControllerType_VerticalPaddle));
     case libmame_input_type_trackball_horizontal:
     case libmame_input_type_trackball_vertical:
         return (controllers->per_player.controller_flags &
@@ -605,16 +588,6 @@ static bool controllers_have_input
     case libmame_input_type_pedal3:
         return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Pedal3));
-    case libmame_input_type_positional:
-        return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_Positional));
-    case libmame_input_type_positional_vertical:
-        return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_PositionalVertical));
-    case libmame_input_type_mouse_x:
-    case libmame_input_type_mouse_y:
-        return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_Mouse));
     case libmame_input_type_Ui_button:
         return true;
     }
@@ -851,8 +824,6 @@ void osd_customize_input_type_list(input_type_desc *typelist)
     int trackball_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
     int lightgun_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
     int pedal_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-    int positional_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-    int mouse_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
     char namebuf[256];
 
 
@@ -893,7 +864,7 @@ void osd_customize_input_type_list(input_type_desc *typelist)
             case libmame_input_type_Hanafuda_button:
             case libmame_input_type_Gambling_button:
             case libmame_input_type_Other_button:
-            case libmame_input_type_left_or_single_joystick:
+            case libmame_input_type_left_joystick:
             case libmame_input_type_right_joystick:
             case libmame_input_type_Ui_button:
                 if ((keyboard_index == -1) || 
@@ -944,13 +915,13 @@ void osd_customize_input_type_list(input_type_desc *typelist)
                 break;
 
             case libmame_input_type_spinner:
-            case libmame_input_type_spinner_vertical:
+            case libmame_input_type_vertical_spinner:
                 GET_ITEM_DEVICE_AND_ID(spinner, DEVICE_CLASS_MOUSE, 
                                        ITEM_CLASS_RELATIVE);
                 break;
 
             case libmame_input_type_paddle:
-            case libmame_input_type_paddle_vertical:
+            case libmame_input_type_vertical_paddle:
                 /* Yes, it's weird that LIGHTGUN is used here - see above
                    comment */
                 GET_ITEM_DEVICE_AND_ID(paddle, DEVICE_CLASS_LIGHTGUN,
@@ -977,20 +948,6 @@ void osd_customize_input_type_list(input_type_desc *typelist)
                    comment */
                 GET_ITEM_DEVICE_AND_ID(pedal, DEVICE_CLASS_LIGHTGUN,
                                        ITEM_CLASS_ABSOLUTE);
-                break;
-
-            case libmame_input_type_positional:
-            case libmame_input_type_positional_vertical:
-                /* Yes, it's weird that LIGHTGUN is used here - see above
-                   comment */
-                GET_ITEM_DEVICE_AND_ID(positional, DEVICE_CLASS_LIGHTGUN,
-                                       ITEM_CLASS_ABSOLUTE);
-                break;
-
-            case libmame_input_type_mouse_x:
-            case libmame_input_type_mouse_y:
-                GET_ITEM_DEVICE_AND_ID(mouse, DEVICE_CLASS_MOUSE,
-                                       ITEM_CLASS_RELATIVE);
                 break;
             }
         }
