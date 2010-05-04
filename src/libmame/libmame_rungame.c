@@ -118,7 +118,7 @@ typedef struct LibMame_RunGame_State
      * This is the controllers state used to query the controllers state via
      * the callback provided in the callbacks structure.
      **/
-    LibMame_AllControllersState controllers_state;
+    LibMame_AllControlsState controls_state;
 
     /**
      * This is the running machine that this state is associated with
@@ -405,10 +405,10 @@ static INT32 get_controller_state(void *, void *data)
     int input_number = g_input_descriptors[ipt_type].number;
 
     /* Just in case we need these */
-    LibMame_PerPlayerControllersState *perplayer_state =
-        &(g_state.controllers_state.per_player[player]);
-    LibMame_SharedControllersState *shared_state =
-        &(g_state.controllers_state.shared);
+    LibMame_PerPlayerControlsState *perplayer_state =
+        &(g_state.controls_state.per_player[player]);
+    LibMame_SharedControlsState *shared_state =
+        &(g_state.controls_state.shared);
 
     switch (input_type) {
     case libmame_input_type_invalid:
@@ -722,14 +722,14 @@ void osd_update(running_machine *machine, int skip_redraw)
     /**
      * Poll input
      **/
-    memset(g_state.controllers_state.per_player, 0, 
-           sizeof(LibMame_PerPlayerControllersState) * 
+    memset(g_state.controls_state.per_player, 0, 
+           sizeof(LibMame_PerPlayerControlsState) * 
            g_state.maximum_player_count);
-    g_state.controllers_state.shared.other_buttons_state = 0;
-    g_state.controllers_state.shared.ui_input_state = 0;
+    g_state.controls_state.shared.other_buttons_state = 0;
+    g_state.controls_state.shared.ui_input_state = 0;
 
-    (*(g_state.callbacks->PollAllControllersState))
-        (&(g_state.controllers_state), g_state.callback_data);
+    (*(g_state.callbacks->PollAllControlsState))
+        (&(g_state.controls_state), g_state.callback_data);
 
     /**
      * Ask the callbacks to update the video.  For now, assume that there
@@ -777,7 +777,7 @@ void osd_set_mastervolume(int attenuation)
  * state of that input port.  We ignore those input ports that are not used in
  * the current game, and for the others, make our own custom controllers as
  * neceessary to provide the inputs, and hook the input callbacks up to fetch
- * the input state from the one single LibMame_AllControllersState structure
+ * the input state from the one single LibMame_AllControlsState structure
  * that we store in the g_state object.  In this way, we completely hardwire
  * the way that MAME handles input so that the users of libmame can do
  * whatever they want to satisfy getting inputs for the various controllers

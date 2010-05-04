@@ -110,11 +110,11 @@ extern "C" {
  *    results, but the display callback itself will be made with rendering
  *    primitives set to display at the game's native resolution).
  *
- *    The set of controllers that the game will require inputs on can be
- *    found by calling LibMame_Get_Game_AllControllers (and the maximum number
- *    of players for whom controller input is needed is available from
+ *    The set of controls that the game will require inputs on can be found by
+ *    calling LibMame_Get_Game_AllControllers (and the maximum number of
+ *    players for whom controller input is needed is available from
  *    LibMame_Get_Game_MaxSimultaneousPlayers).  The application will
- *    typically use this information to decide how to map whatever controllers
+ *    typically use this information to decide how to map whatever controls
  *    it knows about to the inputs that the game is expecting, usually via
  *    user preference (managed by the application).
  *
@@ -925,12 +925,12 @@ typedef struct LibMame_Image
 /**
  * This describes all of the controller values that can be polled by MAME for
  * individual players.  One structure of this type for each player is included
- * in the LibMame_AllControllersState structure.  Not all values provided in
- * this structure are used for every game; see the
+ * in the LibMame_AllControlsState structure.  Not all values provided in this
+ * structure are used for every game; see the
  * LibMame_Get_Game_AllControllers() function for a way to get a description
- * of the set of controllers actually used by the currently running game.
+ * of the set of controls actually used by the currently running game.
  **/
-typedef struct LibMame_PerPlayerControllersState
+typedef struct LibMame_PerPlayerControlsState
 {
     /**
      * These are the current states of the left (or single) joystick; the flag
@@ -1082,15 +1082,15 @@ typedef struct LibMame_PerPlayerControllersState
      * (1 << LibMame_GamblingButtonType_XXX).
      **/
     int gambling_buttons_state;
-} LibMame_PerPlayerControllersState;
+} LibMame_PerPlayerControlsState;
 
 
 /**
  * This describes all of the controller values that can be polled by MAME for
- * controllers that are shared by all players.  Not all values provided in
- * this structure are used for every game.
+ * controls that are shared by all players.  Not all values provided in this
+ * structure are used for every game.
  **/
-typedef struct LibMame_SharedControllersState
+typedef struct LibMame_SharedControlsState
 {
     /**
      * These are the current states of each other binary input; the flag for
@@ -1108,26 +1108,26 @@ typedef struct LibMame_SharedControllersState
      * time.  Its value is one of the LibMame_UiButtonType_XXX values.
      **/
     int ui_input_state;
-} LibMame_SharedControllersState;
+} LibMame_SharedControlsState;
 
 
 /**
- * This combines the per-player and the shared controllers state into one
- * structure representing all states of all controllers.
+ * This combines the per-player and the shared controls state into one
+ * structure representing all states of all controls.
  **/
-typedef struct LibMame_AllControllersState
+typedef struct LibMame_AllControlsState
 {
     /**
-     * This is the per-player controllers states, one per player.  Not all
-     * games use all players.
+     * This is the per-player controls state, one per player.  Not all games
+     * use all players.
      **/
-    LibMame_PerPlayerControllersState per_player[8];
+    LibMame_PerPlayerControlsState per_player[8];
 
     /**
-     * This is the shared controllers state.
+     * This is the shared controls state.
      **/
-    LibMame_SharedControllersState shared;
-} LibMame_AllControllersState;
+    LibMame_SharedControlsState shared;
+} LibMame_AllControlsState;
 
 
 /**
@@ -1501,22 +1501,22 @@ typedef struct LibMame_RunGameCallbacks
 
     /**
      * Called by libmame periodically to poll the current state of all
-     * controllers.  The supplied callback should expect the all_states
-     * structure to be completely zeroed out when this function is called, and
-     * should set all relevent states within the structure.  Relevent states
-     * are those used by the game being played (which can be determined by
-     * calling LibMame_Get_Game_AllControllers()), for each player which
-     * could be playing the game (which can be determined by calling
+     * controls.  The supplied callback should expect the all_states structure
+     * to be completely zeroed out when this function is called, and should
+     * set all relevent states within the structure.  Relevent states are
+     * those used by the game being played (which can be determined by calling
+     * LibMame_Get_Game_AllControllers()), for each player which could be
+     * playing the game (which can be determined by calling
      * LibMame_Get_Game_MaxSimultaneousPlayers()), plus all states from the
      * shared states structure.
      *
-     * @param all_states is all possible controller states; the callback
-     *        should set the current state of relevent controllers
+     * @param all_states is all possible control states; the callback should
+     *        set the current state of relevent controls
      * @param callback_data the data pointer that was passed to
      *        LibMame_RunGame
      **/
-    void (*PollAllControllersState)(LibMame_AllControllersState *all_states,
-                                    void *callback_data);
+    void (*PollAllControlsState)(LibMame_AllControlsState *all_states,
+                                 void *callback_data);
 
     /**
      * Called by libmame to periodically (and regularly, at the original
