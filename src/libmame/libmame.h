@@ -3,6 +3,24 @@
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.
+ * 
+ ************************************************************************** **/
+
+
+#ifndef __LIBMAME_H__
+#define __LIBMAME_H__
+
+#include <stdarg.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#if 0 // fix emacs indentation
+}
+#endif
+#endif
+
+/*! \file libmame.h
  *
  * LibMame provides a single API for (almost) all functionality of the MAME
  * engine.  It provides the following types of functions:
@@ -92,11 +110,11 @@
  *    results, but the display callback itself will be made with rendering
  *    primitives set to display at the game's native resolution).
  *
- *    The set of controllers that the game will require inputs on can be
- *    found by calling LibMame_Get_Game_AllControllers (and the maximum number
- *    of players for whom controller input is needed is available from
+ *    The set of controls that the game will require inputs on can be found by
+ *    calling LibMame_Get_Game_AllControllers (and the maximum number of
+ *    players for whom controller input is needed is available from
  *    LibMame_Get_Game_MaxSimultaneousPlayers).  The application will
- *    typically use this information to decide how to map whatever controllers
+ *    typically use this information to decide how to map whatever controls
  *    it knows about to the inputs that the game is expecting, usually via
  *    user preference (managed by the application).
  *
@@ -124,22 +142,7 @@
  * which case this API will already be ready to take advantage of that, but
  * until the limit is lifted, remember that LibMame_RunGame may only be called
  * from one thread at a time within a single application.
- * 
- ************************************************************************** **/
-
-
-#ifndef __LIBMAME_H__
-#define __LIBMAME_H__
-
-#include <stdarg.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#if 0 // fix emacs indentation
-}
-#endif
-#endif
+ */
 
 
 /** **************************************************************************
@@ -200,35 +203,9 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
 
 
 /**
- * These flags define the screen orientations that could supported by a game.
- * Not all games support all orientations.
+ * These flags define the screen orientation of the game as it was originally
+ * displayed.
  **/
-
-/**
- * Mirror along a vertical line midway aross the screen.
- **/
-#define LIBMAME_ORIENTATIONFLAGS_FLIP_X                         0x01
-
-/**
- * Mirror along a horizontal line midway across the screen
- **/
-#define LIBMAME_ORIENTATIONFLAGS_FLIP_Y                         0x02
-
-/**
- * Rotate the screen 90 degrees
- **/
-#define LIBMAME_ORIENTATIONFLAGS_ROTATE_90                      0x04
-
-/**
- * Rotate the screen 180 degrees
- **/
-#define LIBMAME_ORIENTATIONFLAGS_ROTATE_180                     0x08
-
-/**
- * Rotate the screen 270 degrees
- **/
-#define LIBMAME_ORIENTATIONFLAGS_ROTATE_270                     0x10
-
 
 /**
  * These macros can be used to obtain values from the
@@ -239,29 +216,24 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
  * Calculates the texture orientation of a LibMame_RenderPrimitive's flags
  **/
 #define LIBMAME_RENDERFLAGS_TEXTURE_ORIENTATION(flags) (((flags) >>  0) & 0xF))
-
 /**
  * Calculates the texture format of a LibMame_RenderPrimitive's flags
  **/
 #define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)      (((flags) >>  8) & 0xF))
-
 /**
  * Calculates the blend mode of a LibMame_RenderPrimitive's flags
  **/
 #define LIBMAME_RENDERFLAGS_BLEND_MODE(flags)          (((flags) >> 12) & 0xF))
-
 /**
  * Calculates the antialias value of a LibMame_RenderPrimitive's flags; zero
  * means no antialiasing, nonzero means antialiasing
  **/
 #define LIBMAME_RENDERFLAGS_ANTIALIAS(flags)                   ((flags) & 0x10)
-
 /**
  * Calculates the screen texture value of a LibMame_RenderPrimitive's flags;
  * zero means ???, nonzero means ???
  **/
 #define LIBMAME_RENDERFLAGS_SCREEN_TEXTURE(flags)              ((flags) & 0x20)
-
 /**
  * Calculates the texture wrap of a LibMame_RenderPrimitive's flags;
  * zero means ???, nonzero means ???
@@ -296,6 +268,31 @@ typedef enum
 
 
 /**
+ * Types of orientation for games; this is the orientation of the screen
+ * relative to the displayed image.
+ **/
+typedef enum
+{
+    /**
+     * Normal orientation
+     **/
+    LibMame_OrientationType_Normal,
+    /**
+     * 90 degrees rotation
+     **/
+    LibMame_OrientationType_90,
+    /**
+     * 180 degrees rotation
+     **/
+    LibMame_OrientationType_180,
+    /**
+     * 270 degrees rotation
+     **/
+    LibMame_OrientationType_270
+} LibMame_OrientationType;
+
+
+/**
  * Setting types
  **/
 typedef enum
@@ -323,31 +320,42 @@ typedef enum
 
 
 /**
+ * All of the possible joystick directions
+ **/
+typedef enum
+{
+    LibMame_JoystickDirection_Left,
+    LibMame_JoystickDirection_Right,
+    LibMame_JoystickDirection_Up,
+    LibMame_JoystickDirection_Down,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_JoystickDirectionCount
+} LibMame_JoystickDirection;
+
+
+/**
  * All of the possible controller types
  **/
 typedef enum
 {
-    LibMame_ControllerType_JoystickHorizontal,
-    LibMame_ControllerType_JoystickVertical,
-    LibMame_ControllerType_Joystick4Way,
-    LibMame_ControllerType_Joystick8Way,
-    LibMame_ControllerType_DoubleJoystickHorizontal,
-    LibMame_ControllerType_DoubleJoystickVertical,
-    LibMame_ControllerType_DoubleJoystick4Way,
-    LibMame_ControllerType_DoubleJoystick8Way,
-    LibMame_ControllerType_JoystickAnalog,
+    LibMame_ControllerType_LeftHorizontalJoystick,
+    LibMame_ControllerType_LeftVerticalJoystick,
+    LibMame_ControllerType_Left4WayJoystick,
+    LibMame_ControllerType_Left8WayJoystick,
+    LibMame_ControllerType_RightHorizontalJoystick,
+    LibMame_ControllerType_RightVerticalJoystick,
+    LibMame_ControllerType_Right4WayJoystick,
+    LibMame_ControllerType_Right8WayJoystick,
+    LibMame_ControllerType_AnalogJoystick,
     LibMame_ControllerType_Spinner,
-    LibMame_ControllerType_SpinnerVertical,
+    LibMame_ControllerType_VerticalSpinner,
     LibMame_ControllerType_Paddle,
-    LibMame_ControllerType_PaddleVertical,
+    LibMame_ControllerType_VerticalPaddle,
     LibMame_ControllerType_Trackball,
     LibMame_ControllerType_Lightgun,
     LibMame_ControllerType_Pedal,
     LibMame_ControllerType_Pedal2,
     LibMame_ControllerType_Pedal3,
-    LibMame_ControllerType_Positional,
-    LibMame_ControllerType_PositionalVertical,
-    LibMame_ControllerType_Mouse,
     /* This is not a type, it's the number of entries in this enum */
     LibMame_ControllerTypeCount
 } LibMame_ControllerType;
@@ -738,6 +746,12 @@ typedef struct LibMame_Setting
 typedef struct LibMame_PerPlayerControllers
 {
     /**
+     * These flags identify which controllers are present,
+     * each is indicated in this as (1 << LibMame_ControllerType_XXX).
+     **/
+    int controller_flags;
+
+    /**
      * These are all of the general purpose buttons which are present,
      * each is indicated in this as (1 << LibMame_NormalButtonType_XXX).
      **/
@@ -766,12 +780,6 @@ typedef struct LibMame_PerPlayerControllers
      * each is indicated in this as (1 << LibMame_GamblingButtonType_XXX).
      **/
     int gambling_button_flags;
-
-    /**
-     * These flags identify which controllers are present,
-     * each is indicated in this as (1 << LibMame_ControllerType_XXX).
-     **/
-    int controller_flags;
 } LibMame_PerPlayerControllers;
 
 
@@ -917,100 +925,30 @@ typedef struct LibMame_Image
 /**
  * This describes all of the controller values that can be polled by MAME for
  * individual players.  One structure of this type for each player is included
- * in the LibMame_AllControllersState structure.  Not all values provided in
- * this structure are used for every game; see the
+ * in the LibMame_AllControlsState structure.  Not all values provided in this
+ * structure are used for every game; see the
  * LibMame_Get_Game_AllControllers() function for a way to get a description
- * of the set of controllers actually used by the currently running game.
+ * of the set of controls actually used by the currently running game.
  **/
-typedef struct LibMame_PerPlayerControllersState
+typedef struct LibMame_PerPlayerControlsState
 {
     /**
-     * These are the current states of each normal button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_NormalButtonType_XXX).
+     * These are the current states of the left (or single) joystick; the flag
+     * for a joystick diretion being set here means that the joystick is
+     * currently pushed in that direction.  Each direction is represented by
+     * a flag within this value, by the bit numbered
+     * (1 << LibMame_JoystickDirection_XXX).
      **/
-    int normal_buttons_state;
+    int left_joystick_state;
 
     /**
-     * These are the current states of each Mahjong button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_MahjongButtonType_XXX).
+     * These are the current states of the right joystick; the flag for a
+     * joystick diretion being set here means that the joystick is currently
+     * pushed in that direction.  Each direction is represented by
+     * a flag within this value, by the bit numbered
+     * (1 << LibMame_JoystickDirection_XXX).
      **/
-    int mahjong_buttons_state;
-
-    /**
-     * These are the current states of each Hanafuda button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_HanafudaButtonType_XXX).
-     **/
-    int hanafuda_buttons_state;
-    
-    /**
-     * These are the current states of each Gambling button; the flag for
-     * a button being set here means that the button is currently pressed,
-     * not being set means that the button is currently not pressed.  Each
-     * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_GamblingButtonType_XXX).
-     **/
-    int gambling_buttons_state;
-    
-    /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the left, left-up, or
-     * left-down position.
-     **/
-    int left_or_single_joystick_left_state : 1;
-
-    /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the right, right-up, or
-     * right-down position.
-     **/
-    int left_or_single_joystick_right_state : 1;
-
-    /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the up, right-up, or
-     * left-up position.
-     **/
-    int left_or_single_joystick_up_state : 1;
-
-    /**
-     * This value is set if the left joystick (or single joystick if the
-     * controller has only a single joystick) is in the down, right-down, or
-     * left-down position.
-     **/
-    int left_or_single_joystick_down_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the left, left-up, or
-     * left-down position.
-     **/
-    int right_joystick_left_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the right, right-up, or
-     * right-down position.
-     **/
-    int right_joystick_right_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the up, right-up, or
-     * left-up position.
-     **/
-    int right_joystick_up_state : 1;
-
-    /**
-     * This value is set if the right joystick is in the down, right-down, or
-     * left-down position.
-     **/
-    int right_joystick_down_state : 1;
+    int right_joystick_state;
 
     /**
      * This value is the current horizontal position of the analog joystick,
@@ -1043,7 +981,7 @@ typedef struct LibMame_PerPlayerControllersState
      * last time it was polled, mapped to a range from -65536 (furthest
      * possible spin down) to 65536 (furthest possible spin up).
      **/
-    int spinner_vertical_delta;
+    int vertical_spinner_delta;
 
     /**
      * This value is the current paddle position, mapped to a range from
@@ -1055,7 +993,7 @@ typedef struct LibMame_PerPlayerControllersState
      * This value is the current vertical paddle position, mapped to a range
      * from -65536 (full left) to 65536 (full right).
      **/
-    int paddle_vertical_state;
+    int vertical_paddle_state;
 
     /**
      * This value is the change in position of the trackball along the
@@ -1110,35 +1048,49 @@ typedef struct LibMame_PerPlayerControllersState
     int pedal3_state;
 
     /**
-     * This is some kind of positional input that I don't know what it is.
-     * The range is from -65536 to 65536.
+     * These are the current states of each normal button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_NormalButtonType_XXX).
      **/
-    int positional_state;
+    int normal_buttons_state;
 
     /**
-     * This is some kind of vertical positional input that I don't know what
-     * it is. The range is from -65536 to 65536.
+     * These are the current states of each Mahjong button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_MahjongButtonType_XXX).
      **/
-    int positional_vertical_state;
+    int mahjong_buttons_state;
 
     /**
-     * Mouse X screen coordinate.
+     * These are the current states of each Hanafuda button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_HanafudaButtonType_XXX).
      **/
-    int mouse_x_state;
-
+    int hanafuda_buttons_state;
+    
     /**
-     * Mouse Y screen coordinate.
+     * These are the current states of each Gambling button; the flag for
+     * a button being set here means that the button is currently pressed,
+     * not being set means that the button is currently not pressed.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_GamblingButtonType_XXX).
      **/
-    int mouse_y_state;
-} LibMame_PerPlayerControllersState;
+    int gambling_buttons_state;
+} LibMame_PerPlayerControlsState;
 
 
 /**
  * This describes all of the controller values that can be polled by MAME for
- * controllers that are shared by all players.  Not all values provided in
- * this structure are used for every game.
+ * controls that are shared by all players.  Not all values provided in this
+ * structure are used for every game.
  **/
-typedef struct LibMame_SharedControllersState
+typedef struct LibMame_SharedControlsState
 {
     /**
      * These are the current states of each other binary input; the flag for
@@ -1156,26 +1108,26 @@ typedef struct LibMame_SharedControllersState
      * time.  Its value is one of the LibMame_UiButtonType_XXX values.
      **/
     int ui_input_state;
-} LibMame_SharedControllersState;
+} LibMame_SharedControlsState;
 
 
 /**
- * This combines the per-player and the shared controllers state into one
- * structure representing all states of all controllers.
+ * This combines the per-player and the shared controls state into one
+ * structure representing all states of all controls.
  **/
-typedef struct LibMame_AllControllersState
+typedef struct LibMame_AllControlsState
 {
     /**
-     * This is the per-player controllers states, one per player.  Not all
-     * games use all players.
+     * This is the per-player controls state, one per player.  Not all games
+     * use all players.
      **/
-    LibMame_PerPlayerControllersState per_player[8];
+    LibMame_PerPlayerControlsState per_player[8];
 
     /**
-     * This is the shared controllers state.
+     * This is the shared controls state.
      **/
-    LibMame_SharedControllersState shared;
-} LibMame_AllControllersState;
+    LibMame_SharedControlsState shared;
+} LibMame_AllControlsState;
 
 
 /**
@@ -1549,22 +1501,22 @@ typedef struct LibMame_RunGameCallbacks
 
     /**
      * Called by libmame periodically to poll the current state of all
-     * controllers.  The supplied callback should expect the all_states
-     * structure to be completely zeroed out when this function is called, and
-     * should set all relevent states within the structure.  Relevent states
-     * are those used by the game being played (which can be determined by
-     * calling LibMame_Get_Game_AllControllers()), for each player which
-     * could be playing the game (which can be determined by calling
+     * controls.  The supplied callback should expect the all_states structure
+     * to be completely zeroed out when this function is called, and should
+     * set all relevent states within the structure.  Relevent states are
+     * those used by the game being played (which can be determined by calling
+     * LibMame_Get_Game_AllControllers()), for each player which could be
+     * playing the game (which can be determined by calling
      * LibMame_Get_Game_MaxSimultaneousPlayers()), plus all states from the
      * shared states structure.
      *
-     * @param all_states is all possible controller states; the callback
-     *        should set the current state of relevent controllers
+     * @param all_states is all possible control states; the callback should
+     *        set the current state of relevent controls
      * @param callback_data the data pointer that was passed to
      *        LibMame_RunGame
      **/
-    void (*PollAllControllersState)(LibMame_AllControllersState *all_states,
-                                    void *callback_data);
+    void (*PollAllControlsState)(LibMame_AllControlsState *all_states,
+                                 void *callback_data);
 
     /**
      * Called by libmame to periodically (and regularly, at the original
@@ -1775,14 +1727,13 @@ int LibMame_Get_Game_WorkingFlags(int gamenum);
 
 
 /**
- * Returns the set of flags describing the game's supported orientations.
- * This is an or'd together set of flags from the LIBMAME_ORIENTATIONFLAGS_XXX
- * symbols.
+ * Returns a value describing the game's original orientation as it was
+ * originally played.
  *
  * @param gamenum is the game number of the game
- * @return the set of flags describing the game's supported orientations.
+ * @return a value describing the game's original orientation
  **/
-int LibMame_Get_Game_OrientationFlags(int gamenum);
+LibMame_OrientationType LibMame_Get_Game_Orientation(int gamenum);
 
 
 /**
@@ -2040,7 +1991,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
  * @param game is the game that is to be paused; this game is known because it
  *        was passed into the StartingUp() callback function.
  **/
-void LibMame_RunningGame_Pause(LibMame_RunningGame *game);
+void LibMame_RunningGame_Schedule_Pause(LibMame_RunningGame *game);
 
 
 /**

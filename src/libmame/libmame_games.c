@@ -33,7 +33,8 @@ typedef struct GameInfo
     int driver_index;
     int gameinfo_index;
     int year_of_release;
-    int working_flags, orientation_flags;
+    int working_flags;
+    LibMame_OrientationType orientation;
     LibMame_ScreenType screen_type;
     LibMame_ScreenResolution screen_resolution;
     float screen_refresh_rate;
@@ -171,19 +172,23 @@ static void convert_working_flags(const game_driver *driver,
 }
 
 
-static void convert_orientation_flags(const game_driver *driver,
-                                      GameInfo *gameinfo)
+static void convert_orientation(const game_driver *driver,
+                                GameInfo *gameinfo)
 {
-    CONVERT_FLAG(ORIENTATION_FLIP_X, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_FLIP_X);
-    CONVERT_FLAG(ORIENTATION_FLIP_Y, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_FLIP_Y);
-    CONVERT_FLAG(ROT90, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_ROTATE_90);
-    CONVERT_FLAG(ROT180, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_ROTATE_180);
-    CONVERT_FLAG(ROT270, orientation_flags,
-                 LIBMAME_ORIENTATIONFLAGS_ROTATE_270);
+    switch (driver->flags & ORIENTATION_MASK) {
+    case ROT270:
+        gameinfo->orientation = LibMame_OrientationType_270;
+        break;
+    case ROT180:
+        gameinfo->orientation = LibMame_OrientationType_180;
+        break;
+    case ROT90:
+        gameinfo->orientation = LibMame_OrientationType_90;
+        break;
+    default:
+        gameinfo->orientation = LibMame_OrientationType_Normal;
+        break;
+    }
 }
 
 
@@ -480,79 +485,88 @@ static void convert_controllers(const ioport_list *ioportlist,
 
 	for (port = ioportlist->first(); port; port = port->next) {
 		for (field = port->fieldlist; field; field = field->next) {
+            if (field->flags & FIELD_FLAG_UNUSED) {
+                continue;
+            }
+            // Skip cocktail ports, for the time being; at some point in the
+            // future this code should store the cocktail port specifications
+            // in a different set of perplayer configs.
+            if (field->flags & FIELD_FLAG_COCKTAIL) {
+                continue;
+            }
 			if (gameinfo->max_simultaneous_players < field->player) {
 				gameinfo->max_simultaneous_players = field->player;
             }
             switch (field->type) {
             case IPT_JOYSTICK_LEFT:
             case IPT_JOYSTICK_RIGHT:
-                switch (field->way) {
-                case 2:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_JoystickHorizontal);
-                    break;
-                case 4:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick4Way);
-                    break;
-                default:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick8Way);
-                    break;
-                }
-                break;
-            case IPT_JOYSTICK_UP:
-            case IPT_JOYSTICK_DOWN:
-                switch (field->way) {
-                case 2:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_JoystickVertical);
-                    break;
-                case 4:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick4Way);
-                    break;
-                default:
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_Joystick8Way);
-                    break;
-                }
-                break;
-            case IPT_JOYSTICKRIGHT_LEFT:
-            case IPT_JOYSTICKRIGHT_RIGHT:
             case IPT_JOYSTICKLEFT_LEFT:
             case IPT_JOYSTICKLEFT_RIGHT:
                 switch (field->way) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystickHorizontal);
+                        (1 << LibMame_ControllerType_LeftHorizontalJoystick);
                     break;
                 case 4:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick4Way);
+                        (1 << LibMame_ControllerType_Left4WayJoystick);
                     break;
                 default:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick8Way);
+                        (1 << LibMame_ControllerType_Left8WayJoystick);
                     break;
                 }
                 break;
-            case IPT_JOYSTICKRIGHT_UP:
-            case IPT_JOYSTICKRIGHT_DOWN:
+            case IPT_JOYSTICK_UP:
+            case IPT_JOYSTICK_DOWN:
             case IPT_JOYSTICKLEFT_UP:
             case IPT_JOYSTICKLEFT_DOWN:
                 switch (field->way) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystickVertical);
+                        (1 << LibMame_ControllerType_LeftVerticalJoystick);
                     break;
                 case 4:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick4Way);
+                        (1 << LibMame_ControllerType_Left4WayJoystick);
                     break;
                 default:
                     gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_DoubleJoystick8Way);
+                        (1 << LibMame_ControllerType_Left8WayJoystick);
+                    break;
+                }
+                break;
+            case IPT_JOYSTICKRIGHT_LEFT:
+            case IPT_JOYSTICKRIGHT_RIGHT:
+                switch (field->way) {
+                case 2:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_RightHorizontalJoystick);
+                    break;
+                case 4:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right4WayJoystick);
+                    break;
+                default:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right8WayJoystick);
+                    break;
+                }
+                break;
+            case IPT_JOYSTICKRIGHT_UP:
+            case IPT_JOYSTICKRIGHT_DOWN:
+                switch (field->way) {
+                case 2:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_RightVerticalJoystick);
+                    break;
+                case 4:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right4WayJoystick);
+                    break;
+                default:
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_Right8WayJoystick);
                     break;
                 }
                 break;
@@ -572,7 +586,7 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_AD_STICK_X:
             case IPT_AD_STICK_Y:
                 gameinfo->controllers.per_player.controller_flags |= 
-                    (1 << LibMame_ControllerType_JoystickAnalog);
+                    (1 << LibMame_ControllerType_AnalogJoystick);
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:
@@ -1021,7 +1035,7 @@ static void convert_game_info(GameInfo *gameinfo)
 
     convert_year(driver, gameinfo);
     convert_working_flags(driver, gameinfo);
-    convert_orientation_flags(driver, gameinfo);
+    convert_orientation(driver, gameinfo);
     convert_screen_info(machineconfig, gameinfo);
     convert_sound_channels(machineconfig, gameinfo);
     convert_sound_samples(machineconfig, gameinfo);
@@ -1302,9 +1316,9 @@ int LibMame_Get_Game_WorkingFlags(int gamenum)
 }
 
 
-int LibMame_Get_Game_OrientationFlags(int gamenum)
+LibMame_OrientationType LibMame_Get_Game_Orientation(int gamenum)
 {
-    return get_gameinfo(gamenum)->orientation_flags;
+    return get_gameinfo(gamenum)->orientation;
 }
 
 
