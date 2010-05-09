@@ -210,7 +210,7 @@ struct _kt_table {
 #define OSD_SDL_INDEX(x) (x)
 #define OSD_SDL_INDEX_KEYSYM(keysym) ((keysym)->scancode)
 
-#define GET_WINDOW(ev) window_from_id((ev)->windowID)
+#define GET_WINDOW(ev) window_from_id((SDL_WindowID) (ev)->windowID)
 // FIXME: sdl does not properly report the window for certain OS.
 #define GET_FOCUS_WINDOW(ev) focus_window
 //#define GET_FOCUS_WINDOW(ev) window_from_id((ev)->windowID)

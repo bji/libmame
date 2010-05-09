@@ -2688,7 +2688,7 @@ static texture_info *texture_find(sdl_info *sdl, const render_primitive *prim)
 }
 
 //============================================================
-//  texture_update
+//  texture_coord_update
 //============================================================
 
 static void texture_coord_update(sdl_window_info *window,

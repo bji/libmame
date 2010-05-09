@@ -1440,7 +1440,7 @@ typedef struct LibMame_RenderPrimitive
         void *base;           /* base of the data */
 
         /**
-         * What is this?
+         * Per-row padding information is encoded here.
          **/
         uint32_t rowpixels;   /* pixels per row */
 

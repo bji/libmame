@@ -2160,7 +2160,8 @@ static void process_source_file(running_machine *machine)
 
 		/* fetch the next line */
 		memset(buf, 0, sizeof(buf));
-		fgets(buf, sizeof(buf), global->source_file);
+		char *ptr = fgets(buf, sizeof(buf), global->source_file);
+                (void) ptr;
 
 		/* strip out comments (text after '//') */
 		s = strstr(buf, "//");
