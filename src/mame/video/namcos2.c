@@ -73,6 +73,42 @@ struct RozParam
 	int wrap;
 };
 
+
+static inline
+void DrawRozHelperBlock(const struct RozParam *rozInfo,
+                        int &destx, int desty, int srcx, int srcy,
+                        int width, int height, bitmap_t *destbitmap,
+                        bitmap_t *flagsbitmap, bitmap_t *srcbitmap)
+{
+    int destx_start = destx, destx_end = destx + width;
+    int desty_end = desty + height;
+    UINT32 size_mask = rozInfo->size - 1;
+
+    while (desty++ < desty_end) {
+        UINT16 *dest = BITMAP_ADDR16(destbitmap, desty, destx_start);
+        while (destx++ < destx_end) {
+            UINT32 xpos = (srcx >> 16);
+            UINT32 ypos = (srcy >> 16);
+            if (rozInfo->wrap) {
+                xpos &= size_mask;
+                ypos &= size_mask;
+            }
+            else if ((xpos <= rozInfo->size) && (ypos < rozInfo->size) &&
+                     (*BITMAP_ADDR8(flagsbitmap, ypos, xpos) & 
+                      TILEMAP_PIXEL_LAYER0)) {
+                *dest = *BITMAP_ADDR16(srcbitmap, ypos, xpos) + rozInfo->color;
+            }
+
+            srcx += rozInfo->incxx;
+            srcy += rozInfo->incxy;
+        }
+        srcx += rozInfo->incyx;
+        srcy += rozInfo->incyy;
+        destx = destx_start;
+    }
+}
+
+
 static void
 DrawRozHelper(
 	bitmap_t *bitmap,
@@ -84,6 +120,10 @@ DrawRozHelper(
 
 	if( bitmap->bpp == 16 )
 	{
+        struct timeval tv_start;
+        gettimeofday(&tv_start, 0);
+
+#if 0
         int innercount = 0;
 		UINT32 size_mask = rozInfo->size-1;
 		bitmap_t *srcbitmap = tilemap_get_pixmap( tmap );
@@ -93,10 +133,6 @@ DrawRozHelper(
 		int sx = clip->min_x;
 		int sy = clip->min_y;
 
-        struct timeval tv_start;
-        gettimeofday(&tv_start, 0);
-
-#if 1
 		while( sy <= clip->max_y )
 		{
 			int x = sx;
@@ -150,18 +186,15 @@ L_SkipPixel:
            corresponds to an 8x8 destination block fits in cache!).
         */
 
-		UINT32 size_mask = rozInfo->size - 1;
 		bitmap_t *srcbitmap = tilemap_get_pixmap(tmap);
 		bitmap_t *flagsbitmap = tilemap_get_flagsmap(tmap);
 		UINT32 srcx = (rozInfo->startx + (clip->min_x * rozInfo->incxx) + 
                        (clip->min_y * rozInfo->incyx));
 		UINT32 srcy = (rozInfo->starty + (clip->min_x * rozInfo->incxy) +
                        (clip->min_y * rozInfo->incyy));
-		int destx = clip->min_x;
-		int desty = clip->min_y;
+        int destx = clip->min_x;
+        int desty = clip->min_y;
 
-        // do_rows with count 8
-        // then do final rows of count whatever
         int row_count = (clip->max_y - clip->min_y) + 1;
         int row_block_count = row_count / 8;
         int row_extra_count = row_count % 8;
@@ -170,35 +203,44 @@ L_SkipPixel:
         int column_block_count = column_count / 8;
         int column_extra_count = column_count % 8;
 
-        UINT16 *dest = BITMAP_ADDR16(bitmap, desty, destx);
-
-        // Do the full rows
+        // Do the block rows
         for (int i = 0; i < row_block_count; i++) {
-            int x = srcx;
-            // Do the full columns
+            int sx = srcx;
+            int dx = destx;
+            // Do the block columns
             for (int j = 0; j < column_block_count; j++) {
-                do_block(x, srcy, 8, 8, /* modifies */ dest);
-                x += 8;
+                DrawRozHelperBlock(rozInfo, dx, desty, sx, srcy, 8, 8,
+                                   bitmap, flagsbitmap, srcbitmap);
+                // Increment to the next block column
+                sx += (8 * rozInfo->incxx);
+                dx += 8;
             }
-            // Do the remainder columns
+            // Do the extra columns
             if (column_extra_count) {
-                // KEEP IN MIND that do_block should increment by bitmap
-                // rowcount each time, not column count
-                do_block(x, srcy, column_extra_count, 8, /* modifies */ dest);
+                DrawRozHelperBlock(rozInfo, dx, desty, sx, srcy,
+                                   column_extra_count, 8,
+                                   bitmap, flagsbitmap, srcbitmap);
             }
-            srcy += 8;
+            // Increment to the next row block
+            srcx += (8 * rozInfo->incyx);
+            srcy += (8 * rozInfo->incyy);
+            desty += 8;
         }
-        // Do the remainder rows
+        // Do the extra rows
         if (row_extra_count) {
-            // Do the full columns
-            for (int j = 0; j < column_block_count; j++) {
-                do_block(srcx, srcy, 8, row_extra_count, /* modifies */ dest);
-                srcx += 8;
+            // Do the block columns
+            for (int i = 0; i < column_block_count; i++) {
+                DrawRozHelperBlock(rozInfo, destx, desty, srcx, srcy,
+                                   8, row_extra_count,
+                                   bitmap, flagsbitmap, srcbitmap);
+                srcx += (row_extra_count * rozInfo->incxx);
+                destx += 8;
             }
-            // Do the remainder columns
+            // Do the extra columns
             if (column_extra_count) {
-                do_block(srcx, srcy, column_extra_count, row_extra_count,
-                         /* modifies */ dest);
+                DrawRozHelperBlock(rozInfo, destx, desty, srcx, srcy,
+                                   column_extra_count, row_extra_count,
+                                   bitmap, flagsbitmap, srcbitmap);
             }
         }
 #endif
@@ -210,10 +252,6 @@ L_SkipPixel:
             tv_end.tv_usec += (1000 * 1000);
             tv_end.tv_sec -= 1;
         }
-
-        printf("innercount %d -- %ld\n", innercount,
-               ((tv_end.tv_sec - tv_start.tv_sec) * (1000 * 1000) +
-                         (tv_end.tv_usec - tv_start.tv_usec)));
 	}
 	else
 	{
