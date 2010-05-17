@@ -303,14 +303,14 @@ int mame_execute(core_options *options)
 			nvram_load(machine);
 			sound_mute(machine, FALSE);
 
+            mame_startup_update(machine, MAME_STARTUP_INITIALIZING, 100);
+
 			/* display the startup screens */
 #if 0 /* bji - hard disabling startup screens -- this will NOT merge back
          into MAME official source */
 			ui_display_startup_screens(machine, firstrun, !settingsloaded);
 #endif
 			firstrun = FALSE;
-
-            mame_startup_update(machine, MAME_STARTUP_INITIALIZING, 100);
 
 			/* perform a soft reset -- this takes us to the running phase */
 			soft_reset(machine, NULL, 0);

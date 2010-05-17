@@ -2,6 +2,8 @@
 
 #include "emu.h"
 
+#include <sys/time.h>
+
 #include "includes/namcos2.h"
 #include "includes/namcoic.h"
 
@@ -82,6 +84,7 @@ DrawRozHelper(
 
 	if( bitmap->bpp == 16 )
 	{
+        int innercount = 0;
 		UINT32 size_mask = rozInfo->size-1;
 		bitmap_t *srcbitmap = tilemap_get_pixmap( tmap );
 		bitmap_t *flagsbitmap = tilemap_get_flagsmap( tmap );
@@ -89,6 +92,11 @@ DrawRozHelper(
 		UINT32 starty = rozInfo->starty + clip->min_x * rozInfo->incxy + clip->min_y * rozInfo->incyy;
 		int sx = clip->min_x;
 		int sy = clip->min_y;
+
+        struct timeval tv_start;
+        gettimeofday(&tv_start, 0);
+
+#if 1
 		while( sy <= clip->max_y )
 		{
 			int x = sx;
@@ -111,6 +119,7 @@ DrawRozHelper(
 
 				if( *BITMAP_ADDR8(flagsbitmap, ypos, xpos)&TILEMAP_PIXEL_LAYER0 )
 				{
+                    innercount++;
 					*dest = *BITMAP_ADDR16(srcbitmap, ypos, xpos)+rozInfo->color;
 				}
 L_SkipPixel:
@@ -123,6 +132,88 @@ L_SkipPixel:
 			starty += rozInfo->incyy;
 			sy++;
 		} /* next y */
+#else
+        /* On many processors, the simple approach of an outer loop over the
+           rows of the destination bitmap with an inner loop over the columns
+           of the destination bitmap has poor performance due to the order
+           that memory in the source bitmap is referenced when rotation
+           approaches 90 or 270 degrees.  The reason is that the inner loop
+           ends up reading pixels not sequentially in the source bitmap, but
+           instead at rozInfo->incxx increments, which is at its maximum at 90
+           degrees of rotation.  This means that only a few (or as little as
+           one) source pixel is in each cache line at a time.
+
+           Instead of the above, this code iterates in 8x8 blocks through the
+           destination bitmap.  This has more overhead when there is little or
+           no rotation, but much better performance when there is closer to 90
+           degrees of rotation (as long as the chunk of the source bitmap that
+           corresponds to an 8x8 destination block fits in cache!).
+        */
+
+		UINT32 size_mask = rozInfo->size - 1;
+		bitmap_t *srcbitmap = tilemap_get_pixmap(tmap);
+		bitmap_t *flagsbitmap = tilemap_get_flagsmap(tmap);
+		UINT32 srcx = (rozInfo->startx + (clip->min_x * rozInfo->incxx) + 
+                       (clip->min_y * rozInfo->incyx));
+		UINT32 srcy = (rozInfo->starty + (clip->min_x * rozInfo->incxy) +
+                       (clip->min_y * rozInfo->incyy));
+		int destx = clip->min_x;
+		int desty = clip->min_y;
+
+        // do_rows with count 8
+        // then do final rows of count whatever
+        int row_count = (clip->max_y - clip->min_y) + 1;
+        int row_block_count = row_count / 8;
+        int row_extra_count = row_count % 8;
+
+        int column_count = (clip->max_x - clip->min_x) + 1;
+        int column_block_count = column_count / 8;
+        int column_extra_count = column_count % 8;
+
+        UINT16 *dest = BITMAP_ADDR16(bitmap, desty, destx);
+
+        // Do the full rows
+        for (int i = 0; i < row_block_count; i++) {
+            int x = srcx;
+            // Do the full columns
+            for (int j = 0; j < column_block_count; j++) {
+                do_block(x, srcy, 8, 8, /* modifies */ dest);
+                x += 8;
+            }
+            // Do the remainder columns
+            if (column_extra_count) {
+                // KEEP IN MIND that do_block should increment by bitmap
+                // rowcount each time, not column count
+                do_block(x, srcy, column_extra_count, 8, /* modifies */ dest);
+            }
+            srcy += 8;
+        }
+        // Do the remainder rows
+        if (row_extra_count) {
+            // Do the full columns
+            for (int j = 0; j < column_block_count; j++) {
+                do_block(srcx, srcy, 8, row_extra_count, /* modifies */ dest);
+                srcx += 8;
+            }
+            // Do the remainder columns
+            if (column_extra_count) {
+                do_block(srcx, srcy, column_extra_count, row_extra_count,
+                         /* modifies */ dest);
+            }
+        }
+#endif
+
+        struct timeval tv_end;
+        gettimeofday(&tv_end, 0);
+
+        if (tv_end.tv_usec < tv_start.tv_usec) {
+            tv_end.tv_usec += (1000 * 1000);
+            tv_end.tv_sec -= 1;
+        }
+
+        printf("innercount %d -- %ld\n", innercount,
+               ((tv_end.tv_sec - tv_start.tv_sec) * (1000 * 1000) +
+                         (tv_end.tv_usec - tv_start.tv_usec)));
 	}
 	else
 	{
@@ -144,10 +235,17 @@ DrawROZ(bitmap_t *bitmap,const rectangle *cliprect)
 	struct RozParam rozParam;
 
 	rozParam.color = (namcos2_gfx_ctrl & 0x0f00);
+#if 1
 	rozParam.incxx  = (INT16)namcos2_68k_roz_ctrl[0];
 	rozParam.incxy  = (INT16)namcos2_68k_roz_ctrl[1];
 	rozParam.incyx  = (INT16)namcos2_68k_roz_ctrl[2];
 	rozParam.incyy  = (INT16)namcos2_68k_roz_ctrl[3];
+#else
+	rozParam.incxx  = 256;
+	rozParam.incxy  = 0;
+	rozParam.incyx  = 0;
+	rozParam.incyy  = 256;
+#endif
 	rozParam.startx = (INT16)namcos2_68k_roz_ctrl[4];
 	rozParam.starty = (INT16)namcos2_68k_roz_ctrl[5];
 	rozParam.size = 2048;

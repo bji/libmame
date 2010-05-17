@@ -2013,6 +2013,9 @@ DRVLIBOBJ_MISC = \
 
 DRVLIBOBJS += $(DRVLIBOBJ_MISC)
 
+$(MAMEOBJ)/misc.a: $(DRVLIBOBJ_MISC)
+
+
 #-------------------------------------------------
 # layout dependencies
 #-------------------------------------------------
