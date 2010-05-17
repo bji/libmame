@@ -81,40 +81,46 @@ void DrawRozHelperBlock(const struct RozParam *rozInfo,
                         bitmap_t *flagsbitmap, bitmap_t *srcbitmap,
                         UINT32 size_mask)
 {
-    int destx_start = destx, destx_end = destx + width;
     int desty_end = desty + height;
 
     int end_x = rozInfo->incyx - (width * rozInfo->incxx);
     int end_y = rozInfo->incyy - (width * rozInfo->incxy);
 
+    UINT16 *dest = BITMAP_ADDR16(destbitmap, desty, destx);
+    int dest_rowinc = destbitmap->rowpixels - width;
+
     while (desty < desty_end) {
-        UINT16 *dest = BITMAP_ADDR16(destbitmap, desty, destx_start);
-        while (destx < destx_end) {
+        UINT16 *dest_end = dest + width;
+        while (dest < dest_end) {
             UINT32 xpos = (srcx >> 16);
             UINT32 ypos = (srcy >> 16);
             if (rozInfo->wrap) {
                 xpos &= size_mask;
                 ypos &= size_mask;
             }
+            else if ((xpos > rozInfo->size) || (ypos >= rozInfo->size)) {
+                goto L_SkipPixel;
+            }
             
-            if ((xpos <= rozInfo->size) && (ypos < rozInfo->size) &&
-                (*BITMAP_ADDR8(flagsbitmap, ypos, xpos) & 
-                 TILEMAP_PIXEL_LAYER0)) {
+            if (*BITMAP_ADDR8(flagsbitmap, ypos, xpos) & TILEMAP_PIXEL_LAYER0) {
                 *dest = *BITMAP_ADDR16(srcbitmap, ypos, xpos) + rozInfo->color;
             }
 
+        L_SkipPixel:
+
             srcx += rozInfo->incxx;
             srcy += rozInfo->incxy;
-            destx++;
             dest++;
         }
         srcx += end_x;
         srcy += end_y;
-        destx = destx_start;
+        dest += dest_rowinc;
         desty++;
     }
 }
 
+
+// #define PROFILE_ROZ
 
 static void
 DrawRozHelper(
@@ -127,11 +133,12 @@ DrawRozHelper(
 
 	if( bitmap->bpp == 16 )
 	{
+#ifdef PROFILE_ROZ
         struct timeval tv_start;
         gettimeofday(&tv_start, 0);
+#endif
 
 #if 0
-        int innercount = 0;
 		UINT32 size_mask = rozInfo->size-1;
 		bitmap_t *srcbitmap = tilemap_get_pixmap( tmap );
 		bitmap_t *flagsbitmap = tilemap_get_flagsmap( tmap );
@@ -162,7 +169,6 @@ DrawRozHelper(
 
 				if( *BITMAP_ADDR8(flagsbitmap, ypos, xpos)&TILEMAP_PIXEL_LAYER0 )
 				{
-                    innercount++;
 					*dest = *BITMAP_ADDR16(srcbitmap, ypos, xpos)+rozInfo->color;
 				}
 L_SkipPixel:
@@ -213,11 +219,6 @@ L_SkipPixel:
         int column_block_count = column_count / ROZ_BLOCK_SIZE;
         int column_extra_count = column_count % ROZ_BLOCK_SIZE;
 
-#if 0
-        printf("Block %u, %u, %u, %u -> %u, %u\n", srcx >> 16, srcy >> 16, 
-               column_count, row_count, destx, desty);
-#endif
-
         // Do the block rows
         for (int i = 0; i < row_block_count; i++) {
             int sx = srcx;
@@ -264,6 +265,7 @@ L_SkipPixel:
         }
 #endif
 
+#ifdef PROFILE_ROZ
         struct timeval tv_end;
         gettimeofday(&tv_end, 0);
 
@@ -274,6 +276,7 @@ L_SkipPixel:
 
         printf("%ld\n", ((tv_end.tv_sec - tv_start.tv_sec) * (1000 * 1000) +
                          (tv_end.tv_usec - tv_start.tv_usec)));
+#endif
 	}
 	else
 	{
