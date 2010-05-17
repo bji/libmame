@@ -76,35 +76,42 @@ struct RozParam
 
 static inline
 void DrawRozHelperBlock(const struct RozParam *rozInfo,
-                        int &destx, int desty, int srcx, int srcy,
+                        int destx, int desty, int srcx, int srcy,
                         int width, int height, bitmap_t *destbitmap,
-                        bitmap_t *flagsbitmap, bitmap_t *srcbitmap)
+                        bitmap_t *flagsbitmap, bitmap_t *srcbitmap,
+                        UINT32 size_mask)
 {
     int destx_start = destx, destx_end = destx + width;
     int desty_end = desty + height;
-    UINT32 size_mask = rozInfo->size - 1;
 
-    while (desty++ < desty_end) {
+    int end_x = rozInfo->incyx - (width * rozInfo->incxx);
+    int end_y = rozInfo->incyy - (width * rozInfo->incxy);
+
+    while (desty < desty_end) {
         UINT16 *dest = BITMAP_ADDR16(destbitmap, desty, destx_start);
-        while (destx++ < destx_end) {
+        while (destx < destx_end) {
             UINT32 xpos = (srcx >> 16);
             UINT32 ypos = (srcy >> 16);
             if (rozInfo->wrap) {
                 xpos &= size_mask;
                 ypos &= size_mask;
             }
-            else if ((xpos <= rozInfo->size) && (ypos < rozInfo->size) &&
-                     (*BITMAP_ADDR8(flagsbitmap, ypos, xpos) & 
-                      TILEMAP_PIXEL_LAYER0)) {
+            
+            if ((xpos <= rozInfo->size) && (ypos < rozInfo->size) &&
+                (*BITMAP_ADDR8(flagsbitmap, ypos, xpos) & 
+                 TILEMAP_PIXEL_LAYER0)) {
                 *dest = *BITMAP_ADDR16(srcbitmap, ypos, xpos) + rozInfo->color;
             }
 
             srcx += rozInfo->incxx;
             srcy += rozInfo->incxy;
+            destx++;
+            dest++;
         }
-        srcx += rozInfo->incyx;
-        srcy += rozInfo->incyy;
+        srcx += end_x;
+        srcy += end_y;
         destx = destx_start;
+        desty++;
     }
 }
 
@@ -186,6 +193,9 @@ L_SkipPixel:
            corresponds to an 8x8 destination block fits in cache!).
         */
 
+#define ROZ_BLOCK_SIZE 8
+
+        UINT32 size_mask = rozInfo->size - 1;
 		bitmap_t *srcbitmap = tilemap_get_pixmap(tmap);
 		bitmap_t *flagsbitmap = tilemap_get_flagsmap(tmap);
 		UINT32 srcx = (rozInfo->startx + (clip->min_x * rozInfo->incxx) + 
@@ -194,53 +204,62 @@ L_SkipPixel:
                        (clip->min_y * rozInfo->incyy));
         int destx = clip->min_x;
         int desty = clip->min_y;
-
+        
         int row_count = (clip->max_y - clip->min_y) + 1;
-        int row_block_count = row_count / 8;
-        int row_extra_count = row_count % 8;
+        int row_block_count = row_count / ROZ_BLOCK_SIZE;
+        int row_extra_count = row_count % ROZ_BLOCK_SIZE;
 
         int column_count = (clip->max_x - clip->min_x) + 1;
-        int column_block_count = column_count / 8;
-        int column_extra_count = column_count % 8;
+        int column_block_count = column_count / ROZ_BLOCK_SIZE;
+        int column_extra_count = column_count % ROZ_BLOCK_SIZE;
+
+#if 0
+        printf("Block %u, %u, %u, %u -> %u, %u\n", srcx >> 16, srcy >> 16, 
+               column_count, row_count, destx, desty);
+#endif
 
         // Do the block rows
         for (int i = 0; i < row_block_count; i++) {
             int sx = srcx;
+            int sy = srcy;
             int dx = destx;
             // Do the block columns
             for (int j = 0; j < column_block_count; j++) {
-                DrawRozHelperBlock(rozInfo, dx, desty, sx, srcy, 8, 8,
-                                   bitmap, flagsbitmap, srcbitmap);
+                DrawRozHelperBlock(rozInfo, dx, desty, sx, sy, ROZ_BLOCK_SIZE,
+                                   ROZ_BLOCK_SIZE, bitmap, flagsbitmap,
+                                   srcbitmap, size_mask);
                 // Increment to the next block column
-                sx += (8 * rozInfo->incxx);
-                dx += 8;
+                sx += (ROZ_BLOCK_SIZE * rozInfo->incxx);
+                sy += (ROZ_BLOCK_SIZE * rozInfo->incxy);
+                dx += ROZ_BLOCK_SIZE;
             }
             // Do the extra columns
             if (column_extra_count) {
-                DrawRozHelperBlock(rozInfo, dx, desty, sx, srcy,
-                                   column_extra_count, 8,
-                                   bitmap, flagsbitmap, srcbitmap);
+                DrawRozHelperBlock(rozInfo, dx, desty, sx, sy,
+                                   column_extra_count, ROZ_BLOCK_SIZE,
+                                   bitmap, flagsbitmap, srcbitmap, size_mask);
             }
             // Increment to the next row block
-            srcx += (8 * rozInfo->incyx);
-            srcy += (8 * rozInfo->incyy);
-            desty += 8;
+            srcx += ((ROZ_BLOCK_SIZE + column_extra_count) * rozInfo->incyx);
+            srcy += (ROZ_BLOCK_SIZE * rozInfo->incyy);
+            desty += ROZ_BLOCK_SIZE;
         }
         // Do the extra rows
         if (row_extra_count) {
             // Do the block columns
             for (int i = 0; i < column_block_count; i++) {
                 DrawRozHelperBlock(rozInfo, destx, desty, srcx, srcy,
-                                   8, row_extra_count,
-                                   bitmap, flagsbitmap, srcbitmap);
-                srcx += (row_extra_count * rozInfo->incxx);
-                destx += 8;
+                                   ROZ_BLOCK_SIZE, row_extra_count,
+                                   bitmap, flagsbitmap, srcbitmap, size_mask);
+                srcx += (ROZ_BLOCK_SIZE * rozInfo->incxx);
+                srcy += (row_extra_count * rozInfo->incxy);
+                destx += ROZ_BLOCK_SIZE;
             }
             // Do the extra columns
             if (column_extra_count) {
                 DrawRozHelperBlock(rozInfo, destx, desty, srcx, srcy,
                                    column_extra_count, row_extra_count,
-                                   bitmap, flagsbitmap, srcbitmap);
+                                   bitmap, flagsbitmap, srcbitmap, size_mask);
             }
         }
 #endif
@@ -252,6 +271,9 @@ L_SkipPixel:
             tv_end.tv_usec += (1000 * 1000);
             tv_end.tv_sec -= 1;
         }
+
+        printf("%ld\n", ((tv_end.tv_sec - tv_start.tv_sec) * (1000 * 1000) +
+                         (tv_end.tv_usec - tv_start.tv_usec)));
 	}
 	else
 	{
