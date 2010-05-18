@@ -119,7 +119,7 @@ DrawRozHelperBlock(const struct RozParam *rozInfo, int destx, int desty,
         dest += dest_rowinc;
         desty++;
     }
-}
+} /* DrawRozHelperBlock */
 
 
 static void
@@ -172,11 +172,11 @@ DrawRozHelper(
         int destx = clip->min_x;
         int desty = clip->min_y;
         
-        int row_count = (clip->max_y - clip->min_y) + 1;
+        int row_count = (clip->max_y - desty) + 1;
         int row_block_count = row_count / ROZ_BLOCK_SIZE;
         int row_extra_count = row_count % ROZ_BLOCK_SIZE;
 
-        int column_count = (clip->max_x - clip->min_x) + 1;
+        int column_count = (clip->max_x - destx) + 1;
         int column_block_count = column_count / ROZ_BLOCK_SIZE;
         int column_extra_count = column_count % ROZ_BLOCK_SIZE;
 
@@ -251,17 +251,10 @@ DrawROZ(bitmap_t *bitmap,const rectangle *cliprect)
 	struct RozParam rozParam;
 
 	rozParam.color = (namcos2_gfx_ctrl & 0x0f00);
-#if 1
 	rozParam.incxx  = (INT16)namcos2_68k_roz_ctrl[0];
 	rozParam.incxy  = (INT16)namcos2_68k_roz_ctrl[1];
 	rozParam.incyx  = (INT16)namcos2_68k_roz_ctrl[2];
 	rozParam.incyy  = (INT16)namcos2_68k_roz_ctrl[3];
-#else
-	rozParam.incxx  = 256;
-	rozParam.incxy  = 0;
-	rozParam.incyx  = 0;
-	rozParam.incyy  = 256;
-#endif
 	rozParam.startx = (INT16)namcos2_68k_roz_ctrl[4];
 	rozParam.starty = (INT16)namcos2_68k_roz_ctrl[5];
 	rozParam.size = 2048;
