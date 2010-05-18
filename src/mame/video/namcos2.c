@@ -93,6 +93,7 @@ DrawRozHelperBlock(const struct RozParam *rozInfo, int destx, int desty,
         {
             UINT32 xpos = (srcx >> 16);
             UINT32 ypos = (srcy >> 16);
+            
             if (rozInfo->wrap)
             {
                 xpos &= size_mask;
@@ -155,8 +156,8 @@ DrawRozHelper(
            Keep in mind that the block of source pixels used can be somewhat
            scattered in memory.  8x8 works well on the few processors that
            were tested; 16x16 seems to work even better for more modern
-           processors with larger caches, but since 8x8 works so well and is
-           less likely to result in cache misses on processors with smaller
+           processors with larger caches, but since 8x8 works well enough and
+           is less likely to result in cache misses on processors with smaller
            caches, it is used.
         */
 
@@ -180,6 +181,11 @@ DrawRozHelper(
         int column_block_count = column_count / ROZ_BLOCK_SIZE;
         int column_extra_count = column_count % ROZ_BLOCK_SIZE;
 
+        int row_block_size_incxx = ROZ_BLOCK_SIZE * rozInfo->incxx;
+        int row_block_size_incxy = ROZ_BLOCK_SIZE * rozInfo->incxy;
+        int row_block_size_incyx = ROZ_BLOCK_SIZE * rozInfo->incyx;
+        int row_block_size_incyy = ROZ_BLOCK_SIZE * rozInfo->incyy;
+
         // Do the block rows
         for (int i = 0; i < row_block_count; i++)
         {
@@ -193,8 +199,8 @@ DrawRozHelper(
                                    ROZ_BLOCK_SIZE, bitmap, flagsbitmap,
                                    srcbitmap, size_mask);
                 // Increment to the next block column
-                sx += (ROZ_BLOCK_SIZE * rozInfo->incxx);
-                sy += (ROZ_BLOCK_SIZE * rozInfo->incxy);
+                sx += row_block_size_incxx;
+                sy += row_block_size_incxy;
                 dx += ROZ_BLOCK_SIZE;
             }
             // Do the extra columns
@@ -205,8 +211,8 @@ DrawRozHelper(
                                    bitmap, flagsbitmap, srcbitmap, size_mask);
             }
             // Increment to the next row block
-            srcx += ((ROZ_BLOCK_SIZE + column_extra_count) * rozInfo->incyx);
-            srcy += (ROZ_BLOCK_SIZE * rozInfo->incyy);
+            srcx += row_block_size_incyx;
+            srcy += row_block_size_incyy;
             desty += ROZ_BLOCK_SIZE;
         }
         // Do the extra rows
@@ -218,8 +224,8 @@ DrawRozHelper(
                 DrawRozHelperBlock(rozInfo, destx, desty, srcx, srcy,
                                    ROZ_BLOCK_SIZE, row_extra_count,
                                    bitmap, flagsbitmap, srcbitmap, size_mask);
-                srcx += (ROZ_BLOCK_SIZE * rozInfo->incxx);
-                srcy += (row_extra_count * rozInfo->incxy);
+                srcx += row_block_size_incxx;
+                srcy += row_block_size_incxy;
                 destx += ROZ_BLOCK_SIZE;
             }
             // Do the extra columns
