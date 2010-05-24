@@ -306,7 +306,7 @@ int mame_execute(core_options *options)
             mame_startup_update(machine, MAME_STARTUP_INITIALIZING, 100);
 
 			/* display the startup screens */
-#if 0 /* bji - hard disabling startup screens -- this will NOT merge back
+#if 1 /* bji - hard disabling startup screens -- this will NOT merge back
          into MAME official source */
 			ui_display_startup_screens(machine, firstrun, !settingsloaded);
 #endif
