@@ -346,7 +346,9 @@ typedef enum
     LibMame_ControllerType_RightVerticalJoystick,
     LibMame_ControllerType_Right4WayJoystick,
     LibMame_ControllerType_Right8WayJoystick,
-    LibMame_ControllerType_AnalogJoystick,
+    LibMame_ControllerType_AnalogHorizontalJoystick,
+    LibMame_ControllerType_AnalogVerticalJoystick,
+    LibMame_ControllerType_Analog8WayJoystick,
     LibMame_ControllerType_Spinner,
     LibMame_ControllerType_VerticalSpinner,
     LibMame_ControllerType_Paddle,
@@ -961,13 +963,6 @@ typedef struct LibMame_PerPlayerControlsState
      * mapped to a range from -65536 (full down) to 65536 (full up).
      **/
     int analog_joystick_vertical_state;
-
-    /**
-     * This value is the current position of the analog joystick when measured
-     * in the Z axis, i.e. an altitude, mapped to a range from -65536 (full
-     * down) to 65536 (full up).
-     **/
-    int analog_joystick_altitude_state;
 
     /**
      * This value is the change in position of the spinner since the last

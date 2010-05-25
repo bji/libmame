@@ -584,9 +584,30 @@ static void convert_controllers(const ioport_list *ioportlist,
                     (1 << LibMame_ControllerType_Trackball);
                 break;
             case IPT_AD_STICK_X:
+                if (gameinfo->controllers.per_player.controller_flags &
+                    (1 << LibMame_ControllerType_AnalogVerticalJoystick)) {
+                    gameinfo->controllers.per_player.controller_flags &=
+                        ~(1 << LibMame_ControllerType_AnalogVerticalJoystick);
+                    gameinfo->controllers.per_player.controller_flags |=
+                        (1 << LibMame_ControllerType_Analog8WayJoystick);
+                }
+                else {
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_AnalogHorizontalJoystick);
+                }
+                break;
             case IPT_AD_STICK_Y:
-                gameinfo->controllers.per_player.controller_flags |= 
-                    (1 << LibMame_ControllerType_AnalogJoystick);
+                if (gameinfo->controllers.per_player.controller_flags &
+                    (1 << LibMame_ControllerType_AnalogHorizontalJoystick)) {
+                    gameinfo->controllers.per_player.controller_flags &=
+                        ~(1 << LibMame_ControllerType_AnalogHorizontalJoystick);
+                    gameinfo->controllers.per_player.controller_flags |=
+                        (1 << LibMame_ControllerType_Analog8WayJoystick);
+                }
+                else {
+                    gameinfo->controllers.per_player.controller_flags |= 
+                        (1 << LibMame_ControllerType_AnalogVerticalJoystick);
+                }
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:

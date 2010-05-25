@@ -45,7 +45,6 @@ typedef enum
     libmame_input_type_right_joystick,
     libmame_input_type_analog_joystick_horizontal,
     libmame_input_type_analog_joystick_vertical,
-    libmame_input_type_analog_joystick_altitude,
     libmame_input_type_spinner,
     libmame_input_type_vertical_spinner,
     libmame_input_type_paddle,
@@ -316,14 +315,14 @@ static libmame_input_descriptor g_input_descriptors[] =
 	ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_PADDLE_V */
   ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS), /* IPT_AD_STICK_X */
 	ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS), /* IPT_AD_STICK_Y */
-	ANALOG_INPUT(analog_joystick_altitude, ITEM_ID_ZAXIS), /* IPT_AD_STICK_Z */
+	ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_AD_STICK_Z */
 	ANALOG_INPUT(lightgun_horizontal, ITEM_ID_XAXIS), /* IPT_LIGHTGUN_X */
 	ANALOG_INPUT(lightgun_vertical, ITEM_ID_YAXIS), /* IPT_LIGHTGUN_Y */
 	ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_PEDAL */
 	ANALOG_INPUT(pedal2, ITEM_ID_YAXIS), /* IPT_PEDAL2 */
 	ANALOG_INPUT(pedal3, ITEM_ID_ZAXIS), /* IPT_PEDAL3 */
-    INVALID_INPUT, /* IPT_POSITIONAL */
-    INVALID_INPUT, /* IPT_POSITIONAL_V */
+    ANALOG_INPUT(paddle, ITEM_ID_XAXIS), /* IPT_POSITIONAL */
+    ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_POSITIONAL_V */
 	ANALOG_INPUT(spinner, ITEM_ID_RXAXIS), /* IPT_DIAL */
 	ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS), /* IPT_DIAL_V */
 	ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS), /* IPT_TRACKBALL_X */
@@ -432,8 +431,6 @@ static INT32 get_controller_state(void *, void *data)
         return perplayer_state->analog_joystick_horizontal_state;
     case libmame_input_type_analog_joystick_vertical:
         return perplayer_state->analog_joystick_vertical_state;
-    case libmame_input_type_analog_joystick_altitude:
-        return perplayer_state->analog_joystick_altitude_state;
     case libmame_input_type_spinner:
         return perplayer_state->spinner_delta;
     case libmame_input_type_vertical_spinner:
@@ -556,9 +553,8 @@ static bool controllers_have_input
         }
     case libmame_input_type_analog_joystick_horizontal:
     case libmame_input_type_analog_joystick_vertical:
-    case libmame_input_type_analog_joystick_altitude:
         return (controllers->per_player.controller_flags &
-                (1 << LibMame_ControllerType_AnalogJoystick));
+                (1 << LibMame_ControllerType_Analog8WayJoystick));
     case libmame_input_type_spinner:
         return (controllers->per_player.controller_flags &
                 (1 << LibMame_ControllerType_Spinner));
@@ -907,7 +903,6 @@ void osd_customize_input_type_list(input_type_desc *typelist)
 
             case libmame_input_type_analog_joystick_horizontal:
             case libmame_input_type_analog_joystick_vertical:
-            case libmame_input_type_analog_joystick_altitude:
                 /* Yes, it's weird that LIGHTGUN is used here - see above
                    comment */
                 GET_ITEM_DEVICE_AND_ID(analog_joystick, DEVICE_CLASS_LIGHTGUN,
