@@ -106,6 +106,11 @@ public:
         return !strcmp(keyM, other.keyM);
     }
 
+    operator const char *() const
+    {
+        return keyM;
+    }
+
 private:
     
     const char *keyM;
