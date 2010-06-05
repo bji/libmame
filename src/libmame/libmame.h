@@ -324,10 +324,10 @@ typedef enum
  **/
 typedef enum
 {
-    LibMame_JoystickDirection_Left,
-    LibMame_JoystickDirection_Right,
     LibMame_JoystickDirection_Up,
+    LibMame_JoystickDirection_Right,
     LibMame_JoystickDirection_Down,
+    LibMame_JoystickDirection_Left,
     /* This is not a type, it's the number of entries in this enum */
     LibMame_JoystickDirectionCount
 } LibMame_JoystickDirection;
