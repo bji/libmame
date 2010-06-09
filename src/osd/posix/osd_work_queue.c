@@ -401,7 +401,7 @@ static int work_queue_create_threads_locked()
      * sufficient.
      **/
 #ifdef OSDLIB_WORK_QUEUE_THREAD_COUNT
-    threads_count = OSDLIB_PROCESSOR_COUNT + 1;
+    threads_count = OSDLIB_WORK_QUEUE_THREAD_COUNT;
 #else
     /**
      * If that's not defined, then if _SC_NPROCESSORS_ONLN is defined, it
