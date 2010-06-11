@@ -1531,14 +1531,16 @@ typedef struct LibMame_RunGameCallbacks
      * frame rate of the game) provide the audio that need to be output for
      * the current frame of the game.
      *
-     * @param buffer is a pointer to the raw sound data (more documentation
-     *        needed about the format of this)
+     * @param sample_rate is the sample rate of the game which is delivering
+     *        this audio
      * @param samples_this_frame is the number of samples contained in
      *        the buffer (?? more docs needed)
+     * @param buffer is a pointer to the raw sound data (more documentation
+     *        needed about the format of this)
      * @param callback_data the data pointer that was passed to
      *        LibMame_RunGame
      **/
-    void (*UpdateAudio)(int16_t *buffer, int samples_this_frame,
+    void (*UpdateAudio)(int sample_rate, int samples_this_frame, int16_t *buffer, 
                         void *callback_data);
 
     /**

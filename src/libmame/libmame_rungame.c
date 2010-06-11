@@ -752,8 +752,8 @@ void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
     /**
      * Ask the callbacks to update the audio
      **/
-    (*(g_state.callbacks->UpdateAudio))(buffer, samples_this_frame,
-                                        g_state.callback_data);
+    (*(g_state.callbacks->UpdateAudio))(machine->sample_rate, samples_this_frame,
+                                        buffer, g_state.callback_data);
 }
 
 
