@@ -215,7 +215,7 @@ BUILD_ZLIB = 1
 # in addition to as a dynamic library.  This uses quite a bit more disk
 # space and compile time, and would typically only be enabled for a final
 # build
-# BUILD_LIBMAME_STATIC = 1
+# STATIC = 1
 
 # uncomment next line to include the symbols
 # SYMBOLS = 1
@@ -340,7 +340,7 @@ SUFFIXDEBUG = d
 endif
 
 # static library builds get the 's' suffix
-ifdef BUILD_LIBMAME_STATIC
+ifdef STATIC
 SUFFIXSTATIC = s
 endif
 
@@ -434,7 +434,7 @@ CPPONLYFLAGS =
 
 ifdef BUILD_LIBMAME
 # if bulding shared libraries (the default), need -fPIC
-ifndef BUILD_LIBMAME_STATIC
+ifndef STATIC
 CCOMFLAGS += -fPIC
 endif
 endif
