@@ -810,39 +810,36 @@ void osd_customize_input_type_list(input_type_desc *typelist)
      * devices which have been mapped to key '0' (and probably other MAME
      * default UI keys) as having input that triggers that UI event.
      **/
-    int keyboard_index = -1;
+    input_device *keyboard = 0;
     input_item_id keyboard_item = ITEM_ID_A;
     int keyboard_count = 0;
     /* As to all of the rest, they are created as needed, one for each player */
-    int analog_joystick_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-    int spinner_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-    int paddle_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 }; 
-    int trackball_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-    int lightgun_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
-    int pedal_index[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+    input_device *analog_joystick[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *spinner[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *paddle[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; 
+    input_device *trackball[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *lightgun[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    input_device *pedal[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
     char namebuf[256];
 
 
 #define GET_ITEM_DEVICE_AND_ID(device_type, device_class, item_class)   \
     do {                                                                \
-        if (device_type##_index [typedesc->player] == -1) {             \
+        if (device_type [typedesc->player] == 0) {                      \
             snprintf(namebuf, sizeof(namebuf),                          \
                      "libmame_virtual_" #device_type "_%d",             \
                      typedesc->player);                                 \
-            item_device = input_device_add                              \
+            device_type [typedesc->player] = input_device_add           \
                 (g_state.machine, device_class, namebuf, NULL);         \
-            device_type##_index [typedesc->player] =                    \
-                input_device_get_index(g_state.machine, item_device);   \
         }                                                               \
-        item_device = input_device_get_by_index                         \
-            (g_state.machine,                                           \
-             device_type##_index [typedesc->player],                    \
-             device_class);                                             \
+        item_device = device_type [typedesc->player];                   \
         item_id = g_input_descriptors[typedesc->type].item_id;          \
-        input_code =                                                    \
-            INPUT_CODE(device_class,                                    \
-                       device_type##_index [typedesc->player],          \
-                       item_class, ITEM_MODIFIER_NONE, item_id);        \
+        input_code = INPUT_CODE(device_class,                           \
+                                input_device_get_index                  \
+                                (g_state.machine,                       \
+                                 device_type [typedesc->player]),       \
+                                item_class, ITEM_MODIFIER_NONE,         \
+                                item_id);                               \
     } while (0);
 
 
@@ -863,22 +860,20 @@ void osd_customize_input_type_list(input_type_desc *typelist)
             case libmame_input_type_left_joystick:
             case libmame_input_type_right_joystick:
             case libmame_input_type_Ui_button:
-                if ((keyboard_index == -1) || 
-                    (keyboard_item > ITEM_ID_Z)) {
+                if (!keyboard || (keyboard_item > ITEM_ID_Z)) {
                     snprintf(namebuf, sizeof(namebuf), 
                              "libmame_virtual_keyboard_%d", keyboard_count++);
-                    item_device = input_device_add
+                    keyboard = input_device_add
                         (g_state.machine, DEVICE_CLASS_KEYBOARD, 
                          namebuf, NULL);
-                    keyboard_index = input_device_get_index
-                        (g_state.machine, item_device);
                     keyboard_item = ITEM_ID_A;
                 }
-                item_device = input_device_get_by_index
-                    (g_state.machine, keyboard_index, DEVICE_CLASS_KEYBOARD);
+                item_device = keyboard;
                 item_id = keyboard_item;
                 keyboard_item++;
-                input_code = INPUT_CODE(DEVICE_CLASS_KEYBOARD, keyboard_index,
+                input_code = INPUT_CODE(DEVICE_CLASS_KEYBOARD,
+                                        input_device_get_index(g_state.machine,
+                                                               keyboard),
                                         ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE,
                                         item_id);
                 break;

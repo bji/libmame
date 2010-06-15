@@ -795,22 +795,6 @@ int input_device_get_index(running_machine *, input_device *device)
 
 
 /*-------------------------------------------------
-    input_device_get_by_index - gets an
-    input_device by index and device_class
--------------------------------------------------*/
-input_device *input_device_get_by_index(running_machine *machine, int index, input_device_class devclass)
-{
-	input_private *state = machine->input_data;
-	input_device_list *devlist = &state->device_list[devclass];
-
-	assert_always(mame_get_phase(machine) == MAME_PHASE_INIT, 
-                  "Can only call input_device_get_by_index at init time!");
-
-    return &(devlist->list[index]);
-}
-
-
-/*-------------------------------------------------
     input_device_item_add - add a new item to an
     input device
 -------------------------------------------------*/
