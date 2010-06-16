@@ -973,13 +973,13 @@ static WRITE_LINE_DEVICE_HANDLER( changed_write_line_device )
 
 time_t input_port_init(running_machine *machine, const input_port_token *tokens)
 {
-	input_port_private *portdata;
+	//input_port_private *portdata;
 	char errorbuf[1024];
 	time_t basetime;
 
 	/* allocate memory for our data structure */
 	machine->input_port_data = auto_alloc_clear(machine, input_port_private);
-	portdata = machine->input_port_data;
+	//portdata = machine->input_port_data;
 
 	/* add an exit callback and a frame callback */
 	add_exit_callback(machine, input_port_exit);
@@ -4713,11 +4713,14 @@ int input_machine_has_keyboard(running_machine *machine)
 		for (field = port->fieldlist; field != NULL; field = field->next)
 		{
 			if (field->type == IPT_KEYBOARD)
+			{
 				have_keyboard = TRUE;
 				break;
+			}
 		}
 	}
 #endif
+
 	return have_keyboard;
 }
 

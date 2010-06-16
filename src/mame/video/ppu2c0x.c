@@ -111,6 +111,7 @@ struct _ppu2c0x_state
 	int                         scan_scale;			/* scan scale */
 	int                         scanlines_per_frame;	/* number of scanlines per frame */
 	rgb_t                       palette[64*4];		/* palette for this chip */
+	int                         security_value;		/* 2C05 protection */
 };
 
 /***************************************************************************
@@ -138,8 +139,9 @@ INLINE ppu2c0x_state *get_token( running_device *device )
 {
 	assert(device != NULL);
 	assert((device->type == PPU_2C02) || (device->type == PPU_2C03B)
-		 || (device->type == PPU_2C04) || (device->type == PPU_2C05)
-		 || (device->type == PPU_2C07));
+		 || (device->type == PPU_2C04) || (device->type == PPU_2C05_01)
+		 || (device->type == PPU_2C05_02) || (device->type == PPU_2C05_03)
+		 || (device->type == PPU_2C05_04) || (device->type == PPU_2C07));
 	return (ppu2c0x_state *) device->token;
 }
 
@@ -148,8 +150,9 @@ INLINE const ppu2c0x_interface *get_interface( running_device *device )
 {
 	assert(device != NULL);
 	assert((device->type == PPU_2C02) || (device->type == PPU_2C03B)
-		 || (device->type == PPU_2C04) || (device->type == PPU_2C05)
-		 || (device->type == PPU_2C07));
+		 || (device->type == PPU_2C04) || (device->type == PPU_2C05_01)
+		 || (device->type == PPU_2C05_02) || (device->type == PPU_2C05_03)
+		 || (device->type == PPU_2C05_04) || (device->type == PPU_2C07));
 	return (const ppu2c0x_interface *) device->baseconfig().static_config;
 }
 
@@ -200,7 +203,7 @@ void ppu2c0x_init_palette( running_machine *machine, int first_entry )
 	};
 
 	/* Loop through the emphasis modes (8 total) */
-	for (color_emphasis = 0; color_emphasis < 8; color_emphasis ++)
+	for (color_emphasis = 0; color_emphasis < 8; color_emphasis++)
 	{
 		/*
         double r_mod = 0.0;
@@ -280,6 +283,30 @@ void ppu2c0x_init_palette( running_machine *machine, int first_entry )
 				palette_set_color_rgb(machine, first_entry++, floor(R + .5), floor(G + .5), floor(B + .5));
 			}
 		}
+	}
+
+	/* color tables are modified at run-time, and are initialized on 'ppu2c0x_reset' */
+}
+
+void ppu2c0x_init_palette_rgb( running_machine *machine, int first_entry )
+{
+	int color_emphasis, color_num;
+
+	int R, G, B;
+
+	UINT8 *palette_data = memory_region(machine, "palette");
+
+	/* Loop through the emphasis modes (8 total) */
+	for (color_emphasis = 0; color_emphasis < 8; color_emphasis++)
+	{
+		for (color_num = 0; color_num < 64; color_num++)
+			{
+				R = ((color_emphasis & 1) ? 7 : palette_data[color_num * 3]);
+				G = ((color_emphasis & 2) ? 7 : palette_data[color_num * 3 + 1]);
+				B = ((color_emphasis & 4) ? 7 : palette_data[color_num * 3 + 2]);
+
+				palette_set_color_rgb(machine, first_entry++, pal3bit(R), pal3bit(G), pal3bit(B));
+			}
 	}
 
 	/* color tables are modified at run-time, and are initialized on 'ppu2c0x_reset' */
@@ -887,9 +914,11 @@ static WRITE8_HANDLER( ppu2c0x_palette_write )
 {
 	ppu2c0x_state *ppu2c0x = get_token(space->cpu);
 	int color_base = ppu2c0x->color_base;
-
 	int color_emphasis = (ppu2c0x->regs[PPU_CONTROL1] & PPU_CONTROL1_COLOR_EMPHASIS) * 2;
-	// it's a palette
+
+	// palette RAM is only 6 bits wide
+	data &= 0x3f;
+
 	// transparent pens are mirrored!
 	if (offset & 0x3)
 	{
@@ -921,7 +950,7 @@ static READ8_HANDLER( ppu2c0x_palette_read )
 			return (ppu2c0x->palette_ram[offset & 0x1f] & 0x30);
 
 		else
-			return (ppu2c0x->palette_ram[offset & 0x1f] & 0x3f);
+			return (ppu2c0x->palette_ram[offset & 0x1f]);
 	}
 }
 
@@ -946,8 +975,11 @@ READ8_DEVICE_HANDLER( ppu2c0x_r )
 	{
 		case PPU_STATUS:
 			// The top 3 bits of the status register are the only ones that report data. The
-			// remainder contain whatever was last in the PPU data latch.
-			ppu2c0x->data_latch = ppu2c0x->regs[PPU_STATUS] | (ppu2c0x->data_latch & 0x1f);
+			// remainder contain whatever was last in the PPU data latch, except on the RC2C05 (protection)
+			if (ppu2c0x->security_value)
+				ppu2c0x->data_latch = (ppu2c0x->regs[PPU_STATUS] & 0xc0) | ppu2c0x->security_value;
+			else
+				ppu2c0x->data_latch = ppu2c0x->regs[PPU_STATUS] | (ppu2c0x->data_latch & 0x1f);
 
 			// Reset hi/lo scroll toggle
 			ppu2c0x->toggle = 0;
@@ -1015,6 +1047,10 @@ WRITE8_DEVICE_HANDLER( ppu2c0x_w )
 	}
 #endif
 
+	/* on the RC2C05, PPU_CONTROL0 and PPU_CONTROL1 are swapped (protection) */
+	if ((ppu2c0x->security_value) && !(offset & 6))
+		offset ^= 1;
+
 	switch (offset & 7)
 	{
 		case PPU_CONTROL0:
@@ -1037,7 +1073,7 @@ WRITE8_DEVICE_HANDLER( ppu2c0x_w )
 			if ((data & PPU_CONTROL1_COLOR_EMPHASIS) != (ppu2c0x->regs[PPU_CONTROL1] & PPU_CONTROL1_COLOR_EMPHASIS))
 			{
 				int i;
-				for (i = 0; i <= 0x1f; i ++)
+				for (i = 0; i <= 0x1f; i++)
 				{
 					UINT8 oldColor = ppu2c0x->palette_ram[i];
 
@@ -1241,6 +1277,22 @@ static DEVICE_START( ppu2c0x )
 	memset(ppu2c0x, 0, sizeof(*ppu2c0x));
 	ppu2c0x->scanlines_per_frame = (int) device->get_config_int(PPU2C0XINFO_INT_SCANLINES_PER_FRAME);
 
+	/* usually, no security value... */
+	ppu2c0x->security_value = 0;
+
+	/* ...except for VS. games which specific PPU types */
+	if (device->type == PPU_2C05_01)
+		ppu2c0x->security_value = 0x1b;	// game (jajamaru) doesn't seem to ever actually check it
+
+	if (device->type == PPU_2C05_02)
+		ppu2c0x->security_value = 0x3d;
+
+	if (device->type == PPU_2C05_03)
+		ppu2c0x->security_value = 0x1c;
+
+	if (device->type == PPU_2C05_04)
+		ppu2c0x->security_value = 0x1b;
+
 	/* initialize the scanline handling portion */
 	ppu2c0x->scanline_timer = timer_alloc(device->machine, scanline_callback, (void *) device);
 	timer_adjust_oneshot(ppu2c0x->scanline_timer, video_screen_get_time_until_pos(device->machine->primary_screen, 1, 0), 0);
@@ -1395,7 +1447,7 @@ DEVICE_GET_INFO(ppu2c04)
 	}
 }
 
-DEVICE_GET_INFO(ppu2c05)
+DEVICE_GET_INFO(ppu2c05_01)
 {
 	switch (state)
 	{
@@ -1403,6 +1455,21 @@ DEVICE_GET_INFO(ppu2c05)
 		case PPU2C0XINFO_INT_SCANLINES_PER_FRAME:		info->i = PPU_NTSC_SCANLINES_PER_FRAME;		break;
 		default:										DEVICE_GET_INFO_CALL(ppu2c02);				break;
 	}
+}
+
+DEVICE_GET_INFO(ppu2c05_02)
+{
+	DEVICE_GET_INFO_CALL(ppu2c05_01);
+}
+
+DEVICE_GET_INFO(ppu2c05_03)
+{
+	DEVICE_GET_INFO_CALL(ppu2c05_01);
+}
+
+DEVICE_GET_INFO(ppu2c05_04)
+{
+	DEVICE_GET_INFO_CALL(ppu2c05_01);
 }
 
 DEVICE_GET_INFO(ppu2c07)
