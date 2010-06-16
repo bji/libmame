@@ -205,6 +205,7 @@ static libmame_input_descriptor g_input_descriptors[] =
 	BUTTON_INPUT(Other, Volume_Down), /* IPT_VOLUME_DOWN */
 	INVALID_INPUT, /* IPT_START */
 	INVALID_INPUT, /* IPT_SELECT */
+    INVALID_INPUT, /* IPT_KEYPAD */
 	INVALID_INPUT, /* IPT_KEYBOARD */
     /* IPT_JOYSTICK_UP */
 	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up),
