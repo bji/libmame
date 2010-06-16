@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 
 	// read the file contents and NULL-terminate
 	int unused = fread(buffer, 1, size, f);
-        (void) unused;
+    (void) unused;
 	fclose(f);
 	buffer[size] = 0;
 

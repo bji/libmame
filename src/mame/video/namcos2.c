@@ -130,7 +130,7 @@ DrawRozHelper(
 {
 	tilemap_set_palette_offset( tmap, rozInfo->color );
 
-    if( bitmap->bpp == 16 )
+	if( bitmap->bpp == 16 )
 	{
 		/* On many processors, the simple approach of an outer loop over the
             rows of the destination bitmap with an inner loop over the columns

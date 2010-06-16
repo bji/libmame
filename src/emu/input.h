@@ -596,7 +596,7 @@ int input_device_set_joystick_map(running_machine *machine, int devindex, const 
 
 /* ----- OSD configuration and access ----- */
 
-/* add a new input device.  */
+/* add a new input device */
 input_device *input_device_add(running_machine *machine, input_device_class devclass, const char *name, void *internal);
 
 /* gets the index of an input_device.  Combined with the input_device_class, 
