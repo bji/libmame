@@ -1907,7 +1907,6 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/itgambl3.o \
 	$(DRIVERS)/itgamble.o \
 	$(DRIVERS)/jackpool.o \
-	$(DRIVERS)/janshi.o \
 	$(DRIVERS)/jokrwild.o \
 	$(DRIVERS)/jongkyo.o \
 	$(DRIVERS)/kingpin.o \
@@ -1932,7 +1931,6 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/miniboy7.o \
 	$(DRIVERS)/mirage.o \
 	$(DRIVERS)/mirax.o \
-	$(DRIVERS)/mirderby.o \
 	$(DRIVERS)/mole.o \
 	$(DRIVERS)/mosaic.o $(VIDEO)/mosaic.o \
 	$(DRIVERS)/mrjong.o $(VIDEO)/mrjong.o \
@@ -2105,6 +2103,8 @@ $(DRIVERS)/highvdeo.o:	$(LAYOUT)/fashion.lh
 $(DRIVERS)/igspoker.o:	$(LAYOUT)/igspoker.lh
 
 $(DRIVERS)/lazercmd.o:	$(LAYOUT)/lazercmd.lh
+
+$(DRIVERS)/luckgrln.o:	$(LAYOUT)/luckgrln.lh
 
 $(DRIVERS)/lucky74.o:	$(LAYOUT)/lucky74.lh
 

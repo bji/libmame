@@ -197,11 +197,11 @@ static void convert_screen_info(const machine_config *machineconfig,
 {
     /* We assume that all screens are the same; and in any case, only report
        on the first screen, which is assumed to be the primary screen */
-    const device_config *devconfig = video_screen_first(machineconfig);
+    const device_config *devconfig = screen_first(*machineconfig);
     if (devconfig != NULL) {
-        const screen_config *screenconfig =
-            (const screen_config *) devconfig->inline_config;
-        switch (screenconfig->type) {
+        const screen_device_config *screenconfig =
+            (const screen_device_config *) devconfig;
+        switch (screenconfig->screen_type()) {
         case SCREEN_TYPE_RASTER:
             gameinfo->screen_type = LibMame_ScreenType_Raster;
             break;
@@ -211,17 +211,21 @@ static void convert_screen_info(const machine_config *machineconfig,
         case SCREEN_TYPE_VECTOR:
             gameinfo->screen_type = LibMame_ScreenType_Vector;
             break;
+        case SCREEN_TYPE_INVALID:
+            // MAME doesn't actually use this; not sure why they bother to
+            // define it, it only creates confusion and difficulty
+            gameinfo->screen_type = LibMame_ScreenType_Raster;
+            break;
         }
         if (gameinfo->screen_type != LibMame_ScreenType_Vector) {
+            const rectangle &visarea = screenconfig->visible_area();
             gameinfo->screen_resolution.width = 
-                ((screenconfig->visarea.max_x - 
-                  screenconfig->visarea.min_x) + 1);
+                ((visarea.max_x - visarea.min_x) + 1);
             gameinfo->screen_resolution.height = 
-                ((screenconfig->visarea.max_y - 
-                  screenconfig->visarea.min_y) + 1);
+                ((visarea.max_y - visarea.min_y) + 1);
         }
         gameinfo->screen_refresh_rate = 
-            ATTOSECONDS_TO_HZ(screenconfig->refresh);
+            ATTOSECONDS_TO_HZ(screenconfig->refresh());
     }
 }
 
@@ -229,7 +233,7 @@ static void convert_screen_info(const machine_config *machineconfig,
 static void convert_sound_channels(const machine_config *machineconfig,
                                    GameInfo *gameinfo)
 {
-    gameinfo->sound_channel_count = sound_first(machineconfig) ?
+    gameinfo->sound_channel_count = speaker_output_first(machineconfig) ?
         speaker_output_count(machineconfig) : 0;
 }
 
@@ -239,16 +243,17 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
 {
     const char **destsample = gameinfo->sound_samples;
 
-	const device_config *devconfig;
+	const device_config_sound_interface *soundi;
 
-	for (devconfig = sound_first(machineconfig); devconfig; 
-         devconfig = sound_next(devconfig)) {
-		if (sound_get_type(devconfig) != SOUND_SAMPLES) {
+    for (bool b = machineconfig->devicelist.first(/* returns */ soundi); b;
+         b = soundi->next(/* returns */ soundi)) {
+        if (soundi->devconfig().type() != SOUND_SAMPLES) {
             continue;
         }
 
         const char * const *samplenames = 
-            ((const samples_interface *) devconfig->static_config)->samplenames;
+            ((const samples_interface *) soundi->devconfig().static_config())->
+            samplenames;
 
         if (!samplenames) {
             continue;
@@ -364,8 +369,10 @@ static void convert_chips(const machine_config *machineconfig,
         gameinfo->chip_count++;
     }
 
-	for (devconfig = sound_first(machineconfig); devconfig; 
-         devconfig = sound_next(devconfig)) {
+	const device_config_sound_interface *soundi = NULL;
+	for (bool b = machineconfig->devicelist.first(/* returns */ soundi); b;
+         b = soundi->next(/* returns */ soundi))
+	{
         gameinfo->chip_count++;
     }
 
@@ -383,16 +390,18 @@ static void convert_chips(const machine_config *machineconfig,
         descriptor->is_sound = false;
         descriptor->tag = copy_string(devconfig->tag());
         descriptor->name = copy_string(devconfig->name());
-        descriptor->clock_hz = devconfig->clock;
+        descriptor->clock_hz = devconfig->clock();
         descriptor++;
     }        
     
-	for (devconfig = sound_first(machineconfig); devconfig; 
-         devconfig = sound_next(devconfig)) {
+	for (bool b = machineconfig->devicelist.first(/* returns */ soundi); b;
+         b = soundi->next(/* returns */ soundi))
+	{
+        devconfig = &(soundi->devconfig());
         descriptor->is_sound = true;
         descriptor->tag = copy_string(devconfig->tag());
         descriptor->name = copy_string(devconfig->name());
-        descriptor->clock_hz = devconfig->clock;
+        descriptor->clock_hz = devconfig->clock();
         descriptor++;
     }        
 }
@@ -404,7 +413,7 @@ static void convert_settings(const ioport_list *ioportlist,
 	const input_port_config *port;
 	const input_field_config *field;
     
-	for (port = ioportlist->first(); port; port = port->next) {
+	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
             if ((field->type != IPT_CONFIG) &&
                 (field->type != IPT_DIPSWITCH) &&
@@ -425,7 +434,7 @@ static void convert_settings(const ioport_list *ioportlist,
 
     LibMame_Setting *desc = gameinfo->settings;
 
-	for (port = ioportlist->first(); port; port = port->next) {
+	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
             if (field->type == IPT_CONFIG) {
                 desc->type = LibMame_SettingType_Configuration;
@@ -483,7 +492,7 @@ static void convert_controllers(const ioport_list *ioportlist,
 	const input_port_config *port;
 	const input_field_config *field;
 
-	for (port = ioportlist->first(); port; port = port->next) {
+	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
             if (field->flags & FIELD_FLAG_UNUSED) {
                 continue;

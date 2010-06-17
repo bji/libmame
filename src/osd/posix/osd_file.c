@@ -327,3 +327,29 @@ int osd_uchar_from_osdchar(UINT32 /* unicode_char */ *uchar,
 
     return 1;
 }
+
+
+file_error osd_get_full_path(char **dst, const char *path)
+{
+	char path_buffer[4096];
+
+	if (!getcwd(path_buffer, sizeof(path_buffer)))
+	{
+		return FILERR_FAILURE;
+	}
+	else
+	{
+		if (path[0] == '/')
+		{
+            *dst = (char *) osd_malloc(strlen(path) + 1);
+			strcpy(*dst, path);
+		}
+		else
+		{
+            *dst = (char *) osd_malloc(strlen(path_buffer) + strlen(path) + 2);
+			sprintf(*dst, "%s/%s", path_buffer, path);
+		}
+	}
+
+	return FILERR_NONE;
+}

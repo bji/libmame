@@ -30,6 +30,36 @@ struct _osd_directory
     int base_len;
 };
 
+
+static void stat_into(const char *path, osd_directory_entry &entry)
+{
+    /* We do not rely on Linux' non-POSIX d_type parameter */
+    struct stat statbuf;
+    if (stat(path, /* returns */ &statbuf))
+    {
+        /* No really reasonable way to proceed */
+        entry.type = ENTTYPE_NONE;
+        entry.size = 0;
+    }
+    else
+    {
+        if (S_ISREG(statbuf.st_mode))
+        {
+            entry.type = ENTTYPE_FILE;
+        }
+        else if (S_ISDIR(statbuf.st_mode))
+        {
+            entry.type = ENTTYPE_DIR;
+        }
+        else
+        {
+            entry.type = ENTTYPE_OTHER;
+        }
+        entry.size = statbuf.st_size;
+    }
+}
+
+
 osd_directory *osd_opendir(const char *dirname)
 {
     char posix_dirname[4096];
@@ -100,31 +130,8 @@ const osd_directory_entry *osd_readdir(osd_directory *dir)
     {
         return NULL;
     }
-    
-    /* We do not rely on Linux' non-POSIX d_type parameter */
-    struct stat statbuf;
-    if (stat(dir->current_entry_path, /* returns */ &statbuf))
-    {
-        /* No really reasonable way to proceed */
-        dir->current_entry.type = ENTTYPE_NONE;
-        dir->current_entry.size = 0;
-    }
-    else
-    {
-        if (S_ISREG(statbuf.st_mode))
-        {
-            dir->current_entry.type = ENTTYPE_FILE;
-        }
-        else if (S_ISDIR(statbuf.st_mode))
-        {
-            dir->current_entry.type = ENTTYPE_DIR;
-        }
-        else
-        {
-            dir->current_entry.type = ENTTYPE_OTHER;
-        }
-        dir->current_entry.size = statbuf.st_size;
-    }
+
+    stat_into(dir->current_entry_path, dir->current_entry);
 
     return &(dir->current_entry);
 }
@@ -140,4 +147,20 @@ void osd_closedir(osd_directory *dir)
 int osd_is_absolute_path(const char *path)
 {
     return !strncmp(path, PATH_SEPARATOR, sizeof(PATH_SEPARATOR) - 1);
+}
+
+
+osd_directory_entry *osd_stat(const char *path)
+{
+    osd_directory_entry *entry = 
+        (osd_directory_entry *) osd_malloc(sizeof(osd_directory_entry));
+
+    if (entry == NULL)
+    {
+        return NULL;
+    }
+
+    stat_into(path, *entry);
+
+    return entry;
 }

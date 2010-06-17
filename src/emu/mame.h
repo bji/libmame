@@ -178,6 +178,8 @@ public:
 	region_info(running_machine *machine, const char *_name, UINT32 _length, UINT32 _flags);
 	~region_info();
 
+	region_info *next() const { return m_next; }
+
 	operator void *() const { return (this != NULL) ? base.v : NULL; }
 	operator INT8 *() const { return (this != NULL) ? base.i8 : NULL; }
 	operator UINT8 *() const { return (this != NULL) ? base.u8 : NULL; }
@@ -193,7 +195,7 @@ public:
 	endianness_t endianness() const { return ((flags & ROMREGION_ENDIANMASK) == ROMREGION_LE) ? ENDIANNESS_LITTLE : ENDIANNESS_BIG; }
 	UINT8 width() const { return 1 << ((flags & ROMREGION_WIDTHMASK) >> 8); }
 
-	region_info *			next;
+	region_info *			m_next;
 	astring					name;
 	generic_ptr				base;
 	UINT32					length;
@@ -230,20 +232,24 @@ public:
 	running_machine(const game_driver *driver);
 	~running_machine();
 
-	inline running_device *device(const char *tag);
+	inline device_t *device(const char *tag);
+	template<class T> inline T *device(const char *tag) { return downcast<T *>(device(tag)); }
 	inline const input_port_config *port(const char *tag);
 	inline const region_info *region(const char *tag);
 
-	resource_pool			respool;			/* pool of resources for this machine */
-	region_list				regionlist;			/* list of memory regions */
-	device_list				devicelist;			/* list of running devices */
+	const char *describe_context();
+
+	resource_pool			respool;			// pool of resources for this machine
+	region_list				regionlist;			// list of memory regions
+	device_list				devicelist;			// list of running devices
+	device_scheduler		scheduler;			// scheduler object
 
 	/* configuration data */
 	const machine_config *	config;				/* points to the constructed machine_config */
 	ioport_list				portlist;			/* points to a list of input port configurations */
 
 	/* CPU information */
-	running_device *		firstcpu;			/* first CPU (allows for quick iteration via typenext) */
+	device_t *				firstcpu;			/* first CPU (allows for quick iteration via typenext) */
 
 	/* game-related information */
 	const game_driver *		gamedrv;			/* points to the definition of the game machine */
@@ -251,7 +257,7 @@ public:
 
 	/* video-related information */
 	gfx_element *			gfx[MAX_GFX_ELEMENTS];/* array of pointers to graphic sets (chars, sprites) */
-	running_device *		primary_screen;		/* the primary screen device, or NULL if screenless */
+	screen_device *	primary_screen;		/* the primary screen device, or NULL if screenless */
 	palette_t *				palette;			/* global palette object */
 
 	/* palette-related information */
@@ -266,12 +272,14 @@ public:
 	/* debugger-related information */
 	UINT32					debug_flags;		/* the current debug flags */
 
+	/* UI-related */
+	bool					ui_active;			/* ui active or not (useful for games / systems with keyboard inputs) */
+
 	/* generic pointers */
 	generic_pointers		generic;			/* generic pointers */
 
 	/* internal core information */
 	mame_private *			mame_data;			/* internal data from mame.c */
-	cpuexec_private *		cpuexec_data;		/* internal data from cpuexec.c */
 	timer_private *			timer_data;			/* internal data from timer.c */
 	state_private *			state_data;			/* internal data from state.c */
 	memory_private *		memory_data;		/* internal data from memory.c */
@@ -296,6 +304,9 @@ public:
 
 	/* driver-specific information */
 	void *					driver_data;		/* drivers can hang data off of here instead of using globals */
+
+private:
+	astring						m_context;				// context string
 };
 
 
@@ -485,7 +496,7 @@ void mame_get_current_datetime(running_machine *machine, mame_system_time *systi
     INLINE FUNCTIONS
 ***************************************************************************/
 
-inline running_device *running_machine::device(const char *tag)
+inline device_t *running_machine::device(const char *tag)
 {
 	return devicelist.find(tag);
 }

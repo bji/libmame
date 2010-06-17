@@ -87,7 +87,7 @@ void osd_break_into_debugger(const char *message)
 }
 
 
-void osd_wait_for_debugger(running_device *, int)
+void osd_wait_for_debugger(device_t *, int)
 {
     /**
      * Not supported in POSIX
