@@ -298,6 +298,12 @@ typedef enum
 typedef enum
 {
     /**
+     * This is a setting that has an effect each time it is activated.  This
+     * is the equivalent to a special button that can be pressed to have an
+     * effect on the game.
+     **/
+    LibMame_SettingType_Activator,
+    /**
      * This is a setting that is a MAME-specific, nonstandard configuration
      * option for a game.  Changes to these settings typically only take
      * effect when a game is re-loaded in MAME.
@@ -708,8 +714,18 @@ typedef struct LibMame_Setting
     const char *name;
 
     /**
+     * This is the tag of the setting, which is only relevent for identifying
+     * the setting in calls to LibMame_RunningGame_ActivateActivator,
+     * LibMame_RunningGame_ChangeConfigurationValue,
+     * LibMame_RunningGame_ChangeDipswitchValue, or
+     * LibMame_RunningGame_ChangeAdjusterValue
+     **/
+    const char *tag;
+
+    /**
      * This is the mask of the setting, which is only relevent for identifying
-     * the setting in calls to LibMame_RunningGame_ChangeConfigurationValue,
+     * the setting in calls to LibMame_RunningGame_ActivateActivator,
+     * LibMame_RunningGame_ChangeConfigurationValue,
      * LibMame_RunningGame_ChangeDipswitchValue, or
      * LibMame_RunningGame_ChangeAdjusterValue
      **/
@@ -2060,6 +2076,22 @@ void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
 
 
 /**
+ * Activates the function of an activator setting.  This is the equivalent of
+ * pushing a special button on the hardware that effects some change (such as
+ * the 'advance' button on some hardware).  This function may only be called
+ * from within the MakeRunningGameCalls or Paused callback, and not from any
+ * other context of execution.
+ *
+ * @param game is the game that is to be paused; this game is known because it
+ *        was passed into the StartingUp() callback function.
+ * @param tag is the tag of the activator setting
+ * @param mask is the mask of the activator setting
+ **/
+void LibMame_RunningGame_ActivateActivator(LibMame_RunningGame *game,
+                                           const char *tag, uint32_t mask);
+
+
+/**
  * Sets a new value for the setting corresponding to a
  * LibMame_Setting of type LibMame_SettingType_Configuration.  The
  * setting is identified by the name and mask of the
@@ -2069,13 +2101,13 @@ void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
  *
  * @param game is the game that is to be paused; this game is known because it
  *        was passed into the StartingUp() callback function.
- * @param name is the name of the configuration setting
+ * @param tag is the tag of the configuration setting
  * @param mask is the mask of the configuration setting
  * @param value is the value, which must be one of the value_names of the
  *        LibMame_Setting for this configuration setting
  **/
 void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
-                                                  const char *name, 
+                                                  const char *tag, 
                                                   uint32_t mask,
                                                   const char *value);
 
@@ -2089,13 +2121,13 @@ void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
  *
  * @param game is the game that is to be paused; this game is known because it
  *        was passed into the StartingUp() callback function.
- * @param name is the name of the dipswitch setting
+ * @param tag is the tag of the dipswitch setting
  * @param mask is the mask of the dipswitch setting
  * @param value is the value, which must be one of the value_names of the
  *        LibMame_Setting for this dipswitch setting
  **/
 void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
-                                              const char *name, uint32_t mask,
+                                              const char *tag, uint32_t mask,
                                               const char *value);
 
 
@@ -2108,12 +2140,12 @@ void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
  *
  * @param game is the game that is to be paused; this game is known because it
  *        was passed into the StartingUp() callback function.
- * @param name is the name of the adjuster setting
+ * @param tag is the tag of the adjuster setting
  * @param mask is the mask of the adjuster setting
  * @param value is the value
  **/
 void LibMame_RunningGame_ChangeAdjusterValue(LibMame_RunningGame *game,
-                                             const char *name, uint32_t mask,
+                                             const char *tag, uint32_t mask,
                                              int value);
 
 

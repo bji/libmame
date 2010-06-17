@@ -415,7 +415,8 @@ static void convert_settings(const ioport_list *ioportlist,
     
 	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
-            if ((field->type != IPT_CONFIG) &&
+            if (!((field->type == IPT_OTHER) && field->name) &&
+                (field->type != IPT_CONFIG) &&
                 (field->type != IPT_DIPSWITCH) &&
                 (field->type != IPT_ADJUSTER)) {
                 continue;
@@ -436,7 +437,15 @@ static void convert_settings(const ioport_list *ioportlist,
 
 	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
-            if (field->type == IPT_CONFIG) {
+            if ((field->type == IPT_OTHER) && field->name) {
+                desc->type = LibMame_SettingType_Activator;
+                desc->name = field->name;
+                desc->tag = port->tag;
+                desc->mask = field->mask;
+                desc++;
+                continue;
+            }
+            else if (field->type == IPT_CONFIG) {
                 desc->type = LibMame_SettingType_Configuration;
             }
             else if (field->type == IPT_DIPSWITCH) {
@@ -445,6 +454,8 @@ static void convert_settings(const ioport_list *ioportlist,
             else if (field->type == IPT_ADJUSTER) {
                 desc->type = LibMame_SettingType_Adjuster;
                 desc->name = input_field_name(field);
+                desc->tag = port->tag;
+                desc->mask = field->mask;
                 desc->default_value = field->defvalue;
                 desc++;
                 continue;
@@ -456,6 +467,7 @@ static void convert_settings(const ioport_list *ioportlist,
             /* IPT_CONFIG and IPT_DIPSWITCH are handled here */
 
             desc->name = input_field_name(field);
+            desc->tag = port->tag;
             desc->mask = field->mask;
             const input_setting_config *setting;
             for (setting = field->settinglist; setting; 
@@ -464,6 +476,7 @@ static void convert_settings(const ioport_list *ioportlist,
             }
 
             if (desc->value_count == 0) {
+                desc++;
                 continue;
             }
 
@@ -505,6 +518,11 @@ static void convert_controllers(const ioport_list *ioportlist,
             }
 			if (gameinfo->max_simultaneous_players < field->player) {
 				gameinfo->max_simultaneous_players = field->player;
+            }
+            // Only process player 1 controls; it is assumed that all controls
+            // are identical between all players
+            if (field->player != 0) {
+                continue;
             }
             switch (field->type) {
             case IPT_JOYSTICK_LEFT:

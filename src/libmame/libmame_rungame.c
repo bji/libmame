@@ -193,11 +193,19 @@ static libmame_input_descriptor g_input_descriptors[] =
 	BUTTON_INPUT(Other, Coin6), /* IPT_COIN6 */
 	BUTTON_INPUT(Other, Coin7), /* IPT_COIN7 */
 	BUTTON_INPUT(Other, Coin8), /* IPT_COIN8 */
+    INVALID_INPUT, /* IPT_COIN9 */
+    INVALID_INPUT, /* IPT_COIN10 */
+    INVALID_INPUT, /* IPT_COIN11 */
+    INVALID_INPUT, /* IPT_COIN12 */
 	BUTTON_INPUT(Other, Bill1), /* IPT_BILL1 */
 	BUTTON_INPUT(Other, Service1), /* IPT_SERVICE1 */
 	BUTTON_INPUT(Other, Service2), /* IPT_SERVICE2 */
 	BUTTON_INPUT(Other, Service3), /* IPT_SERVICE3 */
 	BUTTON_INPUT(Other, Service4), /* IPT_SERVICE4 */
+    INVALID_INPUT, /* IPT_TILT1 */
+    INVALID_INPUT, /* IPT_TILT2 */
+    INVALID_INPUT, /* IPT_TILT3 */
+    INVALID_INPUT, /* IPT_TILT4 */
 	BUTTON_INPUT(Other, Service), /* IPT_SERVICE */
 	BUTTON_INPUT(Other, Tilt), /* IPT_TILT */
 	BUTTON_INPUT(Other, Interlock), /* IPT_INTERLOCK */
@@ -639,16 +647,18 @@ static void output_callback(void *param, const char *format, va_list args)
 
 
 static void set_configuration_value(LibMame_RunningGame *game,
-                                    const char *name, uint32_t mask,
+                                    const char *tag, uint32_t mask,
                                     int value)
 {
     (void) game;
 
     const input_field_config *config = input_field_by_tag_and_mask
-        (g_state.machine->portlist, name, mask);
+        (g_state.machine->portlist, tag, mask);
 
     if (config != NULL) {
         input_field_user_settings settings;
+        const input_seq default_seq = SEQ_DEF_1(SEQCODE_DEFAULT);
+        settings.seq[0] = default_seq;
         settings.value = value;
         input_field_set_user_settings(config, &settings);
     }
@@ -657,7 +667,7 @@ static void set_configuration_value(LibMame_RunningGame *game,
 
 static void look_up_and_set_configuration_value(LibMame_RunningGame *game,
                                                 int gamenum,
-                                                const char *name,
+                                                const char *tag,
                                                 uint32_t mask,
                                                 const char *value)
 {
@@ -665,11 +675,11 @@ static void look_up_and_set_configuration_value(LibMame_RunningGame *game,
     /* Find the descriptor */
     for (int i = 0; i < count; i++) {
         LibMame_Setting desc = LibMame_Get_Game_Setting(gamenum, i);
-        if ((desc.mask == mask) && !strcmp(desc.name, name)) {
+        if ((desc.mask == mask) && !strcmp(desc.tag, tag)) {
             /* Found the descriptor, now find the value */
             for (int j = 0; j < desc.value_count; j++) {
                 if (!strcmp(desc.value_names[j], value)) {
-                    set_configuration_value(game, name, mask, j);
+                    set_configuration_value(game, tag, mask, j);
                     break;
                 }
             }
@@ -1095,28 +1105,35 @@ void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
 }
 
 
+void LibMame_RunningGame_ActivateActivator(LibMame_RunningGame *game,
+                                           const char *tag, uint32_t mask)
+{
+    set_configuration_value(game, tag, mask, 1);
+}
+
+
 void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
-                                                  const char *name, 
+                                                  const char *tag, 
                                                   uint32_t mask,
                                                   const char *value)
 {
     look_up_and_set_configuration_value
-        (game, g_state.gamenum, name, mask, value);
+        (game, g_state.gamenum, tag, mask, value);
 }
 
 
 void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
-                                              const char *name, uint32_t mask,
+                                              const char *tag, uint32_t mask,
                                               const char *value)
 {
     look_up_and_set_configuration_value
-        (game, g_state.gamenum, name, mask, value);
+        (game, g_state.gamenum, tag, mask, value);
 }
 
 
 void LibMame_RunningGame_ChangeAdjusterValue(LibMame_RunningGame *game,
-                                             const char *name, uint32_t mask,
+                                             const char *tag, uint32_t mask,
                                              int value)
 {
-    set_configuration_value(game, name, mask, value);
+    set_configuration_value(game, tag, mask, value);
 }
