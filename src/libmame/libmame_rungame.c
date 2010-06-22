@@ -109,6 +109,11 @@ typedef struct LibMame_RunGame_State
     LibMame_AllControllers controllers;
 
     /**
+     * Have the special inputs been configured yet?
+     */
+    bool special_inputs_configured;
+
+    /**
      * Has a LibMame_RunningGame_SchedulePause() call been made?
      **/
     bool waiting_for_pause;
@@ -626,7 +631,8 @@ static void startup_callback(running_machine *machine, int mame_phase, int pct)
      * This is the earliest opportunity we have to do this, which must be done
      * after osd_customize_input_type_list.
      **/
-    if (true) {
+    if (!g_state.special_inputs_configured) {
+        g_state.special_inputs_configured = true;
         input_device *keyboard = 0;
         input_item_id keyboard_item = ITEM_ID_A;
         int keyboard_count = 0;
@@ -1085,6 +1091,9 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
         mame_options = get_mame_options
             (options, LibMame_Get_Game_Short_Name(gamenum));
     }
+
+    /* Haven't configured special inputs yet */
+    g_state.special_inputs_configured = false;
 
     /* Not waiting for a pause */
     g_state.waiting_for_pause = false;
