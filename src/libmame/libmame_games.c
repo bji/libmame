@@ -44,8 +44,8 @@ typedef struct GameInfo
     const char **sound_samples;
     int chip_count;
     LibMame_Chip *chips;
-    int setting_count;
-    LibMame_Setting *settings;
+    int dipswitch_count;
+    LibMame_Dipswitch *dipswitches;
     int max_simultaneous_players;
     LibMame_AllControllers controllers;
     int biosset_count;
@@ -415,56 +415,26 @@ static void convert_settings(const ioport_list *ioportlist,
     
 	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
-            if (!((field->type == IPT_OTHER) && field->name) &&
-                (field->type != IPT_CONFIG) &&
-                (field->type != IPT_DIPSWITCH) &&
-                (field->type != IPT_ADJUSTER)) {
-                continue;
+            if (field->type == IPT_DIPSWITCH) {
+                gameinfo->dipswitch_count++;
             }
-            gameinfo->setting_count++;
         }
     }
 
-    if (gameinfo->setting_count == 0) {
+    if (gameinfo->dipswitch_count == 0) {
         return;
     }
 
-    gameinfo->settings = (LibMame_Setting *)
-        osd_calloc(sizeof(LibMame_Setting) * 
-                   gameinfo->setting_count);
+    gameinfo->dipswitches = (LibMame_Dipswitch *)
+        osd_calloc(sizeof(LibMame_Dipswitch) * gameinfo->dipswitch_count);
 
-    LibMame_Setting *desc = gameinfo->settings;
+    LibMame_Dipswitch *desc = gameinfo->dipswitches;
 
 	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
-            if ((field->type == IPT_OTHER) && field->name) {
-                desc->type = LibMame_SettingType_Activator;
-                desc->name = field->name;
-                desc->tag = port->tag;
-                desc->mask = field->mask;
-                desc++;
+            if (field->type != IPT_DIPSWITCH) {
                 continue;
             }
-            else if (field->type == IPT_CONFIG) {
-                desc->type = LibMame_SettingType_Configuration;
-            }
-            else if (field->type == IPT_DIPSWITCH) {
-                desc->type = LibMame_SettingType_Dipswitch;
-            }
-            else if (field->type == IPT_ADJUSTER) {
-                desc->type = LibMame_SettingType_Adjuster;
-                desc->name = input_field_name(field);
-                desc->tag = port->tag;
-                desc->mask = field->mask;
-                desc->default_value = field->defvalue;
-                desc++;
-                continue;
-            }
-            else {
-                continue;
-            }
-            
-            /* IPT_CONFIG and IPT_DIPSWITCH are handled here */
 
             desc->name = input_field_name(field);
             desc->tag = port->tag;
@@ -505,6 +475,8 @@ static void convert_controllers(const ioport_list *ioportlist,
 	const input_port_config *port;
 	const input_field_config *field;
 
+    int special_count = 0;
+
 	for (port = ioportlist->first(); port; port = port->next()) {
 		for (field = port->fieldlist; field; field = field->next) {
             if (field->flags & FIELD_FLAG_UNUSED) {
@@ -525,6 +497,15 @@ static void convert_controllers(const ioport_list *ioportlist,
                 continue;
             }
             switch (field->type) {
+            case IPT_OTHER:
+                if (field->name && 
+                    (special_count < LibMame_SpecialButtonTypeCount)) {
+                    gameinfo->controllers.shared.special_button_flags |=
+                        (1 << special_count);
+                    gameinfo->controllers.shared.
+                        special_button_names[special_count++] = field->name;
+                }
+                break;
             case IPT_JOYSTICK_LEFT:
             case IPT_JOYSTICK_RIGHT:
             case IPT_JOYSTICKLEFT_LEFT:
@@ -669,9 +650,9 @@ static void convert_controllers(const ioport_list *ioportlist,
                     field->name;                                        \
                 break
                 
-#define CASE_OTHER_BUTTON(iptname, enumvalue)                           \
+#define CASE_SHARED_BUTTON(iptname, enumvalue)                          \
             case iptname:                                               \
-                gameinfo->controllers.shared.other_button_flags |=      \
+                gameinfo->controllers.shared.shared_button_flags |=     \
                     (1 << enumvalue);                                   \
                 break
 
@@ -841,33 +822,35 @@ static void convert_controllers(const ioport_list *ioportlist,
             CASE_BUTTON(gambling_button_flags, IPT_SLOT_STOP_ALL,
                         LibMame_GamblingButtonType_Stop_All);
 
-            CASE_OTHER_BUTTON(IPT_COIN1, LibMame_OtherButtonType_Coin1);
-            CASE_OTHER_BUTTON(IPT_COIN2, LibMame_OtherButtonType_Coin2);
-            CASE_OTHER_BUTTON(IPT_COIN3, LibMame_OtherButtonType_Coin3);
-            CASE_OTHER_BUTTON(IPT_COIN4, LibMame_OtherButtonType_Coin4);
-            CASE_OTHER_BUTTON(IPT_COIN5, LibMame_OtherButtonType_Coin5);
-            CASE_OTHER_BUTTON(IPT_COIN6, LibMame_OtherButtonType_Coin6);
-            CASE_OTHER_BUTTON(IPT_COIN7, LibMame_OtherButtonType_Coin7);
-            CASE_OTHER_BUTTON(IPT_COIN8, LibMame_OtherButtonType_Coin8);
-            CASE_OTHER_BUTTON(IPT_BILL1, LibMame_OtherButtonType_Bill1);
-            CASE_OTHER_BUTTON(IPT_START1, LibMame_OtherButtonType_Start1);
-            CASE_OTHER_BUTTON(IPT_START2, LibMame_OtherButtonType_Start2);
-            CASE_OTHER_BUTTON(IPT_START3, LibMame_OtherButtonType_Start3);
-            CASE_OTHER_BUTTON(IPT_START4, LibMame_OtherButtonType_Start4);
-            CASE_OTHER_BUTTON(IPT_START5, LibMame_OtherButtonType_Start5);
-            CASE_OTHER_BUTTON(IPT_START6, LibMame_OtherButtonType_Start6);
-            CASE_OTHER_BUTTON(IPT_START7, LibMame_OtherButtonType_Start7);
-            CASE_OTHER_BUTTON(IPT_START8, LibMame_OtherButtonType_Start8);
-            CASE_OTHER_BUTTON(IPT_SERVICE1, LibMame_OtherButtonType_Service1);
-            CASE_OTHER_BUTTON(IPT_SERVICE2, LibMame_OtherButtonType_Service2);
-            CASE_OTHER_BUTTON(IPT_SERVICE3, LibMame_OtherButtonType_Service3);
-            CASE_OTHER_BUTTON(IPT_SERVICE4, LibMame_OtherButtonType_Service4);
-            CASE_OTHER_BUTTON(IPT_SERVICE, LibMame_OtherButtonType_Service);
-            CASE_OTHER_BUTTON(IPT_TILT, LibMame_OtherButtonType_Tilt);
-            CASE_OTHER_BUTTON(IPT_INTERLOCK, LibMame_OtherButtonType_Interlock);
-            CASE_OTHER_BUTTON(IPT_VOLUME_UP, LibMame_OtherButtonType_Volume_Up);
-            CASE_OTHER_BUTTON(IPT_VOLUME_DOWN,
-                              LibMame_OtherButtonType_Volume_Down);
+            CASE_SHARED_BUTTON(IPT_COIN1, LibMame_SharedButtonType_Coin1);
+            CASE_SHARED_BUTTON(IPT_COIN2, LibMame_SharedButtonType_Coin2);
+            CASE_SHARED_BUTTON(IPT_COIN3, LibMame_SharedButtonType_Coin3);
+            CASE_SHARED_BUTTON(IPT_COIN4, LibMame_SharedButtonType_Coin4);
+            CASE_SHARED_BUTTON(IPT_COIN5, LibMame_SharedButtonType_Coin5);
+            CASE_SHARED_BUTTON(IPT_COIN6, LibMame_SharedButtonType_Coin6);
+            CASE_SHARED_BUTTON(IPT_COIN7, LibMame_SharedButtonType_Coin7);
+            CASE_SHARED_BUTTON(IPT_COIN8, LibMame_SharedButtonType_Coin8);
+            CASE_SHARED_BUTTON(IPT_BILL1, LibMame_SharedButtonType_Bill1);
+            CASE_SHARED_BUTTON(IPT_START1, LibMame_SharedButtonType_Start1);
+            CASE_SHARED_BUTTON(IPT_START2, LibMame_SharedButtonType_Start2);
+            CASE_SHARED_BUTTON(IPT_START3, LibMame_SharedButtonType_Start3);
+            CASE_SHARED_BUTTON(IPT_START4, LibMame_SharedButtonType_Start4);
+            CASE_SHARED_BUTTON(IPT_START5, LibMame_SharedButtonType_Start5);
+            CASE_SHARED_BUTTON(IPT_START6, LibMame_SharedButtonType_Start6);
+            CASE_SHARED_BUTTON(IPT_START7, LibMame_SharedButtonType_Start7);
+            CASE_SHARED_BUTTON(IPT_START8, LibMame_SharedButtonType_Start8);
+            CASE_SHARED_BUTTON(IPT_SERVICE1, LibMame_SharedButtonType_Service1);
+            CASE_SHARED_BUTTON(IPT_SERVICE2, LibMame_SharedButtonType_Service2);
+            CASE_SHARED_BUTTON(IPT_SERVICE3, LibMame_SharedButtonType_Service3);
+            CASE_SHARED_BUTTON(IPT_SERVICE4, LibMame_SharedButtonType_Service4);
+            CASE_SHARED_BUTTON(IPT_SERVICE, LibMame_SharedButtonType_Service);
+            CASE_SHARED_BUTTON(IPT_TILT, LibMame_SharedButtonType_Tilt);
+            CASE_SHARED_BUTTON(IPT_INTERLOCK,
+                               LibMame_SharedButtonType_Interlock);
+            CASE_SHARED_BUTTON(IPT_VOLUME_UP,
+                               LibMame_SharedButtonType_Volume_Up);
+            CASE_SHARED_BUTTON(IPT_VOLUME_DOWN,
+                              LibMame_SharedButtonType_Volume_Down);
             }
         }
     }
@@ -1203,14 +1186,14 @@ void LibMame_Games_Deinitialize()
                 }
                 osd_free(gameinfo->chips);
             }
-            if (gameinfo->settings) {
-                for (int j = 0; j < gameinfo->setting_count; j++) {
-                    if (gameinfo->settings[j].value_names) {
+            if (gameinfo->dipswitches) {
+                for (int j = 0; j < gameinfo->dipswitch_count; j++) {
+                    if (gameinfo->dipswitches[j].value_names) {
                         osd_free((const char **) 
-                                 gameinfo->settings[j].value_names);
+                                 gameinfo->dipswitches[j].value_names);
                     }
                 }
-                osd_free(gameinfo->settings);
+                osd_free(gameinfo->dipswitches);
             }
             if (gameinfo->biossets) {
                 for (int j = 0; j < gameinfo->biosset_count; j++) {
@@ -1432,15 +1415,15 @@ LibMame_Chip LibMame_Get_Game_Chip(int gamenum, int chipnum)
 }
 
 
-int LibMame_Get_Game_Setting_Count(int gamenum)
+int LibMame_Get_Game_Dipswitch_Count(int gamenum)
 {
-    return get_gameinfo(gamenum)->setting_count;
+    return get_gameinfo(gamenum)->dipswitch_count;
 }
 
 
-LibMame_Setting LibMame_Get_Game_Setting(int gamenum, int settingnum)
+LibMame_Dipswitch LibMame_Get_Game_Dipswitch(int gamenum, int num)
 {
-    return get_gameinfo(gamenum)->settings[settingnum];
+    return get_gameinfo(gamenum)->dipswitches[num];
 }
 
 

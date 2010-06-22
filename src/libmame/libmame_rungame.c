@@ -40,7 +40,7 @@ typedef enum
     libmame_input_type_Mahjong_button,
     libmame_input_type_Hanafuda_button,
     libmame_input_type_Gambling_button,
-    libmame_input_type_Other_button,
+    libmame_input_type_Shared_button,
     libmame_input_type_left_joystick,
     libmame_input_type_right_joystick,
     libmame_input_type_analog_joystick_horizontal,
@@ -56,7 +56,7 @@ typedef enum
     libmame_input_type_pedal,
     libmame_input_type_pedal2,
     libmame_input_type_pedal3,
-    libmame_input_type_Ui_button
+    libmame_input_type_Ui_button,
 } libmame_input_type;
 
 
@@ -177,40 +177,40 @@ static libmame_input_descriptor g_input_descriptors[] =
 	INVALID_INPUT, /* IPT_VBLANK */
 	INVALID_INPUT, /* IPT_CONFIG */
 	INVALID_INPUT, /* IPT_CATEGORY */
-    BUTTON_INPUT(Other, Start1), /* IPT_START1 */
-	BUTTON_INPUT(Other, Start2), /* IPT_START2 */
-	BUTTON_INPUT(Other, Start3), /* IPT_START3 */
-	BUTTON_INPUT(Other, Start4), /* IPT_START4 */
-	BUTTON_INPUT(Other, Start5), /* IPT_START5 */
-	BUTTON_INPUT(Other, Start6), /* IPT_START6 */
-	BUTTON_INPUT(Other, Start7), /* IPT_START7 */
-	BUTTON_INPUT(Other, Start8), /* IPT_START8 */
-	BUTTON_INPUT(Other, Coin1), /* IPT_COIN1 */
-	BUTTON_INPUT(Other, Coin2), /* IPT_COIN2 */
-	BUTTON_INPUT(Other, Coin3), /* IPT_COIN3 */
-	BUTTON_INPUT(Other, Coin4), /* IPT_COIN4 */
-	BUTTON_INPUT(Other, Coin5), /* IPT_COIN5 */
-	BUTTON_INPUT(Other, Coin6), /* IPT_COIN6 */
-	BUTTON_INPUT(Other, Coin7), /* IPT_COIN7 */
-	BUTTON_INPUT(Other, Coin8), /* IPT_COIN8 */
+    BUTTON_INPUT(Shared, Start1), /* IPT_START1 */
+	BUTTON_INPUT(Shared, Start2), /* IPT_START2 */
+	BUTTON_INPUT(Shared, Start3), /* IPT_START3 */
+	BUTTON_INPUT(Shared, Start4), /* IPT_START4 */
+	BUTTON_INPUT(Shared, Start5), /* IPT_START5 */
+	BUTTON_INPUT(Shared, Start6), /* IPT_START6 */
+	BUTTON_INPUT(Shared, Start7), /* IPT_START7 */
+	BUTTON_INPUT(Shared, Start8), /* IPT_START8 */
+	BUTTON_INPUT(Shared, Coin1), /* IPT_COIN1 */
+	BUTTON_INPUT(Shared, Coin2), /* IPT_COIN2 */
+	BUTTON_INPUT(Shared, Coin3), /* IPT_COIN3 */
+	BUTTON_INPUT(Shared, Coin4), /* IPT_COIN4 */
+	BUTTON_INPUT(Shared, Coin5), /* IPT_COIN5 */
+	BUTTON_INPUT(Shared, Coin6), /* IPT_COIN6 */
+	BUTTON_INPUT(Shared, Coin7), /* IPT_COIN7 */
+	BUTTON_INPUT(Shared, Coin8), /* IPT_COIN8 */
     INVALID_INPUT, /* IPT_COIN9 */
     INVALID_INPUT, /* IPT_COIN10 */
     INVALID_INPUT, /* IPT_COIN11 */
     INVALID_INPUT, /* IPT_COIN12 */
-	BUTTON_INPUT(Other, Bill1), /* IPT_BILL1 */
-	BUTTON_INPUT(Other, Service1), /* IPT_SERVICE1 */
-	BUTTON_INPUT(Other, Service2), /* IPT_SERVICE2 */
-	BUTTON_INPUT(Other, Service3), /* IPT_SERVICE3 */
-	BUTTON_INPUT(Other, Service4), /* IPT_SERVICE4 */
+	BUTTON_INPUT(Shared, Bill1), /* IPT_BILL1 */
+	BUTTON_INPUT(Shared, Service1), /* IPT_SERVICE1 */
+	BUTTON_INPUT(Shared, Service2), /* IPT_SERVICE2 */
+	BUTTON_INPUT(Shared, Service3), /* IPT_SERVICE3 */
+	BUTTON_INPUT(Shared, Service4), /* IPT_SERVICE4 */
     INVALID_INPUT, /* IPT_TILT1 */
     INVALID_INPUT, /* IPT_TILT2 */
     INVALID_INPUT, /* IPT_TILT3 */
     INVALID_INPUT, /* IPT_TILT4 */
-	BUTTON_INPUT(Other, Service), /* IPT_SERVICE */
-	BUTTON_INPUT(Other, Tilt), /* IPT_TILT */
-	BUTTON_INPUT(Other, Interlock), /* IPT_INTERLOCK */
-	BUTTON_INPUT(Other, Volume_Up), /* IPT_VOLUME_UP */
-	BUTTON_INPUT(Other, Volume_Down), /* IPT_VOLUME_DOWN */
+	BUTTON_INPUT(Shared, Service), /* IPT_SERVICE */
+	BUTTON_INPUT(Shared, Tilt), /* IPT_TILT */
+	BUTTON_INPUT(Shared, Interlock), /* IPT_INTERLOCK */
+	BUTTON_INPUT(Shared, Volume_Up), /* IPT_VOLUME_UP */
+	BUTTON_INPUT(Shared, Volume_Down), /* IPT_VOLUME_DOWN */
 	INVALID_INPUT, /* IPT_START */
 	INVALID_INPUT, /* IPT_SELECT */
     INVALID_INPUT, /* IPT_KEYPAD */
@@ -430,8 +430,8 @@ static INT32 get_controller_state(void *, void *data)
         return (perplayer_state->hanafuda_buttons_state & (1 << input_number));
     case libmame_input_type_Gambling_button:
         return (perplayer_state->gambling_buttons_state & (1 << input_number));
-    case libmame_input_type_Other_button:
-        return (shared_state->other_buttons_state & (1 << input_number));
+    case libmame_input_type_Shared_button:
+        return (shared_state->shared_buttons_state & (1 << input_number));
     case libmame_input_type_left_joystick:
         return (perplayer_state->left_joystick_state & (1 << input_number));
     case libmame_input_type_right_joystick:
@@ -468,6 +468,24 @@ static INT32 get_controller_state(void *, void *data)
 
     /* Weird, this is not an input type that we know about */
     return 0;
+}
+
+
+/**
+ * This is the callback we hook up to the input device that MAME uses
+ * to be called back to get the state of a special input.  We also
+ * arrange that the data passed in includes enough information to identify
+ * what bit of state is being asked about; this one function handles all of
+ * the input for all special inputs.
+ **/
+static INT32 get_special_state(void *, void *data)
+{
+    int special_button_index = (long) data;
+
+    LibMame_SharedControlsState *shared_state =
+        &(g_state.controls_state.shared);
+
+    return shared_state->special_buttons_state & (1 << special_button_index);
 }
 
 
@@ -532,8 +550,8 @@ static bool controllers_have_input
     case libmame_input_type_Gambling_button:
         return (controllers->per_player.gambling_button_flags &
                 (1 << input_number));
-    case libmame_input_type_Other_button:
-        return (controllers->shared.other_button_flags & (1 << input_number));
+    case libmame_input_type_Shared_button:
+        return (controllers->shared.shared_button_flags & (1 << input_number));
     case libmame_input_type_left_joystick:
         switch (input_number) {
         case LibMame_JoystickDirection_Up:
@@ -603,6 +621,56 @@ static bool controllers_have_input
 
 static void startup_callback(running_machine *machine, int mame_phase, int pct)
 {
+    /**
+     * If the special input ports have not been configured yet, do so now.
+     * This is the earliest opportunity we have to do this, which must be done
+     * after osd_customize_input_type_list.
+     **/
+    if (true) {
+        input_device *keyboard = 0;
+        input_item_id keyboard_item = ITEM_ID_A;
+        int keyboard_count = 0;
+        int special_button_index = 0;
+
+        ioport_list &ioportlist = g_state.machine->portlist;
+
+        const input_port_config *port;
+        const input_field_config *field;
+
+        for (port = ioportlist.first(); port; port = port->next()) {
+            for (field = port->fieldlist; field; field = field->next) {
+                if ((field->type != IPT_OTHER) || !field->name) {
+                    continue;
+                }
+                if (!keyboard || (keyboard_item > ITEM_ID_Z)) {
+                    char namebuf[256];
+                    snprintf(namebuf, sizeof(namebuf), 
+                             "libmame_virtual_special_keyboard_%d", 
+                             keyboard_count++);
+                    keyboard = input_device_add
+                        (g_state.machine, DEVICE_CLASS_KEYBOARD, 
+                         namebuf, NULL);
+                    keyboard_item = ITEM_ID_A;
+                }
+                keyboard_item++;
+                int input_code = 
+                    INPUT_CODE(DEVICE_CLASS_KEYBOARD,
+                               input_device_get_index(g_state.machine,
+                                                      keyboard),
+                               ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE,
+                               keyboard_item);
+                input_device_item_add(keyboard, "", 
+                                      (void *) special_button_index++,
+                                      keyboard_item, &get_special_state);
+
+                input_field_user_settings settings;
+                input_seq_set_1(&(settings.seq[SEQ_TYPE_STANDARD]), 
+                                input_code);
+                input_field_set_user_settings(field, &settings);
+            }
+        }
+    }
+
     LibMame_StartupPhase phase;
 
     switch (mame_phase) {
@@ -657,8 +725,6 @@ static void set_configuration_value(LibMame_RunningGame *game,
 
     if (config != NULL) {
         input_field_user_settings settings;
-        const input_seq default_seq = SEQ_DEF_1(SEQCODE_DEFAULT);
-        settings.seq[0] = default_seq;
         settings.value = value;
         input_field_set_user_settings(config, &settings);
     }
@@ -671,10 +737,10 @@ static void look_up_and_set_configuration_value(LibMame_RunningGame *game,
                                                 uint32_t mask,
                                                 const char *value)
 {
-    int count = LibMame_Get_Game_Setting_Count(gamenum);
+    int count = LibMame_Get_Game_Dipswitch_Count(gamenum);
     /* Find the descriptor */
     for (int i = 0; i < count; i++) {
-        LibMame_Setting desc = LibMame_Get_Game_Setting(gamenum, i);
+        LibMame_Dipswitch desc = LibMame_Get_Game_Dipswitch(gamenum, i);
         if ((desc.mask == mask) && !strcmp(desc.tag, tag)) {
             /* Found the descriptor, now find the value */
             for (int j = 0; j < desc.value_count; j++) {
@@ -732,7 +798,7 @@ void osd_update(running_machine *machine, int skip_redraw)
     memset(g_state.controls_state.per_player, 0, 
            sizeof(LibMame_PerPlayerControlsState) * 
            g_state.maximum_player_count);
-    g_state.controls_state.shared.other_buttons_state = 0;
+    g_state.controls_state.shared.shared_buttons_state = 0;
     g_state.controls_state.shared.ui_input_state = 0;
 
     (*(g_state.callbacks->PollAllControlsState))
@@ -867,7 +933,7 @@ void osd_customize_input_type_list(input_type_desc *typelist)
             case libmame_input_type_Mahjong_button:
             case libmame_input_type_Hanafuda_button:
             case libmame_input_type_Gambling_button:
-            case libmame_input_type_Other_button:
+            case libmame_input_type_Shared_button:
             case libmame_input_type_left_joystick:
             case libmame_input_type_right_joystick:
             case libmame_input_type_Ui_button:
@@ -1105,35 +1171,10 @@ void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
 }
 
 
-void LibMame_RunningGame_ActivateActivator(LibMame_RunningGame *game,
-                                           const char *tag, uint32_t mask)
-{
-    set_configuration_value(game, tag, mask, 1);
-}
-
-
-void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
-                                                  const char *tag, 
-                                                  uint32_t mask,
-                                                  const char *value)
-{
-    look_up_and_set_configuration_value
-        (game, g_state.gamenum, tag, mask, value);
-}
-
-
 void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
                                               const char *tag, uint32_t mask,
                                               const char *value)
 {
     look_up_and_set_configuration_value
         (game, g_state.gamenum, tag, mask, value);
-}
-
-
-void LibMame_RunningGame_ChangeAdjusterValue(LibMame_RunningGame *game,
-                                             const char *tag, uint32_t mask,
-                                             int value)
-{
-    set_configuration_value(game, tag, mask, value);
 }

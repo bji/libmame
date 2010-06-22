@@ -47,8 +47,8 @@ extern "C" {
  *    - LibMame_Get_Game_SoundSampleFileName
  *    - LibMame_Get_Game_Chip_Count
  *    - LibMame_Get_Game_Chip
- *    - LibMame_Get_Game_Setting_Count
- *    - LibMame_Get_Game_Setting
+ *    - LibMame_Get_Game_Dipswitch_Count
+ *    - LibMame_Get_Game_Dipswitch
  *    - LibMame_Get_Game_MaxSimultaneousPlayers
  *    - LibMame_Get_Game_AllControllers
  *    - LibMame_Get_Game_BiosSet_Count
@@ -74,9 +74,7 @@ extern "C" {
  *    - LibMame_RunningGame_Schedule_Soft_Reset
  *    - LibMame_RunningGame_SaveState
  *    - LibMame_RunningGame_LoadState
- *    - LibMame_RunningGame_ChangeConfigurationValue
  *    - LibMame_RunningGame_ChangeDipswitchValue
- *    - LibMame_RunningGame_ChangeAdjusterValue
  *
  * 4. Miscellaneous functions necessary for supporting the other libmame
  *    functionality:
@@ -293,39 +291,6 @@ typedef enum
 
 
 /**
- * Setting types
- **/
-typedef enum
-{
-    /**
-     * This is a setting that has an effect each time it is activated.  This
-     * is the equivalent to a special button that can be pressed to have an
-     * effect on the game.
-     **/
-    LibMame_SettingType_Activator,
-    /**
-     * This is a setting that is a MAME-specific, nonstandard configuration
-     * option for a game.  Changes to these settings typically only take
-     * effect when a game is re-loaded in MAME.
-     **/
-    LibMame_SettingType_Configuration,
-    /**
-     * This is a setting that was present in the original game as a
-     * dipswitch.  Changes to these settings typically only take effect in
-     * between games.
-     **/
-    LibMame_SettingType_Dipswitch,
-    /**
-     * This is a setting that may have been present in the original game or
-     * may not have been, but that affects a parameter of the game that can be
-     * adjusted in real time as a game runs.  Changes to these settings take
-     * effect immediately.
-    **/
-    LibMame_SettingType_Adjuster
-} LibMame_SettingType;
-
-
-/**
  * All of the possible joystick directions
  **/
 typedef enum
@@ -494,35 +459,77 @@ typedef enum
  **/
 typedef enum
 {
-    LibMame_OtherButtonType_Coin1,
-    LibMame_OtherButtonType_Coin2,
-    LibMame_OtherButtonType_Coin3,
-    LibMame_OtherButtonType_Coin4,
-    LibMame_OtherButtonType_Coin5,
-    LibMame_OtherButtonType_Coin6,
-    LibMame_OtherButtonType_Coin7,
-    LibMame_OtherButtonType_Coin8,
-    LibMame_OtherButtonType_Bill1,
-    LibMame_OtherButtonType_Start1,
-    LibMame_OtherButtonType_Start2,
-    LibMame_OtherButtonType_Start3,
-    LibMame_OtherButtonType_Start4,
-    LibMame_OtherButtonType_Start5,
-    LibMame_OtherButtonType_Start6,
-    LibMame_OtherButtonType_Start7,
-    LibMame_OtherButtonType_Start8,
-    LibMame_OtherButtonType_Service,
-    LibMame_OtherButtonType_Service1,
-    LibMame_OtherButtonType_Service2,
-    LibMame_OtherButtonType_Service3,
-    LibMame_OtherButtonType_Service4,
-    LibMame_OtherButtonType_Tilt,
-    LibMame_OtherButtonType_Interlock,
-    LibMame_OtherButtonType_Volume_Up,
-    LibMame_OtherButtonType_Volume_Down,
+    LibMame_SharedButtonType_Coin1,
+    LibMame_SharedButtonType_Coin2,
+    LibMame_SharedButtonType_Coin3,
+    LibMame_SharedButtonType_Coin4,
+    LibMame_SharedButtonType_Coin5,
+    LibMame_SharedButtonType_Coin6,
+    LibMame_SharedButtonType_Coin7,
+    LibMame_SharedButtonType_Coin8,
+    LibMame_SharedButtonType_Bill1,
+    LibMame_SharedButtonType_Start1,
+    LibMame_SharedButtonType_Start2,
+    LibMame_SharedButtonType_Start3,
+    LibMame_SharedButtonType_Start4,
+    LibMame_SharedButtonType_Start5,
+    LibMame_SharedButtonType_Start6,
+    LibMame_SharedButtonType_Start7,
+    LibMame_SharedButtonType_Start8,
+    LibMame_SharedButtonType_Service,
+    LibMame_SharedButtonType_Service1,
+    LibMame_SharedButtonType_Service2,
+    LibMame_SharedButtonType_Service3,
+    LibMame_SharedButtonType_Service4,
+    LibMame_SharedButtonType_Tilt,
+    LibMame_SharedButtonType_Interlock,
+    LibMame_SharedButtonType_Volume_Up,
+    LibMame_SharedButtonType_Volume_Down,
     /* This is not a type, it's the number of entries in this enum */
-    LibMame_OtherButtonTypeCount
-} LibMame_OtherButtonType;
+    LibMame_SharedButtonTypeCount
+} LibMame_SharedButtonType;
+
+
+/**
+ * All of the possible 'special' buttons. 
+ **/
+typedef enum
+{
+    LibMame_SpecialButtonType_1,
+    LibMame_SpecialButtonType_2,
+    LibMame_SpecialButtonType_3,
+    LibMame_SpecialButtonType_4,
+    LibMame_SpecialButtonType_5,
+    LibMame_SpecialButtonType_6,
+    LibMame_SpecialButtonType_7,
+    LibMame_SpecialButtonType_8,
+    LibMame_SpecialButtonType_9,
+    LibMame_SpecialButtonType_10,
+    LibMame_SpecialButtonType_11,
+    LibMame_SpecialButtonType_12,
+    LibMame_SpecialButtonType_13,
+    LibMame_SpecialButtonType_14,
+    LibMame_SpecialButtonType_15,
+    LibMame_SpecialButtonType_16,
+    LibMame_SpecialButtonType_17,
+    LibMame_SpecialButtonType_18,
+    LibMame_SpecialButtonType_19,
+    LibMame_SpecialButtonType_20,
+    LibMame_SpecialButtonType_21,
+    LibMame_SpecialButtonType_22,
+    LibMame_SpecialButtonType_23,
+    LibMame_SpecialButtonType_24,
+    LibMame_SpecialButtonType_25,
+    LibMame_SpecialButtonType_26,
+    LibMame_SpecialButtonType_27,
+    LibMame_SpecialButtonType_28,
+    LibMame_SpecialButtonType_29,
+    LibMame_SpecialButtonType_30,
+    LibMame_SpecialButtonType_31,
+    LibMame_SpecialButtonType_32,
+    /* This is not a type, it's the number of entries in this enum */
+    LibMame_SpecialButtonTypeCount
+} LibMame_SpecialButtonType;
 
 
 /**
@@ -698,61 +705,47 @@ typedef struct LibMame_Chip
 
 
 /**
- * This describes a setting that MAME allows to be adjusted for a game.
+ * This describes a dipswitch that MAME allows to be adjusted for a game.
  **/
-typedef struct LibMame_Setting
+typedef struct LibMame_Dipswitch
 {
     /**
-     * This is the type of this setting
-     **/
-    LibMame_SettingType type;
-
-    /**
-     * This is the name of the setting, which typically describes what the 
-     * setting does.
+     * This is the name of the dipswitch, which typically describes what the 
+     * dipswitch does.
      **/
     const char *name;
 
     /**
-     * This is the tag of the setting, which is only relevent for identifying
-     * the setting in calls to LibMame_RunningGame_ActivateActivator,
-     * LibMame_RunningGame_ChangeConfigurationValue,
-     * LibMame_RunningGame_ChangeDipswitchValue, or
-     * LibMame_RunningGame_ChangeAdjusterValue
+     * This is the tag of the dipswitch, which is only relevent for
+     * identifying the dipswitch in calls to
+     * LibMame_RunningGame_ChangeDipswitchValue
      **/
     const char *tag;
 
     /**
-     * This is the mask of the setting, which is only relevent for identifying
-     * the setting in calls to LibMame_RunningGame_ActivateActivator,
-     * LibMame_RunningGame_ChangeConfigurationValue,
-     * LibMame_RunningGame_ChangeDipswitchValue, or
-     * LibMame_RunningGame_ChangeAdjusterValue
+     * This is the mask of the dipswitch, which is only relevent for
+     * identifying the dipswitch in calls to
+     * LibMame_RunningGame_ChangeDipswitchValue
      **/
     uint32_t mask;
 
     /**
-     * This is the number of individual values that the setting may be set to,
-     * if the setting is a Configuration or Dipswitch setting.  This value is
-     * meaningless for Adjuster settings, which always range from 0 to 100
-     * inclusive.
+     * This is the number of individual values that the dipswitch may be set
+     * to
      **/
     int value_count;
 
     /**
-     * If this is a Configuration or Dipswitch setting, then this gives the
-     * index into the value_names array of the default value.  If this is an
-     * Adjuster setting, then this gives the default value of the setting.
+     * This gives the index into the value_names array of the default value.
      **/
     int default_value;
 
     /**
-     * This is the names of each of the individual values that the setting
-     * may be set to, which typically describe what the setting does.  These
-     * are only relevent for Configuration and Dipswitch settings.
+     * This is the names of each of the individual values that the dipswitch
+     * may be set to, which typically describe what the value does.
      **/
     const char * const *value_names;
-} LibMame_Setting;
+} LibMame_Dipswitch;
 
 
 /**
@@ -810,10 +803,22 @@ typedef struct LibMame_PerPlayerControllers
 typedef struct LibMame_SharedControllers
 {
     /**
-     * These flags identify which other binary controls are present,
-     * each is indicated in this as (1 << LibMame_OtherButtonType_XXX).
+     * These flags identify which shared buttons are present,
+     * each is indicated in this as (1 << LibMame_SharedButtonType_XXX).
      **/
-    int other_button_flags;
+    int shared_button_flags;
+
+    /**
+     * These flags identify which special controls are present,
+     * each is indicated in this as (1 << LibMame_SpecialButtonType_XXX).
+     **/
+    int special_button_flags;
+
+    /**
+     * These are the names of the special buttons, or NULL if the special
+     * button has no name, one per button type.
+     **/
+    const char *special_button_names[LibMame_SpecialButtonTypeCount];
 } LibMame_SharedControllers;
 
 
@@ -1104,15 +1109,26 @@ typedef struct LibMame_PerPlayerControlsState
 typedef struct LibMame_SharedControlsState
 {
     /**
-     * These are the current states of each other binary input; the flag for
+     * These are the current states of each shared button input; the flag for
      * an input being set here means that the input is currently triggered,
      * not being set means that the input is currently not triggered.  Each
      * is represented as a flag within this value, by the bit numbered
-     * (1 << LibMame_OtherButtonType_XXX).  These are not duplicated per
+     * (1 << LibMame_SharedButtonType_XXX).  These are not duplicated per
      * player but instead have only one set of buttons shared across all
      * players.
      **/
-    int other_buttons_state;
+    int shared_buttons_state;
+
+    /**
+     * These are the current states of each special button input; the flag for
+     * an input being set here means that the input is currently triggered,
+     * not being set means that the input is currently not triggered.  Each
+     * is represented as a flag within this value, by the bit numbered
+     * (1 << LibMame_SpecialButtonType_XXX).  These are not duplicated per
+     * player but instead have only one set of buttons shared across all
+     * players.
+     **/
+    int special_buttons_state;
 
     /**
      * This is the current UI input.  libmame allows only one UI input at a
@@ -1839,22 +1855,22 @@ LibMame_Chip LibMame_Get_Game_Chip(int gamenum, int chipnum);
 
 
 /**
- * Returns the number of settings that MAME supports for a given game.
+ * Returns the number of dipswitches that MAME supports for a given game.
  *
  * @param gamenum is the game number of the game
- * @return the number of settings that MAME supports for a given game.
+ * @return the number of dipswitches that MAME supports for a given game.
  **/
-int LibMame_Get_Game_Setting_Count(int gamenum);
+int LibMame_Get_Game_Dipswitch_Count(int gamenum);
 
 
 /**
- * Returns a description of a setting that MAME supports for a given game.
+ * Returns a description of a dipswitch that MAME supports for a given game.
  *
  * @param gamenum is the game number of the game
- * @param settingnum is the setting number of the setting
- * @return a description of a setting that MAME supports for a given game.
+ * @param num is the number of the setting
+ * @return a description of a dipswitch that MAME supports for a given game.
  **/
-LibMame_Setting LibMame_Get_Game_Setting(int gamenum, int settingnum);
+LibMame_Dipswitch LibMame_Get_Game_Dipswitch(int gamenum, int num);
 
 
 /**
@@ -2076,77 +2092,21 @@ void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
 
 
 /**
- * Activates the function of an activator setting.  This is the equivalent of
- * pushing a special button on the hardware that effects some change (such as
- * the 'advance' button on some hardware).  This function may only be called
- * from within the MakeRunningGameCalls or Paused callback, and not from any
- * other context of execution.
- *
- * @param game is the game that is to be paused; this game is known because it
- *        was passed into the StartingUp() callback function.
- * @param tag is the tag of the activator setting
- * @param mask is the mask of the activator setting
- **/
-void LibMame_RunningGame_ActivateActivator(LibMame_RunningGame *game,
-                                           const char *tag, uint32_t mask);
-
-
-/**
- * Sets a new value for the setting corresponding to a
- * LibMame_Setting of type LibMame_SettingType_Configuration.  The
- * setting is identified by the name and mask of the
- * LibMame_Setting.  This function may only be called from within
- * the MakeRunningGameCalls or Paused callback, and not from any other context
- * of execution.
- *
- * @param game is the game that is to be paused; this game is known because it
- *        was passed into the StartingUp() callback function.
- * @param tag is the tag of the configuration setting
- * @param mask is the mask of the configuration setting
- * @param value is the value, which must be one of the value_names of the
- *        LibMame_Setting for this configuration setting
- **/
-void LibMame_RunningGame_ChangeConfigurationValue(LibMame_RunningGame *game,
-                                                  const char *tag, 
-                                                  uint32_t mask,
-                                                  const char *value);
-
-
-/**
- * Sets a new value for the setting corresponding to a LibMame_Setting of type
- * LibMame_SettingType_Dipswitch.  The setting is identified by the name and
- * mask of the LibMame_Setting.  This function may only be called from within
- * the MakeRunningGameCalls or Paused callback, and not from any other context
- * of execution.
+ * Sets a new value for a dipswitch.  The dipswitch is identified by the name
+ * and mask of the LibMame_Dipswitch.  This function may only be called from
+ * within the MakeRunningGameCalls or Paused callback, and not from any other
+ * context of execution.
  *
  * @param game is the game that is to be paused; this game is known because it
  *        was passed into the StartingUp() callback function.
  * @param tag is the tag of the dipswitch setting
  * @param mask is the mask of the dipswitch setting
  * @param value is the value, which must be one of the value_names of the
- *        LibMame_Setting for this dipswitch setting
+ *        LibMame_Dipswitch for this dipswitch
  **/
 void LibMame_RunningGame_ChangeDipswitchValue(LibMame_RunningGame *game,
                                               const char *tag, uint32_t mask,
                                               const char *value);
-
-
-/**
- * Sets a new value for the setting corresponding to a LibMame_Setting of type
- * LibMame_SettingType_Adjuster.  The setting is identified by the name and
- * mask of the LibMame_Setting.  This function may only be called from within
- * the MakeRunningGameCalls or Paused callback, and not from any other context
- * of execution.
- *
- * @param game is the game that is to be paused; this game is known because it
- *        was passed into the StartingUp() callback function.
- * @param tag is the tag of the adjuster setting
- * @param mask is the mask of the adjuster setting
- * @param value is the value
- **/
-void LibMame_RunningGame_ChangeAdjusterValue(LibMame_RunningGame *game,
-                                             const char *tag, uint32_t mask,
-                                             int value);
 
 
 #ifdef __cplusplus
