@@ -200,6 +200,14 @@ void dump_unfreed_mem();
 //  INLINE FUNCTIONS
 //**************************************************************************
 
+// C++ standard new and delete operators are only overridden if
+// TRACK_STANDARD_NEW_AND_DELETE are defined.  This should only be set when
+// compiling the MAME source code into a standalone application that will not
+// be further linked against other C++ code.  This is because when compiling
+// MAME into the libmame library, including an overridden C++ standard new and
+// delete totally hoses C++ applications linking against the library.
+#if TRACK_STANDARD_NEW_AND_DELETE
+
 // standard new/delete operators (try to avoid using)
 inline void *operator new(std::size_t size) throw (std::bad_alloc)
 {
@@ -229,6 +237,15 @@ inline void operator delete[](void *ptr)
 		free_file_line(ptr, NULL, 0);
 }
 
+#endif // TRACK_STANDARD_NEW_AND_DELETE
+
+// These nonstandard C++ new and delete operators are allowed to be overridden
+// even when compiling MAME as a library (i.e. libmame) because it is expected
+// that an application would rarely ever want to use new and delete operators
+// with these signatures, and an attempt is made to allow the MAME compile to
+// be as unaltered as possible when compiling as a library.  There is a danger
+// that this will hose some application linking against libmame, but the
+// danger is small because these signatures are so unusual.
 
 // file/line new/delete operators
 inline void *operator new(std::size_t size, const char *file, int line) throw (std::bad_alloc)

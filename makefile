@@ -240,7 +240,6 @@ BUILD_ZLIB = 1
 # (default is OPTIMIZE = 3 normally, or OPTIMIZE = 0 with symbols)
 # OPTIMIZE = 3
 
-
 ###########################################################################
 ##################   END USER-CONFIGURABLE OPTIONS   ######################
 ###########################################################################
@@ -333,6 +332,22 @@ endif
 # OSD
 ifdef BUILD_LIBMAME
 OSD = posix
+endif
+
+
+#-------------------------------------------------
+# Turn on allocation tracking of C++ standard new and delete
+# operators only if not compiling libmame (because building
+# a library that overrides the standard new and delete is a
+# bad thing)
+#-------------------------------------------------
+
+# turn this on to enable allocation tracking for debugging purposes.  This
+# is the default when compiling MAME (but not libmame).
+ifdef BUILD_LIBMAME
+TRACK_STANDARD_NEW_AND_DELETE = 0
+else
+TRACK_STANDARD_NEW_AND_DELETE = 1
 endif
 
 
@@ -490,6 +505,9 @@ endif
 ifdef PROFILE
 CCOMFLAGS += -pg
 endif
+
+# add global new/delete tracking flags
+CCOMFLAGS += -DTRACK_STANDARD_NEW_AND_DELETE=$(TRACK_STANDARD_NEW_AND_DELETE)
 
 # add the optimization flag
 CCOMFLAGS += -O$(OPTIMIZE)
