@@ -815,12 +815,14 @@ void osd_update(running_machine *machine, int skip_redraw)
      * is only one display.  Might want to support multiple displays in the
      * future.
      **/
-    const render_primitive_list *list = 
-        render_target_get_primitives(g_state.target);
-    osd_lock_acquire(list->lock);
-    (*(g_state.callbacks->UpdateVideo))((LibMame_RenderPrimitive *) list->head,
-                                        g_state.callback_data);
-    osd_lock_release(list->lock);
+    if (!skip_redraw) {
+        const render_primitive_list *list = 
+            render_target_get_primitives(g_state.target);
+        osd_lock_acquire(list->lock);
+        (*(g_state.callbacks->UpdateVideo))
+            ((LibMame_RenderPrimitive *) list->head, g_state.callback_data);
+        osd_lock_release(list->lock);
+    }
 
     /**
      * Give the callbacks a chance to make running game calls
@@ -1101,6 +1103,9 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     /* Run the game */
     int result = mame_execute(mame_options);
 
+    /* Free the render target */
+    render_target_free(g_state.target);
+    
     /* Free the options */
     options_free(mame_options);
 
