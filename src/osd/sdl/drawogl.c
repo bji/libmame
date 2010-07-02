@@ -3177,7 +3177,7 @@ static void drawogl_destroy_all_textures(sdl_window_info *window)
 		if ( sdl->glsl_program_mb2sc < sdl->glsl_program_num - 1 )
 		{
 			assert(sdl->usefbo);
-			pfn_glDeleteFramebuffers(2, (GLuint *)&texture->mpass_fbo_scr[0]);
+			pfn_glDeleteFramebuffers(2, (GLuint *)&texture->mpass_fbo_scrn[0]);
 			glDeleteTextures(2, (GLuint *)&texture->mpass_texture_scrn[0]);
 		}
 
