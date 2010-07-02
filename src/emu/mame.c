@@ -1425,7 +1425,7 @@ static void init_machine(running_machine *machine)
 	state_save_allow_registration(machine, TRUE);
 	palette_init(machine);
 	render_init(machine);
-	ui_init(machine);
+	ui_init(machine, options_get_bool(mame_options(), OPTION_QUIET_STARTUP));
 	generic_machine_init(machine);
 	generic_video_init(machine);
 	generic_sound_init(machine);

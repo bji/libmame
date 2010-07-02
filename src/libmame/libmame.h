@@ -1284,6 +1284,8 @@ typedef struct LibMame_RunGameOptions
     float gamma;
     /** amount to scale the screen brightness when paused (0.0 - 1.0) **/
     float pause_brightness;
+    /** show only the disclaimer screen on startup **/
+    int quiet_startup;
 
     /* core vector options ------------------------------------------------ */
 

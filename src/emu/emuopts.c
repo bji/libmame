@@ -101,6 +101,7 @@ const options_entry mame_core_options[] =
 	{ "contrast(0.1-2.0)",           "1.0",       0,                 "default game screen contrast correction" },
 	{ "gamma(0.1-3.0)",              "1.0",       0,                 "default game screen gamma correction" },
 	{ "pause_brightness(0.0-1.0)",   "0.65",      0,                 "amount to scale the screen brightness when paused" },
+    { "quiet_startup",               "0",         OPTION_BOOLEAN,    "show only disclaimer screen at startup and nothing else" },
 
 	/* vector options */
 	{ NULL,                          NULL,        OPTION_HEADER,     "CORE VECTOR OPTIONS" },

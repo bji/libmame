@@ -94,6 +94,10 @@ static const input_item_id non_char_keys[] =
     GLOBAL VARIABLES
 ***************************************************************************/
 
+/* if this is nonzero, then startup will be quiet and will only show the
+   disclaimer screen and nothing else */
+static int quiet_startup;
+
 /* font for rendering */
 static render_font *ui_font;
 
@@ -239,7 +243,7 @@ INLINE int is_breakable_char(unicode_char ch)
     ui_init - set up the user interface
 -------------------------------------------------*/
 
-int ui_init(running_machine *machine)
+int ui_init(running_machine *machine, int _quiet_startup)
 {
 	/* make sure we clean up after ourselves */
 	add_exit_callback(machine, ui_exit);
@@ -252,6 +256,7 @@ int ui_init(running_machine *machine)
 	ui_gfx_init(machine);
 
 	/* reset globals */
+    quiet_startup = _quiet_startup;
 	single_step = FALSE;
 	ui_set_handler(handler_messagebox, 0);
 	/* retrieve options */
@@ -291,6 +296,11 @@ int ui_display_startup_screens(running_machine *machine, int first_time, int sho
        or if we are debugging */
 	if (!first_time || (str > 0 && str < 60*5) || machine->gamedrv == &GAME_NAME(empty) || (machine->debug_flags & DEBUG_FLAG_ENABLED) != 0)
 		show_gameinfo = show_warnings = show_disclaimer = FALSE;
+
+    /* disable show_gameinfo and show_warnings if quiet_startup is enabled */
+    if (quiet_startup) {
+        show_gameinfo = show_warnings = FALSE;
+    }
 
 	/* initialize the on-screen display system */
 	slider_list = slider_current = slider_init(machine);
@@ -355,6 +365,10 @@ int ui_display_startup_screens(running_machine *machine, int first_time, int sho
 
 void ui_set_startup_text(running_machine *machine, const char *text, int force)
 {
+    if (quiet_startup) {
+        return;
+    }
+
 	static osd_ticks_t lastupdatetime = 0;
 	osd_ticks_t curtime = osd_ticks();
 

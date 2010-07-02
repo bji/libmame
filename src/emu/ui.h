@@ -121,7 +121,7 @@ struct _slider_state
 ***************************************************************************/
 
 /* main init/exit routines */
-int ui_init(running_machine *machine);
+int ui_init(running_machine *machine, int quiet_startup);
 
 /* display the startup screens */
 int ui_display_startup_screens(running_machine *machine, int first_time, int show_disclaimer);

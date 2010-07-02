@@ -105,6 +105,7 @@ static const option_map_entry g_option_map[] =
     OPTION_MAP_ENTRY(float, CONTRAST, contrast),
     OPTION_MAP_ENTRY(float, GAMMA, gamma),
     OPTION_MAP_ENTRY(float, PAUSE_BRIGHTNESS, pause_brightness),
+    OPTION_MAP_ENTRY(boolean, QUIET_STARTUP, quiet_startup),
     OPTION_MAP_ENTRY(boolean, ANTIALIAS, vector_antialias),
     OPTION_MAP_ENTRY(float, BEAM, vector_beam),
     OPTION_MAP_ENTRY(float, FLICKER, vector_flicker),
