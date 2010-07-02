@@ -780,13 +780,19 @@ void osd_init(running_machine *machine)
 
     /* Set it up to be the same size as the game's original display, if it's
        a raster display; then any stretching to the actual display hardware
-       will be done by the update callback. */
-    if (LibMame_Get_Game_ScreenType(g_state.gamenum) != 
-        LibMame_ScreenType_Vector) {
-        LibMame_ScreenResolution res = LibMame_Get_Game_ScreenResolution
-            (g_state.gamenum);
-        render_target_set_bounds(g_state.target, res.width, res.height, 0.0);
+       will be done by the update callback.   If it's a vector display, use
+       10000 x 10000 and expect the callback to scale it as appropriate. */
+    LibMame_ScreenResolution res;
+    if (LibMame_Get_Game_ScreenType(g_state.gamenum) ==
+        LibMame_ScreenType_Raster) {
+        res = LibMame_Get_Game_ScreenResolution(g_state.gamenum);
     }
+    else {
+        res.width = 10000;
+        res.height = 10000;
+    }
+
+    render_target_set_bounds(g_state.target, res.width, res.height, 1.0);
 
     /* Add a startup callback so that we can forward this info to users */
     add_startup_callback(machine, &startup_callback);
@@ -1103,9 +1109,6 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     /* Run the game */
     int result = mame_execute(mame_options);
 
-    /* Free the render target */
-    render_target_free(g_state.target);
-    
     /* Free the options */
     options_free(mame_options);
 

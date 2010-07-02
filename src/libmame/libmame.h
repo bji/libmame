@@ -1358,6 +1358,10 @@ typedef struct LibMame_RunGameOptions
  * by libmame.  It is one element of a list of render primitives, all of which
  * must be rendered in order to produce a complete frame of video for the
  * running game.
+ *
+ * The coordinate system in which primitives are rendered is as follows: For
+ * games which use a Raster screen type, it is the width and height of the
+ * screen.  For games which use a Vector screen type, it is 10000 x 10000.
  **/
 typedef struct LibMame_RenderPrimitive
 {
