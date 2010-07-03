@@ -843,6 +843,15 @@ struct _inp_header
 	TOKEN_UINT64_PACK2(_mask, 32, _default, 32), \
 	TOKEN_STRING(_diploc),
 
+/* when building libmame, PORT_CODE, PORT_CODE_DEC, and PORT_CODE_INC are
+   removed.  This is because they establish a binding for the port to a
+   specific input device and this strategy conflicts with libmame, which
+   relies on default bindings being assigned for all inputs */
+#ifdef BUILDING_LIBMAME
+#define PORT_CODE(_code)
+#define PORT_CODE_DEC(_code)
+#define PORT_CODE_INC(_code)
+#else
 /* append a code */
 #define PORT_CODE(_code) \
 	TOKEN_UINT64_PACK2(INPUT_TOKEN_CODE, 8, _code, 32),
@@ -852,6 +861,7 @@ struct _inp_header
 
 #define PORT_CODE_INC(_code) \
 	TOKEN_UINT64_PACK2(INPUT_TOKEN_CODE_INC, 8, _code, 32),
+#endif
 
 /* joystick flags */
 #define PORT_2WAY \

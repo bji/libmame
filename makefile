@@ -476,6 +476,8 @@ ifdef BUILD_LIBMAME
 ifndef STATIC
 CCOMFLAGS += -fPIC
 endif
+# Always define the BUILDING_LIBMAME symbol
+CCOMFLAGS += -DBUILDING_LIBMAME
 endif
 
 # CFLAGS is defined based on C or C++ targets
