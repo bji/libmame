@@ -780,17 +780,9 @@ void osd_init(running_machine *machine)
 
     /* Set it up to be the same size as the game's original display, if it's
        a raster display; then any stretching to the actual display hardware
-       will be done by the update callback.   If it's a vector display, use
-       10000 x 10000 and expect the callback to scale it as appropriate. */
-    LibMame_ScreenResolution res;
-    if (LibMame_Get_Game_ScreenType(g_state.gamenum) ==
-        LibMame_ScreenType_Raster) {
-        res = LibMame_Get_Game_ScreenResolution(g_state.gamenum);
-    }
-    else {
-        res.width = 10000;
-        res.height = 10000;
-    }
+       will be done by the update callback. */
+    LibMame_ScreenResolution res = 
+        LibMame_Get_Game_ScreenResolution(g_state.gamenum);
 
     render_target_set_bounds(g_state.target, res.width, res.height, 1.0);
 
