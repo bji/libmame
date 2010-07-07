@@ -1132,7 +1132,9 @@ astring &game_info_astring(running_machine *machine, astring &string)
 
 static UINT32 handler_messagebox(running_machine *machine, render_container *container, UINT32 state)
 {
-	ui_draw_text_box(container, messagebox_text, JUSTIFY_LEFT, 0.5f, 0.5f, messagebox_backcolor);
+    if (messagebox_text[0]) {
+        ui_draw_text_box(container, messagebox_text, JUSTIFY_LEFT, 0.5f, 0.5f, messagebox_backcolor);
+    }
 	return 0;
 }
 

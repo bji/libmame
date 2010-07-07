@@ -211,32 +211,38 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
  **/
 
 /**
- * Calculates the texture orientation of a LibMame_RenderPrimitive's flags
+ * Calculates the texture orientation of a LibMame_RenderPrimitive's flags;
+ * one of the LibMame_OrientationType enumerated values.
  **/
-#define LIBMAME_RENDERFLAGS_TEXTURE_ORIENTATION(flags) (((flags) >>  0) & 0xF))
-/**
- * Calculates the texture format of a LibMame_RenderPrimitive's flags
- **/
-#define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)      (((flags) >>  8) & 0xF))
-/**
- * Calculates the blend mode of a LibMame_RenderPrimitive's flags
- **/
-#define LIBMAME_RENDERFLAGS_BLEND_MODE(flags)          (((flags) >> 12) & 0xF))
+#define LIBMAME_RENDERFLAGS_TEXTURE_ORIENTATION(flags)      ((flags) & 0x000F)
 /**
  * Calculates the antialias value of a LibMame_RenderPrimitive's flags; zero
  * means no antialiasing, nonzero means antialiasing
  **/
-#define LIBMAME_RENDERFLAGS_ANTIALIAS(flags)                   ((flags) & 0x10)
+#define LIBMAME_RENDERFLAGS_ANTIALIAS(flags)                ((flags) & 0x0010)
 /**
  * Calculates the screen texture value of a LibMame_RenderPrimitive's flags;
- * zero means ???, nonzero means ???
+ * zero means that the texture is part of the game's screen, nonzero means
+ * that the texture is not part of the game's screen, but is part of some
+ * other MAME UI element.
  **/
-#define LIBMAME_RENDERFLAGS_SCREEN_TEXTURE(flags)              ((flags) & 0x20)
+#define LIBMAME_RENDERFLAGS_SCREEN_TEXTURE(flags)           ((flags) & 0x0020)
 /**
  * Calculates the texture wrap of a LibMame_RenderPrimitive's flags;
- * zero means ???, nonzero means ???
+ * zero means do texture wrapping by repeating the texture; nonzero means
+ * do texture wrapping by claping the texture.
  **/
-#define LIBMAME_RENDERFLAGS_TEXTURE_WRAP(flags)                ((flags) & 0x40)
+#define LIBMAME_RENDERFLAGS_TEXTURE_WRAP(flags)             ((flags) & 0x0040)
+/**
+ * Calculates the texture format of a LibMame_RenderPrimitive's flags; one of
+ * the LibMame_RenderFlags_TextureFormat enumerated values.
+ **/
+#define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)           ((flags) & 0x0F00)
+/**
+ * Calculates the blend mode of a LibMame_RenderPrimitive's flags; one of the
+ * LibMame_RenderFlags_BlendMode enumerated values.
+ **/
+#define LIBMAME_RENDERFLAGS_BLEND_MODE(flags)               ((flags) & 0xF000)
 
 
 /** **************************************************************************
@@ -274,19 +280,19 @@ typedef enum
     /**
      * Normal orientation
      **/
-    LibMame_OrientationType_Normal,
+    LibMame_OrientationType_Normal       = 0,
     /**
      * 90 degrees rotation
      **/
-    LibMame_OrientationType_90,
+    LibMame_OrientationType_90           = 5,
     /**
      * 180 degrees rotation
      **/
-    LibMame_OrientationType_180,
+    LibMame_OrientationType_180          = 3,
     /**
      * 270 degrees rotation
      **/
-    LibMame_OrientationType_270
+    LibMame_OrientationType_270          = 6
 } LibMame_OrientationType;
 
 
@@ -609,6 +615,68 @@ typedef enum
     LibMame_RenderPrimitiveType_Line,
     LibMame_RenderPrimitiveType_Quad
 } LibMame_RenderPrimitiveType;
+
+
+/**
+ * The possible texture formats that can result from the evaluation of
+ * the LIBMAME_RENDERFLAGS_TETURE_FORMAT macro
+ **/
+typedef enum
+{
+    /**
+     * Requires a palette to be specified
+     **/
+    LibMame_TextureFormat_Undefined     = 0x0000,
+    /**
+     * 16 bpp palettized, alpha ignored
+     **/
+    LibMame_TextureFormat_Palette16     = 0x0100,
+    /**
+     * 16 bpp palettized, alpha respected
+     **/
+    LibMame_TextureFormat_PaletteA16    = 0x0200,
+    /**
+     * 16 bpp 5-5-5 RGB
+     **/
+    LibMame_TextureFormat_RGB15         = 0x0300,
+    /**
+     * 32 bpp 8-8-8 RGB
+     **/
+    LibMame_TextureFormat_RGB32         = 0x0400,
+    /**
+     * 32 bpp 8-8-8-8 ARGB
+     **/
+    LibMame_TextureFormat_ARGB32        = 0x0500,
+    /**
+     * 16 bpp 8-8 Y/Cb, Y/Cr in sequence
+     **/
+    LibMame_TextureFormat_YUY16         = 0x0600
+} LibMame_TextureFormat;
+
+
+/**
+ * The possible blend modes that can result from the evaluation of the
+ * LIBMAME_RENDERFLAGS_BLEND_MODE macro
+ **/
+typedef enum
+{
+    /**
+     * No blending
+     **/
+    LibMame_BlendMode_None              = 0x0000,
+    /**
+     * Standard alpha blending
+     **/
+    LibMame_BlendMode_Alpha             = 0x1000,
+    /**
+     * Apply source alpha to source pixel, then multiply RGB values
+     **/
+    LibMame_BlendMode_RGB_Multiply      = 0x2000,
+    /**
+     * Apply source alpha to source pixel, then add RGB values
+     **/
+    LibMame_BlendMode_ADD               = 0x3000
+} LibMame_BlendMode;
 
 
 /**
