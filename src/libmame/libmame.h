@@ -675,7 +675,7 @@ typedef enum
     /**
      * Apply source alpha to source pixel, then add RGB values
      **/
-    LibMame_BlendMode_ADD               = 0x3000
+    LibMame_BlendMode_RGB_Add           = 0x3000
 } LibMame_BlendMode;
 
 
