@@ -778,9 +778,7 @@ void osd_init(running_machine *machine)
      **/
     g_state.target = render_target_alloc(g_state.machine, NULL, 0);
 
-    /* Set it up to be the same size as the game's original display, if it's
-       a raster display; then any stretching to the actual display hardware
-       will be done by the update callback. */
+    /* Set it up to be the same size as the game's original display */
     LibMame_ScreenResolution res = 
         LibMame_Get_Game_ScreenResolution(g_state.gamenum);
 

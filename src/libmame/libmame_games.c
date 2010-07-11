@@ -217,17 +217,11 @@ static void convert_screen_info(const machine_config *machineconfig,
             gameinfo->screen_type = LibMame_ScreenType_Raster;
             break;
         }
-        if (gameinfo->screen_type == LibMame_ScreenType_Vector) {
-            gameinfo->screen_resolution.width = 1000000;
-            gameinfo->screen_resolution.height = 1000000;
-        }
-        else {
-            const rectangle &visarea = screenconfig->visible_area();
-            gameinfo->screen_resolution.width = 
-                ((visarea.max_x - visarea.min_x) + 1);
-            gameinfo->screen_resolution.height = 
-                ((visarea.max_y - visarea.min_y) + 1);
-        }
+        const rectangle &visarea = screenconfig->visible_area();
+        gameinfo->screen_resolution.width = 
+            ((visarea.max_x - visarea.min_x) + 1);
+        gameinfo->screen_resolution.height = 
+            ((visarea.max_y - visarea.min_y) + 1);
         gameinfo->screen_refresh_rate = 
             ATTOSECONDS_TO_HZ(screenconfig->refresh());
     }
