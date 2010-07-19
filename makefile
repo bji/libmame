@@ -400,7 +400,7 @@ else
 NAME = $(TARGET)$(SUBTARGET)
 endif
 
-# fullname is prefix+name+suffix+suffix64+suffixdebug
+# fullname is prefix+name+suffix+suffix64+suffixdebug+suffixprofile+suffixstatic
 FULLNAME = $(PREFIX)$(PREFIXSDL)$(NAME)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXPROFILE)$(SUFFIXSTATIC)
 
 # add an EXE suffix to get the final emulator name

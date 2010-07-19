@@ -172,7 +172,7 @@ int cli_execute(int argc, char **argv, const options_entry *osd_options)
 		}
 
 		/* run the game */
-		result = mame_execute(options);
+		result = mame_execute(options, false);
 	}
 	catch (emu_fatalerror &fatal)
 	{

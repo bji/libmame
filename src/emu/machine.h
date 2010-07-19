@@ -304,7 +304,7 @@ public:
 	device_scheduler &scheduler() { return m_scheduler; }
 
 	// immediate operations
-	int run(bool firstrun);
+	int run(bool firstrun, bool benchmarking);
 	void pause();
 	void resume();
 	void add_notifier(machine_notification event, notify_callback callback);

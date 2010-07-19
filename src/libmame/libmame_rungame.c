@@ -1046,7 +1046,7 @@ void osd_customize_input_type_list(input_type_desc *typelist)
  * LibMame exported function implementations
  ************************************************************************** **/
 
-LibMame_RunGameStatus LibMame_RunGame(int gamenum,
+LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
                                       const LibMame_RunGameOptions *options,
                                       const LibMame_RunGameCallbacks *cbs,
                                       void *callback_data)
@@ -1099,7 +1099,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum,
     g_state.waiting_for_pause = false;
 
     /* Run the game */
-    int result = mame_execute(mame_options);
+    int result = mame_execute(mame_options, benchmarking);
 
     /* Free the options */
     options_free(mame_options);

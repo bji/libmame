@@ -149,7 +149,7 @@ int mame_is_valid_machine(running_machine *machine)
     mame_execute - run the core emulation
 -------------------------------------------------*/
 
-int mame_execute(core_options *options)
+int mame_execute(core_options *options, bool benchmarking)
 {
 	bool firstgame = true;
 	bool firstrun = true;
@@ -198,7 +198,7 @@ int mame_execute(core_options *options)
 		global_machine = machine;
 
 		// run the machine
-		error = machine->run(firstrun);
+		error = machine->run(firstrun, benchmarking);
 		firstrun = false;
 
 		// check the state of the machine

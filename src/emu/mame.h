@@ -42,6 +42,7 @@ enum
 };
 
 
+// MESS vs. MAME abstractions
 #ifndef MESS
 #define APPNAME					"MAME"
 #define APPNAME_LOWER			"mame"
@@ -94,8 +95,10 @@ extern const char build_version[];
 
 /* ----- core system management ----- */
 
-/* execute as configured by the OPTION_GAMENAME option on the specified options */
-int mame_execute(core_options *options);
+/* execute as configured by the OPTION_GAMENAME option on the specified
+   options.  Set [benchmarking] only if running MAME as a part of a
+   benchmarking program that will not interact with the user. */
+int mame_execute(core_options *options, bool benchmarking);
 
 /* accesses the core_options for the currently running emulation */
 core_options *mame_options(void);

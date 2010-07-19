@@ -338,7 +338,7 @@ static void output_oslog(running_machine &machine, const char *buffer)
 //  osd_exit
 //============================================================
 
- static void osd_exit(running_machine &machine)
+static void osd_exit(running_machine &machine)
 {
 
 	if (!SDLMAME_INIT_IN_WORKER_THREAD)

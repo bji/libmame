@@ -282,6 +282,10 @@ void running_machine::start()
 	output_init(this);
 	state_init(this);
 	state_save_allow_registration(this, true);
+
+    // arbitrarily choose this as 25% done with preparing step
+    announce_init_phase(STARTUP_PHASE_PREPARING, 25);
+
 	palette_init(this);
 	render_init(this);
 	ui_init(this, options_get_bool(mame_options(), OPTION_QUIET_STARTUP));
@@ -289,7 +293,7 @@ void running_machine::start()
 	generic_video_init(this);
 	generic_sound_init(this);
 
-    // arbitrarily choose this as 20% done with preparing step
+    // arbitrarily choose this as 50% done with preparing step
     announce_init_phase(STARTUP_PHASE_PREPARING, 50);
 
 	// initialize the timers and allocate a soft_reset timer
@@ -402,7 +406,7 @@ void running_machine::start()
 //  run - execute the machine
 //-------------------------------------------------
 
-int running_machine::run(bool firstrun)
+int running_machine::run(bool firstrun, bool benchmarking)
 {
 	int error = MAMERR_NONE;
 
@@ -432,13 +436,12 @@ int running_machine::run(bool firstrun)
         // with the "initializing state" init phase
         announce_init_phase(STARTUP_PHASE_INITIALIZING_STATE, 50);
 
-		// display the startup screens
-#if 0 /* bji - hard disabling startup screens -- this will NOT merge back into
-         MAME official source */
-		ui_display_startup_screens(this, firstrun, !settingsloaded);
-#else
-        (void) settingsloaded;
-#endif
+		// display the startup screens, unless benchmarking, in which case
+        // there is no user interaction expected and no need to show the
+        // startup screens
+        if (!benchmarking) {
+            ui_display_startup_screens(this, firstrun, !settingsloaded);
+        }
 
 		// perform a soft reset -- this takes us to the running phase
 		soft_reset();
