@@ -686,6 +686,10 @@ typedef enum
 typedef enum
 {
     /**
+     * MAME is preparing internal state before loading ROMs.
+     **/
+    LibMame_StartupPhase_Preparing,
+    /**
      * MAME is loading ROMs.  This happens before machine initialization.
      **/
     LibMame_StartupPhase_LoadingRoms,

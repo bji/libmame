@@ -150,7 +150,7 @@ const int Z80DART_WR5_DTR					= 0x80;
 //-------------------------------------------------
 
 z80dart_device_config::z80dart_device_config(const machine_config &mconfig, const char *tag, const device_config *owner, UINT32 clock)
-	: device_config(mconfig, static_alloc_device_config, tag, owner, clock),
+	: device_config(mconfig, static_alloc_device_config, "Zilog Z80 DART", tag, owner, clock),
 	  device_config_z80daisy_interface(mconfig, *this)
 {
 }
@@ -457,6 +457,7 @@ z80dart_device::dart_channel::dart_channel()
 void z80dart_device::dart_channel::start(z80dart_device *device, int index, const devcb_read_line &in_rxd, const devcb_write_line &out_txd, const devcb_write_line &out_dtr, const devcb_write_line &out_rts, const devcb_write_line &out_wrdy)
 {
 	m_index = index;
+	m_device = device;
 
 	devcb_resolve_read_line(&m_in_rxd_func, &in_rxd, m_device);
 	devcb_resolve_write_line(&m_out_txd_func, &out_txd, m_device);
@@ -1404,3 +1405,5 @@ WRITE8_DEVICE_HANDLER( z80dart_ba_cd_w )
 	else
 		z80dart_d_w(device, channel, data);
 }
+
+const device_type Z80DART = z80dart_device_config::static_alloc_device_config;

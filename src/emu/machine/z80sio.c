@@ -295,7 +295,7 @@ inline attotime z80sio_device::sio_channel::compute_time_per_character()
 //-------------------------------------------------
 
 z80sio_device_config::z80sio_device_config(const machine_config &mconfig, const char *tag, const device_config *owner, UINT32 clock)
-	: device_config(mconfig, static_alloc_device_config, tag, owner, clock),
+	: device_config(mconfig, static_alloc_device_config, "Zilog Z80 SIO", tag, owner, clock),
 	  device_config_z80daisy_interface(mconfig, *this)
 {
 }
@@ -896,3 +896,5 @@ WRITE8_DEVICE_HANDLER( z80sio_ba_cd_w )
 		case 3: z80sio_c_w(device, 1, data); break;
 	}
 }
+
+const device_type Z80SIO = z80sio_device_config::static_alloc_device_config;

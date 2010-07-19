@@ -334,6 +334,7 @@ DRVLIBOBJ_SHARED = \
 	$(MACHINE)/pckeybrd.o \
 	$(MACHINE)/pcshare.o \
 	$(MACHINE)/segacrpt.o \
+	$(MACHINE)/segacrp2.o \
 	$(MACHINE)/ticket.o \
 	$(VIDEO)/avgdvg.o \
 
@@ -1614,7 +1615,6 @@ DRVLIBOBJ_TAITO = \
 	$(DRIVERS)/volfied.o $(MACHINE)/volfied.o $(VIDEO)/volfied.o \
 	$(DRIVERS)/warriorb.o $(VIDEO)/warriorb.o \
 	$(DRIVERS)/wgp.o $(VIDEO)/wgp.o \
-	$(MACHINE)/daikaiju.o \
 	$(AUDIO)/taitosnd.o \
 	$(AUDIO)/t5182.o \
 	$(MACHINE)/taitoio.o \
@@ -1856,6 +1856,7 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/carrera.o \
 	$(DRIVERS)/cave.o $(VIDEO)/cave.o \
 	$(DRIVERS)/cb2001.o \
+	$(DRIVERS)/cdi.o \
 	$(DRIVERS)/chsuper.o \
 	$(DRIVERS)/cidelsa.o $(VIDEO)/cidelsa.o \
 	$(DRIVERS)/coinmstr.o \
@@ -2030,6 +2031,8 @@ $(DRIVERS)/acefruit.o:	$(LAYOUT)/sidewndr.lh
 $(DRIVERS)/ampoker2.o:	$(LAYOUT)/ampoker2.lh \
 						$(LAYOUT)/sigmapkr.lh \
 
+$(DRIVERS)/aristmk4.o:	$(LAYOUT)/aristmk4.lh \
+
 $(DRIVERS)/astrocde.o:	$(LAYOUT)/gorf.lh \
 						$(LAYOUT)/tenpindx.lh
 
@@ -2062,6 +2065,8 @@ $(DRIVERS)/buggychl.o:	$(LAYOUT)/buggychl.lh
 $(DRIVERS)/bzone.o:		$(LAYOUT)/bzone.lh
 
 $(DRIVERS)/cardline.o:	$(LAYOUT)/cardline.lh
+
+$(DRIVERS)/cdi.o:	$(LAYOUT)/cdi.lh
 
 $(DRIVERS)/changela.o:	$(LAYOUT)/changela.lh
 

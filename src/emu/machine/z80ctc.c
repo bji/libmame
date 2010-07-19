@@ -77,7 +77,7 @@ const int WAITING_FOR_TRIG	= 0x100;
 //-------------------------------------------------
 
 z80ctc_device_config::z80ctc_device_config(const machine_config &mconfig, const char *tag, const device_config *owner, UINT32 clock)
-	: device_config(mconfig, static_alloc_device_config, tag, owner, clock),
+	: device_config(mconfig, static_alloc_device_config, "Zilog Z80 CTC", tag, owner, clock),
 	  device_config_z80daisy_interface(mconfig, *this)
 {
 }
@@ -559,3 +559,5 @@ WRITE_LINE_DEVICE_HANDLER( z80ctc_trg0_w ) { downcast<z80ctc_device *>(device)->
 WRITE_LINE_DEVICE_HANDLER( z80ctc_trg1_w ) { downcast<z80ctc_device *>(device)->trigger(1, state); }
 WRITE_LINE_DEVICE_HANDLER( z80ctc_trg2_w ) { downcast<z80ctc_device *>(device)->trigger(2, state); }
 WRITE_LINE_DEVICE_HANDLER( z80ctc_trg3_w ) { downcast<z80ctc_device *>(device)->trigger(3, state); }
+
+const device_type Z80CTC = z80ctc_device_config::static_alloc_device_config;

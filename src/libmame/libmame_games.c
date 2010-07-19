@@ -243,7 +243,7 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
 
 	const device_config_sound_interface *soundi;
 
-    for (bool b = machineconfig->devicelist.first(/* returns */ soundi); b;
+    for (bool b = machineconfig->m_devicelist.first(/* returns */ soundi); b;
          b = soundi->next(/* returns */ soundi)) {
         if (soundi->devconfig().type() != SOUND_SAMPLES) {
             continue;
@@ -360,17 +360,15 @@ static void convert_sound_samples(const machine_config *machineconfig,
 static void convert_chips(const machine_config *machineconfig,
                           GameInfo *gameinfo)
 {
-	const device_config *devconfig;
-
-	for (devconfig = cpu_first(machineconfig); devconfig; 
-         devconfig = cpu_next(devconfig)) {
+	const device_config_execute_interface *execi;
+	for (bool is_valid = machineconfig->m_devicelist.first(execi); is_valid;
+         is_valid = execi->next(execi)) {
         gameinfo->chip_count++;
     }
 
-	const device_config_sound_interface *soundi = NULL;
-	for (bool b = machineconfig->devicelist.first(/* returns */ soundi); b;
-         b = soundi->next(/* returns */ soundi))
-	{
+	const device_config_sound_interface *soundi;
+	for (bool is_valid = machineconfig->m_devicelist.first(soundi); is_valid;
+         is_valid = soundi->next(soundi)) {
         gameinfo->chip_count++;
     }
 
@@ -383,8 +381,9 @@ static void convert_chips(const machine_config *machineconfig,
     
     LibMame_Chip *descriptor = gameinfo->chips;
 
-	for (devconfig = cpu_first(machineconfig); devconfig; 
-         devconfig = cpu_next(devconfig)) {
+	for (bool is_valid = machineconfig->m_devicelist.first(execi); is_valid;
+         is_valid = execi->next(execi)) {
+        const device_config *devconfig = &(execi->devconfig());
         descriptor->is_sound = false;
         descriptor->tag = copy_string(devconfig->tag());
         descriptor->name = copy_string(devconfig->name());
@@ -392,10 +391,9 @@ static void convert_chips(const machine_config *machineconfig,
         descriptor++;
     }        
     
-	for (bool b = machineconfig->devicelist.first(/* returns */ soundi); b;
-         b = soundi->next(/* returns */ soundi))
-	{
-        devconfig = &(soundi->devconfig());
+	for (bool is_valid = machineconfig->m_devicelist.first(soundi); is_valid;
+         is_valid = soundi->next(soundi)) {
+        const device_config *devconfig = &(soundi->devconfig());
         descriptor->is_sound = true;
         descriptor->tag = copy_string(devconfig->tag());
         descriptor->name = copy_string(devconfig->name());
@@ -930,8 +928,8 @@ static void convert_image_info(const game_driver *driver,
                 image->clone_of_rom = 0;
                 const game_driver *clone_of = driver_get_clone(driver);
                 if (clone_of && !ROM_NOGOODDUMP(rom)) {
-                    machine_config *pconfig = machine_config_alloc
-                        (clone_of->machine_config);
+                    machine_config *pconfig = global_alloc
+                        (machine_config(clone_of->machine_config));
                     for (const rom_source *psource = rom_first_source
                              (clone_of, pconfig); psource;
                          psource = rom_next_source
@@ -952,7 +950,7 @@ static void convert_image_info(const game_driver *driver,
                             }
                         }
                     }
-                    machine_config_free(pconfig);
+                    global_free(pconfig);
                 }
                 char checksum[HASH_BUF_SIZE];
                 if (hash_data_extract_printable_checksum
@@ -1057,7 +1055,7 @@ static void convert_game_info(GameInfo *gameinfo)
     const game_driver *driver = drivers[gameinfo->driver_index];
 
 	machine_config *machineconfig = 
-        machine_config_alloc(driver->machine_config);
+        global_alloc(machine_config(driver->machine_config));
     ioport_list ioportlist;
     input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE);
     /* Mame's code assumes the above succeeds, we will too */
@@ -1074,7 +1072,7 @@ static void convert_game_info(GameInfo *gameinfo)
     convert_image_info(driver, machineconfig, gameinfo);
     convert_source_file_name(driver, gameinfo);
 
-    machine_config_free(machineconfig);
+    global_free(machineconfig);
 }
 
 

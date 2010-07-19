@@ -142,7 +142,7 @@ const int TM_SEARCH_TRANSFER	= 0x03;
 //-------------------------------------------------
 
 z80dma_device_config::z80dma_device_config(const machine_config &mconfig, const char *tag, const device_config *owner, UINT32 clock)
-	: device_config(mconfig, static_alloc_device_config, tag, owner, clock),
+	: device_config(mconfig, static_alloc_device_config, "Z8410", tag, owner, clock),
 	  device_config_z80daisy_interface(mconfig, *this)
 {
 }
@@ -898,3 +898,5 @@ WRITE8_DEVICE_HANDLER( z80dma_w ) { downcast<z80dma_device *>(device)->write(dat
 WRITE_LINE_DEVICE_HANDLER( z80dma_rdy_w ) { downcast<z80dma_device *>(device)->rdy_w(state); }
 WRITE_LINE_DEVICE_HANDLER( z80dma_wait_w ) { downcast<z80dma_device *>(device)->wait_w(state); }
 WRITE_LINE_DEVICE_HANDLER( z80dma_bai_w ) { downcast<z80dma_device *>(device)->bai_w(state); }
+
+const device_type Z80DMA = z80dma_device_config::static_alloc_device_config;

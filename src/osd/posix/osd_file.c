@@ -353,3 +353,9 @@ file_error osd_get_full_path(char **dst, const char *path)
 
 	return FILERR_NONE;
 }
+
+
+const char *osd_get_volume_name(int idx)
+{
+    return (idx == 0) ? "/" : 0;
+}

@@ -624,7 +624,7 @@ static bool controllers_have_input
 }
 
 
-static void startup_callback(running_machine *machine, int mame_phase, int pct)
+static void startup_callback(running_machine &machine)
 {
     /**
      * If the special input ports have not been configured yet, do so now.
@@ -638,7 +638,7 @@ static void startup_callback(running_machine *machine, int mame_phase, int pct)
         int keyboard_count = 0;
         int special_button_index = 0;
 
-        ioport_list &ioportlist = g_state.machine->portlist;
+        ioport_list &ioportlist = g_state.machine->m_portlist;
 
         const input_port_config *port;
         const input_field_config *field;
@@ -679,11 +679,14 @@ static void startup_callback(running_machine *machine, int mame_phase, int pct)
 
     LibMame_StartupPhase phase;
 
-    switch (mame_phase) {
-    case MAME_STARTUP_LOADING_ROMS:
+    switch (machine.init_phase()) {
+    case STARTUP_PHASE_PREPARING:
+        phase = LibMame_StartupPhase_Preparing;
+        break;
+    case STARTUP_PHASE_LOADING_ROMS:
         phase = LibMame_StartupPhase_LoadingRoms;
         break;
-    case MAME_STARTUP_INITIALIZING:
+    case STARTUP_PHASE_INITIALIZING_STATE:
         phase = LibMame_StartupPhase_InitializingMachine;
         break;
     default:
@@ -693,20 +696,19 @@ static void startup_callback(running_machine *machine, int mame_phase, int pct)
 
     /* Currently, only one running game at a time is supported, so just pass
        in a bogus value */
-    (*(g_state.callbacks->StartingUp))(phase, pct, (LibMame_RunningGame *) 0x1,
-                                       g_state.callback_data);
+    (*(g_state.callbacks->StartingUp))
+        (phase, machine.init_phase_percent_complete(), 
+         (LibMame_RunningGame *) 0x1, g_state.callback_data);
 }
 
 
-static void pause_callback(running_machine *machine, int is_pause)
+static void pause_callback(running_machine &machine)
 {
-    (void) machine;
-
-    if (g_state.waiting_for_pause && is_pause) {
+    if (g_state.waiting_for_pause) {
         g_state.waiting_for_pause = false;
         (*(g_state.callbacks->Paused))(g_state.callback_data);
         /* Unpause */
-        mame_pause(machine, FALSE);
+        machine.resume();
     }
     /* Else, spontaneous pause by MAME internally, ignore it */
 }
@@ -727,7 +729,7 @@ static void set_configuration_value(LibMame_RunningGame *game,
     (void) game;
 
     const input_field_config *config = input_field_by_tag_and_mask
-        (g_state.machine->portlist, tag, mask);
+        (g_state.machine->m_portlist, tag, mask);
 
     if (config != NULL) {
         input_field_user_settings settings;
@@ -785,10 +787,10 @@ void osd_init(running_machine *machine)
     render_target_set_bounds(g_state.target, res.width, res.height, 1.0);
 
     /* Add a startup callback so that we can forward this info to users */
-    add_startup_callback(machine, &startup_callback);
+    machine->add_notifier(MACHINE_NOTIFY_STARTUP, &startup_callback);
 
     /* Add a callback so that we can know when the running game has paused */
-    add_pause_callback(machine, &pause_callback);
+    machine->add_notifier(MACHINE_NOTIFY_PAUSE, &pause_callback);
 }
 
 
@@ -1132,7 +1134,7 @@ void LibMame_RunningGame_Schedule_Pause(LibMame_RunningGame *game)
 
     g_state.waiting_for_pause = true;
 
-    mame_pause(g_state.machine, TRUE);
+    g_state.machine->pause();
 }
 
 
@@ -1140,7 +1142,7 @@ void LibMame_RunningGame_Schedule_Exit(LibMame_RunningGame *game)
 {
     (void) game;
 
-    mame_schedule_exit(g_state.machine);
+    g_state.machine->schedule_exit();
 }
 
 
@@ -1148,7 +1150,7 @@ void LibMame_RunningGame_Schedule_Hard_Reset(LibMame_RunningGame *game)
 {
     (void) game;
 
-    mame_schedule_hard_reset(g_state.machine);
+    g_state.machine->schedule_hard_reset();
 }
 
 
@@ -1156,7 +1158,7 @@ void LibMame_RunningGame_Schedule_Soft_Reset(LibMame_RunningGame *game)
 {
     (void) game;
 
-    mame_schedule_soft_reset(g_state.machine);
+    g_state.machine->schedule_soft_reset();
 }
 
 
@@ -1165,7 +1167,7 @@ void LibMame_RunningGame_SaveState(LibMame_RunningGame *game,
 {
     (void) game;
 
-    mame_schedule_save(g_state.machine, filename);
+    g_state.machine->schedule_save(filename);
 }
 
 
@@ -1174,7 +1176,7 @@ void LibMame_RunningGame_LoadState(LibMame_RunningGame *game,
 {
     (void) game;
 
-    mame_schedule_load(g_state.machine, filename);
+    g_state.machine->schedule_load(filename);
 }
 
 

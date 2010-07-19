@@ -46,6 +46,7 @@ EMUOBJS = \
 	$(EMUOBJ)/debugger.o \
 	$(EMUOBJ)/devcb.o \
 	$(EMUOBJ)/devcpu.o \
+	$(EMUOBJ)/devimage.o \
 	$(EMUOBJ)/devlegcy.o \
 	$(EMUOBJ)/devintrf.o \
 	$(EMUOBJ)/didisasm.o \
@@ -64,11 +65,14 @@ EMUOBJS = \
 	$(EMUOBJ)/fileio.o \
 	$(EMUOBJ)/hash.o \
 	$(EMUOBJ)/hashfile.o \
+	$(EMUOBJ)/image.o \
 	$(EMUOBJ)/info.o \
 	$(EMUOBJ)/input.o \
 	$(EMUOBJ)/inputseq.o \
 	$(EMUOBJ)/inptport.o \
+	$(EMUOBJ)/ioprocs.o \
 	$(EMUOBJ)/mame.o \
+	$(EMUOBJ)/machine.o \
 	$(EMUOBJ)/mconfig.o \
 	$(EMUOBJ)/memory.o \
 	$(EMUOBJ)/output.o \
@@ -78,6 +82,7 @@ EMUOBJS = \
 	$(EMUOBJ)/rendutil.o \
 	$(EMUOBJ)/romload.o \
 	$(EMUOBJ)/schedule.o \
+	$(EMUOBJ)/softlist.o \
 	$(EMUOBJ)/sound.o \
 	$(EMUOBJ)/state.o \
 	$(EMUOBJ)/streams.o \
@@ -85,6 +90,7 @@ EMUOBJS = \
 	$(EMUOBJ)/timer.o \
 	$(EMUOBJ)/ui.o \
 	$(EMUOBJ)/uigfx.o \
+	$(EMUOBJ)/uiimage.o \
 	$(EMUOBJ)/uiinput.o \
 	$(EMUOBJ)/uimenu.o \
 	$(EMUOBJ)/validity.o \
@@ -96,6 +102,10 @@ EMUOBJS = \
 	$(EMUOBJ)/debug/debugcpu.o \
 	$(EMUOBJ)/debug/debughlp.o \
 	$(EMUOBJ)/debug/debugvw.o \
+	$(EMUOBJ)/debug/dvdisasm.o \
+	$(EMUOBJ)/debug/dvmemory.o \
+	$(EMUOBJ)/debug/dvstate.o \
+	$(EMUOBJ)/debug/dvtext.o \
 	$(EMUOBJ)/debug/express.o \
 	$(EMUOBJ)/debug/textbuf.o \
 	$(EMUOBJ)/debugint/debugint.o

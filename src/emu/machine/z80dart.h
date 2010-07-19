@@ -111,9 +111,6 @@ public:
 	static device_config *static_alloc_device_config(const machine_config &mconfig, const char *tag, const device_config *owner, UINT32 clock);
 	virtual device_t *alloc_device(running_machine &machine) const;
 
-	// basic information getters
-	virtual const char *name() const { return "Zilog Z80 DART"; }
-
 protected:
 	// device_config overrides
 	virtual void device_config_complete();
@@ -267,7 +264,7 @@ private:
 
 
 // device type definition
-const device_type Z80DART = z80dart_device_config::static_alloc_device_config;
+extern const device_type Z80DART;
 /*
 #define Z8470   DEVICE_GET_INFO_NAME(z8470)
 #define LH0081  DEVICE_GET_INFO_NAME(lh0088)

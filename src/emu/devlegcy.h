@@ -199,15 +199,15 @@ public:																			\
 	virtual device_t *alloc_device(running_machine &machine) const; 			\
 };																				\
 																				\
-const device_type name = configclass::static_alloc_device_config
+extern const device_type name
 
 // macro for defining the implementation needed for configuration and device classes
-#define _DEFINE_LEGACY_DEVICE(name, basename, configclass, deviceclass, baseconfigclass, basedeviceclass)		\
+#define _DEFINE_LEGACY_DEVICE(name, basename, configclass, deviceclass, baseconfigclass, basedeviceclass) \
 																				\
 deviceclass::deviceclass(running_machine &_machine, const configclass &config)	\
-		: basedeviceclass(_machine, config)										\
-	{																			\
-	}																			\
+	: basedeviceclass(_machine, config)											\
+{																				\
+}																				\
 																				\
 configclass::configclass(const machine_config &mconfig, device_type type, const char *tag, const device_config *owner, UINT32 clock) \
 	: baseconfigclass(mconfig, type, tag, owner, clock, DEVICE_GET_INFO_NAME(basename)) \
@@ -222,7 +222,8 @@ device_config *configclass::static_alloc_device_config(const machine_config &mco
 device_t *configclass::alloc_device(running_machine &machine) const 			\
 {																				\
 	return pool_alloc(machine_get_pool(machine), deviceclass(machine, *this));	\
-}
+}																				\
+const device_type name = configclass::static_alloc_device_config
 
 // reduced macros that are easier to use, and map to the above two macros
 #define DECLARE_LEGACY_DEVICE(name, basename) _DECLARE_LEGACY_DEVICE(name, basename, basename##_device_config, basename##_device, legacy_device_config_base, legacy_device_base)
@@ -386,14 +387,6 @@ typedef INT32 (*device_execute_func)(device_t *device, INT32 clocks);
 typedef void (*device_reset_func)(device_t *device);
 typedef void (*device_nvram_func)(device_t *device, mame_file *file, int read_or_write);
 
-// device image interface function types
-typedef int (*device_image_load_func)(device_t *image);
-typedef int (*device_image_create_func)(device_t *image, int format_type, option_resolution *format_options);
-typedef void (*device_image_unload_func)(device_t *image);
-typedef void (*device_image_display_func)(device_t *image);
-typedef void (*device_image_partialhash_func)(char *, const unsigned char *, unsigned long, unsigned int);
-typedef void (*device_image_get_devices_func)(device_t *device);
-
 // the actual deviceinfo union
 union deviceinfo
 {
@@ -427,6 +420,7 @@ class legacy_device_config_base : public device_config
 {
 	friend class legacy_device_base;
 	friend class legacy_nvram_device_base;
+	friend class legacy_image_device_base;
 
 protected:
 	// construction/destruction
@@ -437,7 +431,6 @@ protected:
 
 	// basic information getters
 public:
-	virtual const char *name() const { return get_legacy_config_string(DEVINFO_STR_NAME); }
 	virtual const rom_entry *rom_region() const { return reinterpret_cast<const rom_entry *>(get_legacy_config_ptr(DEVINFO_PTR_ROM_REGION)); }
 	virtual const machine_config_token *machine_config_tokens() const { return reinterpret_cast<const machine_config_token *>(get_legacy_config_ptr(DEVINFO_PTR_MACHINE_CONFIG)); }
 
@@ -578,22 +571,6 @@ protected:
 };
 
 // ======================> legacy_image_device_config
-struct image_device_format
-{
-    image_device_format *m_next;
-    int m_index;
-    astring m_name;
-    astring m_description;
-    astring m_extensions;
-    astring m_optspec;
-};
-
-struct image_device_type_info
-{
-	iodevice_t m_type;
-	astring m_name;
-	astring m_shortname;
-};
 
 // legacy_image_device_config is a device_config with a image interface
 class legacy_image_device_config_base : 	public legacy_device_config_base,
@@ -614,8 +591,9 @@ public:
 	virtual const char *instance_name() const { return m_instance_name; }
 	virtual const char *brief_instance_name() const { return m_brief_instance_name; }
 	virtual bool uses_file_extension(const char *file_extension) const;
-	static const char *device_typename(iodevice_t type);
-	static const char *device_brieftypename(iodevice_t type);
+	virtual const option_guide *create_option_guide() const { return m_create_option_guide; }
+    virtual image_device_format *formatlist() const { return m_formatlist; }
+	virtual device_image_partialhash_func get_partial_hash() const;
 protected:
 	// construction/destruction
 	legacy_image_device_config_base(const machine_config &mconfig, device_type type, const char *tag, const device_config *owner, UINT32 clock, device_get_config_func get_config);
@@ -623,10 +601,6 @@ protected:
 
 	// device_config overrides
 	virtual void device_config_complete();
-
-	static const image_device_type_info *find_device_type(iodevice_t type);
-
-	static const image_device_type_info m_device_info_array[];
 
     iodevice_t   m_type;
 	bool m_readable;
@@ -640,13 +614,6 @@ protected:
     astring m_brief_instance_name;
 	astring m_interface_name;
 
-	device_image_load_func			load;
-	device_image_create_func		create;
-	device_image_unload_func		unload;
-	device_image_display_func		display;
-	device_image_partialhash_func	partialhash;
-	device_image_get_devices_func	get_devices;
-
     /* creation info */
     const option_guide *m_create_option_guide;
     image_device_format *m_formatlist;
@@ -659,11 +626,30 @@ protected:
 class legacy_image_device_base :	public legacy_device_base,
 									public device_image_interface
 {
+public:
+	virtual bool load(const char *path);
+	virtual bool finish_load();
+	virtual void unload();
+	virtual bool create(const char *path, const image_device_format *create_format, option_resolution *create_args);
+
+	virtual int call_load();
+	virtual int call_create(int format_type, option_resolution *format_options);
+	virtual void call_unload();
+	virtual void call_display();
+	virtual device_image_partialhash_func get_partial_hash();
+	virtual void call_get_devices();
+	virtual void *get_device_specific_call();
 protected:
 	// construction/destruction
 	legacy_image_device_base(running_machine &machine, const device_config &config);
-
 	// device_image_interface overrides
+	bool load_internal(const char *path, bool is_create, int create_format, option_resolution *create_args);
+	void determine_open_plan(int is_create, UINT32 *open_plan);
+	image_error_t load_image_by_path(UINT32 open_flags, const char *path);
+	void clear();
+	bool is_loaded();
+
+	bool m_is_loading;
 };
 
 

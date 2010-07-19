@@ -76,9 +76,6 @@ public:
 	static device_config *static_alloc_device_config(const machine_config &mconfig, const char *tag, const device_config *owner, UINT32 clock);
 	virtual device_t *alloc_device(running_machine &machine) const;
 
-	// basic information getters
-	virtual const char *name() const { return "EEPROM"; }
-
 	// inline configuration indexes
 	enum
 	{
@@ -156,7 +153,7 @@ protected:
 
 
 // device type definition
-const device_type EEPROM = eeprom_device_config::static_alloc_device_config;
+extern const device_type EEPROM;
 
 
 
