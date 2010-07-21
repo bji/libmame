@@ -219,7 +219,7 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
  * Calculates the texture format of a LibMame_RenderPrimitive's flags; one of
  * the LibMame_RenderFlags_TextureFormat enumerated values.
  **/
-#define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)           ((flags) & 0x00F0)
+#define LIBMAME_RENDERFLAGS_TEXTURE_FORMAT(flags)           ((LibMame_TextureFormat) ((flags) & 0x00F0))
 /**
  * Calculates the blend mode of a LibMame_RenderPrimitive's flags; one of the
  * LibMame_RenderFlags_BlendMode enumerated values.
@@ -240,7 +240,7 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
 /**
  * Calculates the texture wrap of a LibMame_RenderPrimitive's flags;
  * zero means do texture wrapping by repeating the texture; nonzero means
- * do texture wrapping by claping the texture.
+ * do texture wrapping by clamping the texture.
  **/
 #define LIBMAME_RENDERFLAGS_TEXTURE_WRAP(flags)             ((flags) & 0x4000)
 
