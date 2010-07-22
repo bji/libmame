@@ -1018,7 +1018,7 @@ astring &game_info_astring(running_machine *machine, astring &string)
 	string.printf("%s\n%s %s\n\nCPU:\n", machine->gamedrv->description, machine->gamedrv->year, machine->gamedrv->manufacturer);
 
 	/* loop over all CPUs */
-	device_execute_interface *exec;
+	device_execute_interface *exec = NULL;
 	for (bool gotone = machine->m_devicelist.first(exec); gotone; gotone = exec->next(exec))
 	{
 		/* get cpu specific clock that takes internal multiplier/dividers into account */
@@ -1026,7 +1026,7 @@ astring &game_info_astring(running_machine *machine, astring &string)
 
 		/* count how many identical CPUs we have */
 		int count = 1;
-		device_execute_interface *scan;
+		device_execute_interface *scan = NULL;
 		for (bool gotone = exec->next(scan); gotone; gotone = scan->next(scan))
 		{
 			if (exec->device().type() != scan->device().type() || exec->device().clock() != scan->device().clock())
@@ -1058,7 +1058,7 @@ astring &game_info_astring(running_machine *machine, astring &string)
 
 		/* count how many identical sound chips we have */
 		int count = 1;
-		device_sound_interface *scan;
+		device_sound_interface *scan = NULL;
 		for (bool gotanother = sound->next(scan); gotanother; gotanother = scan->next(scan))
 		{
 			if (sound->device().type() != scan->device().type() || sound->device().clock() != scan->device().clock())
@@ -1661,8 +1661,8 @@ static slider_state *slider_init(running_machine *machine)
 	/* add CPU overclocking (cheat only) */
 	if (options_get_bool(machine->options(), OPTION_CHEAT))
 	{
-		device_execute_interface *exec;
-		for (bool gotone = machine->m_devicelist.first(exec); exec != NULL; gotone = exec->next(exec))
+		device_execute_interface *exec = NULL;
+		for (bool gotone = machine->m_devicelist.first(exec); gotone; gotone = exec->next(exec))
 		{
 			void *param = (void *)&exec->device();
 			string.printf("Overclock CPU %s", exec->device().tag());
@@ -1833,10 +1833,10 @@ static INT32 slider_overclock(running_machine *machine, void *arg, astring *stri
 {
 	device_t *cpu = (device_t *)arg;
 	if (newval != SLIDER_NOCHANGE)
-		cpu_set_clockscale(cpu, (float)newval * 0.001f);
+		cpu->set_clock_scale((float)newval * 0.001f);
 	if (string != NULL)
-		string->printf("%3.0f%%", floor(cpu_get_clockscale(cpu) * 100.0f + 0.5f));
-	return floor(cpu_get_clockscale(cpu) * 1000.0f + 0.5f);
+		string->printf("%3.0f%%", floor(cpu->clock_scale() * 100.0f + 0.5f));
+	return floor(cpu->clock_scale() * 1000.0f + 0.5f);
 }
 
 
