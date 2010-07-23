@@ -10,13 +10,64 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <time.h>
-static unsigned long long nownanos()
+/**
+ * A work queue.  All it has is an items_count, a mutex to protect it, and a
+ * condition variable to be signalled when the items_count goes to 0, so that
+ * anyone waiting on the work queue to be complete will be notified when it is
+ * so.  Each work item has a pointer back to its work queue, which is how work
+ * queues get updated when items are completed.
+ **/
+struct _osd_work_queue
 {
-    struct timespec ts;
-    (void) clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (ts.tv_sec * 1000 * 1000 * 1000) + ts.tv_nsec;
-}
+    int items_count;
+
+    pthread_mutex_t mutex;
+
+    pthread_cond_t cond;
+};
+
+
+/**
+ * A work item.  It stores all of the parameters that were passed in when it
+ * was created, and keeps track of the number of items that have been run.
+ * The thread to run the last item will remove the work_item from the global
+ * list, and will, after running the work item, either free it, or signal its
+ * condition so that whoever is waiting on it can be notified that it is done,
+ * depending on flags.
+ **/
+struct _osd_work_item
+{
+    osd_work_callback callback;
+
+    INT32 numitems;
+
+    INT32 numitems_per_worker;
+    
+    void *parambase;
+
+    INT32 paramstep;
+
+    UINT32 flags;
+
+    void *result;
+
+    int numitemsrun;
+    
+    int numitemscompleted;
+
+    osd_work_queue *queue;
+    
+    osd_work_item *prev, *next;
+};
+
+
+//#include <time.h>
+//static unsigned long long nownanos()
+//{
+//    struct timespec ts;
+//    (void) clock_gettime(CLOCK_MONOTONIC, &ts);
+//    return (ts.tv_sec * 1000 * 1000 * 1000) + ts.tv_nsec;
+//}
 
 /**
  * Work queues are implemented very simply; it's not clear whether or not a
@@ -80,6 +131,22 @@ static int g_queues_count;
 static osd_work_item *g_items;
 
 /**
+ * This is a static array of osd_work_item structures, to be used instead of
+ * using dynamic memory allocation (unless there are no more available,
+ * in which case they are dynamically allocated).
+ **/
+static osd_work_item g_static_items[10000];
+
+/**
+ * This is the list of static items that are freely available
+ **/
+static osd_work_item *g_free_items;
+
+static int g_free_items_count;
+
+static bool g_free_items_initialized;
+
+/**
  * This is a global mutex protecting g_threads_count, g_threads_stop,
  * g_queues_count, and g_items.
  **/
@@ -96,55 +163,27 @@ static pthread_cond_t g_threads_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t g_items_cond = PTHREAD_COND_INITIALIZER;
 
 
-/**
- * A work queue.  All it has is an items_count, a mutex to protect it, and a
- * condition variable to be signalled when the items_count goes to 0, so that
- * anyone waiting on the work queue to be complete will be notified when it is
- * so.  Each work item has a pointer back to its work queue, which is how work
- * queues get updated when items are completed.
- **/
-struct _osd_work_queue
+static void work_item_release_locked(osd_work_item *item)
 {
-    int items_count;
-
-    pthread_mutex_t mutex;
-
-    pthread_cond_t cond;
-};
-
-
-/**
- * A work item.  It stores all of the parameters that were passed in when it
- * was created, and keeps track of the number of items that have been run.
- * The thread to run the last item will remove the work_item from the global
- * list, and will, after running the work item, either free it, or signal its
- * condition so that whoever is waiting on it can be notified that it is done,
- * depending on flags.
- **/
-struct _osd_work_item
-{
-    osd_work_callback callback;
-
-    INT32 numitems;
-
-    INT32 numitems_per_worker;
-    
-    void *parambase;
-
-    INT32 paramstep;
-
-    UINT32 flags;
-
-    void *result;
-
-    int numitemsrun;
-    
-    int numitemscompleted;
-
-    osd_work_queue *queue;
-    
-    osd_work_item *prev, *next;
-};
+    if ((item >= &(g_static_items[0])) &&
+        (item <= &(g_static_items[sizeof(g_static_items) / 
+                                  sizeof(g_static_items[0])]))) {
+        if (g_free_items == 0) {
+            g_free_items = item->next = item->prev = item;
+        }
+        else {
+            item->prev = g_free_items->prev;
+            item->next = g_free_items;
+            g_free_items->prev->next = item;
+            g_free_items->prev = item;
+            g_free_items = item;
+        }
+        g_free_items_count++;
+    }
+    else {
+        osd_free(item);
+    }
+}
 
 
 /**
@@ -229,13 +268,13 @@ static void *work_queue_thread_main(void *)
             void *result = NULL;
             int end = index + to_run;
             for ( ; index < end; index++) {
-                unsigned long long start = nownanos();
+                // unsigned long long start = nownanos();
                 result = (item->callback)
                     (&(((char *) item->parambase)[index * item->paramstep]),
                      self);
-                fprintf(stderr, "Callback took %llu nanos\n", 
-                        nownanos() - start);
-                fflush(stderr);
+                // fprintf(stderr, "Callback took %llu nanos\n", 
+                // nownanos() - start);
+                // fflush(stderr);
             }
 
             /**
@@ -274,7 +313,7 @@ static void *work_queue_thread_main(void *)
                      * completed the last item so no other worker thread could
                      * be looking at it.  So it's safe to release it here.
                      **/
-                    osd_work_item_release(item);
+                    work_item_release_locked(item);
                 }
 
                 /* Check the item's queue to see if all of its items have
@@ -413,6 +452,8 @@ static int work_queue_create_threads_locked()
     threads_count = 2;
 #endif
 #endif
+    
+    threads_count = 6;
 
     /**
      * This variable will be set if the creation of any of the work threads
@@ -517,6 +558,24 @@ osd_work_queue *osd_work_queue_alloc(int flags)
 
     g_queues_count += 1;
 
+    if (!g_free_items_initialized) {
+        for (int i = 0; 
+             i < (sizeof(g_static_items) / sizeof(g_static_items[0])); i++) {
+            osd_work_item *item = &(g_static_items[i]);
+            if (g_free_items) {
+                item->prev = g_free_items->prev;
+                item->next = g_free_items;
+                g_free_items->prev->next = item;
+                g_free_items->prev = item;
+            }
+            else {
+                g_free_items = item->prev = item->next = item;
+            }
+            g_free_items_count++;
+        }
+        g_free_items_initialized = true;
+    }
+
     pthread_mutex_unlock(&g_mutex);
     
     return queue;
@@ -619,11 +678,29 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
                                             INT32 numitems, void *parambase,
                                             INT32 paramstep, UINT32 flags)
 {
-    osd_work_item *item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
+    osd_work_item *item;
 
-    if ((item == NULL) || !numitems)
-    {
-        return NULL;
+    pthread_mutex_lock(&g_mutex);
+
+    if (g_free_items) {
+        item = g_free_items;
+        if (item->next == item) {
+            g_free_items = 0;
+        }
+        else {
+            item->prev->next = item->next;
+            item->next->prev = item->prev;
+            g_free_items = item->next;
+        }
+        g_free_items_count--;
+    }
+    else {
+        item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
+
+        if (item == NULL)
+        {
+            return NULL;
+        }
     }
 
     item->callback = callback;
@@ -649,8 +726,6 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     queue->items_count += 1;
 
     pthread_mutex_unlock(&(queue->mutex));
-
-    pthread_mutex_lock(&g_mutex);
 
     if (g_items)
     {
@@ -707,5 +782,9 @@ void *osd_work_item_result(osd_work_item *item)
 
 void osd_work_item_release(osd_work_item *item)
 {
-    osd_free(item);
+    pthread_mutex_lock(&g_mutex);
+
+    work_item_release_locked(item);
+
+    pthread_mutex_unlock(&g_mutex);
 }
