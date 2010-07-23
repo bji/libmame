@@ -61,14 +61,6 @@ struct _osd_work_item
 };
 
 
-//#include <time.h>
-//static unsigned long long nownanos()
-//{
-//    struct timespec ts;
-//    (void) clock_gettime(CLOCK_MONOTONIC, &ts);
-//    return (ts.tv_sec * 1000 * 1000 * 1000) + ts.tv_nsec;
-//}
-
 /**
  * Work queues are implemented very simply; it's not clear whether or not a
  * sophisticated implementation is necessary.  The mame source current uses
@@ -142,8 +134,10 @@ static osd_work_item g_static_items[10000];
  **/
 static osd_work_item *g_free_items;
 
-static int g_free_items_count;
-
+/**
+ * This is set to true after the g_free_items list is initialized; only
+ * happens once.
+ **/
 static bool g_free_items_initialized;
 
 /**
@@ -178,7 +172,6 @@ static void work_item_release_locked(osd_work_item *item)
             g_free_items->prev = item;
             g_free_items = item;
         }
-        g_free_items_count++;
     }
     else {
         osd_free(item);
@@ -268,13 +261,9 @@ static void *work_queue_thread_main(void *)
             void *result = NULL;
             int end = index + to_run;
             for ( ; index < end; index++) {
-                // unsigned long long start = nownanos();
                 result = (item->callback)
                     (&(((char *) item->parambase)[index * item->paramstep]),
                      self);
-                // fprintf(stderr, "Callback took %llu nanos\n", 
-                // nownanos() - start);
-                // fflush(stderr);
             }
 
             /**
@@ -453,8 +442,6 @@ static int work_queue_create_threads_locked()
 #endif
 #endif
     
-    threads_count = 6;
-
     /**
      * This variable will be set if the creation of any of the work threads
      * fails, and will provoke a cleanup operation
@@ -571,7 +558,6 @@ osd_work_queue *osd_work_queue_alloc(int flags)
             else {
                 g_free_items = item->prev = item->next = item;
             }
-            g_free_items_count++;
         }
         g_free_items_initialized = true;
     }
@@ -692,7 +678,6 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
             item->next->prev = item->prev;
             g_free_items = item->next;
         }
-        g_free_items_count--;
     }
     else {
         item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
