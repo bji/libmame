@@ -10,6 +10,13 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <time.h>
+static unsigned long long nownanos()
+{
+    struct timespec ts;
+    (void) clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (ts.tv_sec * 1000 * 1000 * 1000) + ts.tv_nsec;
+}
 
 /**
  * Work queues are implemented very simply; it's not clear whether or not a
@@ -134,10 +141,6 @@ struct _osd_work_item
     
     int numitemscompleted;
 
-    pthread_mutex_t mutex;
-
-    pthread_cond_t cond;
-
     osd_work_queue *queue;
     
     osd_work_item *prev, *next;
@@ -170,9 +173,9 @@ static void *work_queue_thread_main(void *)
             osd_work_item *item = g_items;
 
             /**
-             * Grab the item lock so that we can safely update values in it
+             * Grab the queue lock so that we can safely update items in it
              **/
-            pthread_mutex_lock(&(item->mutex));
+            pthread_mutex_lock(&(item->queue->mutex));
 
             /* Take a block of items to run.  This reduces locking overhead by
                not requiring a lock for every item. */
@@ -218,7 +221,7 @@ static void *work_queue_thread_main(void *)
              * with it
              **/
             pthread_mutex_unlock(&g_mutex);
-            pthread_mutex_unlock(&(item->mutex));
+            pthread_mutex_unlock(&(item->queue->mutex));
 
             /**
              * Actually run the work item with the appropriate parameters
@@ -226,16 +229,20 @@ static void *work_queue_thread_main(void *)
             void *result = NULL;
             int end = index + to_run;
             for ( ; index < end; index++) {
+                unsigned long long start = nownanos();
                 result = (item->callback)
                     (&(((char *) item->parambase)[index * item->paramstep]),
                      self);
+                fprintf(stderr, "Callback took %llu nanos\n", 
+                        nownanos() - start);
+                fflush(stderr);
             }
 
             /**
              * Re-acquire the mutexes so that we can safely update some fields
              **/
             pthread_mutex_lock(&g_mutex);
-            pthread_mutex_lock(&(item->mutex));
+            pthread_mutex_lock(&(item->queue->mutex));
 
             /**
              * If the work item was complete (meaning that we were the work
@@ -259,7 +266,7 @@ static void *work_queue_thread_main(void *)
                     /**
                      * But of course must release its lock first.
                      **/
-                    pthread_mutex_unlock(&(item->mutex));
+                    pthread_mutex_unlock(&(item->queue->mutex));
 
                     /**
                      * No one else can have a reference to it because the API
@@ -268,20 +275,6 @@ static void *work_queue_thread_main(void *)
                      * be looking at it.  So it's safe to release it here.
                      **/
                     osd_work_item_release(item);
-                }
-                /**
-                 * Else, somebody will presumably want to see the result and
-                 * will wait for the item to complete, so save the result and
-                 * then signal the condition so that whoever is waiting will
-                 * get it
-                 **/
-                else
-                {
-                    item->result = result;
-
-                    pthread_cond_signal(&(item->cond));
-
-                    pthread_mutex_unlock(&(item->mutex));
                 }
 
                 /* Check the item's queue to see if all of its items have
@@ -302,7 +295,7 @@ static void *work_queue_thread_main(void *)
                  * All done with the item, and there is more to be done on it;
                  * give another worker thread a crack at it.
                  **/
-                pthread_mutex_unlock(&(item->mutex));
+                pthread_mutex_unlock(&(item->queue->mutex));
             }
         }
         /**
@@ -406,10 +399,10 @@ static int work_queue_create_threads_locked()
     /**
      * If that's not defined, then if _SC_NPROCESSORS_ONLN is defined, it
      * means that the POSIX sysconf call to get the number of processors is
-     * available, so use it
+     * available, so use it.
      **/
 #ifdef _SC_NPROCESSORS_ONLN
-    threads_count = sysconf(_SC_NPROCESSORS_ONLN) + 1;
+    threads_count = sysconf(_SC_NPROCESSORS_ONLN);
 #else
     /**
      * Else assume a really ancient system without proper POSIX support, and
@@ -633,19 +626,6 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
         return NULL;
     }
 
-    if (pthread_mutex_init(&(item->mutex), NULL))
-    {
-        osd_free(item);
-        return NULL;
-    }
-
-    if (pthread_cond_init(&(item->cond), NULL))
-    {
-        pthread_mutex_destroy(&(item->mutex));
-        osd_free(item);
-        return NULL;
-    }
-
     item->callback = callback;
 
     item->numitems = numitems;
@@ -684,9 +664,9 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
         g_items = item->prev = item->next = item;
     }
 
-    /* Signal that are new items to be worked on.  Broadcast if more than
-       3/4 of the threads would wake up anyway.  Only wake up as many worker
-       threads as are needed to complete all items. */
+    /* Signal that there are new items to be worked on.  Broadcast if more
+       than 3/4 of the threads would wake up anyway.  Only wake up as many
+       worker threads as are needed to complete all items. */
     int num_threads_needed = (item->numitems / item->numitems_per_worker) + 1;
 
     if (num_threads_needed > ((g_threads_count * 3) / 4)) {
@@ -709,46 +689,13 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 int osd_work_item_wait(osd_work_item *item, osd_ticks_t timeout)
 {
     /**
-     * Calculate what the end tick is (if we get to this tick, we've timed
-     * out).
+     * Just wait on the queue that this item belongs to.  This is done because
+     * MAME actually doesn't really use this method and this is the simplest
+     * way to implement it.  Providing for an implementation that can wait for
+     * this specific item to be finished is more heavyweight and hurts the
+     * performance of the rest of the work queue implementation.
      **/
-    osd_ticks_t end = osd_ticks() + timeout;
-
-    pthread_mutex_lock(&(item->mutex));
-
-    /**
-     * Wait until the number of items completed is the same as the number
-     * if items, which means that every one has been run
-     **/
-    while (item->numitemscompleted < item->numitems)
-    {
-        osd_ticks_t now = osd_ticks();
-        if (now >= end)
-        {
-            /**
-             * We would like to wait for the item to be complete, but we're
-             * already past the end tick, so time out
-             **/
-            pthread_mutex_unlock(&(item->mutex));
-            return FALSE;
-        }
-        /**
-         * Wait for the condition to be signalled that would indicate that the
-         * item is complete; but, only wait for as long as we can until the
-         * end tick would be reached
-         **/
-        struct timespec ts;
-        ts.tv_sec = (end - now) / (1000 * 1000);
-        ts.tv_nsec = (end - now) % (1000 * 1000);
-        pthread_cond_timedwait(&(item->cond), &(item->mutex), &ts);
-    }
-    /**
-     * If we got here, then the item is now complete so we can return
-     **/
-
-    pthread_mutex_unlock(&(item->mutex));
-
-    return TRUE;
+    return osd_work_queue_wait(item->queue, timeout);
 }
 
 
@@ -760,9 +707,5 @@ void *osd_work_item_result(osd_work_item *item)
 
 void osd_work_item_release(osd_work_item *item)
 {
-    pthread_cond_destroy(&(item->cond));
-
-    pthread_mutex_destroy(&(item->mutex));
-
     osd_free(item);
 }
