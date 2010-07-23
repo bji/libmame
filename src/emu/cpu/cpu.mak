@@ -1035,9 +1035,9 @@ ifneq ($(CROSS_BUILD),1)
 
 BUILD += $(M68KMAKE)
 
-$(M68KMAKE): $(CPUOBJ)/m68000/m68kmake.o $(LIBOCORE)
+$(M68KMAKE): $(CPUOBJ)/m68000/m68kmake.o $(TOOLS_LIBOCORE_DEPENDENCY)
 	$(ECHO) Linking $@...
-	$(LD) $(LDFLAGS) $(OSDBGLDFLAGS) $^ $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $(OSDBGLDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
 endif
 
 # rule to ensure we build the header before building the core CPU file
@@ -1571,9 +1571,9 @@ ifneq ($(CROSS_BUILD),1)
 
 BUILD += $(TMSMAKE)
 
-$(TMSMAKE): $(CPUOBJ)/tms57002/tmsmake.o $(LIBOCORE)
+$(TMSMAKE): $(CPUOBJ)/tms57002/tmsmake.o $(TOOLS_LIBOCORE_DEPENDENCY)
 	$(ECHO) Linking $@...
-	$(LD) $(LDFLAGS) $(OSDBGLDFLAGS) $^ $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $(OSDBGLDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
 
 endif
 

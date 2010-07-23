@@ -243,6 +243,17 @@ BUILD_ZLIB = 1
 # (default is OPTIMIZE = 3 normally, or OPTIMIZE = 0 with symbols)
 # OPTIMIZE = 3
 
+# uncomment only if you are an OSD developer and don't want to have most of
+# MAME be rebuilt just because you have changed something in an OSD source
+# file.  If the following variable is not defined, then lots of MAME build
+# tools will have a dependency on the OSD libraries and will then be rebuilt
+# if you change anything in the OSD, which has the knock-on effect of
+# rebuilding most of the rest of the source.  But this is usually unnecessary;
+# so only define the following as you do iterative work on source files in
+# the OSD that you know should not require the rebuilding of lots of MAME
+# MAME_NO_TOOLS_DEPENDENCY_ON_OSD = 1
+
+
 ###########################################################################
 ##################   END USER-CONFIGURABLE OPTIONS   ######################
 ###########################################################################
@@ -580,6 +591,18 @@ ifeq ($(TARGETOS),macosx)
 ifeq ($(COMMAND_MODE),"legacy")
 ARFLAGS = -crs
 endif
+endif
+
+
+#-------------------------------------------------
+# Special dependency/linking flags 
+#-------------------------------------------------
+ifdef MAME_NO_TOOLS_DEPENDENCY_ON_OSD
+TOOLS_LIBOCORE_DEPENDENCY =
+TOOLS_LIBOCORE_LINK = $(LIBOCORE)
+else
+TOOLS_LIBOCORE_DEPENDENCY = $(LIBOCORE)
+TOOLS_LIBOCORE_LINK =
 endif
 
 
