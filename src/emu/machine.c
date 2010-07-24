@@ -378,19 +378,21 @@ void running_machine::start()
 	// call the driver's _START callbacks
 	if (m_config.m_machine_start != NULL)
 		(*m_config.m_machine_start)(this);
+
 	if (m_config.m_sound_start != NULL)
 		(*m_config.m_sound_start)(this);
+
+    announce_init_phase(STARTUP_PHASE_INITIALIZING_STATE, 30);
+
 	if (m_config.m_video_start != NULL)
 		(*m_config.m_video_start)(this);
 
-    // arbitrary 40% done with initializing state
-    announce_init_phase(STARTUP_PHASE_INITIALIZING_STATE, 40);
+    announce_init_phase(STARTUP_PHASE_INITIALIZING_STATE, 60);
 
 	// if we're coming in with a savegame request, process it now
 	const char *savegame = options_get_string(&m_options, OPTION_STATE);
 	if (savegame[0] != 0)
 		schedule_load(savegame);
-
 	// if we're in autosave mode, schedule a load
 	else if (options_get_bool(&m_options, OPTION_AUTOSAVE) && (m_game.flags & GAME_SUPPORTS_SAVE) != 0)
 		schedule_load("auto");
@@ -398,6 +400,8 @@ void running_machine::start()
 	// set up the cheat engine
 	if (options_get_bool(&m_options, OPTION_CHEAT))
 		cheat_init(this);
+
+    announce_init_phase(STARTUP_PHASE_INITIALIZING_STATE, 80);
 
 	// disallow save state registrations starting here
 	state_save_allow_registration(this, false);
