@@ -2083,6 +2083,20 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
 
 
 /**
+ * Returns a text string describing the current speed of the game relative
+ * to its ideal speed, and additionally information about the autoskip
+ * activation.  The returned text is only valid until a subsequent call
+ * to this function.
+ *
+ * @param game is the game that is to be queried; this game is known because
+ *        it was passed into the StartingUp() callback function.
+ * @return a text string describing the current speed of the game relative
+ *         to its ideal speed
+ **/
+const char *LibMame_RunningGame_GetSpeedText(LibMame_RunningGame *game);
+
+
+/**
  * Functions for altering the state of a running game
  **/
 

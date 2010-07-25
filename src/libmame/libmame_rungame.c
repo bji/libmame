@@ -9,11 +9,12 @@
  ************************************************************************** **/
 
 #include "emu.h"
+#include "libmame.h"
 #include "options.h"
 #include "osdcore.h"
 #include "osdepend.h"
 #include "render.h"
-#include "libmame.h"
+#include "video.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -1125,6 +1126,14 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
     }
 
     return LibMame_RunGameStatus_GeneralError;
+}
+
+
+const char *LibMame_RunningGame_GetSpeedText(LibMame_RunningGame *game)
+{
+    (void) game;
+
+    return video_get_speed_text(g_state.machine);
 }
 
 
