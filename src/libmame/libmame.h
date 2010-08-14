@@ -102,7 +102,7 @@ extern "C" {
  *    
  *    The target display frame rate can be found by calling 
  *    LibMame_Get_Game_ScreenRefreshRateHz, if needed, and the size at which
- *    the game will be rendered is known by calling
+ *    the game was originally redered is known by calling
  *    LibMame_Get_Game_ScreenResolution (the application may scale the
  *    resulting graphics and apply whatever effects it wants to to the
  *    results, but the display callback itself will be made with rendering
