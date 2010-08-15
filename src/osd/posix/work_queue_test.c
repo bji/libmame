@@ -24,6 +24,7 @@ typedef struct work_queue_list_element
 typedef struct work_item_list_element
 {
     osd_work_item *item;
+    osd_work_queue *queue;
     struct work_item_list_element *next;
     struct work_item_list_element *prev;
 } work_item_list_element;
@@ -121,6 +122,7 @@ static void add_work_item(work_queue_list_element *elem, bool multiple,
         work_item_list_element *item_elem = (work_item_list_element *)
             osd_malloc(sizeof(work_item_list_element));
         item_elem->item = item;
+        item_elem->queue = elem->queue;
         if (g_work_item_list) {
             item_elem->next = g_work_item_list;
             item_elem->prev = g_work_item_list->prev;
@@ -132,46 +134,6 @@ static void add_work_item(work_queue_list_element *elem, bool multiple,
         }
         g_work_item_list_count++;
     }
-}
-
-
-static void wait_on_item(work_item_list_element *elem)
-{
-    (void) osd_work_item_wait(elem->item, A_LONG_TIME);
-}
-
-
-static void remove_work_item(work_item_list_element *elem)
-{
-    wait_on_item(elem);
-    osd_work_item_release(elem->item);
-    if (elem == g_work_item_list) {
-        if (g_work_item_list == g_work_item_list->next) {
-            g_work_item_list = NULL;
-        }
-        else {
-            g_work_item_list->prev->next = g_work_item_list->next;
-            g_work_item_list->next->prev = g_work_item_list->prev;
-            g_work_item_list = g_work_item_list->next;
-        }
-    }
-    else {
-        elem->prev->next = elem->next;
-        elem->next->prev = elem->prev;
-    }
-    osd_free(elem);
-    g_work_item_list_count--;
-}
-
-
-static work_item_list_element *get_random_item()
-{
-    long which = random() % g_work_item_list_count;
-    work_item_list_element *elem = g_work_item_list;
-    for (int i = 0; i < which; i++) {
-        elem = elem->next;
-    }
-    return elem;
 }
 
 
@@ -208,11 +170,6 @@ int main(int argc, char **argv)
             else if ((random() % 100) < 5) {
                 remove_work_queue(get_random_queue());
             }
-            /* If there are work items then remove one with a 50% chance */
-            else if ((g_work_item_list_count > 0) && ((random() % 100) < 50)) {
-                /* Wait on a random item */
-                remove_work_item(get_random_item());
-            }
             /* Else create a new work item */
             else {
                 work_queue_list_element *elem = get_random_queue();
@@ -220,24 +177,8 @@ int main(int argc, char **argv)
                 add_work_item(elem, r % 2, (r / 2) % 2);
             }
         }
-        
+
         /* Wait on remainders */
-        while (g_work_item_list) {
-            work_item_list_element *next = g_work_item_list->next;
-            wait_on_item(g_work_item_list);
-            osd_work_item_release(g_work_item_list->item);
-            if (g_work_item_list == next) {
-                osd_free(g_work_item_list);
-                g_work_item_list = NULL;
-            }
-            else {
-                g_work_item_list->prev->next = g_work_item_list->next;
-                g_work_item_list->next->prev = g_work_item_list->prev;
-                osd_free(g_work_item_list);
-                g_work_item_list = next;
-            }
-        }
-        
         while (g_work_queue_list) {
             work_queue_list_element *next = g_work_queue_list->next;
             osd_work_queue_wait(g_work_queue_list->queue, A_LONG_TIME);
@@ -251,6 +192,21 @@ int main(int argc, char **argv)
                 g_work_queue_list->next->prev = g_work_queue_list->prev;
                 osd_free(g_work_queue_list);
                 g_work_queue_list = next;
+            }
+        }
+
+        /* Clear out items */
+        while (g_work_item_list) {
+            work_item_list_element *next = g_work_item_list->next;
+            if (g_work_item_list == next) {
+                osd_free(g_work_item_list);
+                g_work_item_list = NULL;
+            }
+            else {
+                g_work_item_list->prev->next = g_work_item_list->next;
+                g_work_item_list->next->prev = g_work_item_list->prev;
+                osd_free(g_work_item_list);
+                g_work_item_list = next;
             }
         }
     }
