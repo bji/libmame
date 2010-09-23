@@ -10,6 +10,12 @@
 #include <pthread.h>
 #include <unistd.h>
 
+/**
+ * NOTE: Timeouts in work queue methods are pretty useless and should not be a
+ * part of the API.  They are not really even used for anything.  It is a
+ * little faster to ignore them.  So this code ignores timeouts and always
+ * waits forever.
+ **/
 
 /**
  * A work queue.  All it has is an items_count and a condition variable that
@@ -526,13 +532,12 @@ int osd_work_queue_items(osd_work_queue *queue)
 
 int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
 {
-    pthread_t self = pthread_self();
-
     /**
-     * Calculate what the end tick is (if we get to this tick, we've timed
-     * out).
+     * NOTE: we ignore timeout and always wait forever
      **/
-    osd_ticks_t end = osd_ticks() + timeout;
+    (void) timeout;
+
+    pthread_t self = pthread_self();
 
     pthread_mutex_lock(&g_mutex);
 
@@ -541,19 +546,6 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
      **/
     while (queue->items_count)
     {
-        /**
-         * We allow special behavior here: if timeout is 0, we wait forever.
-         **/
-        if ((timeout != 0) && (osd_ticks() >= end))
-        {
-            /**
-             * We would like to wait for the queue to become empty, but we're
-             * already past the end tick, so time out
-             **/
-            pthread_mutex_unlock(&g_mutex);
-            return FALSE;
-        }
-
         /**
          * If there are items to run, then run them, to try to complete the
          * items
