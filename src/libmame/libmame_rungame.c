@@ -330,14 +330,19 @@ static libmame_input_descriptor g_input_descriptors[] =
 	ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_PADDLE_V */
   ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS), /* IPT_AD_STICK_X */
 	ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS), /* IPT_AD_STICK_Y */
-	ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_AD_STICK_Z */
+    // XXX TODO - figure out how to handle IPT_AD_STICK_Z
+	// ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_AD_STICK_Z */
+    INVALID_INPUT, /* IPT_AD_STICK_Z */
 	ANALOG_INPUT(lightgun_horizontal, ITEM_ID_XAXIS), /* IPT_LIGHTGUN_X */
 	ANALOG_INPUT(lightgun_vertical, ITEM_ID_YAXIS), /* IPT_LIGHTGUN_Y */
 	ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_PEDAL */
 	ANALOG_INPUT(pedal2, ITEM_ID_YAXIS), /* IPT_PEDAL2 */
 	ANALOG_INPUT(pedal3, ITEM_ID_ZAXIS), /* IPT_PEDAL3 */
-    ANALOG_INPUT(paddle, ITEM_ID_XAXIS), /* IPT_POSITIONAL */
-    ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_POSITIONAL_V */
+    // XXX TODO - figure out how to handle arbitrary IPT_POSITIONAL stuff
+    // ANALOG_INPUT(paddle, ITEM_ID_XAXIS), /* IPT_POSITIONAL */
+    INVALID_INPUT, /* IPT_POSITIONAL */
+    // ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_POSITIONAL_V */
+    INVALID_INPUT, /* IPT_POSITIONAL_V */
 	ANALOG_INPUT(spinner, ITEM_ID_RXAXIS), /* IPT_DIAL */
 	ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS), /* IPT_DIAL_V */
 	ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS), /* IPT_TRACKBALL_X */

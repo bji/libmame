@@ -39,8 +39,6 @@ struct _osd_work_item
 
     INT32 numitems;
 
-    INT32 numitems_per_worker;
-    
     void *parambase;
 
     INT32 paramstep;
@@ -55,7 +53,7 @@ struct _osd_work_item
 
     osd_work_queue *queue;
     
-    osd_work_item *prev, *next;
+    osd_work_item *next;
 };
 
 
@@ -118,7 +116,7 @@ static int g_queues_count;
  * removes the work_item from the global list and either signals a condition,
  * or frees the work_item directly, depending upon the work_item's flags.
  **/
-static osd_work_item *g_items;
+static osd_work_item *g_items, *g_items_tail;
 
 /**
  * This is a static array of osd_work_item structures, to be used instead of
@@ -140,7 +138,7 @@ static bool g_free_items_initialized;
 
 /**
  * This is a global mutex protecting g_threads_count, g_threads_stop,
- * g_queues_count, and g_items.
+ * g_queues_count, g_items, and g_items_tail.
  **/
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -160,16 +158,8 @@ static void work_item_release_locked(osd_work_item *item)
     if ((item >= &(g_static_items[0])) &&
         (item <= &(g_static_items[sizeof(g_static_items) / 
                                   sizeof(g_static_items[0])]))) {
-        if (g_free_items == 0) {
-            g_free_items = item->next = item->prev = item;
-        }
-        else {
-            item->prev = g_free_items->prev;
-            item->next = g_free_items;
-            g_free_items->prev->next = item;
-            g_free_items->prev = item;
-            g_free_items = item;
-        }
+        item->next = g_free_items;
+        g_free_items = item;
     }
     else {
         osd_free(item);
@@ -180,108 +170,98 @@ static void work_item_release_locked(osd_work_item *item)
 static void work_queue_run_items_locked(pthread_t self)
 {
     /**
-     * Save a pointer to the item, as g_items may change while we are working
-     * on this item
+     * Run items in a loop until there are no more
      **/
-    osd_work_item *item = g_items;
-
-    /* Take a block of items to run.  This reduces locking overhead by not
-       requiring a lock for every item. */
-
-    /**
-     * Save the start index of the items we are to run
-     **/
-    int index = item->numitemsrun;
-
-    /**
-     * Increment the numitemsrun since we are running items.  If we are taking
-     * the last item to run out of the item, then no other work thread should
-     * see this item any more on the work item list, so remove it
-     **/
-
-    int to_run = item->numitems_per_worker;
-    int available = item->numitems - item->numitemsrun;
-    if (to_run > available) {
-        to_run = available;
-    }
-            
-    item->numitemsrun += to_run;
-
-    if (item->numitemsrun == item->numitems)
-    {
-        if (g_items->next == g_items)
-        {
-            g_items = NULL;
-        }
-        else
-        {
-            g_items->next->prev = g_items->prev;
-            g_items->prev->next = g_items->next;
-            g_items = g_items->next;
-        }
-    }
-
-    /**
-     * Release the locks; we know that the work item won't be taken out from
-     * underneath us because it cannot be freed until the last item is
-     * completed, and that can't happen until we're done with it
-     **/
-    pthread_mutex_unlock(&g_mutex);
-
-    /**
-     * Actually run the work item with the appropriate parameters
-     **/
-
-    void *result = NULL;
-    int end = index + to_run;
-    for ( ; index < end; index++)
-    {
-        result = (item->callback)
-            (&(((char *) item->parambase)[index * item->paramstep]),
-             self);
-    }
-
-    /**
-     * Re-acquire the mutex so that we can safely update some fields
-     **/
-    pthread_mutex_lock(&g_mutex);
-
-    /**
-     * If the work item was complete (meaning that we were the work thread
-     * that completed the very last work call), then we can handle its end of
-     * life stuff
-     **/
-    item->numitemscompleted += to_run;
-    if (item->numitemscompleted == item->numitems)
-    {
+    do {
         /**
-         * Get a reference to its queue before releasing the item so that we
-         * can update the queue if necessary
+         * Save a pointer to the item, as g_items may change while we are
+         * working on this item
          **/
-        osd_work_queue *queue = item->queue;
+        osd_work_item *item = g_items;
+
+        /**
+         * Save the start index of the items we are to run
+         **/
+        int index = item->numitemsrun;
         
         /**
-         * If the flag said so, then just immediately auto free it
+         * Increment the numitemsrun since we are running items.  If we are
+         * taking the last item to run out of the item, then no other work
+         * thread should see this item any more on the work item list, so
+         * remove it
          **/
-        if (item->flags & WORK_ITEM_FLAG_AUTO_RELEASE)
+        
+        item->numitemsrun += 1;
+        
+        if (item->numitemsrun == item->numitems)
+        {
+            g_items = g_items->next;
+
+            if (!g_items) {
+                g_items_tail = 0;
+            }
+        }
+        
+        /**
+         * Release the locks; we know that the work item won't be taken out
+         * from underneath us because it cannot be freed until the last item
+         * is completed, and that can't happen until we're done with it
+         **/
+        pthread_mutex_unlock(&g_mutex);
+        
+        /**
+         * Actually run the work item with the appropriate parameters
+         **/
+        
+        void *result = (item->callback)
+            (&(((char *) item->parambase)[index * item->paramstep]), self);
+        
+        /**
+         * Re-acquire the mutex so that we can safely update some fields
+         **/
+        pthread_mutex_lock(&g_mutex);
+        
+        /* Save away the result */
+        item->result = result;
+        
+        /**
+         * If the work item was complete (meaning that we were the work thread
+         * that completed the very last work call), then we can handle its end
+         * of life stuff
+         **/
+        if (++item->numitemscompleted == item->numitems)
         {
             /**
-             * No one else can have a reference to it because the API user
-             * never got a reference to it, and we've just completed the last
-             * item so no other worker thread could be looking at it.  So it's
-             * safe to release it here.
+             * Get a reference to its queue before releasing the item so that
+             * we can update the queue if necessary
              **/
-            work_item_release_locked(item);
+            osd_work_queue *queue = item->queue;
+            
+            /**
+             * If the flag said so, then just immediately auto free it
+             **/
+            if (item->flags & WORK_ITEM_FLAG_AUTO_RELEASE)
+            {
+                /**
+                 * No one else can have a reference to it because the API user
+                 * never got a reference to it, and we've just completed the
+                 * last item so no other worker thread could be looking at it.
+                 * So it's safe to release it here.
+                 **/
+                work_item_release_locked(item);
+            }
+            
+            /**
+             * Decrement the queue's item count.  If it goes to zero, signal
+             * the condition just in case someone is waiting for it to be
+             * done.
+             **/
+            if (--queue->items_count == 0)
+            {
+                pthread_cond_signal(&queue->cond);
+            }
         }
-
-        /**
-         * Decrement the queue's item count.  If it goes to zero, signal the
-         * condition just in case someone is waiting for it to be done.
-         **/
-        if (--queue->items_count == 0) {
-            pthread_cond_signal(&queue->cond);
-        }
-    }
+    } while (g_items);
 }
 
 
@@ -522,18 +502,12 @@ osd_work_queue *osd_work_queue_alloc(int flags)
     g_queues_count += 1;
 
     if (!g_free_items_initialized) {
-        for (int i = 0; 
+        g_free_items = 0;
+        for (unsigned int i = 0; 
              i < (sizeof(g_static_items) / sizeof(g_static_items[0])); i++) {
             osd_work_item *item = &(g_static_items[i]);
-            if (g_free_items) {
-                item->prev = g_free_items->prev;
-                item->next = g_free_items;
-                g_free_items->prev->next = item;
-                g_free_items->prev = item;
-            }
-            else {
-                g_free_items = item->prev = item->next = item;
-            }
+            item->next = g_free_items;
+            g_free_items = item;
         }
         g_free_items_initialized = true;
     }
@@ -645,14 +619,7 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 
     if (g_free_items) {
         item = g_free_items;
-        if (item->next == item) {
-            g_free_items = 0;
-        }
-        else {
-            item->prev->next = item->next;
-            item->next->prev = item->prev;
-            g_free_items = item->next;
-        }
+        g_free_items = item->next;
     }
     else {
         item = (osd_work_item *) osd_malloc(sizeof(osd_work_item));
@@ -666,9 +633,6 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     item->callback = callback;
 
     item->numitems = numitems;
-
-    item->numitems_per_worker = 
-        (numitems / (g_threads_count ? g_threads_count : 1)) + 1;
 
     item->parambase = parambase;
 
@@ -684,24 +648,32 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
     
     queue->items_count += 1;
 
-    if (g_items)
+    item->next = 0;
+
+    if (g_items_tail)
     {
-        item->prev = g_items->prev;
-        item->next = g_items;
-        g_items->prev->next = item;
-        g_items->prev = item;
+        g_items_tail->next = item;
+        g_items_tail = item;
     }
-    else
-    {
-        g_items = item->prev = item->next = item;
+    else {
+        g_items = g_items_tail = item;
     }
 
+#if 0
     pthread_cond_broadcast(&g_items_cond);
+#else
+    if (numitems == 1) {
+        pthread_cond_signal(&g_items_cond);
+    }
+    else {
+        pthread_cond_broadcast(&g_items_cond);
+    }
+#endif
     
     pthread_mutex_unlock(&g_mutex);
 
     /* Enforce that the caller is not allowed to reference this item when they
-       say to auto release it but returning NULL in that case */
+       say to auto release it by returning NULL in that case */
     return (flags & WORK_ITEM_FLAG_AUTO_RELEASE) ? NULL : item;
 }
 
