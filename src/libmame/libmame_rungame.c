@@ -786,11 +786,11 @@ void osd_init(running_machine *machine)
      **/
     g_state.target = render_target_alloc(g_state.machine, NULL, 0);
 
-    /* Set it up to be the same size as the game's original display */
-    LibMame_ScreenResolution res = 
-        LibMame_Get_Game_ScreenResolution(g_state.gamenum);
-
-    render_target_set_bounds(g_state.target, res.width, res.height, 1.0);
+    /**
+     * Set render target bounds to 10000 x 10000 and allow the callback to
+     * scale that to whatever they want.
+     **/
+    render_target_set_bounds(g_state.target, 10000, 10000, 1.0);
 
     /* Add a startup callback so that we can forward this info to users */
     machine->add_notifier(MACHINE_NOTIFY_STARTUP, &startup_callback);

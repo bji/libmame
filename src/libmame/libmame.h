@@ -1445,10 +1445,13 @@ typedef struct LibMame_RenderPrimitive
     LibMame_RenderPrimitiveType type;
 
     /**
-     * This is the bounds within the display to draw this render primitive at; 
+     * This is the bounds within the display to draw this render primitive at;
      * if this is a vector primitive, this gives the endpoints of the vector.
      * If this is a raster primitive, this gives the bounds of the rectangle
-     * into which the texture should be rendered
+     * into which the texture should be rendered.  These bounds are expressed
+     * within a virtual "screen" that is 10000 x 10000 pixels in size.  The
+     * game will be properly oriented and its aspect ratio will be correct,
+     * and it will fill this virtual "screen" as expected.
      **/
     struct {
         float x0;   /* leftmost X coordinate */
