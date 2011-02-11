@@ -1449,12 +1449,7 @@ typedef struct LibMame_RenderPrimitive
      * if this is a vector primitive, this gives the endpoints of the vector.
      * If this is a raster primitive, this gives the bounds of the rectangle
      * into which the texture should be rendered.  These bounds are expressed
-     * within a virtual "screen" that is 10000 x 10000 pixels in size.  Note
-     * that MAME does not inscribe the game within this virtual screen
-     * perfectly; this might be a bug in MAME, or it might be intentional,
-     * it's not clear.  The game's resolution (width and height) can be used
-     * to calculate the points for inscribing the game's resolution within the
-     * virtual 10000x10000 screen.
+     * within a virtual "screen" that is 10000 x 10000 pixels in size.
      **/
     struct {
         float x0;   /* leftmost X coordinate */
