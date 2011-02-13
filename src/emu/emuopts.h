@@ -107,6 +107,7 @@
 #define OPTION_GAMMA				"gamma"
 #define OPTION_PAUSE_BRIGHTNESS		"pause_brightness"
 #define OPTION_QUIET_STARTUP        "quiet_startup"
+#define OPTION_EFFECT				"effect"
 
 /* core vector options */
 #define OPTION_ANTIALIAS			"antialias"

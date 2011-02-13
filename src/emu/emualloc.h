@@ -87,7 +87,8 @@ public:
 		  m_ordered_next(NULL),
 		  m_ordered_prev(NULL),
 		  m_ptr(ptr),
-		  m_size(size) { }
+		  m_size(size),
+		  m_id(~(UINT64)0) { }
 	virtual ~resource_pool_item() { }
 
 	resource_pool_item *	m_next;
@@ -95,6 +96,7 @@ public:
 	resource_pool_item *	m_ordered_prev;
 	void *					m_ptr;
 	size_t					m_size;
+	UINT64					m_id;
 };
 
 
@@ -210,7 +212,7 @@ void dump_unfreed_mem();
 #if TRACK_STANDARD_NEW_AND_DELETE
 
 // standard new/delete operators (try to avoid using)
-inline void *operator new(std::size_t size) throw (std::bad_alloc)
+ATTR_FORCE_INLINE inline void *operator new(std::size_t size) throw (std::bad_alloc)
 {
 	void *result = malloc_file_line(size, NULL, 0);
 	if (result == NULL)
@@ -218,7 +220,7 @@ inline void *operator new(std::size_t size) throw (std::bad_alloc)
 	return result;
 }
 
-inline void *operator new[](std::size_t size) throw (std::bad_alloc)
+ATTR_FORCE_INLINE inline void *operator new[](std::size_t size) throw (std::bad_alloc)
 {
 	void *result = malloc_file_line(size, NULL, 0);
 	if (result == NULL)
@@ -226,13 +228,13 @@ inline void *operator new[](std::size_t size) throw (std::bad_alloc)
 	return result;
 }
 
-inline void operator delete(void *ptr)
+ATTR_FORCE_INLINE inline void operator delete(void *ptr) throw()
 {
 	if (ptr != NULL)
 		free_file_line(ptr, NULL, 0);
 }
 
-inline void operator delete[](void *ptr)
+ATTR_FORCE_INLINE inline void operator delete[](void *ptr) throw()
 {
 	if (ptr != NULL)
 		free_file_line(ptr, NULL, 0);
@@ -240,16 +242,12 @@ inline void operator delete[](void *ptr)
 
 #endif // TRACK_STANDARD_NEW_AND_DELETE
 
-// These nonstandard C++ new and delete operators are allowed to be overridden
-// even when compiling MAME as a library (i.e. libmame) because it is expected
-// that an application would rarely ever want to use new and delete operators
-// with these signatures, and an attempt is made to allow the MAME compile to
-// be as unaltered as possible when compiling as a library.  There is a danger
-// that this will hose some application linking against libmame, but the
-// danger is small because these signatures are so unusual.
+// These nonstandard C++ new and delete operators must be defined because
+// the code uses them; the implementation of malloc_file_line is modified
+// to do the right thing when TRACK_STANDARD_NEW_AND_DELETE is not defined.
 
 // file/line new/delete operators
-inline void *operator new(std::size_t size, const char *file, int line) throw (std::bad_alloc)
+ATTR_FORCE_INLINE inline void *operator new(std::size_t size, const char *file, int line) throw (std::bad_alloc)
 {
 	void *result = malloc_file_line(size, file, line);
 	if (result == NULL)
@@ -257,7 +255,7 @@ inline void *operator new(std::size_t size, const char *file, int line) throw (s
 	return result;
 }
 
-inline void *operator new[](std::size_t size, const char *file, int line) throw (std::bad_alloc)
+ATTR_FORCE_INLINE inline void *operator new[](std::size_t size, const char *file, int line) throw (std::bad_alloc)
 {
 	void *result = malloc_file_line(size, file, line);
 	if (result == NULL)
@@ -265,13 +263,13 @@ inline void *operator new[](std::size_t size, const char *file, int line) throw 
 	return result;
 }
 
-inline void operator delete(void *ptr, const char *file, int line)
+ATTR_FORCE_INLINE inline void operator delete(void *ptr, const char *file, int line)
 {
 	if (ptr != NULL)
 		free_file_line(ptr, file, line);
 }
 
-inline void operator delete[](void *ptr, const char *file, int line)
+ATTR_FORCE_INLINE inline void operator delete[](void *ptr, const char *file, int line)
 {
 	if (ptr != NULL)
 		free_file_line(ptr, file, line);
@@ -279,7 +277,7 @@ inline void operator delete[](void *ptr, const char *file, int line)
 
 
 // file/line new/delete operators with zeroing
-inline void *operator new(std::size_t size, const char *file, int line, const zeromem_t &) throw (std::bad_alloc)
+ATTR_FORCE_INLINE inline void *operator new(std::size_t size, const char *file, int line, const zeromem_t &) throw (std::bad_alloc)
 {
 	void *result = malloc_file_line(size, file, line);
 	if (result == NULL)
@@ -288,7 +286,7 @@ inline void *operator new(std::size_t size, const char *file, int line, const ze
 	return result;
 }
 
-inline void *operator new[](std::size_t size, const char *file, int line, const zeromem_t &) throw (std::bad_alloc)
+ATTR_FORCE_INLINE inline void *operator new[](std::size_t size, const char *file, int line, const zeromem_t &) throw (std::bad_alloc)
 {
 	void *result = malloc_file_line(size, file, line);
 	if (result == NULL)
@@ -297,13 +295,13 @@ inline void *operator new[](std::size_t size, const char *file, int line, const 
 	return result;
 }
 
-inline void operator delete(void *ptr, const char *file, int line, const zeromem_t &)
+ATTR_FORCE_INLINE inline void operator delete(void *ptr, const char *file, int line, const zeromem_t &)
 {
 	if (ptr != NULL)
 		free_file_line(ptr, file, line);
 }
 
-inline void operator delete[](void *ptr, const char *file, int line, const zeromem_t &)
+ATTR_FORCE_INLINE inline void operator delete[](void *ptr, const char *file, int line, const zeromem_t &)
 {
 	if (ptr != NULL)
 		free_file_line(ptr, file, line);

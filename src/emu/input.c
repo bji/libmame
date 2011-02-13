@@ -867,7 +867,7 @@ INT32 input_code_value(running_machine *machine, input_code code)
 	INT32 result = 0;
 	int curindex;
 
-	profiler_mark_start(PROFILER_INPUT);
+	g_profiler.start(PROFILER_INPUT);
 
 	/* return 0 for any disabled or invalid device classes */
 	if (devclass <= DEVICE_CLASS_INVALID || devclass >= DEVICE_CLASS_MAXIMUM || !device_list[devclass].enabled)
@@ -918,7 +918,7 @@ INT32 input_code_value(running_machine *machine, input_code code)
 	}
 
 exit:
-	profiler_mark_end();
+	g_profiler.stop();
 	return result;
 }
 
@@ -1363,7 +1363,7 @@ astring &input_code_to_token(running_machine *machine, astring &string, input_co
 		devindex[0] = 0;
 
 	/* determine the itemid part; look up in the table if we don't have a token */
-	if (item != NULL && item->token.len() != 0)
+	if (item != NULL && item->token)
 		devcode = item->token;
 	else
 	{

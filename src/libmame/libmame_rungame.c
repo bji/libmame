@@ -784,13 +784,13 @@ void osd_init(running_machine *machine)
      * Create the render_target that tells MAME the rendering parameters it
      * will use.
      **/
-    g_state.target = render_target_alloc(g_state.machine, NULL, 0);
+    g_state.target = g_state.machine->render().target_alloc();
 
     /**
      * Set render target bounds to 10000 x 10000 and allow the callback to
      * scale that to whatever they want.
      **/
-    render_target_set_bounds(g_state.target, 10000, 10000, 1.0);
+    g_state.target->set_bounds(10000, 10000, 1.0);
 
     /* Add a startup callback so that we can forward this info to users */
     machine->add_notifier(MACHINE_NOTIFY_STARTUP, &startup_callback);
@@ -820,12 +820,11 @@ void osd_update(running_machine *machine, int skip_redraw)
      * future.
      **/
     if (!skip_redraw) {
-        const render_primitive_list *list = 
-            render_target_get_primitives(g_state.target);
-        osd_lock_acquire(list->lock);
+        render_primitive_list &list = g_state.target->get_primitives();
+        list.acquire_lock();
         (*(g_state.callbacks->UpdateVideo))
-            ((LibMame_RenderPrimitive *) list->head, g_state.callback_data);
-        osd_lock_release(list->lock);
+            ((LibMame_RenderPrimitive *) list.first(), g_state.callback_data);
+        list.release_lock();
     }
 
     /**
@@ -841,7 +840,8 @@ void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
     /**
      * Ask the callbacks to update the audio
      **/
-    (*(g_state.callbacks->UpdateAudio))(machine->sample_rate, samples_this_frame,
+    (*(g_state.callbacks->UpdateAudio))(machine->sample_rate, 
+                                        samples_this_frame,
                                         buffer, g_state.callback_data);
 }
 

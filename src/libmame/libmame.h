@@ -612,6 +612,7 @@ typedef enum LibMame_ImageStatus_Status
  **/
 typedef enum
 {
+    LibMame_RenderPrimitiveType_Invalid,
     LibMame_RenderPrimitiveType_Line,
     LibMame_RenderPrimitiveType_Quad
 } LibMame_RenderPrimitiveType;
@@ -1358,6 +1359,8 @@ typedef struct LibMame_RunGameOptions
     float pause_brightness;
     /** show only the disclaimer screen on startup **/
     int quiet_startup;
+    /** name of a PNG file to use for visual effects **/
+    char effect[256];
 
     /* core vector options ------------------------------------------------ */
 
@@ -1433,12 +1436,6 @@ typedef struct LibMame_RunGameOptions
  **/
 typedef struct LibMame_RenderPrimitive
 {
-    /**
-     * This is the next render primitive in this list, or NULL if there are no
-     * more render primitives after this one
-     **/
-    struct LibMame_RenderPrimitive *next;
-
     /**
      * This is the type of this render primitive (vector or raster)
      **/
@@ -1554,6 +1551,12 @@ typedef struct LibMame_RenderPrimitive
             float u, v;
         } bottom_right;
     } quad_texuv;
+
+    /**
+     * This is the next render primitive in this list, or NULL if there are no
+     * more render primitives after this one
+     **/
+    struct LibMame_RenderPrimitive *next;
 } LibMame_RenderPrimitive;
 
 

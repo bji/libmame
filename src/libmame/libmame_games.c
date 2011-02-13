@@ -245,7 +245,7 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
 
     for (bool b = machineconfig->m_devicelist.first(/* returns */ soundi); b;
          b = soundi->next(/* returns */ soundi)) {
-        if (soundi->devconfig().type() != SOUND_SAMPLES) {
+        if (soundi->devconfig().type() != SAMPLES) {
             continue;
         }
 
@@ -861,10 +861,10 @@ static void convert_image_info(const game_driver *driver,
     /* Could the roms and hdd images */
 
     /* Iterate through the sources ... */
-    for (const rom_source *source = rom_first_source(driver, machineconfig); 
-         source; source = rom_next_source(driver, machineconfig, source)) {
+    for (const rom_source *source = rom_first_source(*machineconfig); 
+         source; source = rom_next_source(*source)) {
         /* Iterate through the regions */
-        for (const rom_entry *region = rom_first_region(driver, source); region;
+        for (const rom_entry *region = rom_first_region(*source); region;
              region = rom_next_region(region)) {
             /* iterate through ROM entries */
             for (const rom_entry *rom = rom_first_file(region); rom;
@@ -893,10 +893,10 @@ static void convert_image_info(const game_driver *driver,
     Hash::Table<Hash::StringKey, LibMame_BiosSet> htBiosSets;
     LibMame_Image *rom_image = gameinfo->roms, *hdd_image = gameinfo->hdds;
     int current_rom_index = 0;
-    for (const rom_source *source = rom_first_source(driver, machineconfig);
-         source; source = rom_next_source(driver, machineconfig, source)) {
+    for (const rom_source *source = rom_first_source(*machineconfig);
+         source; source = rom_next_source(*source)) {
         /* Iterate through the regions */
-        for (const rom_entry *region = rom_first_region(driver, source); 
+        for (const rom_entry *region = rom_first_region(*source); 
              region; region = rom_next_region(region)) {
             /* iterate through ROM entries */
             for (const rom_entry *rom = rom_first_file(region); rom;
@@ -928,14 +928,12 @@ static void convert_image_info(const game_driver *driver,
                 image->clone_of_rom = 0;
                 const game_driver *clone_of = driver_get_clone(driver);
                 if (clone_of && !ROM_NOGOODDUMP(rom)) {
-                    machine_config *pconfig = global_alloc
-                        (machine_config(clone_of->machine_config));
+                    machine_config config(*clone_of);
                     for (const rom_source *psource = rom_first_source
-                             (clone_of, pconfig); psource;
-                         psource = rom_next_source
-                             (clone_of, pconfig, psource)) {
+                             (config); psource;
+                         psource = rom_next_source(*psource)) {
                         for (const rom_entry *pregion = 
-                                 rom_first_region(clone_of, psource); pregion;
+                                 rom_first_region(*psource); pregion;
                              pregion = rom_next_region(pregion)) {
                             for (const rom_entry *prom = 
                                      rom_first_file(pregion); prom; 
@@ -950,7 +948,6 @@ static void convert_image_info(const game_driver *driver,
                             }
                         }
                     }
-                    global_free(pconfig);
                 }
                 char checksum[HASH_BUF_SIZE];
                 if (hash_data_extract_printable_checksum
@@ -1054,8 +1051,7 @@ static void convert_game_info(GameInfo *gameinfo)
 {
     const game_driver *driver = drivers[gameinfo->driver_index];
 
-	machine_config *machineconfig = 
-        global_alloc(machine_config(driver->machine_config));
+	machine_config machineconfig(*driver);
     ioport_list ioportlist;
     input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE);
     /* Mame's code assumes the above succeeds, we will too */
@@ -1063,16 +1059,14 @@ static void convert_game_info(GameInfo *gameinfo)
     convert_year(driver, gameinfo);
     convert_working_flags(driver, gameinfo);
     convert_orientation(driver, gameinfo);
-    convert_screen_info(machineconfig, gameinfo);
-    convert_sound_channels(machineconfig, gameinfo);
-    convert_sound_samples(machineconfig, gameinfo);
-    convert_chips(machineconfig, gameinfo);
+    convert_screen_info(&machineconfig, gameinfo);
+    convert_sound_channels(&machineconfig, gameinfo);
+    convert_sound_samples(&machineconfig, gameinfo);
+    convert_chips(&machineconfig, gameinfo);
     convert_settings(&ioportlist, gameinfo);
     convert_controllers(&ioportlist, gameinfo);
-    convert_image_info(driver, machineconfig, gameinfo);
+    convert_image_info(driver, &machineconfig, gameinfo);
     convert_source_file_name(driver, gameinfo);
-
-    global_free(machineconfig);
 }
 
 
