@@ -197,7 +197,7 @@ static void convert_screen_info(const machine_config *machineconfig,
 {
     /* We assume that all screens are the same; and in any case, only report
        on the first screen, which is assumed to be the primary screen */
-    const device_config *devconfig = screen_first(*machineconfig);
+    const device_config *devconfig = machineconfig->first_screen();
     if (devconfig != NULL) {
         const screen_device_config *screenconfig =
             (const screen_device_config *) devconfig;

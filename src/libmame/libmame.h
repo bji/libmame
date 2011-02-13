@@ -1650,8 +1650,8 @@ typedef struct LibMame_RunGameCallbacks
      * @param callback_data the data pointer that was passed to
      *        LibMame_RunGame
      **/
-    void (*UpdateAudio)(int sample_rate, int samples_this_frame, int16_t *buffer, 
-                        void *callback_data);
+    void (*UpdateAudio)(int sample_rate, int samples_this_frame, 
+                        const int16_t *buffer, void *callback_data);
 
     /**
      * Called by libmame to alter the current volume of audio output.

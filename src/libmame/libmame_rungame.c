@@ -62,6 +62,66 @@ typedef enum
 
 
 /** **************************************************************************
+ * Static prototypes
+ ************************************************************************** **/
+/* libmame OSD prototypes */
+static void osd_init(running_machine *machine);
+static void osd_update(running_machine *machine, int skip_redraw);
+static void osd_update_audio_stream(running_machine *machine, 
+                                    const INT16 *buffer,
+                                    int samples_this_frame);
+static void osd_set_mastervolume(int attenuation);
+static void osd_customize_input_type_list(input_type_desc *typelist);
+
+
+/** **************************************************************************
+ * Classes
+ ************************************************************************** **/
+
+class libmame_rungame_osd_interface : public osd_interface
+{
+public:
+
+	libmame_rungame_osd_interface()
+    {
+    }
+
+	virtual ~libmame_rungame_osd_interface()
+    {
+    }
+
+	virtual void init(running_machine &machine)
+    {
+        this->osd_interface::init(machine);
+
+        return osd_init(&machine);
+    }
+
+	virtual void update(bool skip_redraw)
+    {
+        return osd_update(&(this->machine()), skip_redraw);
+    }
+
+	virtual void update_audio_stream(const INT16 *buffer, 
+                                     int samples_this_frame)
+    {
+        return osd_update_audio_stream(&(this->machine()), buffer, 
+                                       samples_this_frame);
+    }
+
+	virtual void set_mastervolume(int attenuation)
+    {
+        return osd_set_mastervolume(attenuation);
+    }
+
+	virtual void customize_input_type_list(input_type_desc *typelist)
+    {
+        return osd_customize_input_type_list(typelist);
+    }
+};
+
+
+/** **************************************************************************
  * Structured Type Definitions
  ************************************************************************** **/
 
@@ -134,6 +194,11 @@ typedef struct LibMame_RunGame_State
      * This is the render target for the game
      **/
     render_target *target;
+
+    /**
+     * Most recently requested 'speed text'
+     **/
+    astring speed_text;
 
 } LibMame_RunGame_State;
 
@@ -773,7 +838,7 @@ static void look_up_and_set_configuration_value(LibMame_RunningGame *game,
  * libmame OSD function implementations
  ************************************************************************** **/
 
-void osd_init(running_machine *machine)
+static void osd_init(running_machine *machine)
 {
     /**
      *  Save away the machine, we'll need it in osd_customize_input_type_list
@@ -800,7 +865,7 @@ void osd_init(running_machine *machine)
 }
 
 
-void osd_update(running_machine *machine, int skip_redraw)
+static void osd_update(running_machine *machine, int skip_redraw)
 {
     /**
      * Poll input
@@ -834,8 +899,9 @@ void osd_update(running_machine *machine, int skip_redraw)
 }
 
 
-void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
-                             int samples_this_frame)
+static void osd_update_audio_stream(running_machine *machine, 
+                                    const INT16 *buffer,
+                                    int samples_this_frame)
 {
     /**
      * Ask the callbacks to update the audio
@@ -846,7 +912,7 @@ void osd_update_audio_stream(running_machine *machine, INT16 *buffer,
 }
 
 
-void osd_set_mastervolume(int attenuation)
+static void osd_set_mastervolume(int attenuation)
 {
     /**
      * Ask the callbacks to set the master volume
@@ -868,7 +934,7 @@ void osd_set_mastervolume(int attenuation)
  * whatever they want to satisfy getting inputs for the various controllers
  * types.
  **/
-void osd_customize_input_type_list(input_type_desc *typelist)
+static void osd_customize_input_type_list(input_type_desc *typelist)
 {
     /**
      * For each input descriptor, create a keyboard key, or mouse axis, or
@@ -1105,7 +1171,11 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
     g_state.waiting_for_pause = false;
 
     /* Run the game */
-    int result = mame_execute(mame_options, benchmarking);
+    int result;
+    {
+        libmame_rungame_osd_interface osd;
+        result = mame_execute(osd, mame_options, benchmarking);
+    }
 
     /* Free the options */
     options_free(mame_options);
@@ -1138,7 +1208,9 @@ const char *LibMame_RunningGame_GetSpeedText(LibMame_RunningGame *game)
 {
     (void) game;
 
-    return video_get_speed_text(g_state.machine);
+    g_state.machine->video().speed_text(g_state.speed_text);
+
+    return astring_c(&(g_state.speed_text));
 }
 
 
