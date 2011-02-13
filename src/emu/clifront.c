@@ -23,8 +23,9 @@
 
 #include <new>
 #include <ctype.h>
-
-
+#ifdef MESS
+#include "mess.h"
+#endif
 
 
 /***************************************************************************
@@ -61,6 +62,7 @@ static void romident(core_options *options, const char *filename, romident_statu
 static void identify_file(core_options *options, const char *name, romident_status *status);
 static void identify_data(core_options *options, const char *name, const UINT8 *data, int length, romident_status *status);
 static void match_roms(core_options *options, const char *hash, int length, int *found);
+static void display_suggestions(const char *gamename);
 
 
 
@@ -96,7 +98,7 @@ static const options_entry cli_options[] =
 	{ "romident",                 "0",        OPTION_COMMAND,    "compare files with known MAME roms" },
 	{ "listdevices;ld",           "0",        OPTION_COMMAND,    "list available devices" },
 	{ "listmedia;lm",             "0",        OPTION_COMMAND,    "list available media for the system" },
-	{ "listsoftware",             "0",        OPTION_COMMAND,    "list known software for the system" },
+	{ "listsoftware;lsoft",       "0",        OPTION_COMMAND,    "list known software for the system" },
 
 	{ NULL }
 };
@@ -107,6 +109,21 @@ static const options_entry cli_options[] =
     CORE IMPLEMENTATION
 ***************************************************************************/
 
+static void display_suggestions(const char *gamename)
+{
+	const game_driver *matches[10];
+	int drvnum;
+
+	/* get the top 10 approximate matches */
+	driver_list_get_approx_matches(drivers, gamename, ARRAY_LENGTH(matches), matches);
+
+	/* print them out */
+	fprintf(stderr, "\n\"%s\" approximately matches the following\n"
+			"supported " GAMESNOUN " (best match first):\n\n", gamename);
+	for (drvnum = 0; drvnum < ARRAY_LENGTH(matches); drvnum++)
+		if (matches[drvnum] != NULL)
+			fprintf(stderr, "%-18s%s\n", matches[drvnum]->name, matches[drvnum]->description);
+}
 /*-------------------------------------------------
     cli_execute - execute a game via the standard
     command line interface
@@ -128,7 +145,7 @@ int cli_execute(int argc, char **argv, osd_interface &osd, const options_entry *
 		options_add_entries(options, cli_options);
 
 		/* parse the command line first; if we fail here, we're screwed */
-		if (options_parse_command_line(options, argc, argv, OPTION_PRIORITY_CMDLINE))
+		if (options_parse_command_line(options, argc, argv, OPTION_PRIORITY_CMDLINE, FALSE))
 		{
 			result = MAMERR_INVALID_CONFIG;
 			goto error;
@@ -153,23 +170,18 @@ int cli_execute(int argc, char **argv, osd_interface &osd, const options_entry *
 		/* if we don't have a valid driver selected, offer some suggestions */
 		if (strlen(gamename_option) > 0 && driver == NULL)
 		{
-			const game_driver *matches[10];
-			int drvnum;
-
-			/* get the top 10 approximate matches */
-			driver_list_get_approx_matches(drivers, gamename_option, ARRAY_LENGTH(matches), matches);
-
-			/* print them out */
-			fprintf(stderr, "\n\"%s\" approximately matches the following\n"
-					"supported " GAMESNOUN " (best match first):\n\n", gamename_option);
-			for (drvnum = 0; drvnum < ARRAY_LENGTH(matches); drvnum++)
-				if (matches[drvnum] != NULL)
-					fprintf(stderr, "%-18s%s\n", matches[drvnum]->name, matches[drvnum]->description);
-
+			display_suggestions(gamename_option);
 			/* exit with an error */
 			result = MAMERR_NO_SUCH_GAME;
 			goto error;
 		}
+		/* parse the command line first; if we fail here, we're screwed */
+		if (options_parse_command_line(options, argc, argv, OPTION_PRIORITY_CMDLINE, TRUE))
+		{
+			result = MAMERR_INVALID_CONFIG;
+			goto error;
+		}
+
 
 		/* run the game */
         result = mame_execute(osd, options, false);
@@ -317,10 +329,14 @@ static int execute_commands(core_options *options, const char *exename, const ga
 		if (options_get_bool(options, info_commands[i].option))
 		{
 			const char *gamename = options_get_string(options, OPTION_GAMENAME);
-
 			/* parse any relevant INI files before proceeding */
 			mame_parse_ini_files(options, driver);
-			return (*info_commands[i].function)(options, (gamename[0] == 0) ? "*" : gamename);
+			int retVal = (*info_commands[i].function)(options, (gamename[0] == 0) ? "*" : gamename);
+			if ( retVal == MAMERR_NO_SUCH_GAME) {
+				display_suggestions(gamename);
+				return MAMERR_NO_SUCH_GAME;
+			}
+			return retVal;
 		}
 
 	return -1;
@@ -807,41 +823,65 @@ static int info_listsoftware(core_options *options, const char *gamename)
 
 	lists = global_alloc_array( char *, nr_lists );
 
-	fprintf( out,
-			"<?xml version=\"1.0\"?>\n"
-			"<!DOCTYPE softwarelist [\n"
-			"<!ELEMENT softwarelists (softwarelist*)>\n"
-			"\t<!ELEMENT softwarelist (software+)>\n"
-			"\t\t<!ATTLIST softwarelist name CDATA #REQUIRED>\n"
-			"\t\t<!ATTLIST softwarelist description CDATA #IMPLIED>\n"
-			"\t\t<!ELEMENT software (description, year?, publisher, part*)>\n"
-			"\t\t\t<!ATTLIST software name CDATA #REQUIRED>\n"
-			"\t\t\t<!ATTLIST software cloneof CDATA #IMPLIED>\n"
-			"\t\t\t<!ATTLIST software supported (yes|partial|no) \"yes\">\n"
-			"\t\t\t<!ELEMENT description (#PCDATA)>\n"
-			"\t\t\t<!ELEMENT year (#PCDATA)>\n"
-			"\t\t\t<!ELEMENT publisher (#PCDATA)>\n"
-			"\t\t\t<!ELEMENT part (dataarea*)>\n"
-			"\t\t\t\t<!ATTLIST part name CDATA #REQUIRED>\n"
-			"\t\t\t\t<!ATTLIST part interface CDATA #REQUIRED>\n"
-			"\t\t\t\t<!ATTLIST part feature CDATA #IMPLIED>\n"
-			"\t\t\t\t<!ELEMENT dataarea (rom*)>\n"
-			"\t\t\t\t\t<!ATTLIST dataarea name CDATA #REQUIRED>\n"
-			"\t\t\t\t\t<!ATTLIST dataarea size CDATA #REQUIRED>\n"
-			"\t\t\t\t\t<!ATTLIST dataarea databits (8|16|32|64) \"8\">\n"
-			"\t\t\t\t\t<!ATTLIST dataarea endian (big|little) \"little\">\n"
-			"\t\t\t\t\t<!ELEMENT rom EMPTY>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom name CDATA #IMPLIED>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom size CDATA #REQUIRED>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom crc CDATA #IMPLIED>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom md5 CDATA #IMPLIED>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom sha1 CDATA #IMPLIED>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom offset CDATA #IMPLIED>\n"
-			"\t\t\t\t\t\t<!ATTLIST rom status (baddump|nodump|good) \"good\">\n"
-			"\t\t\t\t\t\t<!ATTLIST rom loadflag (load16_byte|load16_word|load16_word_swap|load32_byte|load32_word|load32_word_swap|load32_dword|load64_word|load64_word_swap|reload) #IMPLIED>\n"
-			"]>\n\n"
-			"<softwarelists>\n"
-	);
+	if (nr_lists)
+	{
+		fprintf( out,
+				"<?xml version=\"1.0\"?>\n"
+				"<!DOCTYPE softwarelist [\n"
+				"<!ELEMENT softwarelists (softwarelist*)>\n"
+				"\t<!ELEMENT softwarelist (software+)>\n"
+				"\t\t<!ATTLIST softwarelist name CDATA #REQUIRED>\n"
+				"\t\t<!ATTLIST softwarelist description CDATA #IMPLIED>\n"
+				"\t\t<!ELEMENT software (description, year?, publisher, part*)>\n"
+				"\t\t\t<!ATTLIST software name CDATA #REQUIRED>\n"
+				"\t\t\t<!ATTLIST software cloneof CDATA #IMPLIED>\n"
+				"\t\t\t<!ATTLIST software supported (yes|partial|no) \"yes\">\n"
+				"\t\t\t<!ELEMENT description (#PCDATA)>\n"
+				"\t\t\t<!ELEMENT year (#PCDATA)>\n"
+				"\t\t\t<!ELEMENT publisher (#PCDATA)>\n"
+				"\t\t\t<!ELEMENT part (feature*, dataarea*, diskarea*, dipswitch*)>\n"
+				"\t\t\t\t<!ATTLIST part name CDATA #REQUIRED>\n"
+				"\t\t\t\t<!ATTLIST part interface CDATA #REQUIRED>\n"
+				"\t\t\t\t<!ELEMENT feature EMPTY>\n"
+				"\t\t\t\t\t<!ATTLIST feature name CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ATTLIST feature value CDATA #IMPLIED>\n"
+				"\t\t\t\t<!ELEMENT dataarea (rom*)>\n"
+				"\t\t\t\t\t<!ATTLIST dataarea name CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ATTLIST dataarea size CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ATTLIST dataarea databits (8|16|32|64) \"8\">\n"
+				"\t\t\t\t\t<!ATTLIST dataarea endian (big|little) \"little\">\n"
+				"\t\t\t\t\t<!ELEMENT rom EMPTY>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom name CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom size CDATA #REQUIRED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom crc CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom md5 CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom sha1 CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom offset CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom value CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST rom status (baddump|nodump|good) \"good\">\n"
+				"\t\t\t\t\t\t<!ATTLIST rom loadflag (load16_byte|load16_word|load16_word_swap|load32_byte|load32_word|load32_word_swap|load32_dword|load64_word|load64_word_swap|reload|fill|continue) #IMPLIED>\n"
+				"\t\t\t\t<!ELEMENT diskarea (disk*)>\n"
+				"\t\t\t\t\t<!ATTLIST diskarea name CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ELEMENT disk EMPTY>\n"
+				"\t\t\t\t\t\t<!ATTLIST disk name CDATA #REQUIRED>\n"
+				"\t\t\t\t\t\t<!ATTLIST disk md5 CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST disk sha1 CDATA #IMPLIED>\n"
+				"\t\t\t\t\t\t<!ATTLIST disk status (baddump|nodump|good) \"good\">\n"
+				"\t\t\t\t\t\t<!ATTLIST disk writeable (yes|no) \"no\">\n"
+				// we still do not store the dipswitch values in softlist, so there is no output here
+				// TODO: add parsing dipsw in softlist.c and then add output here!
+				"\t\t\t\t<!ELEMENT dipswitch (dipvalue*)>\n"
+				"\t\t\t\t\t<!ATTLIST dipswitch name CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ATTLIST dipswitch tag CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ATTLIST dipswitch mask CDATA #REQUIRED>\n"
+				"\t\t\t\t\t<!ELEMENT dipvalue EMPTY>\n"
+				"\t\t\t\t\t\t<!ATTLIST dipvalue name CDATA #REQUIRED>\n"
+				"\t\t\t\t\t\t<!ATTLIST dipvalue value CDATA #REQUIRED>\n"
+				"\t\t\t\t\t\t<!ATTLIST dipvalue default (yes|no) \"no\">\n"
+				"]>\n\n"
+				"<softwarelists>\n"
+				);
+	}
 
 	for ( int drvindex = 0; drivers[drvindex] != NULL; drvindex++ )
 	{
@@ -876,8 +916,9 @@ static int info_listsoftware(core_options *options, const char *gamename)
 							{
 								lists[list_idx] = core_strdup( swlist->list_name[i] );
 								list_idx++;
+								software_list_parse( list, NULL, NULL );
 
-								fprintf(out, "\t<softwarelist name=\"%s\">\n", swlist->list_name[i] );
+								fprintf(out, "\t<softwarelist name=\"%s\" description=\"%s\">\n", swlist->list_name[i], xml_normalize_string(software_list_get_description(list)) );
 
 								for ( software_info *swinfo = software_list_find( list, "*", NULL ); swinfo != NULL; swinfo = software_list_find( list, "*", swinfo ) )
 								{
@@ -898,20 +939,38 @@ static int info_listsoftware(core_options *options, const char *gamename)
 										fprintf( out, "\t\t\t<part name=\"%s\"", part->name );
 										if ( part->interface_ )
 											fprintf( out, " interface=\"%s\"", part->interface_ );
-//                                          if ( part->feature )
-//                                              fprintf( out, " features=\"%s\"", part->feature );
+
 										fprintf( out, ">\n");
+
+										if ( part->featurelist )
+										{
+											feature_list *list = part->featurelist;
+
+											while( list )
+											{
+												fprintf( out, "\t\t\t\t<feature name=\"%s\" value=\"%s\" />\n", list->name, list->value );
+												list = list->next;
+											}
+										}
 
 										/* TODO: display rom region information */
 										for ( const rom_entry *region = part->romdata; region; region = rom_next_region( region ) )
 										{
-											fprintf( out, "\t\t\t\t<dataarea name=\"%s\" size=\"%x\">\n", ROMREGION_GETTAG(region), ROMREGION_GETLENGTH(region) );
+											int is_disk = ROMREGION_ISDISKDATA(region);
+
+											if (!is_disk)
+												fprintf( out, "\t\t\t\t<dataarea name=\"%s\" size=\"%d\">\n", ROMREGION_GETTAG(region), ROMREGION_GETLENGTH(region) );
+											else
+												fprintf( out, "\t\t\t\t<diskarea name=\"%s\">\n", ROMREGION_GETTAG(region) );
 
 											for ( const rom_entry *rom = rom_first_file( region ); rom && !ROMENTRY_ISREGIONEND(rom); rom++ )
 											{
 												if ( ROMENTRY_ISFILE(rom) )
 												{
-													fprintf( out, "\t\t\t\t\t<rom name=\"%s\" size=\"%d\"", xml_normalize_string(ROM_GETNAME(rom)), rom_file_size(rom) );
+													if (!is_disk)
+														fprintf( out, "\t\t\t\t\t<rom name=\"%s\" size=\"%d\"", xml_normalize_string(ROM_GETNAME(rom)), rom_file_size(rom) );
+													else
+														fprintf( out, "\t\t\t\t\t<disk name=\"%s\"", xml_normalize_string(ROM_GETNAME(rom)) );
 
 													/* dump checksum information only if there is a known dump */
 													if (!hash_data_has_info(ROM_GETHASHDATA(rom), HASH_INFO_NO_DUMP))
@@ -925,22 +984,67 @@ static int info_listsoftware(core_options *options, const char *gamename)
 																fprintf(out, " %s=\"%s\"", hash_function_name(1 << hashtype), checksum);
 													}
 
-													fprintf( out, " offset=\"%x\"", ROM_GETOFFSET(rom) );
+													if (!is_disk)
+														fprintf( out, " offset=\"0x%x\"", ROM_GETOFFSET(rom) );
 
 													if ( hash_data_has_info(ROM_GETHASHDATA(rom), HASH_INFO_BAD_DUMP) )
 														fprintf( out, " status=\"baddump\"" );
 													if ( hash_data_has_info(ROM_GETHASHDATA(rom), HASH_INFO_NO_DUMP) )
 														fprintf( out, " status=\"nodump\"" );
 
+													if (is_disk)
+														fprintf( out, " writable=\"%s\"", (ROM_GETFLAGS(rom) & DISK_READONLYMASK) ? "no" : "yes");
+
+													if ((ROM_GETFLAGS(rom) & ROM_SKIPMASK) == ROM_SKIP(1))
+														fprintf( out, " loadflag=\"load16_byte\"" );
+
+													if ((ROM_GETFLAGS(rom) & ROM_SKIPMASK) == ROM_SKIP(3))
+														fprintf( out, " loadflag=\"load32_byte\"" );
+
+													if (((ROM_GETFLAGS(rom) & ROM_SKIPMASK) == ROM_SKIP(2)) && ((ROM_GETFLAGS(rom) & ROM_GROUPMASK) == ROM_GROUPWORD))
+													{
+														if (!(ROM_GETFLAGS(rom) & ROM_REVERSEMASK))
+															fprintf( out, " loadflag=\"load32_word\"" );
+														else
+															fprintf( out, " loadflag=\"load32_word_swap\"" );
+													}
+
+													if (((ROM_GETFLAGS(rom) & ROM_SKIPMASK) == ROM_SKIP(6)) && ((ROM_GETFLAGS(rom) & ROM_GROUPMASK) == ROM_GROUPWORD))
+													{
+														if (!(ROM_GETFLAGS(rom) & ROM_REVERSEMASK))
+															fprintf( out, " loadflag=\"load64_word\"" );
+														else
+															fprintf( out, " loadflag=\"load64_word_swap\"" );
+													}
+
+													if (((ROM_GETFLAGS(rom) & ROM_SKIPMASK) == ROM_NOSKIP) && ((ROM_GETFLAGS(rom) & ROM_GROUPMASK) == ROM_GROUPWORD))
+													{
+														if (!(ROM_GETFLAGS(rom) & ROM_REVERSEMASK))
+															fprintf( out, " loadflag=\"load32_dword\"" );
+														else
+															fprintf( out, " loadflag=\"load16_word_swap\"" );
+													}
+
 													fprintf( out, "/>\n" );
 												}
 												else if ( ROMENTRY_ISRELOAD(rom) )
 												{
-													fprintf( out, "\t\t\t\t\t<rom size=\"%d\" offset=\"%x\" loadflag=\"reload\" />\n", ROM_GETLENGTH(rom), ROM_GETOFFSET(rom) );
+													fprintf( out, "\t\t\t\t\t<rom size=\"%d\" offset=\"0x%x\" loadflag=\"reload\" />\n", ROM_GETLENGTH(rom), ROM_GETOFFSET(rom) );
+												}
+												else if ( ROMENTRY_ISCONTINUE(rom) )
+												{
+													fprintf( out, "\t\t\t\t\t<rom size=\"%d\" offset=\"0x%x\" loadflag=\"continue\" />\n", ROM_GETLENGTH(rom), ROM_GETOFFSET(rom) );
+												}
+												else if ( ROMENTRY_ISFILL(rom) )
+												{
+													fprintf( out, "\t\t\t\t\t<rom size=\"%d\" offset=\"0x%x\" loadflag=\"fill\" />\n", ROM_GETLENGTH(rom), ROM_GETOFFSET(rom) );
 												}
 											}
 
-											fprintf( out, "\t\t\t\t</dataarea>\n" );
+											if (!is_disk)
+												fprintf( out, "\t\t\t\t</dataarea>\n" );
+											else
+												fprintf( out, "\t\t\t\t</diskarea>\n" );
 										}
 
 										fprintf( out, "\t\t\t</part>\n" );
@@ -960,7 +1064,10 @@ static int info_listsoftware(core_options *options, const char *gamename)
 		}
 	}
 
-	fprintf( out, "</softwarelists>\n" );
+	if (nr_lists)
+		fprintf( out, "</softwarelists>\n" );
+	else
+		fprintf( out, "No software lists found for this system\n" );
 
 	global_free( lists );
 
@@ -1038,7 +1145,7 @@ static int info_listmedia(core_options *options, const char *gamename)
 	const char *shortname;
 	char paren_shortname[16];
 
-	printf(" SYSTEM      DEVICE NAME (brief)   IMAGE FILE EXTENSIONS SUPPORTED    \n");
+	printf(" SYSTEM      MEDIA NAME (brief)   IMAGE FILE EXTENSIONS SUPPORTED     \n");
 	printf("----------  --------------------  ------------------------------------\n");
 
 	/* iterate over drivers */

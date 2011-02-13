@@ -45,6 +45,7 @@
 #define GAME_REQUIRES_ARTWORK			0x00004000	/* the driver requires external artwork for key elements of the game */
 #define GAME_UNOFFICIAL     			0x00008000	/* unofficial hardware change */
 #define GAME_NO_SOUND_HW				0x00010000	/* sound hardware not available */
+#define GAME_MECHANICAL					0x00020000	/* contains mechanical parts (pinball, redemption games,...) */
 
 
 /* ----- flags to return from video_update ----- */
@@ -114,7 +115,41 @@ extern const game_driver GAME_NAME(NAME) =	\
 	&LAYOUT[0]								\
 };
 
+#define CONS(YEAR,NAME,PARENT,COMPAT,MACHINE,INPUT,INIT,COMPANY,FULLNAME,FLAGS)	\
+extern const game_driver GAME_NAME(NAME) =	\
+{											\
+	__FILE__,								\
+	#PARENT,								\
+	#NAME,									\
+	FULLNAME,								\
+	#YEAR,									\
+	COMPANY,								\
+	MACHINE_CONFIG_NAME(MACHINE),			\
+	INPUT_PORTS_NAME(INPUT),				\
+	DRIVER_INIT_NAME(INIT),					\
+	ROM_NAME(NAME),							\
+	#COMPAT,								\
+	ROT0|(FLAGS),							\
+	NULL									\
+};
 
+#define COMP(YEAR,NAME,PARENT,COMPAT,MACHINE,INPUT,INIT,COMPANY,FULLNAME,FLAGS)	\
+extern const game_driver GAME_NAME(NAME) =	\
+{											\
+	__FILE__,								\
+	#PARENT,								\
+	#NAME,									\
+	FULLNAME,								\
+	#YEAR,									\
+	COMPANY,								\
+	MACHINE_CONFIG_NAME(MACHINE),			\
+	INPUT_PORTS_NAME(INPUT),				\
+	DRIVER_INIT_NAME(INIT),					\
+	ROM_NAME(NAME),							\
+	#COMPAT,								\
+	ROT0|(FLAGS),				\
+	NULL									\
+};
 
 /***************************************************************************
     GLOBAL VARIABLES

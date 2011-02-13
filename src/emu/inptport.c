@@ -202,7 +202,7 @@ struct _device_field_info
 {
 	device_field_info *			next;				/* linked list of info for this port */
 	const input_field_config *	field;				/* pointer to the input field referenced */
-	device_t *		device;				/* device */
+	device_t *					device;				/* device */
 	UINT8						shift;				/* shift to apply to the final result */
 	input_port_value			oldval;				/* last value */
 };
@@ -2428,7 +2428,7 @@ static void input_port_update_hook(running_machine *machine, const input_port_co
 		keybuf = get_buffer(machine);
 
 		/* is the key down right now? */
-		if (keybuf->status_keydown && (keybuf->begin_pos != keybuf->end_pos))
+		if (keybuf && keybuf->status_keydown && (keybuf->begin_pos != keybuf->end_pos))
 		{
 			/* identify the character that is down right now, and its component codes */
 			ch = keybuf->buffer[keybuf->begin_pos];
@@ -4706,7 +4706,6 @@ static void record_port(const input_port_config *port)
 int input_machine_has_keyboard(running_machine *machine)
 {
 	int have_keyboard = FALSE;
-#ifdef MESS
 	const input_field_config *field;
 	const input_port_config *port;
 	for (port = machine->m_portlist.first(); port != NULL; port = port->next())
@@ -4720,8 +4719,6 @@ int input_machine_has_keyboard(running_machine *machine)
 			}
 		}
 	}
-#endif
-
 	return have_keyboard;
 }
 

@@ -19,12 +19,9 @@
 #include "uimenu.h"
 #include "audit.h"
 #include "crsshair.h"
-
-#ifdef MESS
-#include "uimess.h"
-#endif /* MESS */
-
 #include <ctype.h>
+#include "imagedev/cassette.h"
+#include "imagedev/bitbngr.h"
 
 
 
@@ -1549,10 +1546,14 @@ static void menu_main_populate(running_machine *machine, ui_menu *menu, void *st
 
 		/* add file manager menu */
 		ui_menu_item_append(menu, "File Manager", NULL, 0, (void*)ui_image_menu_file_manager);
-	#ifdef MESS
-		/* add MESS-specific menus */
-		ui_mess_main_menu_populate(machine, menu);
-	#endif /* MESS */
+
+		/* add tape control menu */
+		if (machine->m_devicelist.first(CASSETTE))
+			ui_menu_item_append(menu, "Tape Control", NULL, 0, (void*)ui_mess_menu_tape_control);
+
+		/* add bitbanger control menu */
+		if (machine->m_devicelist.first(BITBANGER))
+			ui_menu_item_append(menu, "Bitbanger Control", NULL, 0, (void*)ui_mess_menu_bitbanger_control);
 	}
 	/* add keyboard mode menu */
 	if (input_machine_has_keyboard(machine) && inputx_can_post(machine))
@@ -1725,9 +1726,7 @@ static void menu_input_specific_populate(running_machine *machine, ui_menu *menu
 
 			/* add if we match the group and we have a valid name */
 			if (name != NULL && input_condition_true(machine, &field->condition) &&
-#ifdef MESS
 				(field->category == 0 || input_category_active(machine, field->category)) &&
-#endif /* MESS */
 				((field->type == IPT_OTHER && field->name != NULL) || input_type_group(machine, field->type, field->player) != IPG_INVALID))
 			{
 				input_seq_type seqtype;
@@ -2328,7 +2327,7 @@ static void menu_analog_populate(running_machine *machine, ui_menu *menu)
 	/* loop over input ports and add the items */
 	for (port = machine->m_portlist.first(); port != NULL; port = port->next())
 		for (field = port->fieldlist; field != NULL; field = field->next)
-			if (input_type_is_analog(field->type))
+			if (input_type_is_analog(field->type) && input_condition_true(machine, &field->condition))
 			{
 				input_field_user_settings settings;
 				int use_autocenter = FALSE;

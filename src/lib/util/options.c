@@ -250,6 +250,23 @@ void options_revert(core_options *opts, int priority)
 		}
 }
 
+/*-------------------------------------------------
+    options_revert_driver_only - revert options
+    that are marked as driver only and are under
+    priority level
+-------------------------------------------------*/
+
+void options_revert_driver_only(core_options *opts, int priority)
+{
+	options_data *data;
+
+	/* iterate over options and revert to defaults if below the given priority */
+	for (data = opts->datalist; data != NULL; data = data->next)
+		if ((data->flags & OPTION_DRIVER_ONLY) && (data->priority < priority)) {
+			astring_cpy(data->data, data->defdata);
+			data->priority = OPTION_PRIORITY_DEFAULT;
+		}
+}
 
 /*-------------------------------------------------
     options_copy - copy options from one core_options
@@ -309,7 +326,7 @@ int options_equal(core_options *opts1, core_options *opts2)
     current options sets
 -------------------------------------------------*/
 
-int options_add_entries(core_options *opts, const options_entry *entrylist)
+int options_add_entries(core_options *opts, const options_entry *entrylist, int force)
 {
 	/* loop over entries until we hit a NULL name */
 	for ( ; entrylist->name != NULL || (entrylist->flags & OPTION_HEADER); entrylist++)
@@ -333,7 +350,7 @@ int options_add_entries(core_options *opts, const options_entry *entrylist)
 				match = find_entry_data(opts, astring_c(data->links[i].name), FALSE);
 
 		/* if so, throw away this entry and replace the data */
-		if (match != NULL)
+		if ((force == FALSE) && (match != NULL))
 		{
 			/* free what we've allocated so far */
 			for (i = 0; i < ARRAY_LENGTH(data->links); i++)
@@ -384,6 +401,10 @@ int options_add_entries(core_options *opts, const options_entry *entrylist)
 	return TRUE;
 }
 
+int options_add_entries(core_options *opts, const options_entry *entrylist)
+{
+	return options_add_entries(opts,entrylist,FALSE);
+}
 
 /*-------------------------------------------------
     options_set_option_default_value - change the
@@ -435,11 +456,32 @@ int options_set_option_callback(core_options *opts, const char *name, void (*cal
     of command line arguments
 -------------------------------------------------*/
 
-int options_parse_command_line(core_options *opts, int argc, char **argv, int priority)
+int options_parse_command_line(core_options *opts, int argc, char **argv, int priority, int show_error)
 {
 	int unadorned_index = 0;
 	int arg;
+	for (arg = 1; arg < argc; arg++)
+	{
+		const char *optionname;
+		options_data *data;
+		int is_unadorned;
 
+		/* determine the entry name to search for */
+		is_unadorned = (argv[arg][0] != '-');
+		if (!is_unadorned)
+			optionname = &argv[arg][1];
+		else
+			optionname = OPTION_UNADORNED(unadorned_index);
+
+		/* find our entry */
+		data = find_entry_data(opts, optionname, TRUE);
+		if (data == NULL) continue;
+		if ((data->flags & OPTION_COMMAND) != 0) {
+			// in case of any command force show error to TRUE
+			show_error = TRUE;
+			break;
+		}
+	}
 	/* loop over commands, looking for options */
 	for (arg = 1; arg < argc; arg++)
 	{
@@ -458,6 +500,7 @@ int options_parse_command_line(core_options *opts, int argc, char **argv, int pr
 		data = find_entry_data(opts, optionname, TRUE);
 		if (data == NULL)
 		{
+			if (!show_error) continue;
 			message(opts, OPTMSG_ERROR, "Error: unknown option: %s\n", argv[arg]);
 			return 1;
 		}
@@ -523,7 +566,7 @@ int options_force_option_callback(core_options *opts, const char *optionname, co
     of entries in an INI file
 -------------------------------------------------*/
 
-int options_parse_ini_file(core_options *opts, core_file *inifile, int priority)
+int options_parse_ini_file(core_options *opts, core_file *inifile, int priority, int ignoreprio)
 {
 	char buffer[4096];
 
@@ -573,7 +616,7 @@ int options_parse_ini_file(core_options *opts, core_file *inifile, int priority)
 		data = find_entry_data(opts, optionname, FALSE);
 		if (data == NULL)
 		{
-			message(opts, OPTMSG_WARNING, "Warning: unknown option in INI: %s\n", optionname);
+			if (priority >= ignoreprio) message(opts, OPTMSG_WARNING, "Warning: unknown option in INI: %s\n", optionname);
 			continue;
 		}
 		if ((data->flags & (OPTION_DEPRECATED | OPTION_INTERNAL)) != 0)
@@ -727,6 +770,33 @@ const char *options_get_string(core_options *opts, const char *name)
 	/* copy if non-NULL */
 	else
 		value = astring_c(data->data);
+
+	return value;
+}
+
+
+/*-------------------------------------------------
+    options_get_string_priority - return data
+    formatted as a string if priority is equal
+    or better
+-------------------------------------------------*/
+
+const char *options_get_string_priority(core_options *opts, const char *name, int priority)
+{
+	options_data *data = find_entry_data(opts, name, FALSE);
+	const char *value = "";
+
+	/* error if not found */
+	if (data == NULL)
+		message(opts, OPTMSG_ERROR, "Unexpected option %s queried\n", name);
+
+	/* copy if non-NULL */
+	else {
+		if (data->priority!=OPTION_PRIORITY_DEFAULT) {
+			if (priority > data->priority) return value;
+		}
+		value = astring_c(data->data);
+	}
 
 	return value;
 }
@@ -1080,9 +1150,9 @@ static void update_data(core_options *opts, options_data *data, const char *newd
 	}
 
 	/* ignore if we don't have priority */
-	if (priority < data->priority)
+	if (priority < data->priority) {
 		return;
-
+	}
 	/* allocate a copy of the data */
 	astring_cpych(data->data, datastart, dataend + 1 - datastart);
 	data->priority = priority;

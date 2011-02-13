@@ -19,6 +19,7 @@
 #include "emu.h"
 #include "cpu/superfx/superfx.h"
 #include "cpu/g65816/g65816.h"
+#include "cpu/upd7725/upd7725.h"
 #include "includes/snes.h"
 #include "audio/snes_snd.h"
 
@@ -35,20 +36,62 @@ static WRITE8_HANDLER(snes_io_dma_w);
 
 struct snes_cart_info snes_cart;
 
+// DSP accessors
+#define dsp_get_sr() state->upd7725->snesdsp_read(false)
+#define dsp_get_dr() state->upd7725->snesdsp_read(true)
+#define dsp_set_sr(data) state->upd7725->snesdsp_write(false, data)
+#define dsp_set_dr(data) state->upd7725->snesdsp_write(true, data)
+
+#define st010_get_sr() state->upd96050->snesdsp_read(false)
+#define st010_get_dr() state->upd96050->snesdsp_read(true)
+#define st010_set_sr(data) state->upd96050->snesdsp_write(false, data)
+#define st010_set_dr(data) state->upd96050->snesdsp_write(true, data)
+
 // add-on chip emulators
-#include "machine/snesdsp1.c"
-#include "machine/snesdsp2.c"
-#include "machine/snesdsp3.c"
-#include "machine/snesdsp4.c"
 #include "machine/snesobc1.c"
 #include "machine/snescx4.c"
 #include "machine/snesrtc.c"
 #include "machine/snessdd1.c"
 #include "machine/snes7110.c"
-#include "machine/snesst10.c"
 #include "machine/snesbsx.c"
 
 #define USE_CYCLE_STEAL 1
+
+// ST-010 and ST-011 RAM interface
+UINT8 st010_read_ram(snes_state *state, UINT16 addr)
+{
+	UINT16 temp = state->upd96050->dataram_r(addr/2);
+	UINT8 res;
+
+	if (addr & 1)
+	{
+		res = temp>>8;
+	}
+	else
+	{
+		res = temp & 0xff;
+	}
+
+	return res;
+}
+
+void st010_write_ram(snes_state *state, UINT16 addr, UINT8 data)
+{
+	UINT16 temp = state->upd96050->dataram_r(addr/2);
+
+	if (addr & 1)
+	{
+		temp &= 0xff;
+		temp |= data<<8;
+	}
+	else
+	{
+		temp &= 0xff00;
+		temp |= data;
+	}
+
+	state->upd96050->dataram_w(addr/2, temp);
+}
 
 /*************************************
 
@@ -280,7 +323,6 @@ static TIMER_CALLBACK(snes_mult_callback)
 	snes_ram[RDMPYL] = c & 0xff;
 	snes_ram[RDMPYH] = (c >> 8) & 0xff;
 }
-
 
 /*************************************
 
@@ -938,7 +980,7 @@ READ8_HANDLER( snes_r_bank1 )
 		else if (state->has_addon_chip == HAS_OBC1)
 			value = obc1_read(space, offset);
 		else if ((state->cart[0].mode == SNES_MODE_21) && (state->has_addon_chip == HAS_DSP1) && (offset < 0x100000))
-			value = (address < 0x7000) ? dsp1_get_dr() : dsp1_get_sr();
+			value = (address < 0x7000) ? dsp_get_dr() : dsp_get_sr();
 		else if (state->has_addon_chip == HAS_CX4)
 			value = CX4_read(address - 0x6000);
 		else if (state->has_addon_chip == HAS_SPC7110 || state->has_addon_chip == HAS_SPC7110_RTC)
@@ -953,11 +995,11 @@ READ8_HANDLER( snes_r_bank1 )
 		}
 	}
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP1) && (offset >= 0x200000))
-		value = (address < 0xc000) ? dsp1_get_dr() : dsp1_get_sr();
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP2) && (offset >= 0x200000))
-		value = (address < 0xc000) ? dsp2_dr_read() : dsp2_sr_read();
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if ((state->has_addon_chip == HAS_DSP3) && (offset >= 0x200000))
-		value = dsp3_read(address);
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else
 		value = snes_ram[offset];
 
@@ -1017,13 +1059,13 @@ READ8_HANDLER( snes_r_bank2 )
 	}
 	/* some dsp1 games use these banks 0x30 to 0x3f at address 0x8000 */
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP1))
-		value = (address < 0xc000) ? dsp1_get_dr() : dsp1_get_sr();
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP2))
-		value = (address < 0xc000) ? dsp2_dr_read() : dsp2_sr_read();
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if (state->has_addon_chip == HAS_DSP3)
-		value = dsp3_read(address);
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if (state->has_addon_chip == HAS_DSP4)
-		value = (address < 0xc000) ? dsp4_read() : 0x80;
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else
 		value = snes_ram[0x300000 + offset];
 
@@ -1092,15 +1134,24 @@ READ8_HANDLER( snes_r_bank4 )
 		else
 			value = snes_open_bus_r(space, 0);
 	}
-	else if (state->has_addon_chip == HAS_ST010 && offset >= 0x80000 && address < 0x1000)
-		value = st010_read(address);
+	else if (state->has_addon_chip == HAS_ST010 || state->has_addon_chip == HAS_ST011)
+	{
+		if (offset >= 0x80000 && address < 0x1000)
+		{
+			value = st010_read_ram(state, address);
+		}
+		else if (offset <= 1)
+		{
+			value = (address & 1) ? st010_get_sr() : st010_get_dr();
+		}
+	}
 	else if (state->cart[0].mode & 5)							/* Mode 20 & 22 */
 	{
 		if (address >= 0x8000)
 			value = snes_ram[0x600000 + offset];
 		/* some other dsp1 games use these banks 0x60 to 0x6f at address 0x0000 */
 		else if (state->has_addon_chip == HAS_DSP1)
-			value = (address >= 0x4000) ? dsp1_get_sr() : dsp1_get_dr();
+			value = (address >= 0x4000) ? dsp_get_sr() : dsp_get_dr();
 		else
 		{
 			logerror("(PC=%06x) snes_r_bank4: Unmapped external chip read: %04x\n",cpu_get_pc(space->cpu),address);
@@ -1188,13 +1239,13 @@ READ8_HANDLER( snes_r_bank6 )
 		}
 	}
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP1) && (offset >= 0x200000))
-		value = (address < 0xc000) ? dsp1_get_dr() : dsp1_get_sr();
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP2) && (offset >= 0x200000))
-		value = (address < 0xc000) ? dsp2_dr_read() : dsp2_sr_read();
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if ((state->has_addon_chip == HAS_DSP3) && (offset >= 0x200000))
-		value = dsp3_read(address);
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else if ((state->has_addon_chip == HAS_DSP4) && (offset >= 0x300000))
-		value = (address < 0xc000) ? dsp4_read() : 0x80;
+		value = (address < 0xc000) ? dsp_get_dr() : dsp_get_sr();
 	else
 		value = snes_ram[0x800000 + offset];
 
@@ -1241,8 +1292,17 @@ READ8_HANDLER( snes_r_bank7 )
 		value = spc7110_bank7_read(space, offset);
 	else if (state->has_addon_chip == HAS_SDD1)
 		value = sdd1_read(space->machine, offset);
-	else if (state->has_addon_chip == HAS_ST010 && offset >= 0x280000 && offset < 0x300000 && address < 0x1000)
-		value = st010_read(address);
+	else if (state->has_addon_chip == HAS_ST010 || state->has_addon_chip == HAS_ST011)
+	{
+		if (offset >= 0x280000 && offset < 0x300000 && address < 0x1000)
+		{
+			value = st010_read_ram(state, address);
+		}
+		else if (offset >= 0x200000 && offset <= 0x200001)
+		{
+			value = (address & 1) ? st010_get_sr() : st010_get_dr();
+		}
+	}
 	else if ((state->cart[0].mode & 5) && !(state->has_addon_chip == HAS_SUPERFX))		/* Mode 20 & 22 */
 	{
 		if (address < 0x8000)
@@ -1284,7 +1344,7 @@ WRITE8_HANDLER( snes_w_bank1 )
 		else if (state->has_addon_chip == HAS_OBC1)
 			obc1_write(space, offset, data);
 		else if ((state->cart[0].mode == SNES_MODE_21) && (state->has_addon_chip == HAS_DSP1) && (offset < 0x100000))
-			dsp1_set_dr(data);
+			dsp_set_dr(data);
 		else if (state->has_addon_chip == HAS_CX4)
 			CX4_write(space->machine, address - 0x6000, data);
 		else if (state->has_addon_chip == HAS_SPC7110 || state->has_addon_chip == HAS_SPC7110_RTC)
@@ -1296,16 +1356,19 @@ WRITE8_HANDLER( snes_w_bank1 )
 			logerror("snes_w_bank1: Attempt to write to reserved address: %x = %02x\n", offset, data);
 	}
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP1) && (offset >= 0x200000))
-		dsp1_set_dr(data);
+		dsp_set_dr(data);
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP2) && (offset >= 0x200000))
 	{
 		if (address < 0xc000)
-			dsp2_dr_write(data);
+			dsp_set_dr(data);
 		else
-			dsp2_sr_write(data);
+			dsp_set_sr(data);
 	}
 	else if ((state->has_addon_chip == HAS_DSP3) && (offset >= 0x200000))
-		dsp3_write(address, data);
+		if (address < 0xc000)
+			dsp_set_dr(data);
+		else
+			dsp_set_sr(data);
 	else
 		logerror( "(PC=%06x) Attempt to write to ROM address: %X\n",cpu_get_pc(space->cpu),offset );
 
@@ -1354,18 +1417,19 @@ WRITE8_HANDLER( snes_w_bank2 )
 	}
 	/* some dsp1 games use these banks 0x30 to 0x3f at address 0x8000 */
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP1))
-		dsp1_set_dr(data);
+		dsp_set_dr(data);
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP2))
 	{
 		if (address < 0xc000)
-			dsp2_dr_write(data);
+			dsp_set_dr(data);
 		else
-			dsp2_sr_write(data);
+			dsp_set_sr(data);
 	}
-	else if (state->has_addon_chip == HAS_DSP3)
-		dsp3_write(address, data);
-	else if ((state->has_addon_chip == HAS_DSP4) && (address < 0xc000))
-		dsp4_write(data);
+	else if ((state->has_addon_chip == HAS_DSP3) || (state->has_addon_chip == HAS_DSP4))
+		if (address < 0xc000)
+			dsp_set_dr(data);
+		else
+			dsp_set_sr(data);
 	else
 		logerror("(PC=%06x) Attempt to write to ROM address: %X\n",cpu_get_pc(space->cpu),offset + 0x300000);
 
@@ -1383,14 +1447,27 @@ WRITE8_HANDLER( snes_w_bank4 )
 
 	if (state->has_addon_chip == HAS_SUPERFX)
 		snes_ram[0xe00000 + offset] = data;
-	else if (state->has_addon_chip == HAS_ST010 && offset >= 0x80000 && address < 0x1000)
-		st010_write(address, data);
+	else if (state->has_addon_chip == HAS_ST010 || state->has_addon_chip == HAS_ST011)
+	{
+		if (offset >= 0x80000 && address < 0x1000)
+		{
+			st010_write_ram(state, address, data);
+		}
+		else if (offset == 0)
+		{
+			st010_set_dr(data);
+		}
+		else if (offset == 1)
+		{
+			st010_set_sr(data);
+		}
+	}
 	else if (state->cart[0].mode & 5)					/* Mode 20 & 22 */
 	{
 		if (address >= 0x8000)
 			logerror("(PC=%06x) Attempt to write to ROM address: %X\n",cpu_get_pc(space->cpu),offset + 0x600000);
 		else if (state->has_addon_chip == HAS_DSP1)
-			dsp1_set_dr(data);
+			dsp_set_dr(data);
 		else
 			logerror("snes_w_bank4: Attempt to write to reserved address: %X = %02x\n", offset + 0x600000, data);
 	}
@@ -1459,18 +1536,24 @@ WRITE8_HANDLER( snes_w_bank6 )
 		}
 	}
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP1) && (offset >= 0x200000))
-		dsp1_set_dr(data);
+		dsp_set_dr(data);
 	else if ((state->cart[0].mode == SNES_MODE_20) && (state->has_addon_chip == HAS_DSP2) && (offset >= 0x200000))
 	{
 		if (address < 0xc000)
-			dsp2_dr_write(data);
+			dsp_set_dr(data);
 		else
-			dsp2_sr_write(data);
+			dsp_set_sr(data);
 	}
 	else if ((state->has_addon_chip == HAS_DSP3) && (offset >= 0x200000))
-		dsp3_write(address, data);
-	else if ((state->has_addon_chip == HAS_DSP4) && (offset >= 0x300000) && (address < 0xc000))
-		dsp4_write(data);
+		if (address < 0xc000)
+			dsp_set_dr(data);
+		else
+			dsp_set_sr(data);
+	else if ((state->has_addon_chip == HAS_DSP4) && (offset >= 0x300000))
+		if (address < 0xc000)
+			dsp_set_dr(data);
+		else
+			dsp_set_sr(data);
 	else
 		logerror("(PC=%06x) Attempt to write to ROM address: %X\n",cpu_get_pc(space->cpu),offset + 0x800000);
 
@@ -1497,8 +1580,21 @@ WRITE8_HANDLER( snes_w_bank7 )
 		else
 			logerror("(PC=%06x) Attempt to write to ROM address: %X\n",cpu_get_pc(space->cpu),offset + 0xc00000);
 	}
-	else if (state->has_addon_chip == HAS_ST010 && offset >= 0x280000 && offset < 0x300000 && address < 0x1000)
-		st010_write(address, data);
+	else if (state->has_addon_chip == HAS_ST010 || state->has_addon_chip == HAS_ST011)
+	{
+		if (offset >= 0x280000 && offset < 0x300000 && address < 0x1000)
+		{
+			st010_write_ram(state, address, data);
+		}
+		else if (offset == 0x200000)
+		{
+			st010_set_dr(data);
+		}
+		else if (offset == 0x200001)
+		{
+			st010_set_sr(data);
+		}
+	}
 	else if (state->cart[0].mode & 5)				/* Mode 20 & 22 */
 	{
 		if (address < 0x8000)
@@ -1663,22 +1759,38 @@ static void snes_init_ram( running_machine *machine )
 	snes_ram[WRIO] = 0xff;
 	snes_ram[VMAIN] = 0x80;
 
+	// see if there's a uPD7725 DSP in the machine config
+	state->upd7725 = machine->device<upd7725_device>("dsp");
+
+	// if we have a DSP, halt it for the moment
+	if (state->upd7725)
+	{
+		cputag_set_input_line(machine, "dsp", INPUT_LINE_RESET, ASSERT_LINE);
+	}
+
+	// ditto for a uPD96050 (Seta ST-010 or ST-011)
+	state->upd96050 = machine->device<upd96050_device>("setadsp");
+	if (state->upd96050)
+	{
+		cputag_set_input_line(machine, "setadsp", INPUT_LINE_RESET, ASSERT_LINE);
+	}
+
 	switch (state->has_addon_chip)
 	{
 		case HAS_DSP1:
-			dsp1_init(machine);
-			break;
-
 		case HAS_DSP2:
-			dsp2_init(machine);
-			break;
-
 		case HAS_DSP3:
-			dsp3_init(machine);
-			break;
-
 		case HAS_DSP4:
-			dsp4_init(machine);
+			// cartridge uses the DSP, let 'er rip
+			if (state->upd7725)
+			{
+				cputag_set_input_line(machine, "dsp", INPUT_LINE_RESET, CLEAR_LINE);
+			}
+			else
+			{
+				logerror("SNES: Game uses a DSP, but the machine driver is missing the uPD7725!\n");
+				state->has_addon_chip = HAS_NONE;	// prevent crash trying to access NULL device
+			}
 			break;
 
 		case HAS_RTC:
@@ -1694,7 +1806,17 @@ static void snes_init_ram( running_machine *machine )
 			break;
 
 		case HAS_ST010:
-			st010_reset();
+		case HAS_ST011:
+			// cartridge uses the DSP, let 'er rip
+			if (state->upd96050)
+			{
+				cputag_set_input_line(machine, "setadsp", INPUT_LINE_RESET, CLEAR_LINE);
+			}
+			else
+			{
+				logerror("SNES: Game uses a Seta DSP, but the machine driver is missing the uPD96050!\n");
+				state->has_addon_chip = HAS_NONE;	// prevent crash trying to access NULL device
+			}
 			break;
 
 		default:
@@ -1750,9 +1872,6 @@ MACHINE_START( snes )
 			break;
 		case HAS_SPC7110_RTC:
 			spc7110rtc_init(machine);
-			break;
-		case HAS_ST010:
-			st010_init(machine);
 			break;
 	}
 
