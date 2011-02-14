@@ -176,6 +176,15 @@ void dsp16_device::state_import(const device_state_entry &entry)
 
 }
 
+//-------------------------------------------------
+//  state_import - export state from the device
+//-------------------------------------------------
+
+void dsp16_device::state_export(const device_state_entry &entry)
+{
+    (void) entry;
+}
+
 
 //-------------------------------------------------
 //  state_string_export - export state as a string

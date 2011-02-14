@@ -242,7 +242,7 @@ bool disasmSIField(const UINT8& SI)
 
 
 /* execute instructions on this CPU until icount expires */
-CPU_DISASSEMBLE( dsp16a )
+CPU_DISASSEMBLE( dsp16 )
 {
     UINT8 opSize = 1;
     UINT32 dasmflags = 0;

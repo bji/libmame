@@ -90,7 +90,7 @@ DRVLIBOBJS = \
 	$(DRIVERS)/gaelco.o $(VIDEO)/gaelco.o $(MACHINE)/gaelcrpt.o \
 	$(DRIVERS)/wrally.o $(MACHINE)/wrally.o $(VIDEO)/wrally.o \
 	$(DRIVERS)/looping.o \
-	$(DRIVERS)/supertnk.o
+	$(DRIVERS)/supertnk.o \
 
 DRVLIBS = $(DRVLIBOBJS)
 

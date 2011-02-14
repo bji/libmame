@@ -51,7 +51,7 @@
 #include "xmlfile.h"
 #include <ctype.h>
 #include <zlib.h>
-#if defined(SDLMAME_FREEBSD) || defined(SDLMAME_OS2)
+#if defined(SDLMAME_FREEBSD) || defined(SDLMAME_NETBSD) || defined(SDLMAME_OS2)
 # undef tolower
 #endif
 
@@ -91,6 +91,7 @@ struct _debugcpu_private
 	bool			debugger_access;
 
 	int				execution_state;
+	device_t *		m_stop_when_not_device;		// stop execution when the device ceases to be this
 
 	UINT32			bpindex;
 	UINT32			wpindex;
@@ -1093,6 +1094,7 @@ static void reset_transient_flags(running_machine &machine)
 	/* loop over CPUs and reset the transient flags */
 	for (device_t *device = machine.m_devicelist.first(); device != NULL; device = device->next())
 		device->debug()->reset_transient_flag();
+	machine.debugcpu_data->m_stop_when_not_device = NULL;
 }
 
 
@@ -1666,10 +1668,10 @@ device_debug::device_debug(device_t &device)
 	  m_stepaddr(0),
 	  m_stepsleft(0),
 	  m_stopaddr(0),
-	  m_stoptime(attotime_zero),
+	  m_stoptime(attotime::zero),
 	  m_stopirq(0),
 	  m_stopexception(0),
-	  m_endexectime(attotime_zero),
+	  m_endexectime(attotime::zero),
 	  m_pc_history_index(0),
 	  m_bplist(NULL),
 	  m_trace(NULL),
@@ -1750,6 +1752,14 @@ void device_debug::start_hook(attotime endtime)
 	assert(global->livecpu == NULL);
 	global->livecpu = &m_device;
 
+	// if we're a new device, stop now
+	if (global->m_stop_when_not_device != NULL && global->m_stop_when_not_device != &m_device)
+	{
+		global->m_stop_when_not_device = NULL;
+		global->execution_state = EXECUTION_STATE_STOPPED;
+		reset_transient_flags(*m_device.machine);
+	}
+
 	// update the target execution end time
 	m_endexectime = endtime;
 
@@ -1804,13 +1814,6 @@ void device_debug::stop_hook()
 	debugcpu_private *global = m_device.machine->debugcpu_data;
 
 	assert(global->livecpu == &m_device);
-
-	// if we're stopping on a context switch, handle it now
-	if (m_flags & DEBUG_FLAG_STOP_CONTEXT)
-	{
-		global->execution_state = EXECUTION_STATE_STOPPED;
-		reset_transient_flags(*m_device.machine);
-	}
 
 	// clear the live CPU
 	global->livecpu = NULL;
@@ -1907,9 +1910,9 @@ void device_debug::instruction_hook(offs_t curpc)
 	if (global->execution_state != EXECUTION_STATE_STOPPED && (m_flags & (DEBUG_FLAG_STOP_TIME | DEBUG_FLAG_STOP_PC | DEBUG_FLAG_LIVE_BP)) != 0)
 	{
 		// see if we hit a target time
-		if ((m_flags & DEBUG_FLAG_STOP_TIME) != 0 && attotime_compare(timer_get_time(&machine), m_stoptime) >= 0)
+		if ((m_flags & DEBUG_FLAG_STOP_TIME) != 0 && machine.time() >= m_stoptime)
 		{
-			debug_console_printf(&machine, "Stopped at time interval %.1g\n", attotime_to_double(timer_get_time(&machine)));
+			debug_console_printf(&machine, "Stopped at time interval %.1g\n", machine.time().as_double());
 			global->execution_state = EXECUTION_STATE_STOPPED;
 		}
 
@@ -1949,7 +1952,7 @@ void device_debug::instruction_hook(offs_t curpc)
 		debugger_refresh_display(m_device.machine);
 
 		// wait for the debugger; during this time, disable sound output
-		sound_mute(m_device.machine, true);
+		m_device.machine->sound().debugger_mute(true);
 		while (global->execution_state == EXECUTION_STATE_STOPPED)
 		{
 			// flush any pending updates before waiting again
@@ -1977,7 +1980,7 @@ void device_debug::instruction_hook(offs_t curpc)
 			if (machine.scheduled_event_pending())
 				global->execution_state = EXECUTION_STATE_RUNNING;
 		}
-		sound_mute(m_device.machine, false);
+		m_device.machine->sound().debugger_mute(false);
 
 		// remember the last visible CPU in the debugger
 		global->visiblecpu = &m_device;
@@ -2223,7 +2226,7 @@ void device_debug::go_milliseconds(UINT64 milliseconds)
 
 	assert(m_exec != NULL);
 
-	m_stoptime = attotime_add(timer_get_time(m_device.machine), ATTOTIME_IN_MSEC(milliseconds));
+	m_stoptime = m_device.machine->time() + attotime::from_msec(milliseconds);
 	m_flags |= DEBUG_FLAG_STOP_TIME;
 	global->execution_state = EXECUTION_STATE_RUNNING;
 }
@@ -2240,7 +2243,7 @@ void device_debug::go_next_device()
 
 	assert(m_exec != NULL);
 
-	m_flags |= DEBUG_FLAG_STOP_CONTEXT;
+	global->m_stop_when_not_device = &m_device;
 	global->execution_state = EXECUTION_STATE_RUNNING;
 }
 
@@ -2778,7 +2781,7 @@ void device_debug::compute_debug_flags()
 		machine->debug_flags |= DEBUG_FLAG_CALL_HOOK;
 
 	// if we are stopping at a particular time and that time is within the current timeslice, we need to be called
-	if ((m_flags & DEBUG_FLAG_STOP_TIME) && attotime_compare(m_endexectime, m_stoptime) <= 0)
+	if ((m_flags & DEBUG_FLAG_STOP_TIME) && m_endexectime <= m_stoptime)
 		machine->debug_flags |= DEBUG_FLAG_CALL_HOOK;
 }
 

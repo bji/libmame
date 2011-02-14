@@ -231,8 +231,8 @@ static void convert_screen_info(const machine_config *machineconfig,
 static void convert_sound_channels(const machine_config *machineconfig,
                                    GameInfo *gameinfo)
 {
-    gameinfo->sound_channel_count = speaker_output_first(machineconfig) ?
-        speaker_output_count(machineconfig) : 0;
+    gameinfo->sound_channel_count = 
+        machineconfig->m_devicelist.count(SPEAKER);
 }
 
 

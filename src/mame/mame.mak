@@ -29,9 +29,7 @@ OBJDIRS += \
 
 
 #-------------------------------------------------
-# specify available CPU cores; some of these are
-# only for MESS, but are included so that they get
-# updated with any MAME core changes
+# specify available CPU cores
 #-------------------------------------------------
 
 CPUS += Z80
@@ -57,7 +55,7 @@ CPUS += S2650
 CPUS += TMS340X0
 CPUS += TMS9900
 CPUS += Z8000
-#CPUS += Z8001
+CPUS += Z8001
 CPUS += TMS32010
 CPUS += TMS32025
 CPUS += TMS32031
@@ -76,6 +74,7 @@ CPUS += ESRIP
 CPUS += MIPS
 CPUS += SH2
 CPUS += SH4
+CPUS += DSP16A
 CPUS += DSP32C
 CPUS += PIC16C5X
 CPUS += PIC16C62X
@@ -127,8 +126,7 @@ CPUS += UPD7725
 CPUS += HD61700
 
 #-------------------------------------------------
-# specify available sound cores; some of these are
-# only for MESS and so aren't included
+# specify available sound cores
 #-------------------------------------------------
 
 SOUNDS += SAMPLES
@@ -212,13 +210,13 @@ SOUNDS += ST0016
 SOUNDS += NILE
 SOUNDS += X1_010
 SOUNDS += VRENDER0
-#SOUNDS += VOTRAX
+SOUNDS += VOTRAX
 SOUNDS += ES8712
 SOUNDS += CDP1869
 SOUNDS += S14001A
 SOUNDS += WAVE
-#SOUNDS += SID6581
-#SOUNDS += SID8580
+SOUNDS += SID6581
+SOUNDS += SID8580
 SOUNDS += SP0256
 SOUNDS += DIGITALKER
 SOUNDS += CDP1863
@@ -226,8 +224,8 @@ SOUNDS += CDP1864
 SOUNDS += ZSG2
 SOUNDS += MOS656X
 SOUNDS += S2636
-#SOUNDS += ASC
-
+SOUNDS += ASC
+SOUNDS += MAS3507D
 
 
 #-------------------------------------------------
@@ -720,6 +718,7 @@ DRVLIBOBJ_EXCELENT = \
 	$(DRIVERS)/aquarium.o $(VIDEO)/aquarium.o \
 	$(DRIVERS)/d9final.o \
 	$(DRIVERS)/gcpinbal.o $(VIDEO)/gcpinbal.o \
+	$(DRIVERS)/lastbank.o \
 	$(DRIVERS)/vmetal.o \
 
 DRVLIBOBJS += $(DRVLIBOBJ_EXCELENT)
@@ -1052,6 +1051,7 @@ $(MAMEOBJ)/midcoin.a: $(DRVLIBOBJ_MIDCOIN)
 DRVLIBOBJ_MIDW8080 = \
 	$(DRIVERS)/8080bw.o $(AUDIO)/8080bw.o $(VIDEO)/8080bw.o \
 	$(DRIVERS)/m79amb.o $(AUDIO)/m79amb.o \
+	$(DRIVERS)/mw18w.o \
 	$(DRIVERS)/mw8080bw.o $(MACHINE)/mw8080bw.o $(AUDIO)/mw8080bw.o $(VIDEO)/mw8080bw.o \
 	$(DRIVERS)/rotaryf.o \
 	$(DRIVERS)/sspeedr.o $(VIDEO)/sspeedr.o \
@@ -1528,9 +1528,9 @@ DRVLIBOBJS += $(DRVLIBOBJ_STERN)
 $(MAMEOBJ)/stern.a: $(DRVLIBOBJ_STERN)
 
 DRVLIBOBJ_SUBSINO = \
-	$(DRIVERS)/bishjan.o \
 	$(DRIVERS)/lastfght.o \
 	$(DRIVERS)/subsino.o \
+	$(DRIVERS)/subsino2.o \
 
 DRVLIBOBJS += $(DRVLIBOBJ_SUBSINO)
 
@@ -1973,6 +1973,7 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/cubeqst.o \
 	$(DRIVERS)/cybertnk.o \
 	$(DRIVERS)/dcheese.o $(VIDEO)/dcheese.o \
+	$(DRIVERS)/dfruit.o \
 	$(DRIVERS)/dgpix.o \
 	$(DRIVERS)/discoboy.o \
 	$(DRIVERS)/dominob.o \
@@ -1991,6 +1992,7 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/flower.o $(AUDIO)/flower.o $(VIDEO)/flower.o \
 	$(DRIVERS)/fortecar.o \
 	$(DRIVERS)/freekick.o $(VIDEO)/freekick.o \
+	$(DRIVERS)/funkball.o \
 	$(DRIVERS)/funworld.o $(VIDEO)/funworld.o \
 	$(DRIVERS)/galaxi.o \
 	$(DRIVERS)/gamecstl.o \
@@ -2226,7 +2228,8 @@ $(DRIVERS)/luckgrln.o:	$(LAYOUT)/luckgrln.lh
 
 $(DRIVERS)/lucky74.o:	$(LAYOUT)/lucky74.lh
 
-$(DRIVERS)/magic10.o:	$(LAYOUT)/sgsafari.lh
+$(DRIVERS)/magic10.o:	$(LAYOUT)/sgsafari.lh \
+						$(LAYOUT)/musicsrt.lh
 
 $(DRIVERS)/maxaflex.o:	$(LAYOUT)/maxaflex.lh
 
@@ -2236,7 +2239,10 @@ $(DRIVERS)/mpoker.o:	$(LAYOUT)/mpoker.lh
 
 $(DRIVERS)/mpu4.o:		$(LAYOUT)/mpu4.lh \
 						$(LAYOUT)/connect4.lh \
+						$(LAYOUT)/mpu4ext.lh \
 						$(LAYOUT)/gamball.lh
+
+$(DRIVERS)/mw18w.o:		$(LAYOUT)/18w.lh
 
 $(DRIVERS)/mw8080bw.o:	$(LAYOUT)/280zzzap.lh \
 						$(LAYOUT)/clowns.lh \
