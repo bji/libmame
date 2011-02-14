@@ -1841,11 +1841,15 @@ DRVLIBOBJ_ZACCARIA = \
 	$(DRIVERS)/zac2650.o $(VIDEO)/zac2650.o \
 	$(DRIVERS)/zaccaria.o $(VIDEO)/zaccaria.o \
 
+DRVLIBOBJS += $(DRVLIBOBJ_ZACCARIA)
+
+$(MAMEOBJ)/zaccaria.a: $(DRVLIBOBJ_ZACCARIA)
+
 
 #-------------------------------------------------
 # pinball drivers
 #-------------------------------------------------
-$(MAMEOBJ)/pinball.a: \
+DRVLIBOBJ_PINBALL= \
 	$(DRIVERS)/allied.o  \
 	$(DRIVERS)/alvg.o  \
 	$(DRIVERS)/atari_s1.o  \
@@ -1918,15 +1922,15 @@ $(MAMEOBJ)/pinball.a: \
 	$(DRIVERS)/wpc_s.o  \
 	$(DRIVERS)/zac_1.o  \
 	$(DRIVERS)/zac_2.o  \
-	$(DRIVERS)/zac_proto.o  \
+	$(DRIVERS)/zac_proto.o
+
+DRVLIBOBJS += $(DRVLIBOBJ_PINBALL)
+
+$(MAMEOBJ)/pinball.a: $(DRVLIBOBJ_PINBALL)
 
 #-------------------------------------------------
 # remaining drivers
 #-------------------------------------------------
-
-DRVLIBOBJS += $(DRVLIBOBJ_ZACCARIA)
-
-$(MAMEOBJ)/zaccaria.a: $(DRVLIBOBJ_ZACCARIA)
 
 DRVLIBOBJ_MISC = \
 	$(DRIVERS)/39in1.o \

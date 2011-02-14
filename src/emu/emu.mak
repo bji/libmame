@@ -243,14 +243,17 @@ EMUIMAGEDEVOBJS = \
 	$(EMUIMAGEDEV)/cassette.o	\
 	$(EMUIMAGEDEV)/cassimg.o	\
 	$(EMUIMAGEDEV)/chd_cd.o		\
-	$(EMUIMAGEDEV)/flopdrv.o	\
-	$(EMUIMAGEDEV)/flopimg.o	\
 	$(EMUIMAGEDEV)/harddriv.o	\
 	$(EMUIMAGEDEV)/multcart.o	\
 	$(EMUIMAGEDEV)/printer.o	\
 	$(EMUIMAGEDEV)/snapquik.o	\
 	$(EMUIMAGEDEV)/wavfile.o	\
 
+# These files are only needed for MESS and produce unresolvably symbols in
+# MAME libraries
+EMUIMAGEDEVOBJS_MESS = \
+	$(EMUIMAGEDEV)/flopdrv.o	\
+	$(EMUIMAGEDEV)/flopimg.o	\
 
 LIBEMUOBJS = $(EMUOBJS) $(EMUSOUNDOBJS) $(EMUAUDIOOBJS) $(EMUDRIVEROBJS) $(EMUMACHINEOBJS) $(EMUIMAGEDEVOBJS) $(EMUVIDEOOBJS)
 
