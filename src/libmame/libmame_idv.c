@@ -1,7 +1,7 @@
 /** **************************************************************************
- * libmame_dv.c
+ * libmame_idv.c
  *
- * LibMame Deinitialize and Version implementation.
+ * LibMame Initialize, Deinitialize and Version implementation.
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.

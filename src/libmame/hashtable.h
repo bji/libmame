@@ -1,5 +1,5 @@
 /** **************************************************************************
- * tashtable.h
+ * hashtable.h
  *
  * Copyright Bryan Ischo and the MAME Team.
  * Visit http://mamedev.org for licensing and usage restrictions.

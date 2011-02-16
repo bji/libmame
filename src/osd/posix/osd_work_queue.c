@@ -65,10 +65,15 @@ struct _osd_work_item
 
 /**
  * Work queues are implemented very simply; it's not clear whether or not a
- * sophisticated implementation is necessary.  The mame source current uses
+ * sophisticated implementation is necessary.  The mame source currently uses
  * work queues pretty sparingly, and until benchmarking is done, there is no
  * way to know if emulation of any game would be made significantly faster by
  * a faster work queue implementation.
+ *
+ * For what it's worth, a comparison against the SDL OSD work queue
+ * implementation, using work_queue_test, shows that this implementation is
+ * approximately 3x faster than the SDL OSD implementation so, it's probably
+ * fast enough.
  **/
 
 /**

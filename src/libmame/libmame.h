@@ -103,10 +103,10 @@ extern "C" {
  *    The target display frame rate can be found by calling 
  *    LibMame_Get_Game_ScreenRefreshRateHz, if needed, and the size at which
  *    the game was originally redered is known by calling
- *    LibMame_Get_Game_ScreenResolution (the application may scale the
- *    resulting graphics and apply whatever effects it wants to to the
- *    results, but the display callback itself will be made with rendering
- *    primitives set to display at the game's native resolution).
+ *    LibMame_Get_Game_ScreenResolution, although this is not necessarily
+ *    the same resolution as the visible portion of the game's screen; the
+ *    visible portion of the game's screen can only be discerned by examining
+ *    the render primitive bounds in the UpdateVideo callback.
  *
  *    The set of controls that the game will require inputs on can be found by
  *    calling LibMame_Get_Game_AllControllers (and the maximum number of
@@ -254,7 +254,7 @@ typedef struct LibMame_RunningGame LibMame_RunningGame;
  **/
 typedef enum
 {
-    LibMame_InitializeStatus_Success,
+    LibMame_InitializeStatus_Success = 0,
     LibMame_InitializeStatus_OutOfMemory,
     LibMame_InitializeStatus_GeneralFailure
 } LibMame_InitializeStatus;
@@ -1456,8 +1456,7 @@ typedef struct LibMame_RenderPrimitive
     } bounds;
 
     /**
-     * This is the color for the primitive (relevent only to vector, or also
-     * to raster?)
+     * This is the color for the primitive
      **/
     struct {
         float a;    /* alpha component (0.0 = transparent, 1.0 = opaque) */
@@ -1484,9 +1483,9 @@ typedef struct LibMame_RenderPrimitive
     struct {
         /**
          * This is the pointer to the beginning of the block of memory holding
-         * the texture data for this primitive.  This will likely stay
-         * consistent across multiple renderings of the same texture and
-         * caching in the display is advised.
+         * the texture data for this primitive.  If a texture's base and seqid
+         * are the same as a previously-rendered texture, then the texture
+         * contents have not changed and may be re-used.
          **/
         void *base;           /* base of the data */
 
@@ -1506,46 +1505,47 @@ typedef struct LibMame_RenderPrimitive
         uint32_t height;      /* height of the image */
 
         /**
-         * Palette for PALETTE16 textures.  LUTs for RGB15/RGB32.  Not sure
-         * what this means.
+         * Palette for PALETTE16 textures.  LUTs for RGB15/RGB32.
          **/
         const uint32_t *palette;
 
         /**
-         * Sequence number.  Not sure what this is for.  Is it an animation
-         * sequence number for animations composed of a sequence of tiles?
+         * Sequence number.  This is incremented every time a texture is
+         * changed, and allows a texture base that is the same as another
+         * texture to identify the texture contents as having changed.
          **/
         uint32_t seqid;
     } texture;
 
     /**
-     * Not sure what the following is
+     * Texture coordinates for the region of the texture to render.  These are
+     * in the texture-normalized [0..1], [0..1] coordinate system.
      **/
     struct 
     {
         /**
-         * Top left UV coordinate
+         * Top left texture coordinate
          **/
         struct {
             float u, v;
         } top_left;
 
         /**
-         * Top right UV coordinate
+         * Top right texture coordinate
          **/
         struct {
             float u, v;
         } top_right;
 
         /**
-         * Bottom left UV coordinate
+         * Bottom left texture coordinate
          **/
         struct {
             float u, v;
         } bottom_left;
 
         /**
-         * Bottom right UV coordinate
+         * Bottom right texture coordinate
          **/
         struct {
             float u, v;
@@ -1701,15 +1701,18 @@ typedef struct LibMame_RunGameCallbacks
  * Functions comprising the libmame API
  ************************************************************************** **/
 
-/**
+/** --------------------------------------------------------------------------
  * Functions for managing the library.
- **/
+ -------------------------------------------------------------------------- **/
 
 /**
  * Initializes libmame, preparing any resources that the library needs for
  * operation.  This function must be called before any other LibMame function
  * is called, and also must be called after any call to LibMame_Deinitialize
  * before any other LibMame function can be called.
+ *
+ * @return LibMame_InitializeStatus_Success (which is 0) on success, one of
+ *         the other LibMame_InitializeStatus_XXX values on error
  **/
 LibMame_InitializeStatus LibMame_Initialize();
 
@@ -1735,9 +1738,9 @@ void LibMame_Deinitialize();
 const char *LibMame_Get_Version_String();
 
 
-/**
+/** --------------------------------------------------------------------------
  * Functions for querying the supported games and their properties
- **/
+ -------------------------------------------------------------------------- **/
 
 /**
  * Returns the total number of games supported by this instance of libmame.
@@ -2047,9 +2050,9 @@ LibMame_Image LibMame_Get_Game_Hdd(int gamenum, int hddnum);
 const char *LibMame_Get_Game_SourceFileName(int gamenum);
 
 
-/**
+/** --------------------------------------------------------------------------
  * Functions for managing options
- **/
+ -------------------------------------------------------------------------- **/
 
 /**
  * Sets the LibMame_RunGameOptions structure to contain all default values.
@@ -2059,9 +2062,9 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
 void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
 
 
-/**
+/** --------------------------------------------------------------------------
  * Functions for running a game
- **/
+ -------------------------------------------------------------------------- **/
 
 /**
  * Runs a game.  Currently, this is a non-thread-safe call, so only one thread
@@ -2100,9 +2103,9 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
 const char *LibMame_RunningGame_GetSpeedText(LibMame_RunningGame *game);
 
 
-/**
+/** --------------------------------------------------------------------------
  * Functions for altering the state of a running game
- **/
+ -------------------------------------------------------------------------- **/
 
 /**
  * Requests that the currently running game be paused.  This will result in a
