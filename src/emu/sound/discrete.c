@@ -638,7 +638,14 @@ void discrete_device::display_profiling(void)
 	count = m_node_list.count();
 	/* print statistics */
 	printf("Total Samples  : %16" I64FMT "d\n", m_total_samples);
-	tresh = total / count;
+    if (count > 0)
+    {
+        tresh = total / count;
+    }
+    else
+    {
+        tresh = 0;
+    }
 	printf("Threshold (mean): %16" I64FMT "d\n", tresh / m_total_samples );
 	for_each(discrete_base_node **, node, &m_node_list)
 	{
@@ -876,7 +883,8 @@ device_t *discrete_sound_device_config::alloc_device(running_machine &machine) c
 
 discrete_device::discrete_device(running_machine &_machine, const discrete_device_config &config)
 	: device_t(_machine, config),
-	  m_config(config)
+	  m_config(config),
+      m_queue(NULL)
 {
 }
 
@@ -888,7 +896,10 @@ discrete_sound_device::discrete_sound_device(running_machine &_machine, const di
 
 discrete_device::~discrete_device(void)
 {
-	osd_work_queue_free(m_queue);
+    if (m_queue != NULL)
+    {
+        osd_work_queue_free(m_queue);
+    }
 
 	if (m_profiling)
 	{
