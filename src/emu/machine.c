@@ -114,6 +114,7 @@
 #include "uiinput.h"
 #include "crsshair.h"
 #include "validity.h"
+#include "unzip.h"
 #include "debug/debugcon.h"
 
 #include <time.h>
@@ -277,7 +278,6 @@ void running_machine::start()
     announce_init_phase(STARTUP_PHASE_PREPARING, 0);
     
 	// initialize basic can't-fail systems here
-	fileio_init(this);
 	config_init(this);
 	input_init(this);
 	output_init(this);
@@ -301,7 +301,7 @@ void running_machine::start()
 
 	// create the video manager
 	m_video = auto_alloc(this, video_manager(*this));
-	ui_init(this, options_get_bool(mame_options(), OPTION_QUIET_STARTUP));
+	ui_init(this, options_get_bool(&m_options, OPTION_QUIET_STARTUP));
 
 	// initialize the base time (needed for doing record/playback)
 	::time(&m_base_time);
@@ -312,7 +312,7 @@ void running_machine::start()
 	// initialize the input system and input ports for the game
 	// this must be done before memory_init in order to allow specifying
 	// callbacks based on input port tags
-	time_t newbase = input_port_init(this, m_game.ipt);
+	time_t newbase = input_port_init(this, m_game.ipt, m_config.m_devicelist);
 	if (newbase != 0)
 		m_base_time = newbase;
 
@@ -404,7 +404,8 @@ int running_machine::run(bool firstrun, bool benchmarking)
 		// if we have a logfile, set up the callback
 		if (options_get_bool(&m_options, OPTION_LOG))
 		{
-			file_error filerr = mame_fopen(SEARCHPATH_DEBUGLOG, "error.log", OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS, &m_logfile);
+			m_logfile = auto_alloc(this, emu_file(m_options, SEARCHPATH_DEBUGLOG, OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS));
+			file_error filerr = m_logfile->open("error.log");
 			assert_always(filerr == FILERR_NONE, "unable to open log file");
 			add_logerror_callback(logfile_callback);
 		}
@@ -484,10 +485,10 @@ int running_machine::run(bool firstrun, bool benchmarking)
 
 	// call all exit callbacks registered
 	call_notifiers(MACHINE_NOTIFY_EXIT);
+	zip_file_cache_clear();
 
 	// close the logfile
-	if (m_logfile != NULL)
-		mame_fclose(m_logfile);
+	auto_free(this, m_logfile);
 	return error;
 }
 
@@ -825,6 +826,7 @@ void running_machine::handle_saveload()
 	file_error filerr = FILERR_NONE;
 
 	// if no name, bail
+	emu_file file(m_options, m_saveload_searchpath, openflags);
 	if (!m_saveload_pending_file)
 		goto cancel;
 
@@ -842,12 +844,9 @@ void running_machine::handle_saveload()
 	}
 
 	// open the file
-	mame_file *file;
-	filerr = mame_fopen(m_saveload_searchpath, m_saveload_pending_file, openflags, &file);
+	filerr = file.open(m_saveload_pending_file);
 	if (filerr == FILERR_NONE)
 	{
-		astring fullname(mame_file_full_name(file));
-
 		// read/write the save state
 		state_save_error staterr = (m_saveload_schedule == SLS_LOAD) ? m_state.read_file(file) : m_state.write_file(file);
 
@@ -883,9 +882,8 @@ void running_machine::handle_saveload()
 		}
 
 		// close and perhaps delete the file
-		mame_fclose(file);
 		if (staterr != STATERR_NONE && m_saveload_schedule == SLS_SAVE)
-			osd_rmfile(fullname);
+			file.remove_on_close();
 	}
 	else
 		popmessage("Error: Failed to open file for %s operation.", opname);
@@ -926,7 +924,7 @@ void running_machine::soft_reset(running_machine &machine, int param)
 void running_machine::logfile_callback(running_machine &machine, const char *buffer)
 {
 	if (machine.m_logfile != NULL)
-		mame_fputs(machine.m_logfile, buffer);
+		machine.m_logfile->puts(buffer);
 }
 
 
@@ -999,8 +997,7 @@ running_machine::logerror_callback_item::logerror_callback_item(logerror_callbac
 driver_device_config_base::driver_device_config_base(const machine_config &mconfig, device_type type, const char *tag, const device_config *owner)
 	: device_config(mconfig, type, "Driver Device", tag, owner, 0),
 	  m_game(NULL),
-	  m_palette_init(NULL),
-	  m_video_update(NULL)
+	  m_palette_init(NULL)
 {
 	memset(m_callbacks, 0, sizeof(m_callbacks));
 }
@@ -1014,6 +1011,7 @@ driver_device_config_base::driver_device_config_base(const machine_config &mconf
 void driver_device_config_base::static_set_game(device_config *device, const game_driver *game)
 {
 	downcast<driver_device_config_base *>(device)->m_game = game;
+	downcast<driver_device_config_base *>(device)->m_shortname = game->name;
 }
 
 
@@ -1038,18 +1036,6 @@ void driver_device_config_base::static_set_callback(device_config *device, callb
 void driver_device_config_base::static_set_palette_init(device_config *device, palette_init_func callback)
 {
 	downcast<driver_device_config_base *>(device)->m_palette_init = callback;
-}
-
-
-//-------------------------------------------------
-//  static_set_video_update - set the legacy
-//  video update callback in the device
-//  configuration
-//-------------------------------------------------
-
-void driver_device_config_base::static_set_video_update(device_config *device, video_update_func callback)
-{
-	downcast<driver_device_config_base *>(device)->m_video_update = callback;
 }
 
 
@@ -1186,10 +1172,8 @@ void driver_device::video_reset()
 //  calls to the legacy video_update function
 //-------------------------------------------------
 
-bool driver_device::video_update(screen_device &screen, bitmap_t &bitmap, const rectangle &cliprect)
+bool driver_device::screen_update(screen_device &screen, bitmap_t &bitmap, const rectangle &cliprect)
 {
-	if (m_config.m_video_update != NULL)
-		return (*m_config.m_video_update)(&screen, &bitmap, &cliprect);
 	return 0;
 }
 
@@ -1199,10 +1183,8 @@ bool driver_device::video_update(screen_device &screen, bitmap_t &bitmap, const 
 //  calls to the legacy video_eof function
 //-------------------------------------------------
 
-void driver_device::video_eof()
+void driver_device::screen_eof()
 {
-	if (m_config.m_callbacks[driver_device_config_base::CB_VIDEO_EOF] != NULL)
-		(*m_config.m_callbacks[driver_device_config_base::CB_VIDEO_EOF])(&m_machine);
 }
 
 

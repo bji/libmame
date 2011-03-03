@@ -858,7 +858,7 @@ static void convert_image_info(const game_driver *driver,
                                const machine_config *machineconfig,
                                GameInfo *gameinfo)
 {
-    /* Could the roms and hdd images */
+    /* Convert the roms and hdd images */
 
     /* Iterate through the sources ... */
     for (const rom_source *source = rom_first_source(*machineconfig); 
@@ -913,12 +913,10 @@ static void convert_image_info(const game_driver *driver,
                     current_rom_index++;
                 }
                 image->name = ROM_GETNAME(rom);
-                const char *hashdata = ROM_GETHASHDATA(rom);
-                image->status = (hash_data_has_info
-                                 (hashdata, HASH_INFO_BAD_DUMP) ?
+                hash_collection hashes(ROM_GETHASHDATA(rom));
+                image->status = (hashes.flag(hash_collection::FLAG_BAD_DUMP) ?
                                  LibMame_ImageStatus_BadDump :
-                                 hash_data_has_info
-                                 (hashdata, HASH_INFO_NO_DUMP) ?
+                                 hashes.flag(hash_collection::FLAG_NO_DUMP) ?
                                  LibMame_ImageStatus_NoDump :
                                  LibMame_ImageStatus_GoodDump);
                 image->is_optional = ((is_disk && DISK_ISOPTIONAL(rom)) ||
@@ -927,7 +925,7 @@ static void convert_image_info(const game_driver *driver,
                 image->clone_of_game = 0;
                 image->clone_of_rom = 0;
                 const game_driver *clone_of = driver_get_clone(driver);
-                if (clone_of && !ROM_NOGOODDUMP(rom)) {
+                if (clone_of) {
                     machine_config config(*clone_of);
                     for (const rom_source *psource = rom_first_source
                              (config); psource;
@@ -938,9 +936,8 @@ static void convert_image_info(const game_driver *driver,
                             for (const rom_entry *prom = 
                                      rom_first_file(pregion); prom; 
                                  prom = rom_next_file(prom)) {
-                                if (hash_data_is_equal
-                                    (ROM_GETHASHDATA(rom),
-                                     ROM_GETHASHDATA(prom), 0)) {
+                                if (hashes == 
+                                    hash_collection(ROM_GETHASHDATA(prom))) {
                                     image->clone_of_game = clone_of->name;
                                     image->clone_of_rom = ROM_GETNAME(prom);
                                     break;
@@ -949,27 +946,33 @@ static void convert_image_info(const game_driver *driver,
                         }
                     }
                 }
-                char checksum[HASH_BUF_SIZE];
-                if (hash_data_extract_printable_checksum
-                    (hashdata, HASH_CRC, checksum)) {
-                    image->crc = copy_string(checksum);
-                }
-                else {
-                    image->crc = 0;
-                }
-                if (hash_data_extract_printable_checksum
-                    (hashdata, HASH_SHA1, checksum)) {
-                    image->sha1 = copy_string(checksum);
-                }
-                else {
-                    image->sha1 = 0;
-                }
-                if (hash_data_extract_printable_checksum
-                    (hashdata, HASH_MD5, checksum)) {
-                    image->md5 = copy_string(checksum);
-                }
-                else {
-                    image->md5 = 0;
+                image->crc = image->sha1 = image->md5 = 0;
+                if (!hashes.flag(hash_collection::FLAG_NO_DUMP)) {
+                    for (hash_base *hash = hashes.first(); hash != NULL; 
+                         hash = hash->next()) {
+                        char id = hash->id();
+                        astring tempstr;
+                        const char *value = hash->string(tempstr);
+                        if (id == hash_collection::HASH_CRC) {
+                            if (!image->crc) {
+                                image->crc = copy_string(value);
+                            }
+                            // Else weirdness???
+                        }
+                        else if (id == hash_collection::HASH_SHA1) {
+                            if (!image->sha1) {
+                                image->sha1 = copy_string(value);
+                            }
+                            // Else weirdness???
+                        }
+                        else if (id == hash_collection::HASH_MD5) {
+                            if (!image->md5) {
+                                image->md5 = copy_string(value);
+                            }
+                            // Else weirdness???
+                        }
+                        // Else weirdness???
+                    }
                 }
                 /* This is really weird but it's what MAME does. */
                 if (!is_disk && ROM_GETBIOSFLAGS(rom)) {
@@ -1053,7 +1056,7 @@ static void convert_game_info(GameInfo *gameinfo)
 
 	machine_config machineconfig(*driver);
     ioport_list ioportlist;
-    input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE);
+    input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE, 0);
     /* Mame's code assumes the above succeeds, we will too */
 
     convert_year(driver, gameinfo);
@@ -1076,7 +1079,8 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
         const game_driver * const *pdriver = drivers;
         while (*pdriver) {
             const game_driver *driver = *pdriver;
-            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE))) {
+            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
+                                   GAME_MECHANICAL))) {
                 g_game_count++;
             }
             pdriver++;
@@ -1094,7 +1098,8 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
             int *pHashValue;
             g_drivers_hash.Put(driver->name, /* returns */ pHashValue);
             *pHashValue = driver_index;
-            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE))) {
+            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
+                                   GAME_MECHANICAL))) {
                 gameinfo->converted = false;
                 gameinfo->driver_index = driver_index;
                 gameinfo->gameinfo_index = gameinfo_index;

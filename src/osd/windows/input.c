@@ -508,7 +508,7 @@ void wininput_init(running_machine *machine)
 	assert_always(input_lock != NULL, "Failed to allocate input_lock");
 
 	// decode the options
-	lightgun_shared_axis_mode = options_get_bool(machine->options(), WINOPTION_DUAL_LIGHTGUN);
+	lightgun_shared_axis_mode = options_get_bool(&machine->options(), WINOPTION_DUAL_LIGHTGUN);
 
 	// initialize RawInput and DirectInput (RawInput first so we can fall back)
 	rawinput_init(machine);
@@ -1692,7 +1692,7 @@ static void rawinput_init(running_machine *machine)
 			rawinput_mouse_enum(machine, device);
 	}
 
-	// finally, register to recieve raw input WM_INPUT messages
+	// finally, register to receive raw input WM_INPUT messages
 	regcount = 0;
 	if (keyboard_list != NULL)
 	{

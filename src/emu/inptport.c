@@ -288,8 +288,8 @@ struct _input_port_private
 	attoseconds_t				last_delta_nsec;	/* nanoseconds that passed since the previous callback */
 
 	/* playback/record information */
-	mame_file *					record_file;		/* recording file (NULL if not recording) */
-	mame_file *					playback_file;		/* playback file (NULL if not recording) */
+	emu_file *					record_file;		/* recording file (NULL if not recording) */
+	emu_file *					playback_file;		/* playback file (NULL if not recording) */
 	UINT64						playback_accumulated_speed;/* accumulated speed during playback */
 	UINT32						playback_accumulated_frames;/* accumulated frames during playback */
 
@@ -776,7 +776,7 @@ static INT32 apply_analog_settings(INT32 current, analog_field_state *analog);
 /* initialization helpers */
 static void init_port_types(running_machine *machine);
 static void init_port_state(running_machine *machine);
-static void init_autoselect_devices(const ioport_list &portlist, int type1, int type2, int type3, const char *option, const char *ananame);
+static void init_autoselect_devices(running_machine &machine, int type1, int type2, int type3, const char *option, const char *ananame);
 static device_field_info *init_field_device_info(const input_field_config *field,const char *device_name);
 static analog_field_state *init_field_analog_state(const input_field_config *field);
 
@@ -788,7 +788,7 @@ static void frame_update_analog_field(running_machine *machine, analog_field_sta
 static int frame_get_digital_field_state(const input_field_config *field, int mouse_down);
 
 /* port configuration helpers */
-static void port_config_detokenize(ioport_list &portlist, const input_port_token *ipt, char *errorbuf, int errorbuflen);
+static void port_config_detokenize(ioport_list &portlist, const input_port_token *ipt, char *errorbuf, int errorbuflen, device_config *owner);
 static input_field_config *field_config_alloc(input_port_config *port, int type, input_port_value defvalue, input_port_value maskbits);
 static void field_config_insert(input_field_config *field, input_port_value *disallowedbits, char *errorbuf, int errorbuflen);
 static void field_config_free(input_field_config **fieldptr);
@@ -973,7 +973,7 @@ static WRITE_LINE_DEVICE_HANDLER( changed_write_line_device )
     system
 -------------------------------------------------*/
 
-time_t input_port_init(running_machine *machine, const input_port_token *tokens)
+time_t input_port_init(running_machine *machine, const input_port_token *tokens, const device_config_list &devicelist)
 {
 	//input_port_private *portdata;
 	char errorbuf[1024];
@@ -993,12 +993,21 @@ time_t input_port_init(running_machine *machine, const input_port_token *tokens)
 	/* if we have a token list, proceed */
 	if (tokens != NULL)
 	{
-		input_port_list_init(machine->m_portlist, tokens, errorbuf, sizeof(errorbuf), TRUE);
+		input_port_list_init(machine->m_portlist, tokens, errorbuf, sizeof(errorbuf), TRUE, NULL);
 		if (errorbuf[0] != 0)
 			mame_printf_error("Input port errors:\n%s", errorbuf);
-		init_port_state(machine);
 	}
 
+	for (device_config *config = devicelist.first(); config != NULL; config = config->next())
+	{
+		if (config->input_ports()!=NULL) {
+			input_port_list_init(machine->m_portlist, config->input_ports(), errorbuf, sizeof(errorbuf), TRUE, config);
+			if (errorbuf[0] != 0)
+				mame_printf_error("Input port errors:\n%s", errorbuf);
+		}
+	}
+
+	init_port_state(machine);
 	/* register callbacks for when we load configurations */
 	config_register(machine, "input", load_config_callback, save_config_callback);
 
@@ -1034,7 +1043,7 @@ static void input_port_exit(running_machine &machine)
     according to the given tokens
 -------------------------------------------------*/
 
-void input_port_list_init(ioport_list &portlist, const input_port_token *tokens, char *errorbuf, int errorbuflen, int allocmap)
+void input_port_list_init(ioport_list &portlist, const input_port_token *tokens, char *errorbuf, int errorbuflen, int allocmap, device_config *owner)
 {
 	/* no tokens, no list */
 	if (tokens == NULL)
@@ -1045,7 +1054,7 @@ void input_port_list_init(ioport_list &portlist, const input_port_token *tokens,
 		*errorbuf = 0;
 
 	/* detokenize into the list */
-	port_config_detokenize(portlist, tokens, errorbuf, errorbuflen);
+	port_config_detokenize(portlist, tokens, errorbuf, errorbuflen, owner);
 }
 
 
@@ -1574,6 +1583,21 @@ input_port_value input_port_read(running_machine *machine, const char *tag)
 
 
 /*-------------------------------------------------
+    input_port_read - return the value of
+    an device input port specified by tag
+-------------------------------------------------*/
+
+input_port_value input_port_read(running_machine *machine, device_t *device, const char *tag)
+{
+	astring tempstring;
+	const input_port_config *port = machine->port(device->baseconfig().subtag(tempstring, tag));
+	if (port == NULL)
+		fatalerror("Unable to locate input port '%s'", tag);
+	return input_port_read_direct(port);
+}
+
+
+/*-------------------------------------------------
     input_port_read_safe - return the value of
     an input port specified by tag, or a default
     value if the port does not exist
@@ -2012,7 +2036,7 @@ static astring *get_keyboard_key_name(const input_field_config *field)
 
 static void init_port_state(running_machine *machine)
 {
-	const char *joystick_map_default = options_get_string(machine->options(), OPTION_JOYSTICK_MAP);
+	const char *joystick_map_default = options_get_string(&machine->options(), OPTION_JOYSTICK_MAP);
 	input_port_private *portdata = machine->input_port_data;
 	const input_field_config *field;
 	const input_port_config *port;
@@ -2094,14 +2118,14 @@ static void init_port_state(running_machine *machine)
 	}
 
 	/* handle autoselection of devices */
-	init_autoselect_devices(machine->m_portlist, IPT_PADDLE,      IPT_PADDLE_V,     0,              OPTION_PADDLE_DEVICE,     "paddle");
-	init_autoselect_devices(machine->m_portlist, IPT_AD_STICK_X,  IPT_AD_STICK_Y,   IPT_AD_STICK_Z, OPTION_ADSTICK_DEVICE,    "analog joystick");
-	init_autoselect_devices(machine->m_portlist, IPT_LIGHTGUN_X,  IPT_LIGHTGUN_Y,   0,              OPTION_LIGHTGUN_DEVICE,   "lightgun");
-	init_autoselect_devices(machine->m_portlist, IPT_PEDAL,       IPT_PEDAL2,       IPT_PEDAL3,     OPTION_PEDAL_DEVICE,      "pedal");
-	init_autoselect_devices(machine->m_portlist, IPT_DIAL,        IPT_DIAL_V,       0,              OPTION_DIAL_DEVICE,       "dial");
-	init_autoselect_devices(machine->m_portlist, IPT_TRACKBALL_X, IPT_TRACKBALL_Y,  0,              OPTION_TRACKBALL_DEVICE,  "trackball");
-	init_autoselect_devices(machine->m_portlist, IPT_POSITIONAL,  IPT_POSITIONAL_V, 0,              OPTION_POSITIONAL_DEVICE, "positional");
-	init_autoselect_devices(machine->m_portlist, IPT_MOUSE_X,     IPT_MOUSE_Y,      0,              OPTION_MOUSE_DEVICE,      "mouse");
+	init_autoselect_devices(*machine, IPT_PADDLE,      IPT_PADDLE_V,     0,              OPTION_PADDLE_DEVICE,     "paddle");
+	init_autoselect_devices(*machine, IPT_AD_STICK_X,  IPT_AD_STICK_Y,   IPT_AD_STICK_Z, OPTION_ADSTICK_DEVICE,    "analog joystick");
+	init_autoselect_devices(*machine, IPT_LIGHTGUN_X,  IPT_LIGHTGUN_Y,   0,              OPTION_LIGHTGUN_DEVICE,   "lightgun");
+	init_autoselect_devices(*machine, IPT_PEDAL,       IPT_PEDAL2,       IPT_PEDAL3,     OPTION_PEDAL_DEVICE,      "pedal");
+	init_autoselect_devices(*machine, IPT_DIAL,        IPT_DIAL_V,       0,              OPTION_DIAL_DEVICE,       "dial");
+	init_autoselect_devices(*machine, IPT_TRACKBALL_X, IPT_TRACKBALL_Y,  0,              OPTION_TRACKBALL_DEVICE,  "trackball");
+	init_autoselect_devices(*machine, IPT_POSITIONAL,  IPT_POSITIONAL_V, 0,              OPTION_POSITIONAL_DEVICE, "positional");
+	init_autoselect_devices(*machine, IPT_MOUSE_X,     IPT_MOUSE_Y,      0,              OPTION_MOUSE_DEVICE,      "mouse");
 
 	/* look for 4-way joysticks and change the default map if we find any */
 	if (joystick_map_default[0] == 0 || strcmp(joystick_map_default, "auto") == 0)
@@ -2121,9 +2145,10 @@ static void init_port_state(running_machine *machine)
     in and the corresponding option
 -------------------------------------------------*/
 
-static void init_autoselect_devices(const ioport_list &portlist, int type1, int type2, int type3, const char *option, const char *ananame)
+static void init_autoselect_devices(running_machine &machine, int type1, int type2, int type3, const char *option, const char *ananame)
 {
-	const char *stemp = options_get_string(mame_options(), option);
+	const ioport_list &portlist = machine.m_portlist;
+	const char *stemp = options_get_string(&machine.options(), option);
 	input_device_class autoenable = DEVICE_CLASS_KEYBOARD;
 	const char *autostring = "keyboard";
 	const input_field_config *field;
@@ -2846,7 +2871,7 @@ static int frame_get_digital_field_state(const input_field_config *field, int mo
 	}
 
 	/* skip locked-out coin inputs */
-	if (curstate && field->type >= IPT_COIN1 && field->type <= IPT_COIN12 && coin_lockout_get_state(field->port->machine, field->type - IPT_COIN1) && options_get_bool(mame_options(), OPTION_COIN_LOCKOUT))
+	if (curstate && field->type >= IPT_COIN1 && field->type <= IPT_COIN12 && coin_lockout_get_state(field->port->machine, field->type - IPT_COIN1) && options_get_bool(&field->port->machine->options(), OPTION_COIN_LOCKOUT))
 	{
 		ui_popup_time(3, "Coinlock disabled %s.", input_field_name(field));
 		return FALSE;
@@ -2865,13 +2890,15 @@ static int frame_get_digital_field_state(const input_field_config *field, int mo
     detokenize a series of input port tokens
 -------------------------------------------------*/
 
-static void port_config_detokenize(ioport_list &portlist, const input_port_token *ipt, char *errorbuf, int errorbuflen)
+static void port_config_detokenize(ioport_list &portlist, const input_port_token *ipt, char *errorbuf, int errorbuflen, device_config *owner)
 {
 	UINT32 entrytype = INPUT_TOKEN_INVALID;
 	input_setting_config *cursetting = NULL;
 	input_field_config *curfield = NULL;
 	input_port_config *curport = NULL;
 	input_port_value maskbits = 0;
+	astring tempstring;
+	const char *fulltag = NULL;
 	UINT16 category;	/* (MESS-specific) category */
 
 	/* loop over tokens until we hit the end */
@@ -2898,7 +2925,7 @@ static void port_config_detokenize(ioport_list &portlist, const input_port_token
 					field_config_insert(curfield, &maskbits, errorbuf, errorbuflen);
 				maskbits = 0;
 
-				port_config_detokenize(portlist, TOKEN_GET_PTR(ipt, tokenptr), errorbuf, errorbuflen);
+				port_config_detokenize(portlist, TOKEN_GET_PTR(ipt, tokenptr), errorbuf, errorbuflen, owner);
 				curport = NULL;
 				curfield = NULL;
 				cursetting = NULL;
@@ -2911,7 +2938,12 @@ static void port_config_detokenize(ioport_list &portlist, const input_port_token
 				maskbits = 0;
 
 				string = TOKEN_GET_STRING(ipt);
-				curport = &portlist.append(string, *global_alloc(input_port_config(string)));
+				if (owner!=NULL) {
+					fulltag = core_strdup(owner->subtag(tempstring, string));
+				} else {
+					fulltag = string;
+				}
+				curport = &portlist.append(fulltag, *global_alloc(input_port_config(fulltag)));
 				curfield = NULL;
 				cursetting = NULL;
 				break;
@@ -3486,6 +3518,13 @@ static void port_config_detokenize(ioport_list &portlist, const input_port_token
 					break;
 				}
 				curfield->read_device_name = TOKEN_GET_STRING(ipt);
+				if (!strcmp(curfield->read_device_name, DEVICE_SELF))
+				{
+					if (owner)
+						curfield->read_device_name = owner->tag();
+					else
+						error_buf_append(errorbuf, errorbuflen, "DEVICE_SELF used while not in device context\n");
+				}
 				curfield->read_line_device = TOKEN_GET_PTR(ipt, read_line_device);
 				break;
 
@@ -3499,6 +3538,13 @@ static void port_config_detokenize(ioport_list &portlist, const input_port_token
 					break;
 				}
 				curfield->write_device_name = TOKEN_GET_STRING(ipt);
+				if (!strcmp(curfield->write_device_name, DEVICE_SELF))
+				{
+					if (owner)
+						curfield->write_device_name = owner->tag();
+					else
+						error_buf_append(errorbuf, errorbuflen, "DEVICE_SELF used while not in device context\n");
+				}
 				curfield->write_line_device = TOKEN_GET_PTR(ipt, write_line_device);
 				break;
 
@@ -4324,7 +4370,7 @@ static UINT8 playback_read_uint8(running_machine *machine)
 		return 0;
 
 	/* read the value; if we fail, end playback */
-	if (mame_fread(portdata->playback_file, &result, sizeof(result)) != sizeof(result))
+	if (portdata->playback_file->read(&result, sizeof(result)) != sizeof(result))
 	{
 		playback_end(machine, "End of file");
 		return 0;
@@ -4350,7 +4396,7 @@ static UINT32 playback_read_uint32(running_machine *machine)
 		return 0;
 
 	/* read the value; if we fail, end playback */
-	if (mame_fread(portdata->playback_file, &result, sizeof(result)) != sizeof(result))
+	if (portdata->playback_file->read(&result, sizeof(result)) != sizeof(result))
 	{
 		playback_end(machine, "End of file");
 		return 0;
@@ -4376,7 +4422,7 @@ static UINT64 playback_read_uint64(running_machine *machine)
 		return 0;
 
 	/* read the value; if we fail, end playback */
-	if (mame_fread(portdata->playback_file, &result, sizeof(result)) != sizeof(result))
+	if (portdata->playback_file->read(&result, sizeof(result)) != sizeof(result))
 	{
 		playback_end(machine, "End of file");
 		return 0;
@@ -4393,10 +4439,9 @@ static UINT64 playback_read_uint64(running_machine *machine)
 
 static time_t playback_init(running_machine *machine)
 {
-	const char *filename = options_get_string(machine->options(), OPTION_PLAYBACK);
+	const char *filename = options_get_string(&machine->options(), OPTION_PLAYBACK);
 	input_port_private *portdata = machine->input_port_data;
 	UINT8 header[INP_HEADER_SIZE];
-	file_error filerr;
 	time_t basetime;
 
 	/* if no file, nothing to do */
@@ -4404,11 +4449,12 @@ static time_t playback_init(running_machine *machine)
 		return 0;
 
 	/* open the playback file */
-	filerr = mame_fopen(SEARCHPATH_INPUTLOG, filename, OPEN_FLAG_READ, &portdata->playback_file);
+	portdata->playback_file = auto_alloc(machine, emu_file(machine->options(), SEARCHPATH_INPUTLOG, OPEN_FLAG_READ));
+	file_error filerr = portdata->playback_file->open(filename);
 	assert_always(filerr == FILERR_NONE, "Failed to open file for playback");
 
 	/* read the header and verify that it is a modern version; if not, print an error */
-	if (mame_fread(portdata->playback_file, header, sizeof(header)) != sizeof(header))
+	if (portdata->playback_file->read(header, sizeof(header)) != sizeof(header))
 		fatalerror("Input file is corrupt or invalid (missing header)");
 	if (memcmp(header, "MAMEINP\0", 8) != 0)
 		fatalerror("Input file invalid or in an older, unsupported format");
@@ -4428,7 +4474,7 @@ static time_t playback_init(running_machine *machine)
 		mame_printf_info("Input file is for " GAMENOUN " '%s', not for current " GAMENOUN " '%s'\n", header + 0x14, machine->gamedrv->name);
 
 	/* enable compression */
-	mame_fcompress(portdata->playback_file, FCOMPRESS_MEDIUM);
+	portdata->playback_file->compress(FCOMPRESS_MEDIUM);
 
 	return basetime;
 }
@@ -4446,7 +4492,7 @@ static void playback_end(running_machine *machine, const char *message)
 	if (portdata->playback_file != NULL)
 	{
 		/* close the file */
-		mame_fclose(portdata->playback_file);
+		auto_free(machine, portdata->playback_file);
 		portdata->playback_file = NULL;
 
 		/* pop a message */
@@ -4540,7 +4586,7 @@ static void record_write_uint8(running_machine *machine, UINT8 data)
 		return;
 
 	/* read the value; if we fail, end playback */
-	if (mame_fwrite(portdata->record_file, &result, sizeof(result)) != sizeof(result))
+	if (portdata->record_file->write(&result, sizeof(result)) != sizeof(result))
 		record_end(machine, "Out of space");
 }
 
@@ -4560,7 +4606,7 @@ static void record_write_uint32(running_machine *machine, UINT32 data)
 		return;
 
 	/* read the value; if we fail, end playback */
-	if (mame_fwrite(portdata->record_file, &result, sizeof(result)) != sizeof(result))
+	if (portdata->record_file->write(&result, sizeof(result)) != sizeof(result))
 		record_end(machine, "Out of space");
 }
 
@@ -4580,7 +4626,7 @@ static void record_write_uint64(running_machine *machine, UINT64 data)
 		return;
 
 	/* read the value; if we fail, end playback */
-	if (mame_fwrite(portdata->record_file, &result, sizeof(result)) != sizeof(result))
+	if (portdata->record_file->write(&result, sizeof(result)) != sizeof(result))
 		record_end(machine, "Out of space");
 }
 
@@ -4591,18 +4637,18 @@ static void record_write_uint64(running_machine *machine, UINT64 data)
 
 static void record_init(running_machine *machine)
 {
-	const char *filename = options_get_string(machine->options(), OPTION_RECORD);
+	const char *filename = options_get_string(&machine->options(), OPTION_RECORD);
 	input_port_private *portdata = machine->input_port_data;
 	UINT8 header[INP_HEADER_SIZE];
 	system_time systime;
-	file_error filerr;
 
 	/* if no file, nothing to do */
 	if (filename[0] == 0)
 		return;
 
 	/* open the record file  */
-	filerr = mame_fopen(SEARCHPATH_INPUTLOG, filename, OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS, &portdata->record_file);
+	portdata->record_file = auto_alloc(machine, emu_file(machine->options(), SEARCHPATH_INPUTLOG, OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS));
+	file_error filerr = portdata->record_file->open(filename);
 	assert_always(filerr == FILERR_NONE, "Failed to open file for recording");
 
 	/* get the base time */
@@ -4625,10 +4671,10 @@ static void record_init(running_machine *machine)
 	sprintf((char *)header + 0x20, APPNAME " %s", build_version);
 
 	/* write it */
-	mame_fwrite(portdata->record_file, header, sizeof(header));
+	portdata->record_file->write(header, sizeof(header));
 
 	/* enable compression */
-	mame_fcompress(portdata->record_file, FCOMPRESS_MEDIUM);
+	portdata->record_file->compress(FCOMPRESS_MEDIUM);
 }
 
 
@@ -4644,7 +4690,7 @@ static void record_end(running_machine *machine, const char *message)
 	if (portdata->record_file != NULL)
 	{
 		/* close the file */
-		mame_fclose(portdata->record_file);
+		auto_free(machine, portdata->record_file);
 		portdata->record_file = NULL;
 
 		/* pop a message */
