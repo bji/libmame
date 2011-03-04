@@ -354,22 +354,6 @@ endif
 
 
 #-------------------------------------------------
-# Turn on allocation tracking of C++ standard new and delete
-# operators only if not compiling libmame (because building
-# a library that overrides the standard new and delete is a
-# bad thing)
-#-------------------------------------------------
-
-# turn this on to enable allocation tracking for debugging purposes.  This
-# is the default when compiling MAME (but not libmame).
-ifdef BUILD_LIBMAME
-TRACK_STANDARD_NEW_AND_DELETE = 0
-else
-TRACK_STANDARD_NEW_AND_DELETE = 1
-endif
-
-
-#-------------------------------------------------
 # form the name of the executable
 #-------------------------------------------------
 

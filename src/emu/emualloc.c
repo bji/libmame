@@ -134,14 +134,8 @@ void *malloc_file_line(size_t size, const char *file, int line)
 	if (result == NULL)
 		return NULL;
 
-    // Only do this if TRACK_STANDARD_NEW_AND_DELETE is defined, because if
-    // that symbol is NOT defined, then some allocations are done using
-    // standard operator new and cause problems when mismatched with
-    // free_file_line
-#if TRACK_STANDARD_NEW_AND_DELETE
 	// add a new entry
 	memory_entry::allocate(size, result, file, line);
-#endif
 
 #ifdef MAME_DEBUG
 	// randomize the memory
@@ -159,11 +153,6 @@ void *malloc_file_line(size_t size, const char *file, int line)
 
 void free_file_line(void *memory, const char *file, int line)
 {
-    // Only do this if TRACK_STANDARD_NEW_AND_DELETE is defined, because if
-    // that symbol is NOT defined, then some allocations are done using
-    // standard operator new and cause problems when mismatched with a
-    // free_file_line.
-#if TRACK_STANDARD_NEW_AND_DELETE
 	// find the memory entry
 	memory_entry *entry = memory_entry::find(memory);
 
@@ -183,7 +172,6 @@ void free_file_line(void *memory, const char *file, int line)
 	if (entry != NULL)
 		memory_entry::release(entry);
 #endif
-#endif // TRACK_STANDARD_NEW_AND_DELETE
 
 	osd_free(memory);
 }
@@ -249,7 +237,6 @@ void resource_pool::add(resource_pool_item &item)
 	item.m_next = m_hash[hashval];
 	m_hash[hashval] = &item;
 
-#if TRACK_STANDARD_NEW_AND_DELETE
 	// fetch the ID of this item's pointer; some implementations put hidden data
 	// before, so if we don't find it, check 4 bytes ahead
 	memory_entry *entry = memory_entry::find(item.m_ptr);
@@ -257,9 +244,6 @@ void resource_pool::add(resource_pool_item &item)
 		entry = memory_entry::find(reinterpret_cast<UINT8 *>(item.m_ptr) - sizeof(size_t));
 	assert(entry != NULL);
 	item.m_id = entry->m_id;
-#else
-    item.m_id = memory_entry::s_curid++;
-#endif
 
 	// find the entry to insert after
 	resource_pool_item *insert_after;
