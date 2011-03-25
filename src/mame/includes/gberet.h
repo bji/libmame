@@ -1,0 +1,41 @@
+/***************************************************************************
+
+    Green Beret
+
+***************************************************************************/
+
+class gberet_state : public driver_device
+{
+public:
+	gberet_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+	/* memory pointers */
+	UINT8 *     videoram;
+	UINT8 *     colorram;
+	UINT8 *     spriteram;
+	UINT8 *     spriteram2;
+	UINT8 *     scrollram;
+	size_t      spriteram_size;
+
+	/* video-related */
+	tilemap_t     *bg_tilemap;
+	UINT8       spritebank;
+
+	/* misc */
+	UINT8       nmi_enable, irq_enable;
+};
+
+
+/*----------- defined in video/gberet.c -----------*/
+
+WRITE8_HANDLER( gberet_videoram_w );
+WRITE8_HANDLER( gberet_colorram_w );
+WRITE8_HANDLER( gberet_scroll_w );
+WRITE8_HANDLER( gberetb_scroll_w );
+WRITE8_HANDLER( gberet_sprite_bank_w );
+
+PALETTE_INIT( gberet );
+VIDEO_START( gberet );
+SCREEN_UPDATE( gberet );
+SCREEN_UPDATE( gberetb );
