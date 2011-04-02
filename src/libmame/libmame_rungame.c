@@ -844,12 +844,17 @@ static void osd_init(running_machine *machine)
      *  Save away the machine, we'll need it in osd_customize_input_type_list
      **/
     g_state.machine = machine;
-
+    
     /**
      * Create the render_target that tells MAME the rendering parameters it
      * will use.
      **/
     g_state.target = g_state.machine->render().target_alloc();
+
+    /**
+     * Have this target hold every view since we only support one target
+     **/
+    g_state.target->set_view(g_state.target->configured_view("auto", 0, 1));
 
     /**
      * Set render target bounds to 10000 x 10000 and allow the callback to
