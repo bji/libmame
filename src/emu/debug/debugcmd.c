@@ -1587,7 +1587,8 @@ static void execute_load(running_machine *machine, int ref, int params, const ch
 	UINT8 byte;
 	for (i = offset; i <= endoffset || endoffset == offset - 1 ; i++)
 	{
-		fread(&byte, 1, 1, f);
+		size_t amt_read = fread(&byte, 1, 1, f);
+        (void) amt_read;
 		/* check if end of file has been reached and stop loading if it has */
 		if (feof(f))
 			break;
