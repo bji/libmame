@@ -476,7 +476,10 @@ CPPONLYFLAGS =
 ifdef BUILD_LIBMAME
 # if bulding shared libraries (the default), need -fPIC
 ifndef STATIC
+# -fPIC is not used on Microsoft Windows
+ifneq ($(OS),Windows_NT)
 CCOMFLAGS += -fPIC
+endif
 endif
 # Always define the BUILDING_LIBMAME symbol
 CCOMFLAGS += -DBUILDING_LIBMAME
