@@ -4,6 +4,14 @@
 # implementations, at least from a build perspective
 #-------------------------------------------------
 
+# Set WINDOWS preprocessor symbol if building on windows.  This is really
+# unfortunate, but at the moment there are a few things that can't be done
+# using POSIX APIs easily on Windows
+ifeq ($(OS),Windows_NT)
+CFLAGS += -DWINDOWS
+endif
+
+
 # Anything linking the posix OSD depends on pthreads; set this variable so
 # that the top-level makefile's rules for linking executables will get this
 # flag.

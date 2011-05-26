@@ -10,7 +10,11 @@
 #include "osdepend.h"
 #include <signal.h>
 #include <stdlib.h>
+#ifdef WINDOWS
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -63,14 +67,24 @@ void osd_free(void *ptr)
 
 void *osd_alloc_executable(size_t size)
 {
+#ifdef WINDOWS /* XXX need to find a way to make this work on Microsoft
+                  Windows without resorting to this ifdef */
+	return VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+#else
     return mmap(0, size, PROT_EXEC | PROT_READ | PROT_WRITE,
                 MAP_ANON | MAP_SHARED, 0, 0);
+#endif
 }
 
 
 void osd_free_executable(void *ptr, size_t size)
 {
+#ifdef WINDOWS /* XXX need to find a way to make this work on Microsoft
+                  Windows without resorting to this ifdef */
+	VirtualFree(ptr, 0, MEM_RELEASE);
+#else
     munmap(ptr, size);
+#endif
 }
 
 

@@ -178,7 +178,7 @@ static void work_item_release_locked(osd_work_item *item)
 }
 
 
-static void work_queue_run_items_locked(pthread_t self)
+static void work_queue_run_items_locked(int threadid)
 {
     /**
      * Run items in a loop until there are no more
@@ -225,7 +225,7 @@ static void work_queue_run_items_locked(pthread_t self)
          **/
         
         void *result = (item->callback)
-            (&(((char *) item->parambase)[index * item->paramstep]), self);
+            (&(((char *) item->parambase)[index * item->paramstep]), threadid);
         
         /**
          * Re-acquire the mutex so that we can safely update some fields
@@ -281,7 +281,13 @@ static void work_queue_run_items_locked(pthread_t self)
  **/
 static void *work_queue_thread_main(void *)
 {
-    pthread_t self = pthread_self();
+    int threadid;
+
+#ifdef WINDOWS
+    threadid = GetCurrentThreadId();
+#else
+    threadid = (int) pthread_self();
+#endif
 
     pthread_mutex_lock(&g_mutex);
     
@@ -295,7 +301,7 @@ static void *work_queue_thread_main(void *)
          **/
         if (g_items)
         {
-            work_queue_run_items_locked(self);
+            work_queue_run_items_locked(threadid);
         }
         /**
          * Else there are currently no items, so wait until g_items_cond is
@@ -542,7 +548,13 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
      **/
     (void) timeout;
 
-    pthread_t self = pthread_self();
+    int threadid;
+
+#ifdef WINDOWS
+    threadid = GetCurrentThreadId();
+#else
+    threadid = (int) pthread_self();
+#endif
 
     pthread_mutex_lock(&g_mutex);
 
@@ -556,7 +568,7 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
          * items
          **/
         if (g_items) {
-            work_queue_run_items_locked(self);
+            work_queue_run_items_locked(threadid);
         }
         /**
          * Else, some other thread must be completing the queue on our

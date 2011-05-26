@@ -74,7 +74,12 @@ static int mkdir_dash_p(const char *path)
                     return 1;
                 }
                 /* Create it */
+#ifdef WINDOWS /* XXX need to find a way to make this work on Microsoft
+                  Windows without resorting to this ifdef */
+                if (mkdir(dir))
+#else
                 if (mkdir(dir, 0777))
+#endif
                 {
                     return 1;
                 }
