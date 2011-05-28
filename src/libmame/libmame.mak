@@ -28,6 +28,9 @@ LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
 # rules
 #------------------------------------------------
 
+# Because of command line length limits in Microsoft Windows, use GNU tools
+# @file option
+
 ifdef STATIC
 
 # TODO: Figure out how to successfully strip the unneeded symbols from
@@ -35,7 +38,8 @@ ifdef STATIC
 LIBMAME = $(OBJ)/libmame.a
 $(LIBMAME): $(LIBMAMEOBJS)
 			$(ECHO) Archiving $@...
-			$(AR) crs $@ $^
+			@echo "crs $@ $^" > $(OBJ)/libmame/arargs
+			$(AR) @$(OBJ)/libmame/arargs
 
 else
 
@@ -44,14 +48,16 @@ ifdef SYMBOLS
 LIBMAME = $(OBJ)/libmame.so
 $(LIBMAME): $(LIBMAMEOBJS)
 			$(ECHO) Linking $@...
-			$(LD) -shared -o $@ $^
+			@echo "-shared -o $@ $^" > $(OBJ)/libmame/ldargs
+			$(LD) @$(OBJ)/libmame/ldargs
 
 else
 
 LIBMAME = $(OBJ)/libmame.so
 $(LIBMAME): $(LIBMAMEOBJS)
 			$(ECHO) Linking $@...
-			$(LD) -shared -o $@ $^
+			@echo "-shared -o $@ $^" > $(OBJ)/libmame/ldargs
+			$(LD) @$(OBJ)/libmame/ldargs
 			$(ECHO) Stripping $@...
 			$(STRIP) --strip-unneeded $@
 endif
