@@ -46,6 +46,16 @@ MX29F1610MC 16M FlashROM (x7)
 #include "machine/pckeybrd.h"
 #include "machine/idectrl.h"
 
+
+class xtom3d_state : public driver_device
+{
+public:
+	xtom3d_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 static VIDEO_START(xtom3d)
 {
 }
@@ -55,18 +65,18 @@ static SCREEN_UPDATE(xtom3d)
 	return 0;
 }
 
-static ADDRESS_MAP_START(xtom3d_map, ADDRESS_SPACE_PROGRAM, 32)
+static ADDRESS_MAP_START(xtom3d_map, AS_PROGRAM, 32)
 	AM_RANGE(0x00000000, 0x0009ffff) AM_RAM
 	AM_RANGE(0xfffc0000, 0xffffffff) AM_ROM AM_REGION("user1", 0)	/* System BIOS */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START(xtom3d_io, ADDRESS_SPACE_IO, 32)
+static ADDRESS_MAP_START(xtom3d_io, AS_IO, 32)
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( xtom3d )
 INPUT_PORTS_END
 
-static MACHINE_CONFIG_START( xtom3d, driver_device )
+static MACHINE_CONFIG_START( xtom3d, xtom3d_state )
 	MCFG_CPU_ADD("maincpu", PENTIUM, 450000000)	// actually Pentium II 450
 	MCFG_CPU_PROGRAM_MAP(xtom3d_map)
 	MCFG_CPU_IO_MAP(xtom3d_io)

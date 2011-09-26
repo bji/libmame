@@ -506,7 +506,7 @@ int draw13_init(running_machine &machine, sdl_draw_info *callbacks)
 
 	// Load the GL library now - else MT will fail
 
-	stemp = options_get_string(&machine.options(), SDLOPTION_GL_LIB);
+	stemp = downcast<sdl_options &>(machine.options()).gl_lib();
 	if (stemp != NULL && strcmp(stemp, SDLOPTVAL_AUTO) == 0)
 		stemp = NULL;
 
@@ -577,12 +577,10 @@ static int draw13_window_create(sdl_window_info *window, int width, int height)
 			SDL_WINDOW_BORDERLESS | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE);
 
 	// create the SDL window
-	SDL_SelectVideoDisplay(window->monitor->handle);
-
 	if (window->fullscreen && video_config.switchres)
 	{
 		SDL_DisplayMode mode;
-		SDL_GetCurrentDisplayMode(&mode);
+		SDL_GetCurrentDisplayMode(window->monitor->handle, &mode);
 		mode.w = width;
 		mode.h = height;
 		if (window->refresh)
@@ -612,7 +610,7 @@ static int draw13_window_create(sdl_window_info *window, int width, int height)
 	else
 		SDL_SetWindowDisplayMode(window->sdl_window, NULL);	// Use desktop
 
-	window->sdl_window = SDL_CreateWindow(window->title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+	window->sdl_window = SDL_CreateWindow(window->title, SDL_WINDOWPOS_UNDEFINED_DISPLAY(window->monitor->handle), SDL_WINDOWPOS_UNDEFINED,
 			width, height, sdl->extra_flags);
 
 	// create renderer

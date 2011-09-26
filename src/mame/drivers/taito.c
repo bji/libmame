@@ -11,8 +11,8 @@ public:
 };
 
 
-static ADDRESS_MAP_START( taito_map, ADDRESS_SPACE_PROGRAM, 8 )
-	ADDRESS_MAP_UNMAP_HIGH
+static ADDRESS_MAP_START( taito_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( taito )
@@ -26,7 +26,7 @@ static DRIVER_INIT( taito )
 {
 }
 
-static MACHINE_CONFIG_START( taito, driver_device )
+static MACHINE_CONFIG_START( taito, taito_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", I8080, 19000000/9)
 	MCFG_CPU_PROGRAM_MAP(taito_map)

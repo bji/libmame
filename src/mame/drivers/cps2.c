@@ -624,59 +624,59 @@ Stephh's inputs notes (based on some tests on the "parent" set) :
 
 static INTERRUPT_GEN( cps2_interrupt )
 {
-	cps_state *state = device->machine->driver_data<cps_state>();
+	cps_state *state = device->machine().driver_data<cps_state>();
 
 	/* 2 is vblank, 4 is some sort of scanline interrupt, 6 is both at the same time. */
-	if (state->scancount >= 258)
+	if (state->m_scancount >= 258)
 	{
-		state->scancount = -1;
-		state->scancalls = 0;
+		state->m_scancount = -1;
+		state->m_scancalls = 0;
 	}
-	state->scancount++;
+	state->m_scancount++;
 
-	if (state->cps_b_regs[0x10 / 2] & 0x8000)
-		state->cps_b_regs[0x10 / 2] &= 0x1ff;
+	if (state->m_cps_b_regs[0x10 / 2] & 0x8000)
+		state->m_cps_b_regs[0x10 / 2] &= 0x1ff;
 
-	if (state->cps_b_regs[0x12 / 2] & 0x8000)
-		state->cps_b_regs[0x12 / 2] &= 0x1ff;
+	if (state->m_cps_b_regs[0x12 / 2] & 0x8000)
+		state->m_cps_b_regs[0x12 / 2] &= 0x1ff;
 
-//  popmessage("%04x %04x - %04x %04x",state->scanline1,state->scanline2,state->cps_b_regs[0x10/2],state->cps_b_regs[0x12/2]);
+//  popmessage("%04x %04x - %04x %04x",state->m_scanline1,state->m_scanline2,state->m_cps_b_regs[0x10/2],state->m_cps_b_regs[0x12/2]);
 
 	/* raster effects */
-	if (state->scanline1 == state->scancount || (state->scanline1 < state->scancount && !state->scancalls))
+	if (state->m_scanline1 == state->m_scancount || (state->m_scanline1 < state->m_scancount && !state->m_scancalls))
 	{
-		state->cps_b_regs[0x10/2] = 0;
-		cpu_set_input_line(device, 4, HOLD_LINE);
-		cps2_set_sprite_priorities(device->machine);
-		device->machine->primary_screen->update_partial(16 - 10 + state->scancount);	/* visarea.min_y - [first visible line?] + scancount */
-		state->scancalls++;
-//          popmessage("IRQ4 scancounter = %04i", state->scancount);
+		state->m_cps_b_regs[0x10/2] = 0;
+		device_set_input_line(device, 4, HOLD_LINE);
+		cps2_set_sprite_priorities(device->machine());
+		device->machine().primary_screen->update_partial(16 - 10 + state->m_scancount);	/* visarea.min_y - [first visible line?] + scancount */
+		state->m_scancalls++;
+//          popmessage("IRQ4 scancounter = %04i", state->m_scancount);
 	}
 
 	/* raster effects */
-	if(state->scanline2 == state->scancount || (state->scanline2 < state->scancount && !state->scancalls))
+	if(state->m_scanline2 == state->m_scancount || (state->m_scanline2 < state->m_scancount && !state->m_scancalls))
 	{
-		state->cps_b_regs[0x12 / 2] = 0;
-		cpu_set_input_line(device, 4, HOLD_LINE);
-		cps2_set_sprite_priorities(device->machine);
-		device->machine->primary_screen->update_partial(16 - 10 + state->scancount);	/* visarea.min_y - [first visible line?] + scancount */
-		state->scancalls++;
+		state->m_cps_b_regs[0x12 / 2] = 0;
+		device_set_input_line(device, 4, HOLD_LINE);
+		cps2_set_sprite_priorities(device->machine());
+		device->machine().primary_screen->update_partial(16 - 10 + state->m_scancount);	/* visarea.min_y - [first visible line?] + scancount */
+		state->m_scancalls++;
 //          popmessage("IRQ4 scancounter = %04i",scancount);
 	}
 
-	if (state->scancount == 240)  /* VBlank */
+	if (state->m_scancount == 240)  /* VBlank */
 	{
-		state->cps_b_regs[0x10 / 2] = state->scanline1;
-		state->cps_b_regs[0x12 / 2] = state->scanline2;
-		cpu_set_input_line(device, 2, HOLD_LINE);
-		if(state->scancalls)
+		state->m_cps_b_regs[0x10 / 2] = state->m_scanline1;
+		state->m_cps_b_regs[0x12 / 2] = state->m_scanline2;
+		device_set_input_line(device, 2, HOLD_LINE);
+		if(state->m_scancalls)
 		{
-			cps2_set_sprite_priorities(device->machine);
-			device->machine->primary_screen->update_partial(256);
+			cps2_set_sprite_priorities(device->machine());
+			device->machine().primary_screen->update_partial(256);
 		}
-		cps2_objram_latch(device->machine);
+		cps2_objram_latch(device->machine());
 	}
-	//popmessage("Raster calls = %i", state->scancalls);
+	//popmessage("Raster calls = %i", state->m_scancalls);
 }
 
 
@@ -697,7 +697,7 @@ static const eeprom_interface cps2_eeprom_interface =
 
 static WRITE16_HANDLER( cps2_eeprom_port_w )
 {
-	cps_state *state = space->machine->driver_data<cps_state>();
+	cps_state *state = space->machine().driver_data<cps_state>();
 
 	if (ACCESSING_BITS_8_15)
 	{
@@ -711,7 +711,7 @@ static WRITE16_HANDLER( cps2_eeprom_port_w )
 		/* bit 7 - */
 
 		/* EEPROM */
-		input_port_write(space->machine, "EEPROMOUT", data, 0xffff);
+		input_port_write(space->machine(), "EEPROMOUT", data, 0xffff);
 	}
 
 	if (ACCESSING_BITS_0_7)
@@ -726,40 +726,40 @@ static WRITE16_HANDLER( cps2_eeprom_port_w )
 		/* bit 7 - */
 
 	        /* Z80 Reset */
-		if (state->audiocpu != NULL)
-			cpu_set_input_line(state->audiocpu, INPUT_LINE_RESET, (data & 0x0008) ? CLEAR_LINE : ASSERT_LINE);
+		if (state->m_audiocpu != NULL)
+			device_set_input_line(state->m_audiocpu, INPUT_LINE_RESET, (data & 0x0008) ? CLEAR_LINE : ASSERT_LINE);
 
-		coin_counter_w(space->machine, 0, data & 0x0001);
-		if ((strncmp(space->machine->gamedrv->name, "pzloop2", 8) == 0) ||
-		    (strncmp(space->machine->gamedrv->name, "pzloop2j", 8) == 0))
+		coin_counter_w(space->machine(), 0, data & 0x0001);
+		if ((strncmp(space->machine().system().name, "pzloop2", 8) == 0) ||
+		    (strncmp(space->machine().system().name, "pzloop2j", 8) == 0))
 		{
 			// Puzz Loop 2 uses coin counter 2 input to switch between stick and paddle controls
-			state->readpaddle = data & 0x0002;
+			state->m_readpaddle = data & 0x0002;
 		}
 		else
 		{
-			coin_counter_w(space->machine, 1, data & 0x0002);
+			coin_counter_w(space->machine(), 1, data & 0x0002);
 		}
 
-		if (strncmp(space->machine->gamedrv->name, "mmatrix", 7) == 0)		// Mars Matrix seems to require the coin lockout bit to be reversed
+		if (strncmp(space->machine().system().name, "mmatrix", 7) == 0)		// Mars Matrix seems to require the coin lockout bit to be reversed
 		{
-			coin_lockout_w(space->machine, 0, data & 0x0010);
-			coin_lockout_w(space->machine, 1, data & 0x0020);
-			coin_lockout_w(space->machine, 2, data & 0x0040);
-			coin_lockout_w(space->machine, 3, data & 0x0080);
+			coin_lockout_w(space->machine(), 0, data & 0x0010);
+			coin_lockout_w(space->machine(), 1, data & 0x0020);
+			coin_lockout_w(space->machine(), 2, data & 0x0040);
+			coin_lockout_w(space->machine(), 3, data & 0x0080);
 		}
 		else
 		{
-			coin_lockout_w(space->machine, 0, ~data & 0x0010);
-			coin_lockout_w(space->machine, 1, ~data & 0x0020);
-			coin_lockout_w(space->machine, 2, ~data & 0x0040);
-			coin_lockout_w(space->machine, 3, ~data & 0x0080);
+			coin_lockout_w(space->machine(), 0, ~data & 0x0010);
+			coin_lockout_w(space->machine(), 1, ~data & 0x0020);
+			coin_lockout_w(space->machine(), 2, ~data & 0x0040);
+			coin_lockout_w(space->machine(), 3, ~data & 0x0080);
 		}
 
 		/*
-        set_led_status(space->machine, 0, data & 0x01);
-        set_led_status(space->machine, 1, data & 0x10);
-        set_led_status(space->machine, 2, data & 0x20);
+        set_led_status(space->machine(), 0, data & 0x01);
+        set_led_status(space->machine(), 1, data & 0x10);
+        set_led_status(space->machine(), 2, data & 0x20);
         */
     }
 }
@@ -773,13 +773,13 @@ static WRITE16_HANDLER( cps2_eeprom_port_w )
 
 static READ16_HANDLER( cps2_qsound_volume_r )
 {
-	cps_state *state = space->machine->driver_data<cps_state>();
+	cps_state *state = space->machine().driver_data<cps_state>();
 
 	/* Extra adapter memory (0x660000-0x663fff) available when bit 14 = 0 */
 	/* Network adapter (ssf2tb) present when bit 15 = 0 */
 	/* Only game known to use both these so far is SSF2TB */
 
-	if (state->cps2networkpresent)
+	if (state->m_cps2networkpresent)
 		return 0x2021;
 	else
 		return 0xe021;
@@ -799,12 +799,12 @@ static READ16_HANDLER( kludge_r )
 
 static READ16_HANDLER( joy_or_paddle_r )
 {
-	cps_state *state = space->machine->driver_data<cps_state>();
+	cps_state *state = space->machine().driver_data<cps_state>();
 
-	if (state->readpaddle != 0)
-		return (input_port_read(space->machine, "IN0"));
+	if (state->m_readpaddle != 0)
+		return (input_port_read(space->machine(), "IN0"));
 	else
-		return (input_port_read(space->machine, "PADDLE1") & 0xff) | (input_port_read(space->machine, "PADDLE2") << 8);
+		return (input_port_read(space->machine(), "PADDLE1") & 0xff) | (input_port_read(space->machine(), "PADDLE2") << 8);
 }
 
 
@@ -814,22 +814,22 @@ static READ16_HANDLER( joy_or_paddle_r )
  *
  *************************************/
 
-static ADDRESS_MAP_START( cps2_map, ADDRESS_SPACE_PROGRAM, 16 )
+static ADDRESS_MAP_START( cps2_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x000000, 0x3fffff) AM_ROM																			/* 68000 ROM */
-	AM_RANGE(0x400000, 0x40000b) AM_RAM AM_BASE_SIZE_MEMBER(cps_state, output, output_size)						/* CPS2 object output */
+	AM_RANGE(0x400000, 0x40000b) AM_RAM AM_BASE_SIZE_MEMBER(cps_state, m_output, m_output_size)						/* CPS2 object output */
 	AM_RANGE(0x618000, 0x619fff) AM_READWRITE(qsound_sharedram1_r, qsound_sharedram1_w)     					/* Q RAM */
 	AM_RANGE(0x662000, 0x662001) AM_RAM																			/* Network adapter related, accessed in SSF2TB */
 	AM_RANGE(0x662008, 0x662009) AM_RAM																			/* Network adapter related, accessed in SSF2TB */
 	AM_RANGE(0x662020, 0x662021) AM_RAM																			/* Network adapter related, accessed in SSF2TB */
 	AM_RANGE(0x660000, 0x663fff) AM_RAM																			/* When bit 14 of 0x804030 equals 0 this space is available. Many games store highscores and other info here if available. */
 	AM_RANGE(0x664000, 0x664001) AM_RAM																			/* Unknown - Only used if 0x660000-0x663fff available (could be RAM enable?) */
-	AM_RANGE(0x700000, 0x701fff) AM_WRITE(cps2_objram1_w) AM_BASE_MEMBER(cps_state, objram1)    							/* Object RAM, no game seems to use it directly */
-	AM_RANGE(0x708000, 0x709fff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* Object RAM */
-	AM_RANGE(0x70a000, 0x70bfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* mirror */
-	AM_RANGE(0x70c000, 0x70dfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* mirror */
-	AM_RANGE(0x70e000, 0x70ffff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* mirror */
-	AM_RANGE(0x800100, 0x80013f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, cps_a_regs)								/* mirror (sfa) */
-	AM_RANGE(0x800140, 0x80017f) AM_READWRITE(cps1_cps_b_r, cps1_cps_b_w) AM_BASE_MEMBER(cps_state, cps_b_regs) 			/* mirror (sfa) */
+	AM_RANGE(0x700000, 0x701fff) AM_WRITE(cps2_objram1_w) AM_BASE_MEMBER(cps_state, m_objram1)  							/* Object RAM, no game seems to use it directly */
+	AM_RANGE(0x708000, 0x709fff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* Object RAM */
+	AM_RANGE(0x70a000, 0x70bfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* mirror */
+	AM_RANGE(0x70c000, 0x70dfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* mirror */
+	AM_RANGE(0x70e000, 0x70ffff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* mirror */
+	AM_RANGE(0x800100, 0x80013f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, m_cps_a_regs)								/* mirror (sfa) */
+	AM_RANGE(0x800140, 0x80017f) AM_READWRITE(cps1_cps_b_r, cps1_cps_b_w) AM_BASE_MEMBER(cps_state, m_cps_b_regs)			/* mirror (sfa) */
 	AM_RANGE(0x804000, 0x804001) AM_READ_PORT("IN0")                											/* IN0 */
 	AM_RANGE(0x804010, 0x804011) AM_READ_PORT("IN1")                											/* IN1 */
 	AM_RANGE(0x804020, 0x804021) AM_READ_PORT("IN2")                											/* IN2 + EEPROM */
@@ -838,29 +838,29 @@ static ADDRESS_MAP_START( cps2_map, ADDRESS_SPACE_PROGRAM, 16 )
 	AM_RANGE(0x8040a0, 0x8040a1) AM_WRITENOP                													/* Unknown (reset once on startup) */
 	AM_RANGE(0x8040b0, 0x8040b3) AM_READ(kludge_r)																/* unknown (xmcotaj hangs if this is 0) */
 	AM_RANGE(0x8040e0, 0x8040e1) AM_WRITE(cps2_objram_bank_w)													/* bit 0 = Object ram bank swap */
-	AM_RANGE(0x804100, 0x80413f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, cps_a_regs)							/* CPS-A custom */
+	AM_RANGE(0x804100, 0x80413f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, m_cps_a_regs)							/* CPS-A custom */
 	AM_RANGE(0x804140, 0x80417f) AM_READWRITE(cps1_cps_b_r, cps1_cps_b_w)           							/* CPS-B custom */
-	AM_RANGE(0x900000, 0x92ffff) AM_RAM_WRITE(cps1_gfxram_w) AM_BASE_SIZE_MEMBER(cps_state, gfxram, gfxram_size)	/* Video RAM */
+	AM_RANGE(0x900000, 0x92ffff) AM_RAM_WRITE(cps1_gfxram_w) AM_BASE_SIZE_MEMBER(cps_state, m_gfxram, m_gfxram_size)	/* Video RAM */
 	AM_RANGE(0xff0000, 0xffffff) AM_RAM																			/* RAM */
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( dead_cps2_map, ADDRESS_SPACE_PROGRAM, 16 )
+static ADDRESS_MAP_START( dead_cps2_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x000000, 0x3fffff) AM_ROM																			/* 68000 ROM */
-	AM_RANGE(0x400000, 0x40000b) AM_RAM AM_BASE_SIZE_MEMBER(cps_state, output, output_size)						/* CPS2 object output */
+	AM_RANGE(0x400000, 0x40000b) AM_RAM AM_BASE_SIZE_MEMBER(cps_state, m_output, m_output_size)						/* CPS2 object output */
 	AM_RANGE(0x618000, 0x619fff) AM_READWRITE(qsound_sharedram1_r, qsound_sharedram1_w)     					/* Q RAM */
 	AM_RANGE(0x662000, 0x662001) AM_RAM																			/* Network adapter related, accessed in SSF2TB */
 	AM_RANGE(0x662008, 0x662009) AM_RAM																			/* Network adapter related, accessed in SSF2TB */
 	AM_RANGE(0x662020, 0x662021) AM_RAM																			/* Network adapter related, accessed in SSF2TB */
 	AM_RANGE(0x660000, 0x663fff) AM_RAM																			/* When bit 14 of 0x804030 equals 0 this space is available. Many games store highscores and other info here if available. */
 	AM_RANGE(0x664000, 0x664001) AM_RAM																			/* Unknown - Only used if 0x660000-0x663fff available (could be RAM enable?) */
-	AM_RANGE(0x700000, 0x701fff) AM_WRITE(cps2_objram1_w) AM_BASE_MEMBER(cps_state, objram1)    							/* Object RAM, no game seems to use it directly */
-	AM_RANGE(0x708000, 0x709fff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* Object RAM */
-	AM_RANGE(0x70a000, 0x70bfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* mirror */
-	AM_RANGE(0x70c000, 0x70dfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* mirror */
-	AM_RANGE(0x70e000, 0x70ffff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, objram2)			/* mirror */
-	AM_RANGE(0x800100, 0x80013f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, cps_a_regs)								/* mirror (sfa) */
-	AM_RANGE(0x800140, 0x80017f) AM_READWRITE(cps1_cps_b_r, cps1_cps_b_w) AM_BASE_MEMBER(cps_state, cps_b_regs) 			/* mirror (sfa) */
+	AM_RANGE(0x700000, 0x701fff) AM_WRITE(cps2_objram1_w) AM_BASE_MEMBER(cps_state, m_objram1)  							/* Object RAM, no game seems to use it directly */
+	AM_RANGE(0x708000, 0x709fff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* Object RAM */
+	AM_RANGE(0x70a000, 0x70bfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* mirror */
+	AM_RANGE(0x70c000, 0x70dfff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* mirror */
+	AM_RANGE(0x70e000, 0x70ffff) AM_READWRITE(cps2_objram2_r, cps2_objram2_w) AM_BASE_MEMBER(cps_state, m_objram2)			/* mirror */
+	AM_RANGE(0x800100, 0x80013f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, m_cps_a_regs)								/* mirror (sfa) */
+	AM_RANGE(0x800140, 0x80017f) AM_READWRITE(cps1_cps_b_r, cps1_cps_b_w) AM_BASE_MEMBER(cps_state, m_cps_b_regs)			/* mirror (sfa) */
 	AM_RANGE(0x804000, 0x804001) AM_READ_PORT("IN0")                											/* IN0 */
 	AM_RANGE(0x804010, 0x804011) AM_READ_PORT("IN1")                											/* IN1 */
 	AM_RANGE(0x804020, 0x804021) AM_READ_PORT("IN2")                											/* IN2 + EEPROM */
@@ -869,11 +869,11 @@ static ADDRESS_MAP_START( dead_cps2_map, ADDRESS_SPACE_PROGRAM, 16 )
 	AM_RANGE(0x8040a0, 0x8040a1) AM_WRITENOP                													/* Unknown (reset once on startup) */
 	AM_RANGE(0x8040b0, 0x8040b3) AM_READ(kludge_r)																/* unknown (xmcotaj hangs if this is 0) */
 	AM_RANGE(0x8040e0, 0x8040e1) AM_WRITE(cps2_objram_bank_w)													/* bit 0 = Object ram bank swap */
-	AM_RANGE(0x804100, 0x80413f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, cps_a_regs)								/* CPS-A custom */
+	AM_RANGE(0x804100, 0x80413f) AM_WRITE(cps1_cps_a_w) AM_BASE_MEMBER(cps_state, m_cps_a_regs)								/* CPS-A custom */
 	AM_RANGE(0x804140, 0x80417f) AM_READWRITE(cps1_cps_b_r, cps1_cps_b_w)           							/* CPS-B custom */
-	AM_RANGE(0x900000, 0x92ffff) AM_RAM_WRITE(cps1_gfxram_w) AM_BASE_SIZE_MEMBER(cps_state, gfxram, gfxram_size)	/* Video RAM */
+	AM_RANGE(0x900000, 0x92ffff) AM_RAM_WRITE(cps1_gfxram_w) AM_BASE_SIZE_MEMBER(cps_state, m_gfxram, m_gfxram_size)	/* Video RAM */
 	AM_RANGE(0xff0000, 0xffffef) AM_RAM																			/* RAM */
-	AM_RANGE(0xfffff0, 0xfffffb) AM_RAM AM_BASE_SIZE_MEMBER(cps_state, output, output_size)						/* CPS2 output */
+	AM_RANGE(0xfffff0, 0xfffffb) AM_RAM AM_BASE_SIZE_MEMBER(cps_state, m_output, m_output_size)						/* CPS2 output */
 ADDRESS_MAP_END
 
 
@@ -1201,15 +1201,15 @@ GFXDECODE_END
 
 static MACHINE_START( cps2 )
 {
-	cps_state *state = machine->driver_data<cps_state>();
+	cps_state *state = machine.driver_data<cps_state>();
 
-	state->maincpu = machine->device("maincpu");
-	state->audiocpu = machine->device("audiocpu");
+	state->m_maincpu = machine.device("maincpu");
+	state->m_audiocpu = machine.device("audiocpu");
 
-	state->save_item(NAME(state->scancount));
+	state->save_item(NAME(state->m_scancount));
 
-	if (state->audiocpu != NULL)	// gigamn2 has no audiocpu
-		memory_configure_bank(machine, "bank1", 0, (QSOUND_SIZE - 0x10000) / 0x4000, machine->region("audiocpu")->base() + 0x10000, 0x4000);
+	if (state->m_audiocpu != NULL)	// gigamn2 has no audiocpu
+		memory_configure_bank(machine, "bank1", 0, (QSOUND_SIZE - 0x10000) / 0x4000, machine.region("audiocpu")->base() + 0x10000, 0x4000);
 }
 
 
@@ -6192,6 +6192,37 @@ ROM_END
 
 ROM_START( sfa3h )
 	ROM_REGION( CODE_SIZE, "maincpu", 0 )      /* 68000 code */
+	ROM_LOAD16_WORD_SWAP( "sz3h.03c", 0x000000, 0x80000, CRC(b3b563a3) SHA1(27863508fedeb5d85e78b8d64361f0000d00e0a5) )
+	ROM_LOAD16_WORD_SWAP( "sz3h.04c", 0x080000, 0x80000, CRC(47891fec) SHA1(c17421785a0f65edebb6abe54ff161ace4aa67e5) )
+	ROM_LOAD16_WORD_SWAP( "sz3.05c",  0x100000, 0x80000, CRC(57fd0a40) SHA1(bc2d5f4d57117bbf58b1adb088e00424ef489e92) )
+	ROM_LOAD16_WORD_SWAP( "sz3.06c",  0x180000, 0x80000, CRC(f6305f8b) SHA1(3fd1ebdbad96103aca604e950b488e52460a71ec) )
+	ROM_LOAD16_WORD_SWAP( "sz3.07c",  0x200000, 0x80000, CRC(6eab0f6f) SHA1(f8d093dda65cf4e8a3000dc1b96355bb03dcb495) )
+	ROM_LOAD16_WORD_SWAP( "sz3.08c",  0x280000, 0x80000, CRC(910c4a3b) SHA1(dbd41280f9b16ad6a5b8f12092549970349395f1) )
+	ROM_LOAD16_WORD_SWAP( "sz3.09c",  0x300000, 0x80000, CRC(b29e5199) SHA1(c6c215eb5aa37f678a9cafcbd8620969fb5ca12f) )
+	ROM_LOAD16_WORD_SWAP( "sz3.10b",  0x380000, 0x80000, CRC(deb2ff52) SHA1(0aa4722aad68a04164946c78bf05752f947b4322) )
+
+	ROM_REGION( 0x2000000, "gfx", 0 )
+	ROMX_LOAD( "sz3.13m",   0x0000000, 0x400000, CRC(0f7a60d9) SHA1(c69e0ee22537312909dacc86d2e4be319d54e426) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.15m",   0x0000002, 0x400000, CRC(8e933741) SHA1(f4ac4bfe830dc7df9fe4f680e4e0c053e7cbd8fe) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.17m",   0x0000004, 0x400000, CRC(d6e98147) SHA1(37f331fbb1284db446faecade6f484f58c0e1b2a) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.19m",   0x0000006, 0x400000, CRC(f31a728a) SHA1(f14136564648f006c1b74afda78349f260524b5f) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.14m",   0x1000000, 0x400000, CRC(5ff98297) SHA1(9e0ce43380b776c7a03872bafd4856f6fa60bda7) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.16m",   0x1000002, 0x400000, CRC(52b5bdee) SHA1(7918204dc457f7a146d8fb8cf7242dfed3109fd8) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.18m",   0x1000004, 0x400000, CRC(40631ed5) SHA1(c18c56822b90a71ca5fbdf3440eb2671011f3d8f) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "sz3.20m",   0x1000006, 0x400000, CRC(763409b4) SHA1(af60a5116c1ca9050366a35ea29128921867f3cc) , ROM_GROUPWORD | ROM_SKIP(6) )
+
+	ROM_REGION( QSOUND_SIZE, "audiocpu", 0 ) /* 64k for the audio CPU (+banks) */
+	ROM_LOAD( "sz3.01",   0x00000, 0x08000, CRC(de810084) SHA1(fd0b969b732921ed8b40c16fbfa30ee09c7a7cbd) )
+	ROM_CONTINUE(         0x10000, 0x18000 )
+	ROM_LOAD( "sz3.02",   0x28000, 0x20000, CRC(72445dc4) SHA1(14fca7596ac45ba655016eef5b6120f9f9671c23) )
+
+	ROM_REGION( 0x800000, "qsound", 0 ) /* QSound samples */
+	ROM_LOAD16_WORD_SWAP( "sz3.11m",   0x000000, 0x400000, CRC(1c89eed1) SHA1(649a0b0a3eb72e2e69e9fb1ac51a58b70daa39f3) )
+	ROM_LOAD16_WORD_SWAP( "sz3.12m",   0x400000, 0x400000, CRC(f392b13a) SHA1(fa04ce0370144a49bd1d5acd873eef87b0dc9d15) )
+ROM_END
+
+ROM_START( sfa3hr1 )
+	ROM_REGION( CODE_SIZE, "maincpu", 0 )      /* 68000 code */
 	ROM_LOAD16_WORD_SWAP( "sz3h.03", 0x000000, 0x80000, CRC(4b16cb3e) SHA1(2e1f45c9076ce231a545146d475f410397f20e27) )
 	ROM_LOAD16_WORD_SWAP( "sz3h.04", 0x080000, 0x80000, CRC(88ad2e6a) SHA1(2a1de667ebeffd247ab9ee11687813b3397fc8de) )
 	ROM_LOAD16_WORD_SWAP( "sz3.05",  0x100000, 0x80000, CRC(9b21518a) SHA1(5a928307cb90a98a62e7598cb101fb66d62b85f9) )
@@ -7943,7 +7974,7 @@ ROM_END
 
 static DRIVER_INIT( cps2 )
 {
-	cps_state *state = machine->driver_data<cps_state>();
+	cps_state *state = machine.driver_data<cps_state>();
 
 	/* Decrypt the game - see machine/cps2crpt.c */
 	DRIVER_INIT_CALL(cps2crpt);
@@ -7951,66 +7982,66 @@ static DRIVER_INIT( cps2 )
 	/* Initialize some video elements */
 	DRIVER_INIT_CALL(cps2_video);
 
-	state->scancount = 0;
-	state->cps2networkpresent = 0;
+	state->m_scancount = 0;
+	state->m_cps2networkpresent = 0;
 
-	machine->device("maincpu")->set_clock_scale(0.7375f); /* RAM access waitstates etc. aren't emulated - slow the CPU to compensate */
+	machine.device("maincpu")->set_clock_scale(0.7375f); /* RAM access waitstates etc. aren't emulated - slow the CPU to compensate */
 }
 
 static DRIVER_INIT( ssf2tb )
 {
-	cps_state *state = machine->driver_data<cps_state>();
+	cps_state *state = machine.driver_data<cps_state>();
 
 	DRIVER_INIT_CALL(cps2);
 
-	state->cps2networkpresent = 0;
+	state->m_cps2networkpresent = 0;
 
 	/* we don't emulate the network board, so don't say it's present for now, otherwise the game will
        attempt to boot in tournament mode and fail */
-	//state->cps2networkpresent = 1;
+	//state->m_cps2networkpresent = 1;
 
 }
 
 static DRIVER_INIT ( pzloop2 )
 {
-	cps_state *state = machine->driver_data<cps_state>();
+	cps_state *state = machine.driver_data<cps_state>();
 
 	DRIVER_INIT_CALL(cps2);
 
-	state->readpaddle = 0;
+	state->m_readpaddle = 0;
 
-	state->save_item(NAME(state->readpaddle));
+	state->save_item(NAME(state->m_readpaddle));
 
-	memory_install_read16_handler(cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM), 0x804000, 0x804001, 0, 0, joy_or_paddle_r);
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x804000, 0x804001, FUNC(joy_or_paddle_r));
 }
 
 static READ16_HANDLER( gigamn2_dummyqsound_r )
 {
-	cps_state *state = space->machine->driver_data<cps_state>();
-	return state->gigamn2_dummyqsound_ram[offset];
+	cps_state *state = space->machine().driver_data<cps_state>();
+	return state->m_gigamn2_dummyqsound_ram[offset];
 };
 
 static WRITE16_HANDLER( gigamn2_dummyqsound_w )
 {
-	cps_state *state = space->machine->driver_data<cps_state>();
-	state->gigamn2_dummyqsound_ram[offset] = data;
+	cps_state *state = space->machine().driver_data<cps_state>();
+	state->m_gigamn2_dummyqsound_ram[offset] = data;
 };
 
 static DRIVER_INIT( gigamn2 )
 {
-	cps_state *state = machine->driver_data<cps_state>();
-	address_space *space = cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM);
-	UINT16 *rom = (UINT16 *)machine->region("maincpu")->base();
-	int length = machine->region("maincpu")->bytes();
+	cps_state *state = machine.driver_data<cps_state>();
+	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
+	UINT16 *rom = (UINT16 *)machine.region("maincpu")->base();
+	int length = machine.region("maincpu")->bytes();
 
 	DRIVER_INIT_CALL(cps2);
 
-	state->gigamn2_dummyqsound_ram = auto_alloc_array(machine, UINT16, 0x20000 / 2);
-	state->save_pointer(NAME(state->gigamn2_dummyqsound_ram), 0x20000 / 2);
+	state->m_gigamn2_dummyqsound_ram = auto_alloc_array(machine, UINT16, 0x20000 / 2);
+	state->save_pointer(NAME(state->m_gigamn2_dummyqsound_ram), 0x20000 / 2);
 
-	memory_install_readwrite16_handler(cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM), 0x618000, 0x619fff, 0, 0, gigamn2_dummyqsound_r, gigamn2_dummyqsound_w); // no qsound..
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x618000, 0x619fff, FUNC(gigamn2_dummyqsound_r), FUNC(gigamn2_dummyqsound_w)); // no qsound..
 	space->set_decrypted_region(0x000000, (length) - 1, &rom[length/4]);
-	m68k_set_encrypted_opcode_range(machine->device("maincpu"), 0, length);
+	m68k_set_encrypted_opcode_range(machine.device("maincpu"), 0, length);
 }
 
 
@@ -8216,7 +8247,8 @@ GAME( 1998, mvscb,      mvsc,     cps2, cps2_2p6b, cps2,     ROT0,   "Capcom", "
 GAME( 1998, sfa3,       0,        cps2, cps2_2p6b, cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (Euro 980904)", GAME_SUPPORTS_SAVE )
 GAME( 1998, sfa3u,      sfa3,     cps2, cps2_2p6b, cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (USA 980904)", GAME_SUPPORTS_SAVE )
 GAME( 1998, sfa3ur1,    sfa3,     cps2, cps2_2p6b, cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (USA 980629)", GAME_SUPPORTS_SAVE )
-GAME( 1998, sfa3h,      sfa3,     cps2, cps2_2p6bt,cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (Hispanic 980629)", GAME_SUPPORTS_SAVE )
+GAME( 1998, sfa3h,      sfa3,     cps2, cps2_2p6bt,cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (Hispanic 980904)", GAME_SUPPORTS_SAVE )
+GAME( 1998, sfa3hr1,    sfa3,     cps2, cps2_2p6bt,cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (Hispanic 980629)", GAME_SUPPORTS_SAVE )
 GAME( 1998, sfa3b,      sfa3,     cps2, cps2_2p6bt,cps2,     ROT0,   "Capcom", "Street Fighter Alpha 3 (Brazil 980629)", GAME_SUPPORTS_SAVE )
 GAME( 1998, sfz3j,      sfa3,     cps2, cps2_2p6b, cps2,     ROT0,   "Capcom", "Street Fighter Zero 3 (Japan 980904)", GAME_SUPPORTS_SAVE )
 GAME( 1998, sfz3jr1,    sfa3,     cps2, cps2_2p6b, cps2,     ROT0,   "Capcom", "Street Fighter Zero 3 (Japan 980727)", GAME_SUPPORTS_SAVE )

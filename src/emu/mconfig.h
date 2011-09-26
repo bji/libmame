@@ -84,11 +84,11 @@
 
 
 #define NVRAM_HANDLER_NAME(name)	nvram_handler_##name
-#define NVRAM_HANDLER(name)			void NVRAM_HANDLER_NAME(name)(running_machine *machine, emu_file *file, int read_or_write)
+#define NVRAM_HANDLER(name)			void NVRAM_HANDLER_NAME(name)(running_machine &machine, emu_file *file, int read_or_write)
 #define NVRAM_HANDLER_CALL(name)	NVRAM_HANDLER_NAME(name)(machine, file, read_or_write)
 
 #define MEMCARD_HANDLER_NAME(name)	memcard_handler_##name
-#define MEMCARD_HANDLER(name)		void MEMCARD_HANDLER_NAME(name)(running_machine *machine, emu_file &file, int action)
+#define MEMCARD_HANDLER(name)		void MEMCARD_HANDLER_NAME(name)(running_machine &machine, emu_file &file, int action)
 #define MEMCARD_HANDLER_CALL(name)	MEMCARD_HANDLER_NAME(name)(machine, file, action)
 
 
@@ -110,8 +110,8 @@ class screen_device_config;
 
 
 // various callback functions
-typedef void   (*nvram_handler_func)(running_machine *machine, emu_file *file, int read_or_write);
-typedef void   (*memcard_handler_func)(running_machine *machine, emu_file &file, int action);
+typedef void   (*nvram_handler_func)(running_machine &machine, emu_file *file, int read_or_write);
+typedef void   (*memcard_handler_func)(running_machine &machine, emu_file &file, int action);
 
 
 
@@ -126,12 +126,14 @@ class machine_config
 
 public:
 	// construction/destruction
-	machine_config(const game_driver &gamedrv);
+	machine_config(const game_driver &gamedrv, emu_options &options);
 	~machine_config();
 
 	// getters
 	const game_driver &gamedrv() const { return m_gamedrv; }
+	const device_config *first_device() const { return m_devicelist.first(); }
 	screen_device_config *first_screen() const;
+	emu_options &options() const { return m_options; }
 
 	// public state
 	attotime				m_minimum_quantum;			// minimum scheduling quantum
@@ -157,7 +159,7 @@ public:
 
 private:
 	const game_driver &		m_gamedrv;
-	int						m_parse_level;				// nested parsing level
+	emu_options &			m_options;
 };
 
 
@@ -177,8 +179,7 @@ device_config *MACHINE_CONFIG_NAME(_name)(machine_config &config, device_config 
 	astring tempstring; \
 	(void)device; \
 	(void)tag; \
-	assert(owner == NULL); \
-	owner = config.device_add(NULL, "root", &driver_device_config<_class>::static_alloc_device_config, 0); \
+	if (owner == NULL) owner = config.device_add(NULL, "root", &driver_device_config<_class>::static_alloc_device_config, 0); \
 
 #define MACHINE_CONFIG_FRAGMENT(_name) \
 device_config *MACHINE_CONFIG_NAME(_name)(machine_config &config, device_config *owner) \
@@ -200,6 +201,17 @@ device_config *MACHINE_CONFIG_NAME(_name)(machine_config &config, device_config 
 	(void)tag; \
 	owner = MACHINE_CONFIG_NAME(_base)(config, owner); \
 	assert(owner != NULL); \
+
+#define MACHINE_CONFIG_DERIVED_CLASS(_name, _base, _class) \
+device_config *MACHINE_CONFIG_NAME(_name)(machine_config &config, device_config *owner) \
+{ \
+	device_config *device = NULL; \
+	const char *tag; \
+	astring tempstring; \
+	(void)device; \
+	(void)tag; \
+	if (owner == NULL) owner = config.device_add(NULL, "root", &driver_device_config<_class>::static_alloc_device_config, 0); \
+	owner = MACHINE_CONFIG_NAME(_base)(config, owner); \
 
 #define MACHINE_CONFIG_END \
 	return owner; \

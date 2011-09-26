@@ -1019,6 +1019,7 @@ static void I386OP(repeat)(i386_state *cpustate, int invert_flag)
 	UINT32 repeated_pc = cpustate->pc;
 	UINT8 opcode; // = FETCH(cpustate);
 	UINT32 eas, ead;
+    (void) eas, (void) ead;
 	UINT32 count;
 	INT32 cycle_base = 0, cycle_adjustment = 0;
 	UINT8 prefix_flag=1;
@@ -2225,6 +2226,7 @@ static void I386OP(escape)(i386_state *cpustate)			// Opcodes 0xd8 - 0xdf
 	{
 		UINT32 ea;
 		ea = GetEA(cpustate,modrm);
+        (void) ea;
 	}
 	CYCLES(cpustate,3);	// TODO: confirm this
 	(void) LOAD_RM8(modrm);

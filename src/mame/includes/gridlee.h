@@ -9,25 +9,37 @@
 #include "devlegcy.h"
 
 
+#define GRIDLEE_MASTER_CLOCK	(20000000)
+#define GRIDLEE_CPU_CLOCK		(GRIDLEE_MASTER_CLOCK / 16)
+#define GRIDLEE_PIXEL_CLOCK	(GRIDLEE_MASTER_CLOCK / 4)
+#define GRIDLEE_HTOTAL			(0x140)
+#define GRIDLEE_HBEND			(0x000)
+#define GRIDLEE_HBSTART		(0x100)
+#define GRIDLEE_VTOTAL			(0x108)
+#define GRIDLEE_VBEND			(0x010)
+#define GRIDLEE_VBSTART		(0x100)
+
+
 class gridlee_state : public driver_device
 {
 public:
 	gridlee_state(running_machine &machine, const driver_device_config_base &config)
 		: driver_device(machine, config) { }
 
-	UINT8 *videoram;
-	cpu_device *maincpu;
-	UINT8 last_analog_input[2];
-	UINT8 last_analog_output[2];
-	UINT8 *poly17;
-	UINT8 *rand17;
-	emu_timer *irq_off;
-	emu_timer *irq_timer;
-	emu_timer *firq_off;
-	emu_timer *firq_timer;
-	UINT8 cocktail_flip;
-	UINT8 *local_videoram;
-	UINT8 palettebank_vis;
+	UINT8 *m_videoram;
+	cpu_device *m_maincpu;
+	UINT8 m_last_analog_input[2];
+	UINT8 m_last_analog_output[2];
+	UINT8 *m_poly17;
+	UINT8 *m_rand17;
+	emu_timer *m_irq_off;
+	emu_timer *m_irq_timer;
+	emu_timer *m_firq_off;
+	emu_timer *m_firq_timer;
+	UINT8 m_cocktail_flip;
+	UINT8 *m_local_videoram;
+	UINT8 m_palettebank_vis;
+	UINT8 *m_spriteram;
 };
 
 

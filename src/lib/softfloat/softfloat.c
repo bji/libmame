@@ -1867,6 +1867,7 @@ float32 float32_div( float32 a, float32 b )
 float32 float32_rem( float32 a, float32 b )
 {
     flag aSign, bSign, zSign;
+    (void) bSign;
     int16 aExp, bExp, expDiff;
     bits32 aSig, bSig;
     bits32 q;
@@ -2804,6 +2805,7 @@ float64 float64_div( float64 a, float64 b )
 float64 float64_rem( float64 a, float64 b )
 {
     flag aSign, bSign, zSign;
+    (void) bSign;
     int16 aExp, bExp, expDiff;
     bits64 aSig, bSig;
     bits64 q, alternateASig;
@@ -3712,6 +3714,7 @@ floatx80 floatx80_div( floatx80 a, floatx80 b )
 floatx80 floatx80_rem( floatx80 a, floatx80 b )
 {
     flag aSign, bSign, zSign;
+    (void) bSign;
     int32 aExp, bExp, expDiff;
     bits64 aSig0, aSig1, bSig;
     bits64 q, term0, term1, alternateASig0, alternateASig1;
@@ -4821,6 +4824,7 @@ float128 float128_div( float128 a, float128 b )
 float128 float128_rem( float128 a, float128 b )
 {
     flag aSign, bSign, zSign;
+    (void) bSign;
     int32 aExp, bExp, expDiff;
     bits64 aSig0, aSig1, bSig0, bSig1, q, term0, term1, term2;
     bits64 allZero, alternateASig0, alternateASig1, sigMean1;

@@ -114,6 +114,15 @@ Medium size chip with heat sink on it
 #include "cpu/mips/mips3.h"
 
 
+class magictg_state : public driver_device
+{
+public:
+	magictg_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 static VIDEO_START(magictg)
 {
 
@@ -132,14 +141,14 @@ static const mips3_config r4600_config =
 };
 
 
-static ADDRESS_MAP_START( magictg_map, ADDRESS_SPACE_PROGRAM, 32 )
+static ADDRESS_MAP_START( magictg_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x00000000, 0x00ffffff) AM_RAM
 	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_WRITENOP AM_ROM AM_REGION("user1", 0)
 ADDRESS_MAP_END
 
 
 
-static MACHINE_CONFIG_START( magictg, driver_device )
+static MACHINE_CONFIG_START( magictg, magictg_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", R4600BE, 10000000)  // ?? what cpu?
 	MCFG_CPU_CONFIG(r4600_config)

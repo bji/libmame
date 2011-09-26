@@ -248,7 +248,7 @@ const device_type name = configclass::static_alloc_device_config
 #define DEVICE_GET_INFO_CALL(name)	DEVICE_GET_INFO_NAME(name)(device, state, info)
 
 #define DEVICE_VALIDITY_CHECK_NAME(name)	device_validity_check_##name
-#define DEVICE_VALIDITY_CHECK(name)			int DEVICE_VALIDITY_CHECK_NAME(name)(const game_driver *driver, const device_config *device, core_options &options)
+#define DEVICE_VALIDITY_CHECK(name)			int DEVICE_VALIDITY_CHECK_NAME(name)(const game_driver *driver, const device_config *device, emu_options &options)
 #define DEVICE_VALIDITY_CHECK_CALL(name)	DEVICE_VALIDITY_CHECK_NAME(name)(driver, device)
 
 #define DEVICE_START_NAME(name)		device_start_##name
@@ -383,7 +383,7 @@ resource_pool &machine_get_pool(running_machine &machine);
 
 // device interface function types
 typedef void (*device_get_config_func)(const device_config *device, UINT32 state, deviceinfo *info);
-typedef int (*device_validity_check_func)(const game_driver *driver, const device_config *device, core_options &options);
+typedef int (*device_validity_check_func)(const game_driver *driver, const device_config *device, emu_options &options);
 
 typedef void (*device_start_func)(device_t *device);
 typedef void (*device_stop_func)(device_t *device);
@@ -436,10 +436,6 @@ protected:
 
 	// basic information getters
 public:
-	virtual const rom_entry *rom_region() const { return reinterpret_cast<const rom_entry *>(get_legacy_config_ptr(DEVINFO_PTR_ROM_REGION)); }
-	virtual machine_config_constructor machine_config_additions() const { return reinterpret_cast<machine_config_constructor>(get_legacy_config_ptr(DEVINFO_PTR_MACHINE_CONFIG)); }
-	virtual const input_port_token *input_ports() const { return reinterpret_cast<const input_port_token *>(get_legacy_config_ptr(DEVINFO_PTR_INPUT_PORTS)); }
-
 	// access to legacy inline configuartion
 	void *inline_config() const { return m_inline_config; }
 
@@ -450,7 +446,10 @@ public:
 
 protected:
 	// overrides
-	virtual bool device_validity_check(core_options &options, const game_driver &driver) const;
+	virtual bool device_validity_check(emu_options &options, const game_driver &driver) const;
+	virtual const rom_entry *device_rom_region() const { return reinterpret_cast<const rom_entry *>(get_legacy_config_ptr(DEVINFO_PTR_ROM_REGION)); }
+	virtual machine_config_constructor device_mconfig_additions() const { return reinterpret_cast<machine_config_constructor>(get_legacy_config_ptr(DEVINFO_PTR_MACHINE_CONFIG)); }
+	virtual const input_port_token *device_input_ports() const { return reinterpret_cast<const input_port_token *>(get_legacy_config_ptr(DEVINFO_PTR_INPUT_PORTS)); }
 
 	// access to legacy configuration info
 	INT64 get_legacy_config_int(UINT32 state) const;
@@ -534,7 +533,7 @@ protected:
 	virtual void device_config_complete();
 
 	// device_config_memory_interface overrides
-	virtual const address_space_config *memory_space_config(int spacenum = 0) const { return (spacenum == 0) ? &m_space_config : NULL; }
+	virtual const address_space_config *memory_space_config(address_spacenum spacenum = AS_0) const { return (spacenum == 0) ? &m_space_config : NULL; }
 
 	// internal state
 	address_space_config m_space_config;

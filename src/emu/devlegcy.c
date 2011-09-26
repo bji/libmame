@@ -192,7 +192,7 @@ void legacy_device_config_base::static_set_inline_float(device_config *device, U
 //  checks on a device configuration
 //-------------------------------------------------
 
-bool legacy_device_config_base::device_validity_check(core_options &options, const game_driver &driver) const
+bool legacy_device_config_base::device_validity_check(emu_options &options, const game_driver &driver) const
 {
 	device_validity_check_func validity_func = reinterpret_cast<device_validity_check_func>(get_legacy_config_fct(DEVINFO_FCT_VALIDITY_CHECK));
 	if (validity_func != NULL)
@@ -217,7 +217,7 @@ legacy_device_base::legacy_device_base(running_machine &_machine, const device_c
 {
 	int tokenbytes = m_config.get_legacy_config_int(DEVINFO_INT_TOKEN_BYTES);
 	if (tokenbytes != 0)
-		m_token = auto_alloc_array_clear(machine, UINT8, tokenbytes);
+		m_token = auto_alloc_array_clear(m_machine, UINT8, tokenbytes);
 }
 
 

@@ -15,8 +15,8 @@ public:
 };
 
 
-static ADDRESS_MAP_START( st_mp200_map, ADDRESS_SPACE_PROGRAM, 8 )
-	ADDRESS_MAP_UNMAP_HIGH
+static ADDRESS_MAP_START( st_mp200_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( st_mp200 )
@@ -351,7 +351,7 @@ GAME(1980,	galaxypi,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Galax
 GAME(1981,	ironmaid,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Iron Maiden",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1984,	lazrlord,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Lazer Lord",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1981,	lightnin,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Lightning",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1979,	meteorp,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Meteor (Pinball)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1979,	meteorp,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Meteor (Stern)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1980,	nineball,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Nine Ball",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1982,	orbitor1,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Orbitor 1",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1980,	quicksil,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Quicksilver",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

@@ -30,6 +30,7 @@ static void PREFIX186(_pusha)(i8086_state *cpustate)    /* Opcode 0x60 */
 static void PREFIX186(_popa)(i8086_state *cpustate)    /* Opcode 0x61 */
 {
 	 unsigned tmp;
+     (void) tmp;
 
 	ICOUNT -= timing.popa;
 	POP(cpustate->regs.w[DI]);

@@ -308,6 +308,15 @@ public:
 		osd_break_into_debugger(text);
 	}
 
+	emu_fatalerror(int _exitcode, const char *format, ...)
+		: code(_exitcode)
+	{
+		va_list ap;
+		va_start(ap, format);
+		vsprintf(text, format, ap);
+		va_end(ap);
+	}
+
 	emu_fatalerror(int _exitcode, const char *format, va_list ap)
 		: code(_exitcode)
 	{
@@ -364,7 +373,7 @@ inline _Dest crosscast(_Source *src)
 //**************************************************************************
 
 DECL_NORETURN void fatalerror(const char *format, ...) ATTR_PRINTF(1,2) ATTR_NORETURN;
-DECL_NORETURN void fatalerror_exitcode(running_machine *machine, int exitcode, const char *format, ...) ATTR_PRINTF(3,4) ATTR_NORETURN;
+DECL_NORETURN void fatalerror_exitcode(running_machine &machine, int exitcode, const char *format, ...) ATTR_PRINTF(3,4) ATTR_NORETURN;
 
 inline void fatalerror(const char *format, ...)
 {
@@ -374,7 +383,7 @@ inline void fatalerror(const char *format, ...)
 	va_end(ap);
 }
 
-inline void fatalerror_exitcode(running_machine *machine, int exitcode, const char *format, ...)
+inline void fatalerror_exitcode(running_machine &machine, int exitcode, const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);

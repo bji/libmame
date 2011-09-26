@@ -28,7 +28,7 @@ gtia_struct gtia;
 #define VERBOSE			0
 
 static void gtia_reset(running_machine &machine);
-static void gtia_state(running_machine *machine);
+static void gtia_state(running_machine &machine);
 static STATE_POSTLOAD( gtia_state_postload );
 
 /**********************************************
@@ -63,12 +63,12 @@ static STATE_POSTLOAD( gtia_state_postload );
  *
  *************************************/
 
-void gtia_init(running_machine *machine, const gtia_interface *intf)
+void gtia_init(running_machine &machine, const gtia_interface *intf)
 {
 	memset(&gtia, 0, sizeof(gtia));
 	gtia.intf = *intf;
 
-	machine->add_notifier(MACHINE_NOTIFY_RESET, gtia_reset);
+	machine.add_notifier(MACHINE_NOTIFY_RESET, gtia_reset);
 
 	/* state saves */
 	gtia_state(machine);
@@ -76,7 +76,7 @@ void gtia_init(running_machine *machine, const gtia_interface *intf)
 
 
 
-static void gtia_state(running_machine *machine)
+static void gtia_state(running_machine &machine)
 {
 	state_save_register_global(machine, gtia.r.m0pf);
 	state_save_register_global(machine, gtia.r.m1pf);
@@ -139,14 +139,14 @@ static void gtia_state(running_machine *machine)
 	state_save_register_global(machine, gtia.w.gractl);
 	state_save_register_global(machine, gtia.w.hitclr);
 	state_save_register_global(machine, gtia.w.cons);
-	machine->state().register_postload(gtia_state_postload, NULL);
+	machine.state().register_postload(gtia_state_postload, NULL);
 }
 
 
 
-static int is_ntsc(running_machine *machine)
+static int is_ntsc(running_machine &machine)
 {
-	return ATTOSECONDS_TO_HZ(machine->primary_screen->frame_period().attoseconds) > 55;
+	return ATTOSECONDS_TO_HZ(machine.primary_screen->frame_period().attoseconds) > 55;
 }
 
 
@@ -154,13 +154,13 @@ static int is_ntsc(running_machine *machine)
 static void gtia_reset(running_machine &machine)
 {
 	int i;
-	address_space *space = cputag_get_address_space(&machine, "maincpu", ADDRESS_SPACE_PROGRAM);
+	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
 
 	/* reset the GTIA read/write/helper registers */
 	for (i = 0; i < 32; i++)
 		atari_gtia_w(space,i,0);
     memset(&gtia.r, 0, sizeof(gtia.r));
-	if (is_ntsc(&machine))
+	if (is_ntsc(machine))
 		gtia.r.pal = 0xff;
 	else
 		gtia.r.pal = 0xf1;
@@ -388,6 +388,9 @@ WRITE8_HANDLER( atari_gtia_w )
 	static UINT8 lumpf1=0,lumpf2=0,lumbk= 0;
 	static UINT8 huepm0=0,huepm1=0,huepm2=0,huepm3=0,huepm4=0;
 	static UINT8 huepf1=0,huepf2=0,huebk= 0;
+
+    (void) lumpm0, (void) lumpm1, (void) lumpm2, (void) lumpm3;
+    (void) lumpm4, (void) lumpf2, (void) lumbk, (void) huepf1;
 
     switch (offset & 31)
     {

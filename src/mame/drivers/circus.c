@@ -35,9 +35,7 @@ D000      Paddle Position and Interrupt Reset (where applicable)
 
     TODO:
     - generic video timing (vsync, vblank, # of scanlines)
-    - circus/ripcord collision detection:
-      * is accurate?
-      * move away from video update (fails with frameskipping)
+    - circus/ripcord collision detection is accurate?
     - crash: irq timing
     - improve discrete sound
 
@@ -56,16 +54,16 @@ D000      Paddle Position and Interrupt Reset (where applicable)
 static READ8_HANDLER( circus_paddle_r )
 {
 	// also clears irq
-	cputag_set_input_line(space->machine, "maincpu", 0, CLEAR_LINE);
-	return input_port_read(space->machine, "PADDLE");
+	cputag_set_input_line(space->machine(), "maincpu", 0, CLEAR_LINE);
+	return input_port_read(space->machine(), "PADDLE");
 }
 
-static ADDRESS_MAP_START( circus_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( circus_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x01ff) AM_RAM
 	AM_RANGE(0x1000, 0x1fff) AM_ROM
 	AM_RANGE(0x2000, 0x2000) AM_WRITE(circus_clown_x_w)
 	AM_RANGE(0x3000, 0x3000) AM_WRITE(circus_clown_y_w)
-	AM_RANGE(0x4000, 0x43ff) AM_RAM_WRITE(circus_videoram_w) AM_BASE_MEMBER(circus_state, videoram)
+	AM_RANGE(0x4000, 0x43ff) AM_RAM_WRITE(circus_videoram_w) AM_BASE_MEMBER(circus_state, m_videoram)
 	AM_RANGE(0x8000, 0x8000) AM_RAM_WRITE(circus_clown_z_w)
 	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("INPUTS")
 	AM_RANGE(0xc000, 0xc000) AM_READ_PORT("DSW")
@@ -266,40 +264,41 @@ GFXDECODE_END
 ***************************************************************************/
 static MACHINE_START( circus )
 {
-	circus_state *state = machine->driver_data<circus_state>();
+	circus_state *state = machine.driver_data<circus_state>();
 
-	state->maincpu = machine->device("maincpu");
-	state->samples = machine->device("samples");
-	state->discrete = machine->device("discrete");
+	state->m_maincpu = machine.device("maincpu");
+	state->m_samples = machine.device("samples");
+	state->m_discrete = machine.device("discrete");
 
-	state->save_item(NAME(state->clown_x));
-	state->save_item(NAME(state->clown_y));
-	state->save_item(NAME(state->clown_z));
+	state->save_item(NAME(state->m_clown_x));
+	state->save_item(NAME(state->m_clown_y));
+	state->save_item(NAME(state->m_clown_z));
 }
 
 static MACHINE_RESET( circus )
 {
-	circus_state *state = machine->driver_data<circus_state>();
+	circus_state *state = machine.driver_data<circus_state>();
 
-	state->clown_x = 0;
-	state->clown_y = 0;
-	state->clown_z = 0;
+	state->m_clown_x = 0;
+	state->m_clown_y = 0;
+	state->m_clown_z = 0;
 }
 
 
 static MACHINE_CONFIG_START( circus, circus_state )
 
 	/* basic machine hardware */
-	MCFG_CPU_ADD("maincpu", M6502, XTAL_11_289MHz / 16) /* 705.562kHz */
+	MCFG_CPU_ADD("maincpu", M6502, XTAL_11_289MHz / 16)	/* 705.562kHz */
 	MCFG_CPU_PROGRAM_MAP(circus_map)
 
 	MCFG_MACHINE_START(circus)
 	MCFG_MACHINE_RESET(circus)
 
 	/* video hardware */
+	MCFG_VIDEO_ATTRIBUTES(VIDEO_ALWAYS_UPDATE)			/* needed for proper hardware collisions */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57)
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(3500) /* frames per second, vblank duration (complete guess) */)
+	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(3500)	/* frames per second, vblank duration (complete guess) */)
 	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 31*8-1, 0*8, 32*8-1)
@@ -411,9 +410,10 @@ static MACHINE_CONFIG_START( ripcord, circus_state )
 	MCFG_MACHINE_RESET(circus)
 
 	/* video hardware */
+	MCFG_VIDEO_ATTRIBUTES(VIDEO_ALWAYS_UPDATE)			/* needed for proper hardware collisions */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57)
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(3500) /* frames per second, vblank duration (complete guess) */)
+	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(3500)	/* frames per second, vblank duration (complete guess) */)
 	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 31*8-1, 0*8, 32*8-1)
@@ -573,24 +573,24 @@ ROM_END
 
 static DRIVER_INIT( circus )
 {
-	circus_state *state = machine->driver_data<circus_state>();
-	state->game_id = 1;
+	circus_state *state = machine.driver_data<circus_state>();
+	state->m_game_id = 1;
 }
 
 static DRIVER_INIT( robotbwl )
 {
-	circus_state *state = machine->driver_data<circus_state>();
-	state->game_id = 2;
+	circus_state *state = machine.driver_data<circus_state>();
+	state->m_game_id = 2;
 }
 static DRIVER_INIT( crash )
 {
-	circus_state *state = machine->driver_data<circus_state>();
-	state->game_id = 3;
+	circus_state *state = machine.driver_data<circus_state>();
+	state->m_game_id = 3;
 }
 static DRIVER_INIT( ripcord )
 {
-	circus_state *state = machine->driver_data<circus_state>();
-	state->game_id = 4;
+	circus_state *state = machine.driver_data<circus_state>();
+	state->m_game_id = 4;
 }
 
 

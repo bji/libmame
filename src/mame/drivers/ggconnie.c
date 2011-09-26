@@ -23,6 +23,16 @@
 #include "cpu/h6280/h6280.h"
 #include "sound/c6280.h"
 
+
+class ggconnie_state : public driver_device
+{
+public:
+	ggconnie_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 static INPUT_PORTS_START(ggconnie)
     PORT_START("IN0")
     PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON6 ) PORT_NAME( "Medal" )
@@ -114,7 +124,7 @@ static WRITE8_HANDLER(output_w)
 	// written in "Output Test" in test mode
 }
 
-static ADDRESS_MAP_START( sgx_mem , ADDRESS_SPACE_PROGRAM, 8)
+static ADDRESS_MAP_START( sgx_mem , AS_PROGRAM, 8)
 	AM_RANGE( 0x000000, 0x0fffff) AM_ROM
 	AM_RANGE( 0x110000, 0x1edfff) AM_NOP
 	AM_RANGE( 0x1ee800, 0x1effff) AM_NOP
@@ -134,7 +144,7 @@ static ADDRESS_MAP_START( sgx_mem , ADDRESS_SPACE_PROGRAM, 8)
 	AM_RANGE( 0x1ff400, 0x1ff7ff) AM_READWRITE(h6280_irq_status_r, h6280_irq_status_w )
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sgx_io , ADDRESS_SPACE_IO, 8)
+static ADDRESS_MAP_START( sgx_io , AS_IO, 8)
 	AM_RANGE( 0x00, 0x03) AM_READWRITE( sgx_vdc_r, sgx_vdc_w )
 ADDRESS_MAP_END
 
@@ -143,7 +153,7 @@ static const c6280_interface c6280_config =
 	"maincpu"
 };
 
-static MACHINE_CONFIG_START( ggconnie, driver_device )
+static MACHINE_CONFIG_START( ggconnie, ggconnie_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", H6280, PCE_MAIN_CLOCK/3)
 	MCFG_CPU_PROGRAM_MAP(sgx_mem)

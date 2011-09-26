@@ -26,7 +26,7 @@
 #include "mc6845.h"
 
 
-#define LOG		(1)
+#define LOG		(0)
 
 
 /* device types */
@@ -208,7 +208,7 @@ INLINE void call_on_update_address(device_t *device, int strobe)
 	mc6845_t *mc6845 = get_safe_token(device);
 
 	if (mc6845->intf->on_update_addr_changed)
-		device->machine->scheduler().timer_set(attotime::zero, FUNC(on_update_address_cb), (mc6845->update_addr << 8) | strobe, (void *) device);
+		device->machine().scheduler().timer_set(attotime::zero, FUNC(on_update_address_cb), (mc6845->update_addr << 8) | strobe, (void *) device);
 	else
 		fatalerror("M6845: transparent memory mode without handler\n");
 }
@@ -289,7 +289,7 @@ WRITE8_DEVICE_HANDLER( mc6845_register_w )
 {
 	mc6845_t *mc6845 = get_safe_token(device);
 
-	if (LOG)  logerror("%s:M6845 reg 0x%02x = 0x%02x\n", device->machine->describe_context(), mc6845->register_address_latch, data);
+	if (LOG)  logerror("%s:M6845 reg 0x%02x = 0x%02x\n", device->machine().describe_context(), mc6845->register_address_latch, data);
 
 	switch (mc6845->register_address_latch)
 	{
@@ -837,7 +837,18 @@ void mc6845_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect
 			INT8 cursor_x = cursor_visible ? (mc6845->cursor_addr - mc6845->current_disp_addr) : -1;
 
 			/* call the external system to draw it */
-			mc6845->intf->update_row(device, bitmap, cliprect, mc6845->current_disp_addr, ra, y, mc6845->horiz_disp, cursor_x, param);
+			if (MODE_ROW_COLUMN_ADDRESSING(mc6845))
+			{
+				UINT8 cc = 0;
+				UINT8 cr = y / (mc6845->max_ras_addr + 1);
+				UINT16 ma = (cr << 8) | cc;
+
+				mc6845->intf->update_row(device, bitmap, cliprect, ma, ra, y, mc6845->horiz_disp, cursor_x, param);
+			}
+			else
+			{
+				mc6845->intf->update_row(device, bitmap, cliprect, mc6845->current_disp_addr, ra, y, mc6845->horiz_disp, cursor_x, param);
+			}
 
 			/* update MA if the last raster address */
 			if (ra == mc6845->max_ras_addr)
@@ -882,26 +893,30 @@ static void common_start(device_t *device, int device_type)
 		/* get the screen device */
 		if ( mc6845->intf->screen_tag != NULL )
 		{
-			mc6845->screen = downcast<screen_device *>(device->machine->device(mc6845->intf->screen_tag));
+			mc6845->screen = downcast<screen_device *>(device->machine().device(mc6845->intf->screen_tag));
+			if (mc6845->screen == NULL) {
+				astring tempstring;
+				mc6845->screen = downcast<screen_device *>(device->machine().device(device->owner()->subtag(tempstring,mc6845->intf->screen_tag)));
+			}
 			assert(mc6845->screen != NULL);
 		}
 		else
 			mc6845->screen = NULL;
 
 		/* create the timers */
-		mc6845->line_timer = device->machine->scheduler().timer_alloc(FUNC(line_timer_cb), (void *)device);
+		mc6845->line_timer = device->machine().scheduler().timer_alloc(FUNC(line_timer_cb), (void *)device);
 
-		mc6845->de_off_timer = device->machine->scheduler().timer_alloc(FUNC(de_off_timer_cb), (void *)device);
-		mc6845->upd_adr_timer = device->machine->scheduler().timer_alloc(FUNC(upd_adr_timer_cb), (void *)device);
+		mc6845->de_off_timer = device->machine().scheduler().timer_alloc(FUNC(de_off_timer_cb), (void *)device);
+		mc6845->upd_adr_timer = device->machine().scheduler().timer_alloc(FUNC(upd_adr_timer_cb), (void *)device);
 
-		mc6845->cur_on_timer = device->machine->scheduler().timer_alloc(FUNC(cur_on_timer_cb), (void *)device);
-		mc6845->cur_off_timer = device->machine->scheduler().timer_alloc(FUNC(cur_off_timer_cb), (void *)device);
+		mc6845->cur_on_timer = device->machine().scheduler().timer_alloc(FUNC(cur_on_timer_cb), (void *)device);
+		mc6845->cur_off_timer = device->machine().scheduler().timer_alloc(FUNC(cur_off_timer_cb), (void *)device);
 
-		mc6845->hsync_on_timer = device->machine->scheduler().timer_alloc(FUNC(hsync_on_timer_cb), (void *)device);
-		mc6845->hsync_off_timer = device->machine->scheduler().timer_alloc(FUNC(hsync_off_timer_cb), (void *)device);
+		mc6845->hsync_on_timer = device->machine().scheduler().timer_alloc(FUNC(hsync_on_timer_cb), (void *)device);
+		mc6845->hsync_off_timer = device->machine().scheduler().timer_alloc(FUNC(hsync_off_timer_cb), (void *)device);
 	}
 
-	mc6845->light_pen_latch_timer = device->machine->scheduler().timer_alloc(FUNC(light_pen_latch_timer_cb), (void *)device);
+	mc6845->light_pen_latch_timer = device->machine().scheduler().timer_alloc(FUNC(light_pen_latch_timer_cb), (void *)device);
 
 	/* Use some large startup values */
 	mc6845->horiz_char_total = 0xff;
@@ -909,7 +924,7 @@ static void common_start(device_t *device, int device_type)
 	mc6845->vert_char_total = 0x7f;
 
 	/* register for state saving */
-	device->machine->state().register_postload(mc6845_state_save_postload, mc6845);
+	device->machine().state().register_postload(mc6845_state_save_postload, mc6845);
 
 	device->save_item(NAME(mc6845->clock));
 	device->save_item(NAME(mc6845->hpixels_per_column));

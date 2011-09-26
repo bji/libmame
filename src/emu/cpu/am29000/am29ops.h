@@ -1068,6 +1068,7 @@ static void STORE(am29000_state *am29000)
 	{
 		logerror("Am29000: Attempting a co-processor LOAD!\n");
 		r = 0;
+        (void) r;
 	}
 	else
 	{

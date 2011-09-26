@@ -162,11 +162,11 @@ const int WR5_RTS					= 0x02;
 const int WR5_CRC16					= 0x04; // not supported
 const int WR5_TX_ENABLE				= 0x08;
 const int WR5_SEND_BREAK			= 0x10;
-const int WR5_TX_WORD_LENGTH_MASK	= 0xc0;
+const int WR5_TX_WORD_LENGTH_MASK	= 0x60;
 const int WR5_TX_WORD_LENGTH_5		= 0x00;
-const int WR5_TX_WORD_LENGTH_7		= 0x40;
-const int WR5_TX_WORD_LENGTH_6		= 0x80;
-const int WR5_TX_WORD_LENGTH_8		= 0xc0;
+const int WR5_TX_WORD_LENGTH_6		= 0x40;
+const int WR5_TX_WORD_LENGTH_7		= 0x20;
+const int WR5_TX_WORD_LENGTH_8		= 0x60;
 const int WR5_DTR					= 0x80;
 
 
@@ -221,7 +221,7 @@ device_config *z80dart_device_config::static_alloc_device_config(const machine_c
 
 device_t *z80dart_device_config::alloc_device(running_machine &machine) const
 {
-	return auto_alloc(&machine, z80dart_device(machine, *this));
+	return auto_alloc(machine, z80dart_device(machine, *this));
 }
 
 

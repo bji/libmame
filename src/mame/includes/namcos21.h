@@ -11,13 +11,8 @@ public:
 	namcos21_state(running_machine &machine, const driver_device_config_base &config)
 		: driver_device(machine, config) { }
 
-	UINT8 *videoram;
+	UINT8 *m_videoram;
 };
-
-
-/*----------- defined in drivers/namcos21.c -----------*/
-
-extern void namcos21_kickstart(running_machine *, int);
 
 
 /*----------- defined in video/namcos21.c -----------*/

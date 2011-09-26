@@ -55,7 +55,7 @@ device_config *mb3773_device_config::static_alloc_device_config( const machine_c
 
 device_t *mb3773_device_config::alloc_device( running_machine &machine ) const
 {
-	return auto_alloc( &machine, mb3773_device( machine, *this ) );
+	return auto_alloc( machine, mb3773_device( machine, *this ) );
 }
 
 
@@ -76,7 +76,7 @@ void mb3773_device_config::device_config_complete()
 //  on this device
 //-------------------------------------------------
 
-bool mb3773_device_config::device_validity_check( core_options &options, const game_driver &driver ) const
+bool mb3773_device_config::device_validity_check( emu_options &options, const game_driver &driver ) const
 {
 	return false;
 }

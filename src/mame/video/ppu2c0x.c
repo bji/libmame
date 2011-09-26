@@ -108,6 +108,7 @@ struct _ppu2c0x_state
 	int                         scanlines_per_frame;	/* number of scanlines per frame */
 	rgb_t                       palette[64*4];		/* palette for this chip */
 	int                         security_value;		/* 2C05 protection */
+	void (*latch)( device_t *device, offs_t offset );
 };
 
 
@@ -121,7 +122,6 @@ static TIMER_CALLBACK( scanline_callback );
 static TIMER_CALLBACK( hblank_callback );
 static TIMER_CALLBACK( nmi_callback );
 
-void (*ppu_latch)( device_t *device, offs_t offset );
 
 /* palette handlers */
 static WRITE8_HANDLER( ppu2c0x_palette_write );
@@ -166,11 +166,11 @@ INLINE const ppu2c0x_interface *get_interface( device_t *device )
 
 /* default address map */
 // make this INTERNAL, default should just be enough to avoid compile errors, print error messages!
-static ADDRESS_MAP_START( ppu2c0x, 0, 8 )
+static ADDRESS_MAP_START( ppu2c0x, AS_0, 8 )
 	AM_RANGE(0x3f00, 0x3fff) AM_READWRITE(ppu2c0x_palette_read, ppu2c0x_palette_write)
 ADDRESS_MAP_END
 
-void ppu2c0x_init_palette( running_machine *machine, int first_entry )
+void ppu2c0x_init_palette( running_machine &machine, int first_entry )
 {
 
 	/* This routine builds a palette using a transformation from */
@@ -285,13 +285,13 @@ void ppu2c0x_init_palette( running_machine *machine, int first_entry )
 	/* color tables are modified at run-time, and are initialized on 'ppu2c0x_reset' */
 }
 
-void ppu2c0x_init_palette_rgb( running_machine *machine, int first_entry )
+void ppu2c0x_init_palette_rgb( running_machine &machine, int first_entry )
 {
 	int color_emphasis, color_num;
 
 	int R, G, B;
 
-	UINT8 *palette_data = machine->region("palette")->base();
+	UINT8 *palette_data = machine.region("palette")->base();
 
 	/* Loop through the emphasis modes (8 total) */
 	for (color_emphasis = 0; color_emphasis < 8; color_emphasis++)
@@ -326,6 +326,12 @@ static const gfx_layout ppu_charlayout =
  *  PPU Initialization and Disposal
  *
  *************************************/
+
+void ppu2c0x_set_latch( device_t *device, void (*latch)(device_t *device, offs_t offset))
+{
+	ppu2c0x_state *ppu2c0x = get_token(device);
+	ppu2c0x->latch = latch;
+}
 
 static TIMER_CALLBACK( hblank_callback )
 {
@@ -436,9 +442,9 @@ static void draw_background( device_t *device, UINT8 *line_priority )
 		page2 = ppu2c0x->space->read_byte(index1);
 
 		// 27/12/2002
-		if (ppu_latch)
+		if (ppu2c0x->latch)
 		{
-			(*ppu_latch)(device, (tile_page << 10) | (page2 << 4));
+			(*ppu2c0x->latch)(device, (tile_page << 10) | (page2 << 4));
 		}
 
 		if (start_x < VISIBLE_SCREEN_WIDTH)
@@ -577,8 +583,8 @@ static void draw_sprites( device_t *device, UINT8 *line_priority )
 			}
 		}
 
-		if (ppu_latch)
-			(*ppu_latch)(device, (sprite_page << 10) | ((tile & 0xff) << 4));
+		if (ppu2c0x->latch)
+			(*ppu2c0x->latch)(device, (sprite_page << 10) | ((tile & 0xff) << 4));
 
 		/* compute the character's line to draw */
 		sprite_line = scanline - sprite_ypos;
@@ -851,7 +857,7 @@ static TIMER_CALLBACK( scanline_callback )
 	/* increment our scanline count */
 	ppu2c0x->scanline++;
 
-//  logerror("starting scanline %d (MAME %d, beam %d)\n", ppu2c0x->scanline, device->machine->primary_screen->vpos(), device->machine->primary_screen->hpos());
+//  logerror("starting scanline %d (MAME %d, beam %d)\n", ppu2c0x->scanline, device->machine().primary_screen->vpos(), device->machine().primary_screen->hpos());
 
 	/* Note: this is called at the _end_ of each scanline */
 	if (ppu2c0x->scanline == PPU_VBLANK_FIRST_SCANLINE)
@@ -867,7 +873,7 @@ static TIMER_CALLBACK( scanline_callback )
 			// a game can read the high bit of $2002 before the NMI is called (potentially resetting the bit
 			// via a read from $2002 in the NMI handler).
 			// B-Wings is an example game that needs this.
-			ppu2c0x->nmi_timer->adjust(device->machine->device<cpu_device>("maincpu")->cycles_to_attotime(4));
+			ppu2c0x->nmi_timer->adjust(device->machine().device<cpu_device>("maincpu")->cycles_to_attotime(4));
 		}
 	}
 
@@ -895,10 +901,10 @@ static TIMER_CALLBACK( scanline_callback )
 		next_scanline = 0;
 
 	// Call us back when the hblank starts for this scanline
-	ppu2c0x->hblank_timer->adjust(device->machine->device<cpu_device>("maincpu")->cycles_to_attotime(86.67)); // ??? FIXME - hardcoding NTSC, need better calculation
+	ppu2c0x->hblank_timer->adjust(device->machine().device<cpu_device>("maincpu")->cycles_to_attotime(86.67)); // ??? FIXME - hardcoding NTSC, need better calculation
 
 	// trigger again at the start of the next scanline
-	ppu2c0x->scanline_timer->adjust(device->machine->primary_screen->time_until_pos(next_scanline * ppu2c0x->scan_scale));
+	ppu2c0x->scanline_timer->adjust(device->machine().primary_screen->time_until_pos(next_scanline * ppu2c0x->scan_scale));
 }
 
 /*************************************
@@ -909,7 +915,7 @@ static TIMER_CALLBACK( scanline_callback )
 
 static WRITE8_HANDLER( ppu2c0x_palette_write )
 {
-	ppu2c0x_state *ppu2c0x = get_token(space->cpu);
+	ppu2c0x_state *ppu2c0x = get_token(&space->device());
 	int color_base = ppu2c0x->color_base;
 	int color_emphasis = (ppu2c0x->regs[PPU_CONTROL1] & PPU_CONTROL1_COLOR_EMPHASIS) * 2;
 
@@ -941,7 +947,7 @@ static WRITE8_HANDLER( ppu2c0x_palette_write )
 
 static READ8_HANDLER( ppu2c0x_palette_read )
 {
-	ppu2c0x_state *ppu2c0x = get_token(space->cpu);
+	ppu2c0x_state *ppu2c0x = get_token(&space->device());
 	{
 		if (ppu2c0x->regs[PPU_CONTROL1] & PPU_CONTROL1_DISPLAY_MONO)
 			return (ppu2c0x->palette_ram[offset & 0x1f] & 0x30);
@@ -991,8 +997,8 @@ READ8_DEVICE_HANDLER( ppu2c0x_r )
 			break;
 
 		case PPU_DATA: /* 7 */
-			if (ppu_latch)
-				(*ppu_latch)(device, ppu2c0x->videomem_addr & 0x3fff);
+			if (ppu2c0x->latch)
+				(*ppu2c0x->latch)(device, ppu2c0x->videomem_addr & 0x3fff);
 
 			if (ppu2c0x->videomem_addr >= 0x3f00)
 			{
@@ -1039,7 +1045,7 @@ WRITE8_DEVICE_HANDLER( ppu2c0x_w )
 #ifdef MAME_DEBUG
 	if (ppu2c0x->scanline <= PPU_BOTTOM_VISIBLE_SCANLINE)
 	{
-		screen_device *screen = device->machine->primary_screen;
+		screen_device *screen = device->machine().primary_screen;
 		logerror("PPU register %d write %02x during non-vblank scanline %d (MAME %d, beam pos: %d)\n", offset, data, ppu2c0x->scanline, screen->vpos(), screen->hpos());
 	}
 #endif
@@ -1142,8 +1148,8 @@ WRITE8_DEVICE_HANDLER( ppu2c0x_w )
 			{
 				int tempAddr = ppu2c0x->videomem_addr & 0x3fff;
 
-				if (ppu_latch)
-					(*ppu_latch)(device, tempAddr);
+				if (ppu2c0x->latch)
+					(*ppu2c0x->latch)(device, tempAddr);
 
 				/* if there's a callback, call it now */
 				if (ppu2c0x->vidaccess_callback_proc)
@@ -1191,7 +1197,7 @@ void ppu2c0x_spriteram_dma( address_space *space, device_t *device, const UINT8 
 	}
 
 	// should last 513 CPU cycles.
-	cpu_adjust_icount(space->cpu, -513);
+	device_adjust_icount(&space->device(), -513);
 }
 
 /*************************************
@@ -1281,7 +1287,7 @@ static DEVICE_START( ppu2c0x )
 	const ppu2c0x_interface *intf = get_interface(device);
 
 	memset(ppu2c0x, 0, sizeof(*ppu2c0x));
-	ppu2c0x->space = device_get_space(device, 0);
+	ppu2c0x->space = device->memory().space();
 	ppu2c0x->scanlines_per_frame = (device->type() != PPU_2C07) ? PPU_NTSC_SCANLINES_PER_FRAME : PPU_PAL_SCANLINES_PER_FRAME;
 
 	/* usually, no security value... */
@@ -1301,23 +1307,23 @@ static DEVICE_START( ppu2c0x )
 		ppu2c0x->security_value = 0x1b;
 
 	/* initialize the scanline handling portion */
-	ppu2c0x->scanline_timer = device->machine->scheduler().timer_alloc(FUNC(scanline_callback), (void *) device);
-	ppu2c0x->scanline_timer->adjust(device->machine->primary_screen->time_until_pos(1));
+	ppu2c0x->scanline_timer = device->machine().scheduler().timer_alloc(FUNC(scanline_callback), (void *) device);
+	ppu2c0x->scanline_timer->adjust(device->machine().primary_screen->time_until_pos(1));
 
-	ppu2c0x->hblank_timer = device->machine->scheduler().timer_alloc(FUNC(hblank_callback), (void *) device);
-	ppu2c0x->hblank_timer->adjust(device->machine->device<cpu_device>("maincpu")->cycles_to_attotime(86.67)); // ??? FIXME - hardcoding NTSC, need better calculation
+	ppu2c0x->hblank_timer = device->machine().scheduler().timer_alloc(FUNC(hblank_callback), (void *) device);
+	ppu2c0x->hblank_timer->adjust(device->machine().device<cpu_device>("maincpu")->cycles_to_attotime(86.67)); // ??? FIXME - hardcoding NTSC, need better calculation
 
-	ppu2c0x->nmi_timer = device->machine->scheduler().timer_alloc(FUNC(nmi_callback), (void *) device);
+	ppu2c0x->nmi_timer = device->machine().scheduler().timer_alloc(FUNC(nmi_callback), (void *) device);
 	ppu2c0x->nmi_timer->adjust(attotime::never);
 
 	ppu2c0x->nmi_callback_proc = intf->nmi_handler;
 	ppu2c0x->color_base = intf->color_base;
 
 	/* allocate a screen bitmap, videomem and spriteram, a dirtychar array and the monochromatic colortable */
-	ppu2c0x->bitmap = auto_bitmap_alloc(device->machine, VISIBLE_SCREEN_WIDTH, VISIBLE_SCREEN_HEIGHT, device->machine->primary_screen->format());
-	ppu2c0x->spriteram = auto_alloc_array_clear(device->machine, UINT8, SPRITERAM_SIZE);
-	ppu2c0x->colortable = auto_alloc_array(device->machine, pen_t, ARRAY_LENGTH(default_colortable));
-	ppu2c0x->colortable_mono = auto_alloc_array(device->machine, pen_t, ARRAY_LENGTH(default_colortable_mono));
+	ppu2c0x->bitmap = auto_bitmap_alloc(device->machine(), VISIBLE_SCREEN_WIDTH, VISIBLE_SCREEN_HEIGHT, device->machine().primary_screen->format());
+	ppu2c0x->spriteram = auto_alloc_array_clear(device->machine(), UINT8, SPRITERAM_SIZE);
+	ppu2c0x->colortable = auto_alloc_array(device->machine(), pen_t, ARRAY_LENGTH(default_colortable));
+	ppu2c0x->colortable_mono = auto_alloc_array(device->machine(), pen_t, ARRAY_LENGTH(default_colortable_mono));
 
 	device->save_item(NAME(ppu2c0x->scanline));
 	device->save_item(NAME(ppu2c0x->refresh_data));

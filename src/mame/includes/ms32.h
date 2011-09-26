@@ -1,24 +1,47 @@
+class ms32_state : public driver_device
+{
+public:
+	ms32_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+	UINT8 *m_nvram_8;
+	UINT32 *m_mahjong_input_select;
+	UINT32 m_to_main;
+	UINT16 m_irqreq;
+	tilemap_t *m_tx_tilemap;
+	tilemap_t *m_roz_tilemap;
+	tilemap_t *m_bg_tilemap;
+	tilemap_t *m_bg_tilemap_alt;
+	UINT8* m_priram_8;
+	UINT16* m_palram_16;
+	UINT16* m_rozram_16;
+	UINT16* m_lineram_16;
+	UINT16* m_sprram_16;
+	UINT16* m_txram_16;
+	UINT16* m_bgram_16;
+	UINT32 m_tilemaplayoutcontrol;
+	UINT16* m_f1superb_extraram_16;
+	tilemap_t* m_extra_tilemap;
+	UINT32 *m_roz_ctrl;
+	UINT32 *m_tx_scroll;
+	UINT32 *m_bg_scroll;
+	UINT32 *m_mainram;
+	bitmap_t* m_temp_bitmap_tilemaps;
+	bitmap_t* m_temp_bitmap_sprites;
+	bitmap_t* m_temp_bitmap_sprites_pri;
+	int m_reverse_sprite_order;
+	int m_flipscreen;
+	UINT32 m_brt[4];
+	int m_brt_r;
+	int m_brt_g;
+	int m_brt_b;
+};
+
+
 /*----------- defined in video/ms32.c -----------*/
 
-extern tilemap_t *ms32_tx_tilemap, *ms32_roz_tilemap, *ms32_bg_tilemap, *ms32_bg_tilemap_alt;
-extern UINT8* ms32_priram_8;
-extern UINT16* ms32_palram_16;
-extern UINT16* ms32_rozram_16;
-extern UINT16* ms32_lineram_16;
-extern UINT16* ms32_sprram_16;
-extern UINT16* ms32_txram_16;
-extern UINT16* ms32_bgram_16;
-extern UINT32 ms32_tilemaplayoutcontrol;
-
-extern UINT16* f1superb_extraram_16;
-extern tilemap_t* ms32_extra_tilemap;
-
 //extern UINT32 *ms32_fce00000;
-extern UINT32 *ms32_roz_ctrl;
-extern UINT32 *ms32_tx_scroll;
-extern UINT32 *ms32_bg_scroll;
 
-extern UINT32 *ms32_mainram;
 
 WRITE32_HANDLER( ms32_brightness_w );
 

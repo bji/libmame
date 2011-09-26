@@ -28,6 +28,16 @@ Note
 #include "cpu/z80/z80.h"
 #include "sound/okim6295.h"
 
+
+class _3super8_state : public driver_device
+{
+public:
+	_3super8_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 static VIDEO_START(3super8)
 {
 
@@ -38,7 +48,7 @@ static SCREEN_UPDATE(3super8)
 	return 0;
 }
 
-static ADDRESS_MAP_START( map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 ADDRESS_MAP_END
 
@@ -64,7 +74,7 @@ GFXDECODE_END
 
 
 
-static MACHINE_CONFIG_START( 3super8, driver_device )
+static MACHINE_CONFIG_START( 3super8, _3super8_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80,24000000/4)		 /* 6 MHz */
 	MCFG_CPU_PROGRAM_MAP(map)

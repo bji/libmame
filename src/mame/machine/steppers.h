@@ -24,7 +24,7 @@
 #define STARPOINT_48STEP_REEL   0			/* STARPOINT RMXXX reel unit */
 #define BARCREST_48STEP_REEL    1			/* Barcrest bespoke reel unit */
 #define STARPOINT_144STEPS_DICE 2			/* STARPOINT 1DCU DICE mechanism */
-
+#define MPU3_48STEP_REEL        3
 /*------------- Stepper motor interface structure -----------------*/
 
 typedef struct _stepper_interface stepper_interface;
@@ -38,7 +38,7 @@ struct _stepper_interface
 
 extern const stepper_interface starpoint_interface_48step;
 
-void stepper_config(running_machine *machine, int which, const stepper_interface *intf);
+void stepper_config(running_machine &machine, int which, const stepper_interface *intf);
 
 void stepper_reset_position(int id);		/* reset a motor to position 0 */
 

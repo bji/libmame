@@ -1,6 +1,19 @@
-/*----------- defined in video/nova2001.c -----------*/
+class nova2001_state : public driver_device
+{
+public:
+	nova2001_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
 
-extern UINT8 *nova2001_fg_videoram, *nova2001_bg_videoram;
+	UINT8 m_ninjakun_io_a002_ctrl;
+	UINT8 *m_fg_videoram;
+	UINT8 *m_bg_videoram;
+	tilemap_t *m_bg_tilemap;
+	tilemap_t *m_fg_tilemap;
+	UINT8 *m_spriteram;
+};
+
+
+/*----------- defined in video/nova2001.c -----------*/
 
 extern WRITE8_HANDLER( nova2001_fg_videoram_w );
 extern WRITE8_HANDLER( nova2001_bg_videoram_w );

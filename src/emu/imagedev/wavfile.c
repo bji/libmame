@@ -71,6 +71,7 @@ static casserr_t wavfile_process(cassette_image *cassette, struct CassetteOption
 	UINT16 format_type = 0;
 	UINT32 bytes_per_second = 0;
 	UINT16 block_align = 0;
+    (void) block_align;
 	int waveform_flags = 0;
 
 	/* read header */

@@ -1,12 +1,26 @@
 #include "devlegcy.h"
 
-/*----------- defined in video/warpwarp.c -----------*/
+class warpwarp_state : public driver_device
+{
+public:
+	warpwarp_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
 
-extern UINT8 *geebee_videoram,*warpwarp_videoram;
-extern int geebee_bgw;
-extern int warpwarp_ball_on;
-extern int warpwarp_ball_h, warpwarp_ball_v;
-extern int warpwarp_ball_pen, warpwarp_ball_sizex, warpwarp_ball_sizey;
+	UINT8 *m_geebee_videoram;
+	UINT8 *m_videoram;
+	int m_geebee_bgw;
+	int m_ball_on;
+	int m_ball_h;
+	int m_ball_v;
+	int m_ball_pen;
+	int m_ball_sizex;
+	int m_ball_sizey;
+	int m_handle_joystick;
+	tilemap_t *m_bg_tilemap;
+};
+
+
+/*----------- defined in video/warpwarp.c -----------*/
 
 PALETTE_INIT( geebee );
 PALETTE_INIT( navarone );

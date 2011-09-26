@@ -1,6 +1,24 @@
-/*----------- defined in video/zaccaria.c -----------*/
+class zaccaria_state : public driver_device
+{
+public:
+	zaccaria_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
 
-extern UINT8 *zaccaria_videoram,*zaccaria_attributesram;
+	int m_dsw;
+	int m_active_8910;
+	int m_port0a;
+	int m_acs;
+	int m_last_port0b;
+	int m_toggle;
+	UINT8 *m_videoram;
+	UINT8 *m_attributesram;
+	tilemap_t *m_bg_tilemap;
+	UINT8 *m_spriteram;
+	UINT8 *m_spriteram2;
+};
+
+
+/*----------- defined in video/zaccaria.c -----------*/
 
 PALETTE_INIT( zaccaria );
 VIDEO_START( zaccaria );

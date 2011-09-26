@@ -22,6 +22,7 @@ Notes:
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "machine/z80ctc.h"
+#include "machine/nvram.h"
 #include "includes/nb1413m3.h"		// needed for mahjong input controller
 #include "sound/3812intf.h"
 #include "sound/dac.h"
@@ -37,24 +38,11 @@ Notes:
 #endif
 
 
-static NVRAM_HANDLER( nbmj9195 )
-{
-	nbmj9195_state *state = machine->driver_data<nbmj9195_state>();
-	if (read_or_write)
-		file->write(state->nvram, state->nvram_size);
-	else {
-		if (file)
-			file->read(state->nvram, state->nvram_size);
-		else
-			memset(state->nvram, 0, state->nvram_size);
-	}
-}
-
 static WRITE8_HANDLER( nbmj9195_soundbank_w )
 {
-	UINT8 *SNDROM = space->machine->region("audiocpu")->base();
+	UINT8 *SNDROM = space->machine().region("audiocpu")->base();
 
-	memory_set_bankptr(space->machine, "bank1", &SNDROM[0x08000 + (0x8000 * (data & 0x03))]);
+	memory_set_bankptr(space->machine(), "bank1", &SNDROM[0x08000 + (0x8000 * (data & 0x03))]);
 }
 
 static READ8_HANDLER( nbmj9195_sound_r )
@@ -74,42 +62,42 @@ static WRITE8_HANDLER( nbmj9195_soundclr_w )
 
 static void nbmj9195_outcoin_flag_w(address_space *space, int data)
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
 	// bit0: coin in counter
 	// bit1: coin out counter
 	// bit2: hopper
 	// bit3: coin lockout
 
-	if (data & 0x04) state->outcoin_flag ^= 1;
-	else state->outcoin_flag = 1;
+	if (data & 0x04) state->m_outcoin_flag ^= 1;
+	else state->m_outcoin_flag = 1;
 }
 
 static WRITE8_HANDLER( nbmj9195_inputportsel_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->inputport = (data ^ 0xff);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_inputport = (data ^ 0xff);
 }
 
-static int nbmj9195_dipsw_r(running_machine *machine)
+static int nbmj9195_dipsw_r(running_machine &machine)
 {
-	nbmj9195_state *state = machine->driver_data<nbmj9195_state>();
-	return ((((input_port_read(machine, "DSWA") & 0xff) | ((input_port_read(machine, "DSWB") & 0xff) << 8)) >> state->dipswbitsel) & 0x01);
+	nbmj9195_state *state = machine.driver_data<nbmj9195_state>();
+	return ((((input_port_read(machine, "DSWA") & 0xff) | ((input_port_read(machine, "DSWB") & 0xff) << 8)) >> state->m_dipswbitsel) & 0x01);
 }
 
 static void nbmj9195_dipswbitsel_w(address_space *space, int data)
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
 	switch (data & 0xc0)
 	{
 		case 0x00:
-			state->dipswbitsel = 0;
+			state->m_dipswbitsel = 0;
 			break;
 		case 0x40:
 			break;
 		case 0x80:
 			break;
 		case 0xc0:
-			state->dipswbitsel = ((state->dipswbitsel + 1) & 0x0f);
+			state->m_dipswbitsel = ((state->m_dipswbitsel + 1) & 0x0f);
 			break;
 		default:
 			break;
@@ -118,26 +106,26 @@ static void nbmj9195_dipswbitsel_w(address_space *space, int data)
 
 static void mscoutm_inputportsel_w(address_space *space, int data)
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->mscoutm_inputport = (data ^ 0xff);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_mscoutm_inputport = (data ^ 0xff);
 }
 
 static READ8_HANDLER( mscoutm_dipsw_0_r )
 {
 	// DIPSW A
-	return (((input_port_read(space->machine, "DSWA") & 0x01) << 7) | ((input_port_read(space->machine, "DSWA") & 0x02) << 5) |
-	        ((input_port_read(space->machine, "DSWA") & 0x04) << 3) | ((input_port_read(space->machine, "DSWA") & 0x08) << 1) |
-	        ((input_port_read(space->machine, "DSWA") & 0x10) >> 1) | ((input_port_read(space->machine, "DSWA") & 0x20) >> 3) |
-	        ((input_port_read(space->machine, "DSWA") & 0x40) >> 5) | ((input_port_read(space->machine, "DSWA") & 0x80) >> 7));
+	return (((input_port_read(space->machine(), "DSWA") & 0x01) << 7) | ((input_port_read(space->machine(), "DSWA") & 0x02) << 5) |
+	        ((input_port_read(space->machine(), "DSWA") & 0x04) << 3) | ((input_port_read(space->machine(), "DSWA") & 0x08) << 1) |
+	        ((input_port_read(space->machine(), "DSWA") & 0x10) >> 1) | ((input_port_read(space->machine(), "DSWA") & 0x20) >> 3) |
+	        ((input_port_read(space->machine(), "DSWA") & 0x40) >> 5) | ((input_port_read(space->machine(), "DSWA") & 0x80) >> 7));
 }
 
 static READ8_HANDLER( mscoutm_dipsw_1_r )
 {
 	// DIPSW B
-	return (((input_port_read(space->machine, "DSWB") & 0x01) << 7) | ((input_port_read(space->machine, "DSWB") & 0x02) << 5) |
-	        ((input_port_read(space->machine, "DSWB") & 0x04) << 3) | ((input_port_read(space->machine, "DSWB") & 0x08) << 1) |
-	        ((input_port_read(space->machine, "DSWB") & 0x10) >> 1) | ((input_port_read(space->machine, "DSWB") & 0x20) >> 3) |
-	        ((input_port_read(space->machine, "DSWB") & 0x40) >> 5) | ((input_port_read(space->machine, "DSWB") & 0x80) >> 7));
+	return (((input_port_read(space->machine(), "DSWB") & 0x01) << 7) | ((input_port_read(space->machine(), "DSWB") & 0x02) << 5) |
+	        ((input_port_read(space->machine(), "DSWB") & 0x04) << 3) | ((input_port_read(space->machine(), "DSWB") & 0x08) << 1) |
+	        ((input_port_read(space->machine(), "DSWB") & 0x10) >> 1) | ((input_port_read(space->machine(), "DSWB") & 0x20) >> 3) |
+	        ((input_port_read(space->machine(), "DSWB") & 0x40) >> 5) | ((input_port_read(space->machine(), "DSWB") & 0x80) >> 7));
 }
 
 
@@ -146,67 +134,67 @@ static READ8_HANDLER( mscoutm_dipsw_1_r )
 
 static READ8_HANDLER( tmpz84c011_pio_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
 	int portdata;
 
-	if ((!strcmp(space->machine->gamedrv->name, "mscoutm")) ||
-		(!strcmp(space->machine->gamedrv->name, "imekura")) ||
-		(!strcmp(space->machine->gamedrv->name, "mjegolf")))
+	if ((!strcmp(space->machine().system().name, "mscoutm")) ||
+		(!strcmp(space->machine().system().name, "imekura")) ||
+		(!strcmp(space->machine().system().name, "mjegolf")))
 	{
 
 		switch (offset)
 		{
 			case 0:			/* PA_0 */
 				// COIN IN, ETC...
-				portdata = input_port_read(space->machine, "SYSTEM");
+				portdata = input_port_read(space->machine(), "SYSTEM");
 				break;
 			case 1:			/* PB_0 */
 				// PLAYER1 KEY, DIPSW A/B
-				switch (state->mscoutm_inputport)
+				switch (state->m_mscoutm_inputport)
 				{
 					case 0x01:
-						portdata = input_port_read(space->machine, "KEY0");
+						portdata = input_port_read(space->machine(), "KEY0");
 						break;
 					case 0x02:
-						portdata = input_port_read(space->machine, "KEY1");
+						portdata = input_port_read(space->machine(), "KEY1");
 						break;
 					case 0x04:
-						portdata = input_port_read(space->machine, "KEY2");
+						portdata = input_port_read(space->machine(), "KEY2");
 						break;
 					case 0x08:
-						portdata = input_port_read(space->machine, "KEY3");
+						portdata = input_port_read(space->machine(), "KEY3");
 						break;
 					case 0x10:
-						portdata = input_port_read(space->machine, "KEY4");
+						portdata = input_port_read(space->machine(), "KEY4");
 						break;
 					default:
-						portdata = (input_port_read(space->machine, "KEY0") & input_port_read(space->machine, "KEY1") & input_port_read(space->machine, "KEY2")
-									& input_port_read(space->machine, "KEY3") & input_port_read(space->machine, "KEY4"));
+						portdata = (input_port_read(space->machine(), "KEY0") & input_port_read(space->machine(), "KEY1") & input_port_read(space->machine(), "KEY2")
+									& input_port_read(space->machine(), "KEY3") & input_port_read(space->machine(), "KEY4"));
 						break;
 				}
 				break;
 			case 2:			/* PC_0 */
 				// PLAYER2 KEY
-				switch (state->mscoutm_inputport)
+				switch (state->m_mscoutm_inputport)
 				{
 					case 0x01:
-						portdata = input_port_read(space->machine, "KEY5");
+						portdata = input_port_read(space->machine(), "KEY5");
 						break;
 					case 0x02:
-						portdata = input_port_read(space->machine, "KEY6");
+						portdata = input_port_read(space->machine(), "KEY6");
 						break;
 					case 0x04:
-						portdata = input_port_read(space->machine, "KEY7");
+						portdata = input_port_read(space->machine(), "KEY7");
 						break;
 					case 0x08:
-						portdata = input_port_read(space->machine, "KEY8");
+						portdata = input_port_read(space->machine(), "KEY8");
 						break;
 					case 0x10:
-						portdata = input_port_read(space->machine, "KEY9");
+						portdata = input_port_read(space->machine(), "KEY9");
 						break;
 					default:
-						portdata = (input_port_read(space->machine, "KEY5") & input_port_read(space->machine, "KEY6") & input_port_read(space->machine, "KEY7")
-									& input_port_read(space->machine, "KEY8") & input_port_read(space->machine, "KEY9"));
+						portdata = (input_port_read(space->machine(), "KEY5") & input_port_read(space->machine(), "KEY6") & input_port_read(space->machine(), "KEY7")
+									& input_port_read(space->machine(), "KEY8") & input_port_read(space->machine(), "KEY9"));
 						break;
 				}
 				break;
@@ -234,7 +222,7 @@ static READ8_HANDLER( tmpz84c011_pio_r )
 				break;
 
 			default:
-				logerror("%s: TMPZ84C011_PIO Unknown Port Read %02X\n", space->machine->describe_context(), offset);
+				logerror("%s: TMPZ84C011_PIO Unknown Port Read %02X\n", space->machine().describe_context(), offset);
 				portdata = 0xff;
 				break;
 		}
@@ -245,53 +233,53 @@ static READ8_HANDLER( tmpz84c011_pio_r )
 		{
 			case 0:			/* PA_0 */
 				// COIN IN, ETC...
-				portdata = ((input_port_read(space->machine, "SYSTEM") & 0xfe) | state->outcoin_flag);
+				portdata = ((input_port_read(space->machine(), "SYSTEM") & 0xfe) | state->m_outcoin_flag);
 				break;
 			case 1:			/* PB_0 */
 				// PLAYER1 KEY, DIPSW A/B
-				switch (state->inputport)
+				switch (state->m_inputport)
 				{
 					case 0x01:
-						portdata = input_port_read(space->machine, "KEY0");
+						portdata = input_port_read(space->machine(), "KEY0");
 						break;
 					case 0x02:
-						portdata = input_port_read(space->machine, "KEY1");
+						portdata = input_port_read(space->machine(), "KEY1");
 						break;
 					case 0x04:
-						portdata = input_port_read(space->machine, "KEY2");
+						portdata = input_port_read(space->machine(), "KEY2");
 						break;
 					case 0x08:
-						portdata = input_port_read(space->machine, "KEY3");
+						portdata = input_port_read(space->machine(), "KEY3");
 						break;
 					case 0x10:
-						portdata = ((input_port_read(space->machine, "KEY4") & 0x7f) | (nbmj9195_dipsw_r(space->machine) << 7));
+						portdata = ((input_port_read(space->machine(), "KEY4") & 0x7f) | (nbmj9195_dipsw_r(space->machine()) << 7));
 						break;
 					default:
-						portdata = (input_port_read(space->machine, "KEY0") & input_port_read(space->machine, "KEY1") & input_port_read(space->machine, "KEY2") & input_port_read(space->machine, "KEY3") & (input_port_read(space->machine, "KEY4") & 0x7f));
+						portdata = (input_port_read(space->machine(), "KEY0") & input_port_read(space->machine(), "KEY1") & input_port_read(space->machine(), "KEY2") & input_port_read(space->machine(), "KEY3") & (input_port_read(space->machine(), "KEY4") & 0x7f));
 						break;
 				}
 				break;
 			case 2:			/* PC_0 */
 				// PLAYER2 KEY
-				switch (state->inputport)
+				switch (state->m_inputport)
 				{
 					case 0x01:
-						portdata = input_port_read(space->machine, "KEY5");
+						portdata = input_port_read(space->machine(), "KEY5");
 						break;
 					case 0x02:
-						portdata = input_port_read(space->machine, "KEY6");
+						portdata = input_port_read(space->machine(), "KEY6");
 						break;
 					case 0x04:
-						portdata = input_port_read(space->machine, "KEY7");
+						portdata = input_port_read(space->machine(), "KEY7");
 						break;
 					case 0x08:
-						portdata = input_port_read(space->machine, "KEY8");
+						portdata = input_port_read(space->machine(), "KEY8");
 						break;
 					case 0x10:
-						portdata = input_port_read(space->machine, "KEY9") & 0x7f;
+						portdata = input_port_read(space->machine(), "KEY9") & 0x7f;
 						break;
 					default:
-						portdata = (input_port_read(space->machine, "KEY5") & input_port_read(space->machine, "KEY6") & input_port_read(space->machine, "KEY7") & input_port_read(space->machine, "KEY8") & (input_port_read(space->machine, "KEY9") & 0x7f));
+						portdata = (input_port_read(space->machine(), "KEY5") & input_port_read(space->machine(), "KEY6") & input_port_read(space->machine(), "KEY7") & input_port_read(space->machine(), "KEY8") & (input_port_read(space->machine(), "KEY9") & 0x7f));
 						break;
 				}
 				break;
@@ -319,7 +307,7 @@ static READ8_HANDLER( tmpz84c011_pio_r )
 				break;
 
 			default:
-				logerror("%s: TMPZ84C011_PIO Unknown Port Read %02X\n", space->machine->describe_context(), offset);
+				logerror("%s: TMPZ84C011_PIO Unknown Port Read %02X\n", space->machine().describe_context(), offset);
 				portdata = 0xff;
 				break;
 		}
@@ -330,9 +318,9 @@ static READ8_HANDLER( tmpz84c011_pio_r )
 
 static WRITE8_HANDLER( tmpz84c011_pio_w )
 {
-	if ((!strcmp(space->machine->gamedrv->name, "imekura")) ||
-		(!strcmp(space->machine->gamedrv->name, "mscoutm")) ||
-		(!strcmp(space->machine->gamedrv->name, "mjegolf")))
+	if ((!strcmp(space->machine().system().name, "imekura")) ||
+		(!strcmp(space->machine().system().name, "mscoutm")) ||
+		(!strcmp(space->machine().system().name, "mjegolf")))
 	{
 
 		switch (offset)
@@ -355,10 +343,10 @@ static WRITE8_HANDLER( tmpz84c011_pio_w )
 				nbmj9195_soundbank_w(space, 0, data);
 				break;
 			case 6:			/* PB_1 */
-				DAC_WRITE(space->machine->device("dac2"), 0, data);
+				DAC_WRITE(space->machine().device("dac2"), 0, data);
 				break;
 			case 7:			/* PC_1 */
-				DAC_WRITE(space->machine->device("dac1"), 0, data);
+				DAC_WRITE(space->machine().device("dac1"), 0, data);
 				break;
 			case 8:			/* PD_1 */
 				break;
@@ -367,7 +355,7 @@ static WRITE8_HANDLER( tmpz84c011_pio_w )
 				break;
 
 			default:
-				logerror("%s: TMPZ84C011_PIO Unknown Port Write %02X, %02X\n", space->machine->describe_context(), offset, data);
+				logerror("%s: TMPZ84C011_PIO Unknown Port Write %02X, %02X\n", space->machine().describe_context(), offset, data);
 				break;
 		}
 	}
@@ -393,10 +381,10 @@ static WRITE8_HANDLER( tmpz84c011_pio_w )
 				nbmj9195_soundbank_w(space, 0, data);
 				break;
 			case 6:			/* PB_1 */
-				DAC_WRITE(space->machine->device("dac2"), 0, data);
+				DAC_WRITE(space->machine().device("dac2"), 0, data);
 				break;
 			case 7:			/* PC_1 */
-				DAC_WRITE(space->machine->device("dac1"), 0, data);
+				DAC_WRITE(space->machine().device("dac1"), 0, data);
 				break;
 			case 8:			/* PD_1 */
 				break;
@@ -405,7 +393,7 @@ static WRITE8_HANDLER( tmpz84c011_pio_w )
 				break;
 
 			default:
-				logerror("%s: TMPZ84C011_PIO Unknown Port Write %02X, %02X\n", space->machine->describe_context(), offset, data);
+				logerror("%s: TMPZ84C011_PIO Unknown Port Write %02X, %02X\n", space->machine().describe_context(), offset, data);
 				break;
 		}
 	}
@@ -417,245 +405,245 @@ static WRITE8_HANDLER( tmpz84c011_pio_w )
 /* device 0 */
 static READ8_HANDLER( tmpz84c011_0_pa_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,0) & ~state->pio_dir[0]) | (state->pio_latch[0] & state->pio_dir[0]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,0) & ~state->m_pio_dir[0]) | (state->m_pio_latch[0] & state->m_pio_dir[0]);
 }
 static READ8_HANDLER( tmpz84c011_0_pb_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,1) & ~state->pio_dir[1]) | (state->pio_latch[1] & state->pio_dir[1]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,1) & ~state->m_pio_dir[1]) | (state->m_pio_latch[1] & state->m_pio_dir[1]);
 }
 
 static READ8_HANDLER( tmpz84c011_0_pc_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,2) & ~state->pio_dir[2]) | (state->pio_latch[2] & state->pio_dir[2]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,2) & ~state->m_pio_dir[2]) | (state->m_pio_latch[2] & state->m_pio_dir[2]);
 }
 
 static READ8_HANDLER( tmpz84c011_0_pd_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,3) & ~state->pio_dir[3]) | (state->pio_latch[3] & state->pio_dir[3]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,3) & ~state->m_pio_dir[3]) | (state->m_pio_latch[3] & state->m_pio_dir[3]);
 }
 
 static READ8_HANDLER( tmpz84c011_0_pe_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,4) & ~state->pio_dir[4]) | (state->pio_latch[4] & state->pio_dir[4]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,4) & ~state->m_pio_dir[4]) | (state->m_pio_latch[4] & state->m_pio_dir[4]);
 }
 
 
 static WRITE8_HANDLER( tmpz84c011_0_pa_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[0] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[0] = data;
 	tmpz84c011_pio_w(space, 0, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_pb_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[1] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[1] = data;
 	tmpz84c011_pio_w(space, 1, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_pc_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[2] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[2] = data;
 	tmpz84c011_pio_w(space, 2, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_pd_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[3] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[3] = data;
 	tmpz84c011_pio_w(space, 3, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_pe_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[4] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[4] = data;
 	tmpz84c011_pio_w(space, 4, data);
 }
 
 
 static READ8_HANDLER( tmpz84c011_0_dir_pa_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[0];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[0];
 }
 
 static READ8_HANDLER( tmpz84c011_0_dir_pb_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[1];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[1];
 }
 
 static READ8_HANDLER( tmpz84c011_0_dir_pc_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[2];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[2];
 }
 
 static READ8_HANDLER( tmpz84c011_0_dir_pd_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[3];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[3];
 }
 
 static READ8_HANDLER( tmpz84c011_0_dir_pe_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[4];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[4];
 }
 
 
 static WRITE8_HANDLER( tmpz84c011_0_dir_pa_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[0] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[0] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_dir_pb_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[1] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[1] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_dir_pc_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[2] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[2] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_dir_pd_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[3] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[3] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_0_dir_pe_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[4] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[4] = data;
 }
 
 
 /* device 1 */
 static READ8_HANDLER( tmpz84c011_1_pa_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,5) & ~state->pio_dir[5]) | (state->pio_latch[5] & state->pio_dir[5]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,5) & ~state->m_pio_dir[5]) | (state->m_pio_latch[5] & state->m_pio_dir[5]);
 }
 
 static READ8_HANDLER( tmpz84c011_1_pb_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,6) & ~state->pio_dir[6]) | (state->pio_latch[6] & state->pio_dir[6]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,6) & ~state->m_pio_dir[6]) | (state->m_pio_latch[6] & state->m_pio_dir[6]);
 }
 
 static READ8_HANDLER( tmpz84c011_1_pc_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,7) & ~state->pio_dir[7]) | (state->pio_latch[7] & state->pio_dir[7]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,7) & ~state->m_pio_dir[7]) | (state->m_pio_latch[7] & state->m_pio_dir[7]);
 }
 
 static READ8_HANDLER( tmpz84c011_1_pd_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,8) & ~state->pio_dir[8]) | (state->pio_latch[8] & state->pio_dir[8]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,8) & ~state->m_pio_dir[8]) | (state->m_pio_latch[8] & state->m_pio_dir[8]);
 }
 
 static READ8_HANDLER( tmpz84c011_1_pe_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,9) & ~state->pio_dir[9]) | (state->pio_latch[9] & state->pio_dir[9]);
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return (tmpz84c011_pio_r(space,9) & ~state->m_pio_dir[9]) | (state->m_pio_latch[9] & state->m_pio_dir[9]);
 }
 
 
 static WRITE8_HANDLER( tmpz84c011_1_pa_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[5] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[5] = data;
 	tmpz84c011_pio_w(space, 5, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_pb_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[6] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[6] = data;
 	tmpz84c011_pio_w(space, 6, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_pc_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[7] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[7] = data;
 	tmpz84c011_pio_w(space, 7, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_pd_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[8] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[8] = data;
 	tmpz84c011_pio_w(space, 8, data);
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_pe_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_latch[9] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_latch[9] = data;
 	tmpz84c011_pio_w(space, 9, data);
 }
 
 
 static READ8_HANDLER( tmpz84c011_1_dir_pa_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[5];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[5];
 }
 
 static READ8_HANDLER( tmpz84c011_1_dir_pb_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[6];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[6];
 }
 
 static READ8_HANDLER( tmpz84c011_1_dir_pc_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[7];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[7];
 }
 
 static READ8_HANDLER( tmpz84c011_1_dir_pd_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[8];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[8];
 }
 
 static READ8_HANDLER( tmpz84c011_1_dir_pe_r )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>(); return state->pio_dir[9];
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>(); return state->m_pio_dir[9];
 }
 
 
 static WRITE8_HANDLER( tmpz84c011_1_dir_pa_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[5] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[5] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_dir_pb_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[6] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[6] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_dir_pc_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[7] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[7] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_dir_pd_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[8] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[8] = data;
 }
 
 static WRITE8_HANDLER( tmpz84c011_1_dir_pe_w )
 {
-	nbmj9195_state *state = space->machine->driver_data<nbmj9195_state>();
-	state->pio_dir[9] = data;
+	nbmj9195_state *state = space->machine().driver_data<nbmj9195_state>();
+	state->m_pio_dir[9] = data;
 }
 
 /* CTC of main cpu, ch0 trigger is vblank */
 static INTERRUPT_GEN( ctc0_trg1 )
 {
-	device_t *ctc = device->machine->device("main_ctc");
+	device_t *ctc = device->machine().device("main_ctc");
 	z80ctc_trg1_w(ctc, 1);
 	z80ctc_trg1_w(ctc, 0);
 }
@@ -680,22 +668,22 @@ static Z80CTC_INTERFACE( ctc_intf_audio )
 
 static MACHINE_RESET( sailorws )
 {
-	nbmj9195_state *state = machine->driver_data<nbmj9195_state>();
-	address_space *space = cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM);
+	nbmj9195_state *state = machine.driver_data<nbmj9195_state>();
+	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
 	int i;
 
 	// initialize TMPZ84C011 PIO
 	for (i = 0; i < (5 * 2); i++)
 	{
-		state->pio_dir[i] = state->pio_latch[i] = 0;
+		state->m_pio_dir[i] = state->m_pio_latch[i] = 0;
 		tmpz84c011_pio_w(space, i, 0);
 	}
 }
 
 static DRIVER_INIT( nbmj9195 )
 {
-	address_space *space = cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM);
-	UINT8 *ROM = machine->region("audiocpu")->base();
+	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
+	UINT8 *ROM = machine.region("audiocpu")->base();
 
 	// sound program patch
 	ROM[0x0213] = 0x00;			// DI -> NOP
@@ -704,7 +692,7 @@ static DRIVER_INIT( nbmj9195 )
 	nbmj9195_soundbank_w(space, 0, 0);
 }
 
-static ADDRESS_MAP_START( tmpz84c011_regs, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( tmpz84c011_regs, AS_IO, 8 )
 	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("main_ctc", z80ctc_r,z80ctc_w)
 	AM_RANGE(0x50, 0x50) AM_READWRITE(tmpz84c011_0_pa_r,tmpz84c011_0_pa_w)
 	AM_RANGE(0x51, 0x51) AM_READWRITE(tmpz84c011_0_pb_r,tmpz84c011_0_pb_w)
@@ -718,31 +706,31 @@ static ADDRESS_MAP_START( tmpz84c011_regs, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0x44, 0x44) AM_READWRITE(tmpz84c011_0_dir_pe_r,tmpz84c011_0_dir_pe_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sailorws_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( sailorws_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xefff) AM_ROM
 	AM_RANGE(0xf000, 0xf1ff) AM_READWRITE(nbmj9195_palette_r,nbmj9195_palette_w)
-	AM_RANGE(0xf800, 0xffff) AM_RAM AM_BASE_MEMBER(nbmj9195_state, nvram) AM_SIZE_MEMBER(nbmj9195_state, nvram_size)
+	AM_RANGE(0xf800, 0xffff) AM_RAM AM_SHARE("nvram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjuraden_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( mjuraden_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xefff) AM_ROM
 	AM_RANGE(0xf200, 0xf3ff) AM_READWRITE(nbmj9195_palette_r,nbmj9195_palette_w)
 	AM_RANGE(0xf800, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( koinomp_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( koinomp_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xdfff) AM_ROM
 	AM_RANGE(0xe000, 0xe1ff) AM_READWRITE(nbmj9195_palette_r,nbmj9195_palette_w)
-	AM_RANGE(0xe800, 0xefff) AM_RAM AM_BASE_MEMBER(nbmj9195_state, nvram) AM_SIZE_MEMBER(nbmj9195_state, nvram_size)
+	AM_RANGE(0xe800, 0xefff) AM_RAM AM_SHARE("nvram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( ngpgal_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( ngpgal_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xcfff) AM_ROM
 	AM_RANGE(0xd000, 0xd1ff) AM_READWRITE(nbmj9195_palette_r,nbmj9195_palette_w)
 	AM_RANGE(0xd800, 0xdfff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mscoutm_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( mscoutm_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xdfff) AM_ROM
 	AM_RANGE(0xe000, 0xe5ff) AM_RAM
 	AM_RANGE(0xe600, 0xebff) AM_READWRITE(nbmj9195_nb22090_palette_r,nbmj9195_nb22090_palette_w)
@@ -750,7 +738,7 @@ static ADDRESS_MAP_START( mscoutm_map, ADDRESS_SPACE_PROGRAM, 8 )
 	AM_RANGE(0xf200, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjegolf_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( mjegolf_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xdfff) AM_ROM
 	AM_RANGE(0xe000, 0xe5ff) AM_READWRITE(nbmj9195_nb22090_palette_r,nbmj9195_nb22090_palette_w)
 	AM_RANGE(0xe600, 0xebff) AM_RAM
@@ -758,7 +746,7 @@ static ADDRESS_MAP_START( mjegolf_map, ADDRESS_SPACE_PROGRAM, 8 )
 	AM_RANGE(0xf200, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjuraden_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mjuraden_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -773,7 +761,7 @@ static ADDRESS_MAP_START( mjuraden_io_map, ADDRESS_SPACE_IO, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( koinomp_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( koinomp_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -793,7 +781,7 @@ static ADDRESS_MAP_START( koinomp_io_map, ADDRESS_SPACE_IO, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( patimono_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( patimono_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -811,7 +799,7 @@ static ADDRESS_MAP_START( patimono_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xd0, 0xdf) AM_WRITE(nbmj9195_clut_1_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mmehyou_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mmehyou_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -825,7 +813,7 @@ static ADDRESS_MAP_START( mmehyou_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xb0, 0xb0) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( gal10ren_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( gal10ren_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -843,7 +831,7 @@ static ADDRESS_MAP_START( gal10ren_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xd8, 0xd8) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( renaiclb_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( renaiclb_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -861,7 +849,7 @@ static ADDRESS_MAP_START( renaiclb_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf0, 0xff) AM_WRITE(nbmj9195_clut_0_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjlaman_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mjlaman_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -880,7 +868,7 @@ static ADDRESS_MAP_START( mjlaman_io_map, ADDRESS_SPACE_IO, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( mkeibaou_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mkeibaou_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -899,7 +887,7 @@ static ADDRESS_MAP_START( mkeibaou_io_map, ADDRESS_SPACE_IO, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( pachiten_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( pachiten_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -917,7 +905,7 @@ static ADDRESS_MAP_START( pachiten_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xe6, 0xe6) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sailorws_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( sailorws_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -935,7 +923,7 @@ static ADDRESS_MAP_START( sailorws_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf6, 0xf6) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sailorwr_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( sailorwr_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -954,7 +942,7 @@ static ADDRESS_MAP_START( sailorwr_io_map, ADDRESS_SPACE_IO, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( psailor1_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( psailor1_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -972,7 +960,7 @@ static ADDRESS_MAP_START( psailor1_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf6, 0xf6) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( psailor2_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( psailor2_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -990,7 +978,7 @@ static ADDRESS_MAP_START( psailor2_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf6, 0xf6) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( otatidai_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( otatidai_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1008,7 +996,7 @@ static ADDRESS_MAP_START( otatidai_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xb8, 0xb8) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( yosimoto_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( yosimoto_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1026,7 +1014,7 @@ static ADDRESS_MAP_START( yosimoto_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xd0, 0xdf) AM_WRITE(nbmj9195_clut_1_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( jituroku_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( jituroku_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1044,7 +1032,7 @@ static ADDRESS_MAP_START( jituroku_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf8, 0xf8) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( ngpgal_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( ngpgal_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1058,7 +1046,7 @@ static ADDRESS_MAP_START( ngpgal_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xd0, 0xdf) AM_WRITE(nbmj9195_clut_0_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjgottsu_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mjgottsu_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1072,7 +1060,7 @@ static ADDRESS_MAP_START( mjgottsu_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xb0, 0xb0) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( cmehyou_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( cmehyou_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1086,7 +1074,7 @@ static ADDRESS_MAP_START( cmehyou_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xd0, 0xdf) AM_WRITE(nbmj9195_clut_0_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjkoiura_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mjkoiura_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1100,7 +1088,7 @@ static ADDRESS_MAP_START( mjkoiura_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xb0, 0xb0) AM_WRITE(nbmj9195_inputportsel_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mkoiuraa_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mkoiuraa_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1114,7 +1102,7 @@ static ADDRESS_MAP_START( mkoiuraa_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xd0, 0xdf) AM_WRITE(nbmj9195_clut_0_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mscoutm_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mscoutm_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1134,7 +1122,7 @@ static ADDRESS_MAP_START( mscoutm_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf0, 0xff) AM_WRITE(nbmj9195_clut_1_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( imekura_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( imekura_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1154,7 +1142,7 @@ static ADDRESS_MAP_START( imekura_io_map, ADDRESS_SPACE_IO, 8 )
 	AM_RANGE(0xf0, 0xff) AM_WRITE(nbmj9195_clut_1_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mjegolf_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( mjegolf_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_IMPORT_FROM( tmpz84c011_regs )
 
@@ -1176,13 +1164,13 @@ ADDRESS_MAP_END
 
 
 
-static ADDRESS_MAP_START( sailorws_sound_map, ADDRESS_SPACE_PROGRAM, 8 )
+static ADDRESS_MAP_START( sailorws_sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x77ff) AM_ROM
 	AM_RANGE(0x7800, 0x7fff) AM_RAM
 	AM_RANGE(0x8000, 0xffff) AM_ROMBANK("bank1")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sailorws_sound_io_map, ADDRESS_SPACE_IO, 8 )
+static ADDRESS_MAP_START( sailorws_sound_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("audio_ctc", z80ctc_r,z80ctc_w)
 	AM_RANGE(0x50, 0x50) AM_READWRITE(tmpz84c011_1_pa_r,tmpz84c011_1_pa_w)
@@ -3199,7 +3187,7 @@ static MACHINE_CONFIG_DERIVED( janbari, NBMJDRV1 )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_IO_MAP(patimono_io_map)
 
-	MCFG_NVRAM_HANDLER(nbmj9195)
+	MCFG_NVRAM_ADD_0FILL("nvram")
 MACHINE_CONFIG_END
 
 
@@ -3210,7 +3198,7 @@ static MACHINE_CONFIG_DERIVED( mmehyou, NBMJDRV1 )
 	MCFG_CPU_PROGRAM_MAP(koinomp_map)
 	MCFG_CPU_IO_MAP(mmehyou_io_map)
 
-	MCFG_NVRAM_HANDLER(nbmj9195)
+	MCFG_NVRAM_ADD_0FILL("nvram")
 MACHINE_CONFIG_END
 
 
@@ -3221,7 +3209,7 @@ static MACHINE_CONFIG_DERIVED( ultramhm, NBMJDRV1 )
 	MCFG_CPU_PROGRAM_MAP(koinomp_map)
 	MCFG_CPU_IO_MAP(koinomp_io_map)
 
-	MCFG_NVRAM_HANDLER(nbmj9195)
+	MCFG_NVRAM_ADD_0FILL("nvram")
 MACHINE_CONFIG_END
 
 
@@ -3263,7 +3251,7 @@ static MACHINE_CONFIG_DERIVED( pachiten, NBMJDRV1 )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_IO_MAP(pachiten_io_map)
 
-	MCFG_NVRAM_HANDLER(nbmj9195)
+	MCFG_NVRAM_ADD_0FILL("nvram")
 MACHINE_CONFIG_END
 
 
@@ -3279,7 +3267,7 @@ static MACHINE_CONFIG_DERIVED( sailorwr, NBMJDRV1 )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_IO_MAP(sailorwr_io_map)
 
-	MCFG_NVRAM_HANDLER(nbmj9195)
+	MCFG_NVRAM_ADD_0FILL("nvram")
 MACHINE_CONFIG_END
 
 
@@ -3961,24 +3949,24 @@ ROM_END
 
 
 //    YEAR, NAME,     PARENT,   MACHINE,  INPUT,    INIT,     MONITOR, COMPANY, FULLNAME, FLAGS
-GAME( 1992, mjuraden, 0,        mjuraden, mjuraden, nbmj9195, ROT0,   "Nichibutsu/Yubis", "Mahjong Uranai Densetsu (Japan)", 0 )
+GAME( 1992, mjuraden, 0,        mjuraden, mjuraden, nbmj9195, ROT0,   "Nichibutsu / Yubis", "Mahjong Uranai Densetsu (Japan)", 0 )
 GAME( 1992, koinomp,  0,        koinomp,  koinomp,  nbmj9195, ROT0,   "Nichibutsu", "Mahjong Koi no Magic Potion (Japan)", 0 )
 GAME( 1992, patimono, 0,        patimono, patimono, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Pachinko Monogatari (Japan)", 0 )
-GAME( 1992, janbari,  0,        janbari,  janbari,  nbmj9195, ROT0,   "Nichibutsu/Yubis/AV Japan", "Mahjong Janjan Baribari (Japan)", 0 )
-GAME( 1992, mjanbari, janbari,  janbari,  mjanbari, nbmj9195, ROT0,   "Nichibutsu/Yubis/AV Japan", "Medal Mahjong Janjan Baribari [BET] (Japan)", 0 )
-GAME( 1992, mmehyou,  0,        mmehyou,  mmehyou,  nbmj9195, ROT0,   "Nichibutsu/Kawakusu", "Medal Mahjong Circuit no Mehyou [BET] (Japan)", 0 )
+GAME( 1992, janbari,  0,        janbari,  janbari,  nbmj9195, ROT0,   "Nichibutsu / Yubis / AV Japan", "Mahjong Janjan Baribari (Japan)", 0 )
+GAME( 1992, mjanbari, janbari,  janbari,  mjanbari, nbmj9195, ROT0,   "Nichibutsu / Yubis / AV Japan", "Medal Mahjong Janjan Baribari [BET] (Japan)", 0 )
+GAME( 1992, mmehyou,  0,        mmehyou,  mmehyou,  nbmj9195, ROT0,   "Nichibutsu / Kawakusu", "Medal Mahjong Circuit no Mehyou [BET] (Japan)", 0 )
 GAME( 1993, ultramhm, 0,        ultramhm, ultramhm, nbmj9195, ROT0,   "Apple", "Ultra Maru-hi Mahjong (Japan)", 0 )
 GAME( 1993, gal10ren, 0,        gal10ren, gal10ren, nbmj9195, ROT0,   "Fujic", "Mahjong Gal 10-renpatsu (Japan)", 0 )
 GAME( 1993, renaiclb, 0,        renaiclb, renaiclb, nbmj9195, ROT0,   "Fujic", "Mahjong Ren-ai Club (Japan)", 0 )
-GAME( 1993, mjlaman,  0,        mjlaman,  mjlaman,  nbmj9195, ROT0,   "Nichibutsu/AV Japan", "Mahjong La Man (Japan)", 0 )
+GAME( 1993, mjlaman,  0,        mjlaman,  mjlaman,  nbmj9195, ROT0,   "Nichibutsu / AV Japan", "Mahjong La Man (Japan)", 0 )
 GAME( 1993, mkeibaou, 0,        mkeibaou, mkeibaou, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Keibaou (Japan)", 0 )
-GAME( 1993, pachiten, 0,        pachiten, pachiten, nbmj9195, ROT0,   "Nichibutsu/Miki Syouji/AV Japan", "Medal Mahjong Pachi-Slot Tengoku [BET] (Japan)", 0 )
+GAME( 1993, pachiten, 0,        pachiten, pachiten, nbmj9195, ROT0,   "Nichibutsu / AV Japan / Miki Syouji", "Medal Mahjong Pachi-Slot Tengoku [BET] (Japan)", 0 )
 GAME( 1993, sailorws, 0,        sailorws, sailorws, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Sailor Wars (Japan set 1)", 0 )
 GAME( 1993, sailorwa, sailorws, sailorws, sailorws, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Sailor Wars (Japan set 2)", 0 )
 GAME( 1993, sailorwr, sailorws, sailorwr, sailorwr, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Sailor Wars-R [BET] (Japan)", 0 )
 GAME( 1993, wcatcher, 0,        otatidai, wcatcher, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Wakuwaku Catcher (Japan)", 0 )
 GAME( 1993, jituroku, 0,        jituroku, jituroku, nbmj9195, ROT180, "Windom", "Jitsuroku Maru-chi Mahjong (Japan)", 0 )
-GAME( 1994, yosimoto, 0,        yosimoto, yosimoto, nbmj9195, ROT180, "Nichibutsu/Yoshimoto Kougyou", "Mahjong Yoshimoto Gekijou (Japan)", 0 )
+GAME( 1994, yosimoto, 0,        yosimoto, yosimoto, nbmj9195, ROT180, "Nichibutsu / Yoshimoto Kougyou", "Mahjong Yoshimoto Gekijou (Japan)", 0 )
 GAME( 1994, psailor1, 0,        psailor1, psailor1, nbmj9195, ROT0,   "Sphinx", "Bishoujo Janshi Pretty Sailor 18-kin (Japan)", 0 )
 GAME( 1994, psailor2, 0,        psailor2, psailor2, nbmj9195, ROT0,   "Sphinx", "Bishoujo Janshi Pretty Sailor 2 (Japan)", 0 )
 GAME( 1995, otatidai, 0,        otatidai, otatidai, nbmj9195, ROT0,   "Sphinx", "Disco Mahjong Otachidai no Okite (Japan)", 0 )
@@ -3986,10 +3974,10 @@ GAME( 1995, otatidai, 0,        otatidai, otatidai, nbmj9195, ROT0,   "Sphinx", 
 GAME( 1991, ngpgal,   0,        ngpgal,   ngpgal,   nbmj9195, ROT0,   "Nichibutsu", "Nekketsu Grand-Prix Gal (Japan)", 0 )
 GAME( 1991, mjgottsu, 0,        mjgottsu, mjgottsu, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Gottsu ee-kanji (Japan)", 0 )
 GAME( 1991, bakuhatu, mjgottsu, bakuhatu, bakuhatu, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Bakuhatsu Junjouden (Japan)", 0 )
-GAME( 1992, cmehyou,  0,        cmehyou,  cmehyou,  nbmj9195, ROT0,   "Nichibutsu/Kawakusu", "Mahjong Circuit no Mehyou (Japan)", 0 )
+GAME( 1992, cmehyou,  0,        cmehyou,  cmehyou,  nbmj9195, ROT0,   "Nichibutsu / Kawakusu", "Mahjong Circuit no Mehyou (Japan)", 0 )
 GAME( 1992, mjkoiura, 0,        mjkoiura, mjkoiura, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Koi Uranai (Japan set 1)", 0 )
 GAME( 1992, mkoiuraa, mjkoiura, mkoiuraa, mjkoiura, nbmj9195, ROT0,   "Nichibutsu", "Mahjong Koi Uranai (Japan set 2)", 0 )
 
-GAME( 1994, mscoutm,  0,        mscoutm,  mscoutm,  nbmj9195, ROT0,   "Sphinx/AV Japan", "Mahjong Scout Man (Japan)", 0 )
-GAME( 1994, imekura,  0,        imekura,  imekura,  nbmj9195, ROT0,   "Sphinx/AV Japan", "Imekura Mahjong (Japan)", 0 )
-GAME( 1994, mjegolf,  0,        mjegolf,  mjegolf,  nbmj9195, ROT0,   "Fujic/AV Japan", "Mahjong Erotica Golf (Japan)", 0 )
+GAME( 1994, mscoutm,  0,        mscoutm,  mscoutm,  nbmj9195, ROT0,   "Sphinx / AV Japan", "Mahjong Scout Man (Japan)", 0 )
+GAME( 1994, imekura,  0,        imekura,  imekura,  nbmj9195, ROT0,   "Sphinx / AV Japan", "Imekura Mahjong (Japan)", 0 )
+GAME( 1994, mjegolf,  0,        mjegolf,  mjegolf,  nbmj9195, ROT0,   "Fujic / AV Japan", "Mahjong Erotica Golf (Japan)", 0 )

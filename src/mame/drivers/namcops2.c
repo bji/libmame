@@ -24,6 +24,16 @@
 #include "cpu/mips/mips3.h"
 #include "cpu/mips/r3000.h"
 
+
+class namcops2_state : public driver_device
+{
+public:
+	namcops2_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 static VIDEO_START(system246)
 {
 }
@@ -33,7 +43,7 @@ static SCREEN_UPDATE(system246)
 	return 0;
 }
 
-static ADDRESS_MAP_START(ps2_map, ADDRESS_SPACE_PROGRAM, 32)
+static ADDRESS_MAP_START(ps2_map, AS_PROGRAM, 32)
 	AM_RANGE(0x00000000, 0x01ffffff) AM_RAM	// 32 MB RAM in consumer PS2s, do these have more?
 	AM_RANGE(0x1fc00000, 0x1fdfffff) AM_ROM AM_REGION("bios", 0)
 ADDRESS_MAP_END
@@ -47,7 +57,7 @@ static const mips3_config r5000_config =
 	16384				/* data cache size */
 };
 
-static MACHINE_CONFIG_START( system246, driver_device )
+static MACHINE_CONFIG_START( system246, namcops2_state )
 	MCFG_CPU_ADD("maincpu", R5000LE, 294000000)	// actually R5900 @ 294 MHz
 	MCFG_CPU_PROGRAM_MAP(ps2_map)
 	MCFG_CPU_CONFIG(r5000_config)

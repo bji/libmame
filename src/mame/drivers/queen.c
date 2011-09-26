@@ -22,6 +22,16 @@ processor speed is 533MHz <- likely to be a Celeron or a Pentium III class CPU -
 #include "emu.h"
 #include "cpu/i386/i386.h"
 
+
+class queen_state : public driver_device
+{
+public:
+	queen_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 static VIDEO_START(queen)
 {
 
@@ -32,7 +42,7 @@ static SCREEN_UPDATE(queen)
 	return 0;
 }
 
-static ADDRESS_MAP_START( queen_map, ADDRESS_SPACE_PROGRAM, 32 )
+static ADDRESS_MAP_START( queen_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x00000000, 0x0009ffff) AM_RAM
 	AM_RANGE(0x000a0000, 0x000bffff) AM_RAM
 	AM_RANGE(0x000c0000, 0x000fffff) AM_ROM AM_REGION("bios", 0) AM_WRITENOP
@@ -45,7 +55,7 @@ static ADDRESS_MAP_START( queen_map, ADDRESS_SPACE_PROGRAM, 32 )
 	AM_RANGE(0xfffc0000, 0xffffffff) AM_ROM AM_REGION("bios", 0)	/* System BIOS */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START(queen_io, ADDRESS_SPACE_IO, 32)
+static ADDRESS_MAP_START(queen_io, AS_IO, 32)
 	AM_RANGE(0x0000, 0x001f) AM_RAM//AM_DEVREADWRITE8("dma8237_1", dma8237_r, dma8237_w, 0xffffffff)
 	AM_RANGE(0x0020, 0x003f) AM_RAM//AM_DEVREADWRITE8("pic8259_1", pic8259_r, pic8259_w, 0xffffffff)
 	AM_RANGE(0x0040, 0x005f) AM_RAM//AM_DEVREADWRITE8("pit8254", pit8253_r, pit8253_w, 0xffffffff)
@@ -71,7 +81,7 @@ static INPUT_PORTS_START( queen )
 INPUT_PORTS_END
 
 
-static MACHINE_CONFIG_START( queen, driver_device )
+static MACHINE_CONFIG_START( queen, queen_state )
 	MCFG_CPU_ADD("maincpu", PENTIUM, 533000000) // Celeron or Pentium 3, 533 Mhz
 	MCFG_CPU_PROGRAM_MAP(queen_map)
 	MCFG_CPU_IO_MAP(queen_io)

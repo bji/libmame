@@ -4,21 +4,34 @@ public:
 	cischeat_state(running_machine &machine, const driver_device_config_base &config)
 		: driver_device(machine, config) { }
 
-	UINT16 *rom_1;
-	UINT16 *rom_2;
-	UINT16 *rom_3;
-	UINT16 *sharedram1;
-	UINT16 *sharedram2;
-	int prev;
-	int armold;
-	UINT16 scudhamm_motor_command;
-	UINT16 *roadram[2];
-	UINT16 *f1gpstr2_ioready;
-	int ip_select;
-	int shift_ret;
-	UINT8 drawmode_table[16];
-	int debugsprites;
-	int show_unknown;
+	UINT16 *m_scrollram[3];
+	UINT16 *m_objectram;
+	UINT16 *m_vregs;
+	UINT16 *m_ram;
+	tilemap_t *m_tmap[3];
+	tilemap_t *m_tilemap[3][2][4];
+	int m_scrollx[3];
+	int m_scrolly[3];
+	int m_active_layers;
+	int m_bits_per_color_code;
+	int m_scroll_flag[3];
+
+	UINT16 *m_rom_1;
+	UINT16 *m_rom_2;
+	UINT16 *m_rom_3;
+	UINT16 *m_sharedram1;
+	UINT16 *m_sharedram2;
+	int m_prev;
+	int m_armold;
+	UINT16 m_scudhamm_motor_command;
+	UINT16 *m_roadram[2];
+	UINT16 *m_f1gpstr2_ioready;
+	int m_ip_select;
+	int m_shift_ret;
+	UINT8 m_drawmode_table[16];
+	int m_debugsprites;
+	int m_show_unknown;
+	UINT16 *m_spriteram;
 };
 
 
@@ -30,6 +43,10 @@ READ16_HANDLER( scudhamm_analog_r );
 
 
 /*----------- defined in video/cischeat.c -----------*/
+
+WRITE16_HANDLER( cischeat_scrollram_0_w );
+WRITE16_HANDLER( cischeat_scrollram_1_w );
+WRITE16_HANDLER( cischeat_scrollram_2_w );
 
 READ16_HANDLER( bigrun_vregs_r );
 READ16_HANDLER( cischeat_vregs_r );

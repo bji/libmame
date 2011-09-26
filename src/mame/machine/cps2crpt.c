@@ -630,11 +630,11 @@ static void optimise_sboxes(struct optimised_sbox* out, const struct sbox* in)
 
 
 
-static void cps2_decrypt(running_machine *machine, const UINT32 *master_key, UINT32 upper_limit)
+static void cps2_decrypt(running_machine &machine, const UINT32 *master_key, UINT32 upper_limit)
 {
-	address_space *space = cputag_get_address_space(machine, "maincpu", ADDRESS_SPACE_PROGRAM);
-	UINT16 *rom = (UINT16 *)machine->region("maincpu")->base();
-	int length = machine->region("maincpu")->bytes();
+	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
+	UINT16 *rom = (UINT16 *)machine.region("maincpu")->base();
+	int length = machine.region("maincpu")->bytes();
 	UINT16 *dec = auto_alloc_array(machine, UINT16, length/2);
 	int i;
 	UINT32 key1[4];
@@ -721,7 +721,7 @@ static void cps2_decrypt(running_machine *machine, const UINT32 *master_key, UIN
 	}
 
 	space->set_decrypted_region(0x000000, length - 1, dec);
-	m68k_set_encrypted_opcode_range(machine->device("maincpu"), 0, length);
+	m68k_set_encrypted_opcode_range(machine.device("maincpu"), 0, length);
 }
 
 
@@ -947,6 +947,7 @@ static const struct game_keys keys_table[] =
 	{ "sfa3u",    { 0xe7bbf0e5,0x67943248 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
 	{ "sfa3ur1",  { 0xe7bbf0e5,0x67943248 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
 	{ "sfa3h",    { 0x8422df8c,0x7b17a361 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
+	{ "sfa3hr1",  { 0x8422df8c,0x7b17a361 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
 	{ "sfa3b",    { 0xd421c0b2,0x8116d296 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
 	{ "sfz3j",    { 0x7d49f803,0x0cbe2d79 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
 	{ "sfz3jr1",  { 0x7d49f803,0x0cbe2d79 }, 0x100000 },	// 0C80 1C62 F5A8  cmpi.l  #$1C62F5A8,D0
@@ -988,7 +989,7 @@ static const struct game_keys keys_table[] =
 
 DRIVER_INIT( cps2crpt )
 {
-	const char *gamename = machine->gamedrv->name;
+	const char *gamename = machine.system().name;
 	const struct game_keys *k = &keys_table[0];
 
 	while (k->name)

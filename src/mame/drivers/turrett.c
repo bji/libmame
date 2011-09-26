@@ -61,6 +61,15 @@ Windows showed a 5.94 gig partion empty and a 12.74 unallocated partition
 #include "cpu/mips/r3000.h"
 
 
+class turrett_state : public driver_device
+{
+public:
+	turrett_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+};
+
+
 #define R3041_CLOCK		25000000
 
 
@@ -75,7 +84,7 @@ static SCREEN_UPDATE(turrett)
 }
 
 
-static ADDRESS_MAP_START( cpu_map, ADDRESS_SPACE_PROGRAM, 32 )
+static ADDRESS_MAP_START( cpu_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x00000000, 0x0007ffff) AM_RAM
 	AM_RANGE(0x1fc00000, 0x1fdfffff) AM_ROM AM_REGION("maincpu", 0)
 	AM_RANGE(0x02000010, 0x02000013) AM_RAM
@@ -103,7 +112,7 @@ static const r3000_cpu_core r3000_config =
 };
 
 
-static MACHINE_CONFIG_START( turrett, driver_device )
+static MACHINE_CONFIG_START( turrett, turrett_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", R3041BE, R3041_CLOCK)
 	MCFG_CPU_PROGRAM_MAP(cpu_map)

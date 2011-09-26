@@ -17,15 +17,15 @@ public:
 		: driver_device(machine, config) { }
 };
 
-static ADDRESS_MAP_START( gts80a_map, ADDRESS_SPACE_PROGRAM, 8 )
-	ADDRESS_MAP_UNMAP_HIGH
+static ADDRESS_MAP_START( gts80a_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x1000, 0x17ff) AM_MIRROR(0xc000) AM_ROM	/* PROM */
 	AM_RANGE(0x2000, 0x2fff) AM_MIRROR(0xc000) AM_ROM	/* u2 ROM */
 	AM_RANGE(0x3000, 0x3fff) AM_MIRROR(0xc000) AM_ROM	/* u3 ROM */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( caveman_map, ADDRESS_SPACE_PROGRAM, 8 )
-	ADDRESS_MAP_UNMAP_HIGH
+static ADDRESS_MAP_START( caveman_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x1000, 0x17ff) AM_MIRROR(0xc000) AM_ROM	/* PROM */
 	AM_RANGE(0x2000, 0x2fff) AM_MIRROR(0xc000) AM_ROM	/* u2 ROM */
 	AM_RANGE(0x3000, 0x3fff) AM_MIRROR(0xc000) AM_ROM	/* u3 ROM */
@@ -73,14 +73,14 @@ static MACHINE_CONFIG_START( gts80a_ss, gts80a_state )
 	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
-static ADDRESS_MAP_START( video_map, ADDRESS_SPACE_PROGRAM, 16 )
-	ADDRESS_MAP_UNMAP_HIGH
+static ADDRESS_MAP_START( video_map, AS_PROGRAM, 16 )
+	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x08000, 0x0ffff) AM_ROM
 	AM_RANGE(0xf8000, 0xfffff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( video_io_map, ADDRESS_SPACE_IO, 16 )
-	ADDRESS_MAP_UNMAP_HIGH
+static ADDRESS_MAP_START( video_io_map, AS_IO, 16 )
+	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static MACHINE_CONFIG_START( caveman, gts80a_state )
@@ -663,4 +663,4 @@ ROM_END
 
 /* custom (+video) */
 GAME(1981,	caveman,	0,			caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo)",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	cavemana,	caveman,	caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo, Set 2)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1981,	cavemana,	caveman,	caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo, set 2)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

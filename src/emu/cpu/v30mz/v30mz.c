@@ -380,6 +380,7 @@ OP( 0x60, i_pusha  ) {
 }
 OP( 0x61, i_popa  ) {
     unsigned tmp;
+    (void) tmp;
 	POP(cpustate->regs.w[IY]);
 	POP(cpustate->regs.w[IX]);
 	POP(cpustate->regs.w[BP]);
@@ -753,8 +754,8 @@ OP( 0xd3, i_rotshft_wcl ) {
 	}
 }
 
-OP( 0xd4, i_aam    ) { UINT32 mult=FETCH; mult=0; cpustate->regs.b[AH] = cpustate->regs.b[AL] / 10; cpustate->regs.b[AL] %= 10; SetSZPF_Word(cpustate->regs.w[AW]); CLK(17); }
-OP( 0xd5, i_aad    ) { UINT32 mult=FETCH; mult=0; cpustate->regs.b[AL] = cpustate->regs.b[AH] * 10 + cpustate->regs.b[AL]; cpustate->regs.b[AH] = 0; SetSZPF_Byte(cpustate->regs.b[AL]); CLK(5); }
+OP( 0xd4, i_aam    ) { UINT32 mult=FETCH; mult=0; (void) mult; cpustate->regs.b[AH] = cpustate->regs.b[AL] / 10; cpustate->regs.b[AL] %= 10; SetSZPF_Word(cpustate->regs.w[AW]); CLK(17); }
+OP( 0xd5, i_aad    ) { UINT32 mult=FETCH; mult=0; (void) mult; cpustate->regs.b[AL] = cpustate->regs.b[AH] * 10 + cpustate->regs.b[AL]; cpustate->regs.b[AH] = 0; SetSZPF_Byte(cpustate->regs.b[AL]); CLK(5); }
 OP( 0xd6, i_setalc ) { cpustate->regs.b[AL] = (CF)?0xff:0x00; CLK(3); logerror("%06x: Undefined opcode (SETALC)\n",PC(cpustate)); }
 OP( 0xd7, i_trans  ) { UINT32 dest = (cpustate->regs.w[BW]+cpustate->regs.b[AL])&0xffff; cpustate->regs.b[AL] = GetMemB(DS, dest); CLK(5); }
 OP( 0xd8, i_fpo    ) { GetModRM; CLK(1);	logerror("%06x: Unimplemented floating point control %04x\n",PC(cpustate),ModRM); }
@@ -1069,15 +1070,15 @@ CPU_GET_INFO( v30mz )
 		case CPUINFO_INT_MIN_CYCLES:					info->i = 1;							break;
 		case CPUINFO_INT_MAX_CYCLES:					info->i = 80;							break;
 
-		case DEVINFO_INT_DATABUS_WIDTH + ADDRESS_SPACE_PROGRAM:	info->i = 8;					break;
-		case DEVINFO_INT_ADDRBUS_WIDTH + ADDRESS_SPACE_PROGRAM: info->i = 20;					break;
-		case DEVINFO_INT_ADDRBUS_SHIFT + ADDRESS_SPACE_PROGRAM: info->i = 0;					break;
-		case DEVINFO_INT_DATABUS_WIDTH + ADDRESS_SPACE_DATA:	info->i = 0;					break;
-		case DEVINFO_INT_ADDRBUS_WIDTH + ADDRESS_SPACE_DATA:	info->i = 0;					break;
-		case DEVINFO_INT_ADDRBUS_SHIFT + ADDRESS_SPACE_DATA:	info->i = 0;					break;
-		case DEVINFO_INT_DATABUS_WIDTH + ADDRESS_SPACE_IO:		info->i = 8;					break;
-		case DEVINFO_INT_ADDRBUS_WIDTH + ADDRESS_SPACE_IO:		info->i = 16;					break;
-		case DEVINFO_INT_ADDRBUS_SHIFT + ADDRESS_SPACE_IO:		info->i = 0;					break;
+		case DEVINFO_INT_DATABUS_WIDTH + AS_PROGRAM:	info->i = 8;					break;
+		case DEVINFO_INT_ADDRBUS_WIDTH + AS_PROGRAM: info->i = 20;					break;
+		case DEVINFO_INT_ADDRBUS_SHIFT + AS_PROGRAM: info->i = 0;					break;
+		case DEVINFO_INT_DATABUS_WIDTH + AS_DATA:	info->i = 0;					break;
+		case DEVINFO_INT_ADDRBUS_WIDTH + AS_DATA:	info->i = 0;					break;
+		case DEVINFO_INT_ADDRBUS_SHIFT + AS_DATA:	info->i = 0;					break;
+		case DEVINFO_INT_DATABUS_WIDTH + AS_IO:		info->i = 8;					break;
+		case DEVINFO_INT_ADDRBUS_WIDTH + AS_IO:		info->i = 16;					break;
+		case DEVINFO_INT_ADDRBUS_SHIFT + AS_IO:		info->i = 0;					break;
 
 		case CPUINFO_INT_INPUT_STATE + 0:				info->i = (cpustate->pending_irq & INT_IRQ) ? ASSERT_LINE : CLEAR_LINE; break;
 		case CPUINFO_INT_INPUT_STATE + INPUT_LINE_NMI:	info->i = cpustate->nmi_state;					break;

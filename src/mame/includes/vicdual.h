@@ -22,12 +22,23 @@
 #define VICDUAL_VSEND						(0x0f0)
 
 
+class vicdual_state : public driver_device
+{
+public:
+	vicdual_state(running_machine &machine, const driver_device_config_base &config)
+		: driver_device(machine, config) { }
+
+	UINT32 m_coin_status;
+	UINT8 *m_videoram;
+	UINT8 *m_characterram;
+	UINT8 m_samurai_protection_data;
+	UINT8 m_palette_bank;
+};
+
+
 /*----------- defined in drivers/vicdual.c -----------*/
 
-UINT8 vicdual_videoram_r(offs_t offset);
-UINT8 vicdual_characterram_r(offs_t offset);
-
-int vicdual_is_cabinet_color(running_machine *machine);
+int vicdual_is_cabinet_color(running_machine &machine);
 
 
 /*----------- defined in video/vicdual.c -----------*/

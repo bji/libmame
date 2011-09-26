@@ -4,7 +4,8 @@ public:
 	ampoker2_state(running_machine &machine, const driver_device_config_base &config)
 		: driver_device(machine, config) { }
 
-	UINT8 *videoram;
+	UINT8 *m_videoram;
+	tilemap_t *m_bg_tilemap;
 };
 
 
