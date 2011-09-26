@@ -15,8 +15,9 @@ OBJDIRS += $(OBJ)/libmame
 # These are the object files and libraries whose contents will be combined
 # together to make the libmame library
 LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
-              $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(UTILOBJS) \
-              $(EXPATOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
+              $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(FORMATSOBJS) \
+              $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) $(ZLIBOBJS) \
+              $(SOFTFLOATOBJS) $(DRIVLISTOBJ) \
               $(OBJ)/libmame/hashtable.o \
               $(OBJ)/libmame/libmame_idv.o \
               $(OBJ)/libmame/libmame_games.o \

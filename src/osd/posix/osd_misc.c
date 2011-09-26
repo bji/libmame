@@ -59,6 +59,12 @@ void *osd_malloc(size_t size)
 }
 
 
+void *osd_malloc_array(size_t size)
+{
+    return malloc(size);
+}
+
+
 void osd_free(void *ptr)
 {
     return free(ptr);

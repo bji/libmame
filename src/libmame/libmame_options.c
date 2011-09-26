@@ -59,7 +59,7 @@ typedef struct option_map_entry
 
 static const option_map_entry g_option_map[] =
 {
-    OPTION_MAP_ENTRY(string, ROMPATH, rom_path),
+    OPTION_MAP_ENTRY(string, MEDIAPATH, rom_path),
     OPTION_MAP_ENTRY(string, SAMPLEPATH, sample_path),
     OPTION_MAP_ENTRY(string, ARTPATH, art_path),
     OPTION_MAP_ENTRY(string, CTRLRPATH, ctrl_path),
@@ -141,33 +141,35 @@ static int g_option_map_count =
  * Exported functions
  ************************************************************************** **/
 
-core_options *get_mame_options(const LibMame_RunGameOptions *options,
-                               const char *gamename)
+void get_mame_options(const LibMame_RunGameOptions *options,
+                      const char *gamename, emu_options &mame_options)
 {
-    core_options *mame_options = mame_options_init(NULL);
+    astring errorstring;
 
     for (int i = 0; i < g_option_map_count; i++) {
         const option_map_entry *entry = &(g_option_map[i]);
+        // xxx need to handle mame_options errors
         switch (entry->type) {
         case option_map_entry_type_boolean:
-            options_set_bool(mame_options, entry->name,
-                             *((bool *) (((char *) options) + entry->offset)),
-                             OPTION_PRIORITY_MAXIMUM);
+            (void) mame_options.set_value
+                (entry->name, 
+                 (int) *((bool *) (((char *) options) + entry->offset)),
+                 OPTION_PRIORITY_MAXIMUM, errorstring);
             break;
         case option_map_entry_type_integer:
-            options_set_int(mame_options, entry->name,
-                            *((int *) (((char *) options) + entry->offset)),
-                            OPTION_PRIORITY_MAXIMUM);
+            (void) mame_options.set_value
+                (entry->name, *((int *) (((char *) options) + entry->offset)),
+                 OPTION_PRIORITY_MAXIMUM, errorstring);
             break;
         case option_map_entry_type_float:
-            options_set_float(mame_options, entry->name,
-                            *((float *) (((char *) options) + entry->offset)),
-                            OPTION_PRIORITY_MAXIMUM);
+            (void) mame_options.set_value
+                (entry->name, *((float *) (((char *) options) + entry->offset)),
+                 OPTION_PRIORITY_MAXIMUM, errorstring);
             break;
         case option_map_entry_type_string:
-            options_set_string(mame_options, entry->name,
-                               (((char *) options) + entry->offset),
-                               OPTION_PRIORITY_MAXIMUM);
+            (void) mame_options.set_value
+                (entry->name, (((char *) options) + entry->offset),
+                 OPTION_PRIORITY_MAXIMUM, errorstring);
             break;
         }
     }
@@ -176,33 +178,31 @@ core_options *get_mame_options(const LibMame_RunGameOptions *options,
        MAME configuration files can affect the behavior of games in ways that
        don't work with libmame, so they can't be used.  And having config file
        functionality in MAME core seems kind of wrong anyway ... */
-    options_set_bool(mame_options, "readconfig", false, 
-                     OPTION_PRIORITY_MAXIMUM);
+    (void) mame_options.set_value(OPTION_READCONFIG, (int) false, 
+                                  OPTION_PRIORITY_MAXIMUM, errorstring);
 
     /* We always enable mice and lightguns */
-    options_set_bool(mame_options, "mouse", true, OPTION_PRIORITY_MAXIMUM);
-    options_set_bool(mame_options, "lightgun", true, OPTION_PRIORITY_MAXIMUM);
+    (void) mame_options.set_value(OPTION_MOUSE, (int) true, 
+                                  OPTION_PRIORITY_MAXIMUM, errorstring);
+    (void) mame_options.set_value(OPTION_LIGHTGUN, (int) true,
+                                  OPTION_PRIORITY_MAXIMUM, errorstring);
 
     /* We always enable multiple input since we need it */
-    options_set_bool(mame_options, "multikeyboard", true,
-                     OPTION_PRIORITY_MAXIMUM);
-    options_set_bool(mame_options, "multimouse", true,
-                     OPTION_PRIORITY_MAXIMUM);
+    (void) mame_options.set_value(OPTION_MULTIKEYBOARD, (int) true,
+                                  OPTION_PRIORITY_MAXIMUM, errorstring);
+    (void) mame_options.set_value(OPTION_MULTIMOUSE, (int) true,
+                                  OPTION_PRIORITY_MAXIMUM, errorstring);
 
     /* Finally, set the game name in there */
-    options_set_string(mame_options, OPTION_GAMENAME, gamename, 
-                       OPTION_PRIORITY_MAXIMUM);
-
-    return mame_options;
+    (void) mame_options.set_value(OPTION_SYSTEMNAME, gamename, 
+                                  OPTION_PRIORITY_MAXIMUM, errorstring);
 }
 
 
 void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options)
 {
     /* Create an options structure just to get the defaults out of it */
-	core_options *mame_defaults = options_create(NULL);
-    /* Populate it with MAME options */
-	options_add_entries(mame_defaults, mame_core_options);
+	emu_options mame_defaults;
 
     /* Zero out the options, just to have a nice fresh set */
     memset(options, 0, sizeof(LibMame_RunGameOptions));
@@ -212,19 +212,18 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options)
         switch (entry->type) {
         case option_map_entry_type_boolean:
             *((bool *) (((char *) options) + entry->offset)) =
-                options_get_bool(mame_defaults, entry->name);
+                mame_defaults.bool_value(entry->name);
             break;
         case option_map_entry_type_integer:
             *((int *) (((char *) options) + entry->offset)) =
-                options_get_int(mame_defaults, entry->name);
+                mame_defaults.int_value(entry->name);
             break;
         case option_map_entry_type_float:
             *((float *) (((char *) options) + entry->offset)) =
-                options_get_float(mame_defaults, entry->name);
+                mame_defaults.float_value(entry->name);
             break;
         case option_map_entry_type_string:
-            const char *mame_default = options_get_string
-                (mame_defaults, entry->name);
+            const char *mame_default = mame_defaults.value(entry->name);
             char *option_value = ((char *) options) + entry->offset;
             if (mame_default) {
                 strncpy(option_value, mame_default, entry->width);
@@ -236,7 +235,4 @@ void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options)
             break;
         }
     }
-
-    /* Don't forget to free the defaults options that are no longer needed! */
-    options_free(mame_defaults);
 }

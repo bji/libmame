@@ -9,6 +9,7 @@
  ************************************************************************** **/
 
 #include "emu.h"
+#include "emuopts.h"
 #include "libmame.h"
 #include "options.h"
 #include "osdcore.h"
@@ -26,8 +27,9 @@
 /**
  * These are exported by other source files within libmame itself
  **/
-extern core_options *get_mame_options(const LibMame_RunGameOptions *options,
-                                      const char *gamename);
+extern void get_mame_options(const LibMame_RunGameOptions *options,
+                             const char *gamename,
+                             emu_options &mame_options);
 
 
 /** **************************************************************************
@@ -71,7 +73,7 @@ static void osd_update_audio_stream(running_machine *machine,
                                     const INT16 *buffer,
                                     int samples_this_frame);
 static void osd_set_mastervolume(int attenuation);
-static void osd_customize_input_type_list(input_type_desc *typelist);
+static void osd_customize_input_type_list(simple_list<input_type_entry> &typelist);
 
 
 /** **************************************************************************
@@ -114,7 +116,7 @@ public:
         return osd_set_mastervolume(attenuation);
     }
 
-	virtual void customize_input_type_list(input_type_desc *typelist)
+	virtual void customize_input_type_list(simple_list<input_type_entry> &typelist)
     {
         return osd_customize_input_type_list(typelist);
     }
@@ -133,6 +135,7 @@ public:
  **/
 typedef struct libmame_input_descriptor
 {
+    int ipt_port;
     libmame_input_type type;
     int number;
     /* This is the input item id will should be used for this input type,
@@ -215,21 +218,22 @@ typedef struct LibMame_RunGame_State
 #define CBDATA_IPT_MASK                 0xFFF0
 #define CBDATA_PLAYER(d)                (((long) d) & CBDATA_PLAYER_MASK)
 #define CBDATA_IPT(d)                   ((((long) d) & CBDATA_IPT_MASK) >> 8)
-#define CBDATA_MAKE(player, ipt)        (((player) & CBDATA_PLAYER_MASK) | \
-                                         ((ipt << 8) & CBDATA_IPT_MASK))
+#define CBDATA_MAKE(player, ipt)        ((void *) (uintptr_t)                \
+                                         (((player) & CBDATA_PLAYER_MASK) |  \
+                                          ((ipt << 8) & CBDATA_IPT_MASK)))
 
 /* These macros make the following table definition more conscise */
 #define INVALID_INPUT \
-    { libmame_input_type_invalid, 0, ITEM_ID_INVALID }
+    libmame_input_type_invalid, 0, ITEM_ID_INVALID
 #define BUTTON_INPUT(button_type, button_name)                  \
-    { libmame_input_type_##button_type##_button,                \
+      libmame_input_type_##button_type##_button,                \
       LibMame_##button_type##ButtonType_##button_name,          \
-      ITEM_ID_INVALID }
+      ITEM_ID_INVALID
 #define JOYSTICK_INPUT(joystick_type, direction)        \
-    { libmame_input_type_##joystick_type##_joystick,    \
-      direction, ITEM_ID_INVALID }
+      libmame_input_type_##joystick_type##_joystick,    \
+      direction, ITEM_ID_INVALID
 #define ANALOG_INPUT(input_type, input_item_id) \
-    { libmame_input_type_##input_type, 0, input_item_id }
+    libmame_input_type_##input_type, 0, input_item_id
 
 
 /** **************************************************************************
@@ -239,220 +243,217 @@ typedef struct LibMame_RunGame_State
 /* This maps each MAME IPT_ type to a libmame_input descriptor. */
 static libmame_input_descriptor g_input_descriptors[] =
 {
-	INVALID_INPUT, /* IPT_INVALID */
-	INVALID_INPUT, /* IPT_UNUSED */
-	INVALID_INPUT, /* IPT_END */
-	INVALID_INPUT, /* IPT_UNKNOWN */
-	INVALID_INPUT, /* IPT_PORT */
-	INVALID_INPUT, /* IPT_DIPSWITCH */
-	INVALID_INPUT, /* IPT_VBLANK */
-	INVALID_INPUT, /* IPT_CONFIG */
-	INVALID_INPUT, /* IPT_CATEGORY */
-    BUTTON_INPUT(Shared, Start1), /* IPT_START1 */
-	BUTTON_INPUT(Shared, Start2), /* IPT_START2 */
-	BUTTON_INPUT(Shared, Start3), /* IPT_START3 */
-	BUTTON_INPUT(Shared, Start4), /* IPT_START4 */
-	BUTTON_INPUT(Shared, Start5), /* IPT_START5 */
-	BUTTON_INPUT(Shared, Start6), /* IPT_START6 */
-	BUTTON_INPUT(Shared, Start7), /* IPT_START7 */
-	BUTTON_INPUT(Shared, Start8), /* IPT_START8 */
-	BUTTON_INPUT(Shared, Coin1), /* IPT_COIN1 */
-	BUTTON_INPUT(Shared, Coin2), /* IPT_COIN2 */
-	BUTTON_INPUT(Shared, Coin3), /* IPT_COIN3 */
-	BUTTON_INPUT(Shared, Coin4), /* IPT_COIN4 */
-	BUTTON_INPUT(Shared, Coin5), /* IPT_COIN5 */
-	BUTTON_INPUT(Shared, Coin6), /* IPT_COIN6 */
-	BUTTON_INPUT(Shared, Coin7), /* IPT_COIN7 */
-	BUTTON_INPUT(Shared, Coin8), /* IPT_COIN8 */
-    INVALID_INPUT, /* IPT_COIN9 */
-    INVALID_INPUT, /* IPT_COIN10 */
-    INVALID_INPUT, /* IPT_COIN11 */
-    INVALID_INPUT, /* IPT_COIN12 */
-	BUTTON_INPUT(Shared, Bill1), /* IPT_BILL1 */
-	BUTTON_INPUT(Shared, Service1), /* IPT_SERVICE1 */
-	BUTTON_INPUT(Shared, Service2), /* IPT_SERVICE2 */
-	BUTTON_INPUT(Shared, Service3), /* IPT_SERVICE3 */
-	BUTTON_INPUT(Shared, Service4), /* IPT_SERVICE4 */
-    INVALID_INPUT, /* IPT_TILT1 */
-    INVALID_INPUT, /* IPT_TILT2 */
-    INVALID_INPUT, /* IPT_TILT3 */
-    INVALID_INPUT, /* IPT_TILT4 */
-	BUTTON_INPUT(Shared, Service), /* IPT_SERVICE */
-	BUTTON_INPUT(Shared, Tilt), /* IPT_TILT */
-	BUTTON_INPUT(Shared, Interlock), /* IPT_INTERLOCK */
-	BUTTON_INPUT(Shared, Volume_Up), /* IPT_VOLUME_UP */
-	BUTTON_INPUT(Shared, Volume_Down), /* IPT_VOLUME_DOWN */
-	INVALID_INPUT, /* IPT_START */
-	INVALID_INPUT, /* IPT_SELECT */
-    INVALID_INPUT, /* IPT_KEYPAD */
-	INVALID_INPUT, /* IPT_KEYBOARD */
-    /* IPT_JOYSTICK_UP */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up),
-    /* IPT_JOYSTICK_DOWN */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down),
-    /* IPT_JOYSTICK_LEFT */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left),
-    /* IPT_JOYSTICK_RIGHT */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right),
-    /* IPT_JOYSTICKRIGHT_UP */
-	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Up),
-    /* IPT_JOYSTICKRIGHT_DOWN */
-	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Down),
-    /* IPT_JOYSTICKRIGHT_LEFT */
-	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Left),
-    /* IPT_JOYSTICKRIGHT_RIGHT */
-	JOYSTICK_INPUT(right, LibMame_JoystickDirection_Right),
-    /* IPT_JOYSTICKLEFT_UP */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up),
-    /* IPT_JOYSTICKLEFT_DOWN */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down),
-    /* IPT_JOYSTICKLEFT_LEFT */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left),
-    /* IPT_JOYSTICKLEFT_RIGHT */
-	JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right),
-	BUTTON_INPUT(Normal, 1), /* IPT_BUTTON1 */
-	BUTTON_INPUT(Normal, 2), /* IPT_BUTTON2 */
-	BUTTON_INPUT(Normal, 3), /* IPT_BUTTON3 */
-	BUTTON_INPUT(Normal, 4), /* IPT_BUTTON4 */
-	BUTTON_INPUT(Normal, 5), /* IPT_BUTTON5 */
-	BUTTON_INPUT(Normal, 6), /* IPT_BUTTON6 */
-	BUTTON_INPUT(Normal, 7), /* IPT_BUTTON7 */
-	BUTTON_INPUT(Normal, 8), /* IPT_BUTTON8 */
-	BUTTON_INPUT(Normal, 9), /* IPT_BUTTON9 */
-	BUTTON_INPUT(Normal, 10), /* IPT_BUTTON10 */
-	BUTTON_INPUT(Normal, 11), /* IPT_BUTTON11 */
-	BUTTON_INPUT(Normal, 12), /* IPT_BUTTON12 */
-	BUTTON_INPUT(Normal, 13), /* IPT_BUTTON13 */
-	BUTTON_INPUT(Normal, 14), /* IPT_BUTTON14 */
-	BUTTON_INPUT(Normal, 15), /* IPT_BUTTON15 */
-	BUTTON_INPUT(Normal, 16), /* IPT_BUTTON16 */
-	BUTTON_INPUT(Mahjong, A), /* IPT_MAHJONG_A */
-	BUTTON_INPUT(Mahjong, B), /* IPT_MAHJONG_B */
-	BUTTON_INPUT(Mahjong, C), /* IPT_MAHJONG_C */
-	BUTTON_INPUT(Mahjong, D), /* IPT_MAHJONG_D */
-	BUTTON_INPUT(Mahjong, E), /* IPT_MAHJONG_E */
-	BUTTON_INPUT(Mahjong, F), /* IPT_MAHJONG_F */
-	BUTTON_INPUT(Mahjong, G), /* IPT_MAHJONG_G */
-	BUTTON_INPUT(Mahjong, H), /* IPT_MAHJONG_H */
-	BUTTON_INPUT(Mahjong, I), /* IPT_MAHJONG_I */
-	BUTTON_INPUT(Mahjong, J), /* IPT_MAHJONG_J */
-	BUTTON_INPUT(Mahjong, K), /* IPT_MAHJONG_K */
-	BUTTON_INPUT(Mahjong, L), /* IPT_MAHJONG_L */
-	BUTTON_INPUT(Mahjong, M), /* IPT_MAHJONG_M */
-	BUTTON_INPUT(Mahjong, N), /* IPT_MAHJONG_N */
-	BUTTON_INPUT(Mahjong, O), /* IPT_MAHJONG_O */
-	BUTTON_INPUT(Mahjong, P), /* IPT_MAHJONG_P */
-	BUTTON_INPUT(Mahjong, Q), /* IPT_MAHJONG_Q */
-	BUTTON_INPUT(Mahjong, Kan), /* IPT_MAHJONG_KAN */
-	BUTTON_INPUT(Mahjong, Pon), /* IPT_MAHJONG_PON */
-	BUTTON_INPUT(Mahjong, Chi), /* IPT_MAHJONG_CHI */
-	BUTTON_INPUT(Mahjong, Reach), /* IPT_MAHJONG_REACH */
-	BUTTON_INPUT(Mahjong, Ron), /* IPT_MAHJONG_RON */
-	BUTTON_INPUT(Mahjong, Bet), /* IPT_MAHJONG_BET */
-	BUTTON_INPUT(Mahjong, Last_Chance), /* IPT_MAHJONG_LAST_CHANCE */
-	BUTTON_INPUT(Mahjong, Score), /* IPT_MAHJONG_SCORE */
-	BUTTON_INPUT(Mahjong, Double_Up), /* IPT_MAHJONG_DOUBLE_UP */
-	BUTTON_INPUT(Mahjong, Flip_Flop), /* IPT_MAHJONG_FLIP_FLOP */
-	BUTTON_INPUT(Mahjong, Big), /* IPT_MAHJONG_BIG */
-	BUTTON_INPUT(Mahjong, Small), /* IPT_MAHJONG_SMALL */
-	BUTTON_INPUT(Hanafuda, A), /* IPT_HANAFUDA_A */
-	BUTTON_INPUT(Hanafuda, B), /* IPT_HANAFUDA_B */
-	BUTTON_INPUT(Hanafuda, C), /* IPT_HANAFUDA_C */
-	BUTTON_INPUT(Hanafuda, D), /* IPT_HANAFUDA_D */
-	BUTTON_INPUT(Hanafuda, E), /* IPT_HANAFUDA_E */
-	BUTTON_INPUT(Hanafuda, F), /* IPT_HANAFUDA_F */
-	BUTTON_INPUT(Hanafuda, G), /* IPT_HANAFUDA_G */
-	BUTTON_INPUT(Hanafuda, H), /* IPT_HANAFUDA_H */
-	BUTTON_INPUT(Hanafuda, Yes), /* IPT_HANAFUDA_YES */
-	BUTTON_INPUT(Hanafuda, No), /* IPT_HANAFUDA_NO */
-	BUTTON_INPUT(Gambling, High), /* IPT_GAMBLE_HIGH */
-	BUTTON_INPUT(Gambling, Low), /* IPT_GAMBLE_LOW */
-	BUTTON_INPUT(Gambling, Half), /* IPT_GAMBLE_HALF */
-	BUTTON_INPUT(Gambling, Deal), /* IPT_GAMBLE_DEAL */
-	BUTTON_INPUT(Gambling, D_Up), /* IPT_GAMBLE_D_UP */
-	BUTTON_INPUT(Gambling, Take), /* IPT_GAMBLE_TAKE */
-	BUTTON_INPUT(Gambling, Stand), /* IPT_GAMBLE_STAND */
-	BUTTON_INPUT(Gambling, Bet), /* IPT_GAMBLE_BET */
-	BUTTON_INPUT(Gambling, Keyin), /* IPT_GAMBLE_KEYIN */
-	BUTTON_INPUT(Gambling, Keyout), /* IPT_GAMBLE_KEYOUT */
-	BUTTON_INPUT(Gambling, Payout), /* IPT_GAMBLE_PAYOUT */
-	BUTTON_INPUT(Gambling, Door), /* IPT_GAMBLE_DOOR */
-	BUTTON_INPUT(Gambling, Service), /* IPT_GAMBLE_SERVICE */
-	BUTTON_INPUT(Gambling, Book), /* IPT_GAMBLE_BOOK */
-	BUTTON_INPUT(Gambling, Hold1), /* IPT_POKER_HOLD1 */
-	BUTTON_INPUT(Gambling, Hold2), /* IPT_POKER_HOLD2 */
-	BUTTON_INPUT(Gambling, Hold3), /* IPT_POKER_HOLD3 */
-	BUTTON_INPUT(Gambling, Hold4), /* IPT_POKER_HOLD4 */
-	BUTTON_INPUT(Gambling, Hold5), /* IPT_POKER_HOLD5 */
-	BUTTON_INPUT(Gambling, Cancel), /* IPT_POKER_CANCEL */
-	BUTTON_INPUT(Gambling, Bet), /* IPT_POKER_BET */
-	BUTTON_INPUT(Gambling, Stop1), /* IPT_SLOT_STOP1 */
-	BUTTON_INPUT(Gambling, Stop2), /* IPT_SLOT_STOP2 */
-	BUTTON_INPUT(Gambling, Stop3), /* IPT_SLOT_STOP3 */
-	BUTTON_INPUT(Gambling, Stop4), /* IPT_SLOT_STOP4 */
-	BUTTON_INPUT(Gambling, Stop_All), /* IPT_SLOT_STOP_ALL */
-	ANALOG_INPUT(paddle, ITEM_ID_XAXIS), /* IPT_PADDLE */
-	ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_PADDLE_V */
-  ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS), /* IPT_AD_STICK_X */
-	ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS), /* IPT_AD_STICK_Y */
-    // XXX TODO - figure out how to handle IPT_AD_STICK_Z
-	// ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_AD_STICK_Z */
-    INVALID_INPUT, /* IPT_AD_STICK_Z */
-	ANALOG_INPUT(lightgun_horizontal, ITEM_ID_XAXIS), /* IPT_LIGHTGUN_X */
-	ANALOG_INPUT(lightgun_vertical, ITEM_ID_YAXIS), /* IPT_LIGHTGUN_Y */
-	ANALOG_INPUT(pedal, ITEM_ID_XAXIS), /* IPT_PEDAL */
-	ANALOG_INPUT(pedal2, ITEM_ID_YAXIS), /* IPT_PEDAL2 */
-	ANALOG_INPUT(pedal3, ITEM_ID_ZAXIS), /* IPT_PEDAL3 */
+	{ IPT_INVALID, INVALID_INPUT },
+	{ IPT_UNUSED, INVALID_INPUT },
+	{ IPT_END, INVALID_INPUT },
+	{ IPT_UNKNOWN, INVALID_INPUT },
+	{ IPT_PORT, INVALID_INPUT },
+	{ IPT_DIPSWITCH, INVALID_INPUT },
+	{ IPT_VBLANK, INVALID_INPUT },
+	{ IPT_CONFIG, INVALID_INPUT },
+	{ IPT_CATEGORY, INVALID_INPUT },
+    { IPT_START1, BUTTON_INPUT(Shared, Start1) },
+	{ IPT_START2, BUTTON_INPUT(Shared, Start2) },
+	{ IPT_START3, BUTTON_INPUT(Shared, Start3) },
+	{ IPT_START4, BUTTON_INPUT(Shared, Start4) },
+	{ IPT_START5, BUTTON_INPUT(Shared, Start5) },
+	{ IPT_START6, BUTTON_INPUT(Shared, Start6) },
+	{ IPT_START7, BUTTON_INPUT(Shared, Start7) },
+	{ IPT_START8, BUTTON_INPUT(Shared, Start8) },
+	{ IPT_COIN1, BUTTON_INPUT(Shared, Coin1) },
+	{ IPT_COIN2, BUTTON_INPUT(Shared, Coin2) },
+	{ IPT_COIN3, BUTTON_INPUT(Shared, Coin3) },
+	{ IPT_COIN4, BUTTON_INPUT(Shared, Coin4) },
+	{ IPT_COIN5, BUTTON_INPUT(Shared, Coin5) },
+	{ IPT_COIN6, BUTTON_INPUT(Shared, Coin6) },
+	{ IPT_COIN7, BUTTON_INPUT(Shared, Coin7) },
+	{ IPT_COIN8, BUTTON_INPUT(Shared, Coin8) },
+    { IPT_COIN9, INVALID_INPUT },
+    { IPT_COIN10, INVALID_INPUT },
+    { IPT_COIN11, INVALID_INPUT },
+    { IPT_COIN12, INVALID_INPUT },
+	{ IPT_BILL1, BUTTON_INPUT(Shared, Bill1) },
+	{ IPT_SERVICE1, BUTTON_INPUT(Shared, Service1) },
+	{ IPT_SERVICE2, BUTTON_INPUT(Shared, Service2) },
+	{ IPT_SERVICE3, BUTTON_INPUT(Shared, Service3) },
+	{ IPT_SERVICE4, BUTTON_INPUT(Shared, Service4) },
+    { IPT_TILT1, INVALID_INPUT },
+    { IPT_TILT2, INVALID_INPUT },
+    { IPT_TILT3, INVALID_INPUT },
+    { IPT_TILT4, INVALID_INPUT },
+	{ IPT_SERVICE, BUTTON_INPUT(Shared, Service) },
+	{ IPT_TILT, BUTTON_INPUT(Shared, Tilt) },
+	{ IPT_INTERLOCK, BUTTON_INPUT(Shared, Interlock) },
+	{ IPT_VOLUME_UP, BUTTON_INPUT(Shared, Volume_Up) },
+	{ IPT_VOLUME_DOWN, BUTTON_INPUT(Shared, Volume_Down) },
+	{ IPT_START, INVALID_INPUT },
+	{ IPT_SELECT, INVALID_INPUT },
+    { IPT_KEYPAD, INVALID_INPUT },
+	{ IPT_KEYBOARD, INVALID_INPUT },
+    { IPT_JOYSTICK_UP, JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up) },
+    { IPT_JOYSTICK_DOWN, JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down) },
+    { IPT_JOYSTICK_LEFT, JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left) },
+    { IPT_JOYSTICK_RIGHT, 
+      JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right) },
+    { IPT_JOYSTICKRIGHT_UP,
+      JOYSTICK_INPUT(right, LibMame_JoystickDirection_Up) },
+    { IPT_JOYSTICKRIGHT_DOWN, 
+      JOYSTICK_INPUT(right, LibMame_JoystickDirection_Down) },
+    { IPT_JOYSTICKRIGHT_LEFT, 
+      JOYSTICK_INPUT(right, LibMame_JoystickDirection_Left) },
+    { IPT_JOYSTICKRIGHT_RIGHT, 
+      JOYSTICK_INPUT(right, LibMame_JoystickDirection_Right) },
+    { IPT_JOYSTICKLEFT_UP, 
+      JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up) },
+    { IPT_JOYSTICKLEFT_DOWN, 
+      JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down) },
+    { IPT_JOYSTICKLEFT_LEFT, 
+      JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left) },
+    { IPT_JOYSTICKLEFT_RIGHT, 
+      JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right) },
+	{ IPT_BUTTON1, BUTTON_INPUT(Normal, 1) },
+	{ IPT_BUTTON2, BUTTON_INPUT(Normal, 2) },
+	{ IPT_BUTTON3, BUTTON_INPUT(Normal, 3) },
+	{ IPT_BUTTON4, BUTTON_INPUT(Normal, 4) },
+	{ IPT_BUTTON5, BUTTON_INPUT(Normal, 5) },
+	{ IPT_BUTTON6, BUTTON_INPUT(Normal, 6) },
+	{ IPT_BUTTON7, BUTTON_INPUT(Normal, 7) },
+	{ IPT_BUTTON8, BUTTON_INPUT(Normal, 8) },
+	{ IPT_BUTTON9, BUTTON_INPUT(Normal, 9) },
+	{ IPT_BUTTON10, BUTTON_INPUT(Normal, 10) },
+	{ IPT_BUTTON11, BUTTON_INPUT(Normal, 11) },
+	{ IPT_BUTTON12, BUTTON_INPUT(Normal, 12) },
+	{ IPT_BUTTON13, BUTTON_INPUT(Normal, 13) },
+	{ IPT_BUTTON14, BUTTON_INPUT(Normal, 14) },
+	{ IPT_BUTTON15, BUTTON_INPUT(Normal, 15) },
+	{ IPT_BUTTON16, BUTTON_INPUT(Normal, 16) },
+	{ IPT_MAHJONG_A, BUTTON_INPUT(Mahjong, A) },
+	{ IPT_MAHJONG_B, BUTTON_INPUT(Mahjong, B) },
+	{ IPT_MAHJONG_C, BUTTON_INPUT(Mahjong, C) },
+	{ IPT_MAHJONG_D, BUTTON_INPUT(Mahjong, D) },
+	{ IPT_MAHJONG_E, BUTTON_INPUT(Mahjong, E) },
+	{ IPT_MAHJONG_F, BUTTON_INPUT(Mahjong, F) },
+	{ IPT_MAHJONG_G, BUTTON_INPUT(Mahjong, G) },
+	{ IPT_MAHJONG_H, BUTTON_INPUT(Mahjong, H) },
+	{ IPT_MAHJONG_I, BUTTON_INPUT(Mahjong, I) },
+	{ IPT_MAHJONG_J, BUTTON_INPUT(Mahjong, J) },
+	{ IPT_MAHJONG_K, BUTTON_INPUT(Mahjong, K) },
+	{ IPT_MAHJONG_L, BUTTON_INPUT(Mahjong, L) },
+	{ IPT_MAHJONG_M, BUTTON_INPUT(Mahjong, M) },
+	{ IPT_MAHJONG_N, BUTTON_INPUT(Mahjong, N) },
+	{ IPT_MAHJONG_O, BUTTON_INPUT(Mahjong, O) },
+	{ IPT_MAHJONG_P, BUTTON_INPUT(Mahjong, P) },
+	{ IPT_MAHJONG_Q, BUTTON_INPUT(Mahjong, Q) },
+	{ IPT_MAHJONG_KAN, BUTTON_INPUT(Mahjong, Kan) },
+	{ IPT_MAHJONG_PON, BUTTON_INPUT(Mahjong, Pon) },
+	{ IPT_MAHJONG_CHI, BUTTON_INPUT(Mahjong, Chi) },
+	{ IPT_MAHJONG_REACH, BUTTON_INPUT(Mahjong, Reach) },
+	{ IPT_MAHJONG_RON, BUTTON_INPUT(Mahjong, Ron) },
+	{ IPT_MAHJONG_BET, BUTTON_INPUT(Mahjong, Bet) },
+	{ IPT_MAHJONG_LAST_CHANCE, BUTTON_INPUT(Mahjong, Last_Chance) },
+	{ IPT_MAHJONG_SCORE, BUTTON_INPUT(Mahjong, Score) },
+	{ IPT_MAHJONG_DOUBLE_UP, BUTTON_INPUT(Mahjong, Double_Up) },
+	{ IPT_MAHJONG_FLIP_FLOP, BUTTON_INPUT(Mahjong, Flip_Flop) },
+	{ IPT_MAHJONG_BIG, BUTTON_INPUT(Mahjong, Big) },
+	{ IPT_MAHJONG_SMALL, BUTTON_INPUT(Mahjong, Small) },
+	{ IPT_HANAFUDA_A, BUTTON_INPUT(Hanafuda, A) },
+	{ IPT_HANAFUDA_B, BUTTON_INPUT(Hanafuda, B) },
+	{ IPT_HANAFUDA_C, BUTTON_INPUT(Hanafuda, C) },
+	{ IPT_HANAFUDA_D, BUTTON_INPUT(Hanafuda, D) },
+	{ IPT_HANAFUDA_E, BUTTON_INPUT(Hanafuda, E) },
+	{ IPT_HANAFUDA_F, BUTTON_INPUT(Hanafuda, F) },
+	{ IPT_HANAFUDA_G, BUTTON_INPUT(Hanafuda, G) },
+	{ IPT_HANAFUDA_H, BUTTON_INPUT(Hanafuda, H) },
+	{ IPT_HANAFUDA_YES, BUTTON_INPUT(Hanafuda, Yes) },
+	{ IPT_HANAFUDA_NO, BUTTON_INPUT(Hanafuda, No) },
+	{ IPT_GAMBLE_HIGH, BUTTON_INPUT(Gambling, High) },
+	{ IPT_GAMBLE_LOW, BUTTON_INPUT(Gambling, Low) },
+	{ IPT_GAMBLE_HALF, BUTTON_INPUT(Gambling, Half) },
+	{ IPT_GAMBLE_DEAL, BUTTON_INPUT(Gambling, Deal) },
+	{ IPT_GAMBLE_D_UP, BUTTON_INPUT(Gambling, D_Up) },
+	{ IPT_GAMBLE_TAKE, BUTTON_INPUT(Gambling, Take) },
+	{ IPT_GAMBLE_STAND, BUTTON_INPUT(Gambling, Stand) },
+	{ IPT_GAMBLE_BET, BUTTON_INPUT(Gambling, Bet) },
+	{ IPT_GAMBLE_KEYIN, BUTTON_INPUT(Gambling, Keyin) },
+	{ IPT_GAMBLE_KEYOUT, BUTTON_INPUT(Gambling, Keyout) },
+	{ IPT_GAMBLE_PAYOUT, BUTTON_INPUT(Gambling, Payout) },
+	{ IPT_GAMBLE_DOOR, BUTTON_INPUT(Gambling, Door) },
+	{ IPT_GAMBLE_SERVICE, BUTTON_INPUT(Gambling, Service) },
+	{ IPT_GAMBLE_BOOK, BUTTON_INPUT(Gambling, Book) },
+	{ IPT_POKER_HOLD1, BUTTON_INPUT(Gambling, Hold1) },
+	{ IPT_POKER_HOLD2, BUTTON_INPUT(Gambling, Hold2) },
+	{ IPT_POKER_HOLD3, BUTTON_INPUT(Gambling, Hold3) },
+	{ IPT_POKER_HOLD4, BUTTON_INPUT(Gambling, Hold4) },
+	{ IPT_POKER_HOLD5, BUTTON_INPUT(Gambling, Hold5) },
+	{ IPT_POKER_CANCEL, BUTTON_INPUT(Gambling, Cancel) },
+	{ IPT_POKER_BET, BUTTON_INPUT(Gambling, Bet) },
+	{ IPT_SLOT_STOP1, BUTTON_INPUT(Gambling, Stop1) },
+	{ IPT_SLOT_STOP2, BUTTON_INPUT(Gambling, Stop2) },
+	{ IPT_SLOT_STOP3, BUTTON_INPUT(Gambling, Stop3) },
+	{ IPT_SLOT_STOP4, BUTTON_INPUT(Gambling, Stop4) },
+	{ IPT_SLOT_STOP_ALL, BUTTON_INPUT(Gambling, Stop_All) },
+	{ IPT_PADDLE, ANALOG_INPUT(paddle, ITEM_ID_XAXIS) },
+	{ IPT_PADDLE_V, ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS) },
+    { IPT_AD_STICK_X, ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS) },
+	{ IPT_AD_STICK_Y, ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS) },
+    // XXX TODO - figure out how to handle IPT_AD_STICK_ },
+    // { IPT_AD_STICK_Z, // ANALOG_INPUT(pedal, ITEM_ID_XAXIS) },
+    { IPT_AD_STICK_Z, INVALID_INPUT },
+    { IPT_LIGHTGUN_X, ANALOG_INPUT(lightgun_horizontal, ITEM_ID_XAXIS) },
+    { IPT_LIGHTGUN_Y, ANALOG_INPUT(lightgun_vertical, ITEM_ID_YAXIS) },
+    { IPT_PEDAL, ANALOG_INPUT(pedal, ITEM_ID_XAXIS) },
+    { IPT_PEDAL2, ANALOG_INPUT(pedal2, ITEM_ID_YAXIS) },
+    { IPT_PEDAL3, ANALOG_INPUT(pedal3, ITEM_ID_ZAXIS) },
     // XXX TODO - figure out how to handle arbitrary IPT_POSITIONAL stuff
-    // ANALOG_INPUT(paddle, ITEM_ID_XAXIS), /* IPT_POSITIONAL */
-    INVALID_INPUT, /* IPT_POSITIONAL */
-    // ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS), /* IPT_POSITIONAL_V */
-    INVALID_INPUT, /* IPT_POSITIONAL_V */
-	ANALOG_INPUT(spinner, ITEM_ID_RXAXIS), /* IPT_DIAL */
-	ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS), /* IPT_DIAL_V */
-	ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS), /* IPT_TRACKBALL_X */
-	ANALOG_INPUT(trackball_vertical, ITEM_ID_RYAXIS), /* IPT_TRACKBALL_Y */
-    INVALID_INPUT, /* IPT_MOUSE_X */
-    INVALID_INPUT, /* IPT_MOUSE_Y */
-	INVALID_INPUT, /* IPT_ADJUSTER */
-	BUTTON_INPUT(Ui, Configure), /* IPT_UI_CONFIGURE */
-	BUTTON_INPUT(Ui, On_Screen_Display), /* IPT_UI_ON_SCREEN_DISPLAY */
-	BUTTON_INPUT(Ui, Debug_Break), /* IPT_UI_DEBUG_BREAK */
-	BUTTON_INPUT(Ui, Pause), /* IPT_UI_PAUSE */
-	BUTTON_INPUT(Ui, Reset_Machine), /* IPT_UI_RESET_MACHINE */
-	BUTTON_INPUT(Ui, Soft_Reset), /* IPT_UI_SOFT_RESET */
-	BUTTON_INPUT(Ui, Show_Gfx), /* IPT_UI_SHOW_GFX */
-	BUTTON_INPUT(Ui, Frameskip_Dec), /* IPT_UI_FRAMESKIP_DEC */
-	BUTTON_INPUT(Ui, Frameskip_Inc), /* IPT_UI_FRAMESKIP_INC */
-	BUTTON_INPUT(Ui, Throttle), /* IPT_UI_THROTTLE */
-	BUTTON_INPUT(Ui, Fast_Forward), /* IPT_UI_FAST_FORWARD */
-	BUTTON_INPUT(Ui, Show_Fps), /* IPT_UI_SHOW_FPS */
-	BUTTON_INPUT(Ui, Snapshot), /* IPT_UI_SNAPSHOT */
-	BUTTON_INPUT(Ui, Record_Movie), /* IPT_UI_RECORD_MOVIE */
-	BUTTON_INPUT(Ui, Toggle_Cheat), /* IPT_UI_TOGGLE_CHEAT */
-	BUTTON_INPUT(Ui, Up), /* IPT_UI_UP */
-	BUTTON_INPUT(Ui, Down), /* IPT_UI_DOWN */
-	BUTTON_INPUT(Ui, Left), /* IPT_UI_LEFT */
-	BUTTON_INPUT(Ui, Right), /* IPT_UI_RIGHT */
-	BUTTON_INPUT(Ui, Home), /* IPT_UI_HOME */
-	BUTTON_INPUT(Ui, End), /* IPT_UI_END */
-	BUTTON_INPUT(Ui, Page_Up), /* IPT_UI_PAGE_UP */
-	BUTTON_INPUT(Ui, Page_Down), /* IPT_UI_PAGE_DOWN */
-	BUTTON_INPUT(Ui, Select), /* IPT_UI_SELECT */
-	BUTTON_INPUT(Ui, Cancel), /* IPT_UI_CANCEL */
-	BUTTON_INPUT(Ui, Display_Comment), /* IPT_UI_DISPLAY_COMMENT */
-	BUTTON_INPUT(Ui, Clear), /* IPT_UI_CLEAR */
-	BUTTON_INPUT(Ui, Zoom_In), /* IPT_UI_ZOOM_IN */
-	BUTTON_INPUT(Ui, Zoom_Out), /* IPT_UI_ZOOM_OUT */
-	BUTTON_INPUT(Ui, Prev_Group), /* IPT_UI_PREV_GROUP */
-	BUTTON_INPUT(Ui, Next_Group), /* IPT_UI_NEXT_GROUP */
-	BUTTON_INPUT(Ui, Rotate), /* IPT_UI_ROTATE */
-	BUTTON_INPUT(Ui, Show_Profiler), /* IPT_UI_SHOW_PROFILER */
-	BUTTON_INPUT(Ui, Toggle_Ui), /* IPT_UI_TOGGLE_UI */
-	BUTTON_INPUT(Ui, Toggle_Debug), /* IPT_UI_TOGGLE_DEBUG */
-	BUTTON_INPUT(Ui, Paste), /* IPT_UI_PASTE */
-	BUTTON_INPUT(Ui, Save_State), /* IPT_UI_SAVE_STATE */
-	BUTTON_INPUT(Ui, Load_State) /* IPT_UI_LOAD_STATE */
+    // { IPT_POSITIONAL, // ANALOG_INPUT(paddle, ITEM_ID_XAXIS) },
+    { IPT_POSITIONAL, INVALID_INPUT },
+    // IPT_POSITIONAL_V, // ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS) },
+    { IPT_POSITIONAL_V, INVALID_INPUT },
+    { IPT_DIAL, ANALOG_INPUT(spinner, ITEM_ID_RXAXIS) },
+    { IPT_DIAL_V, ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS) },
+    { IPT_TRACKBALL_X, ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS) },
+    { IPT_TRACKBALL_Y, ANALOG_INPUT(trackball_vertical, ITEM_ID_RYAXIS) },
+    { IPT_MOUSE_X, INVALID_INPUT },
+    { IPT_MOUSE_Y, INVALID_INPUT },
+    { IPT_ADJUSTER, INVALID_INPUT },
+    { IPT_UI_CONFIGURE, BUTTON_INPUT(Ui, Configure) },
+    { IPT_UI_ON_SCREEN_DISPLAY, BUTTON_INPUT(Ui, On_Screen_Display) },
+    { IPT_UI_DEBUG_BREAK, BUTTON_INPUT(Ui, Debug_Break) },
+    { IPT_UI_PAUSE, BUTTON_INPUT(Ui, Pause) },
+    { IPT_UI_RESET_MACHINE, BUTTON_INPUT(Ui, Reset_Machine) },
+    { IPT_UI_SOFT_RESET, BUTTON_INPUT(Ui, Soft_Reset) },
+	{ IPT_UI_SHOW_GFX, BUTTON_INPUT(Ui, Show_Gfx) },
+	{ IPT_UI_FRAMESKIP_DEC, BUTTON_INPUT(Ui, Frameskip_Dec) },
+	{ IPT_UI_FRAMESKIP_INC, BUTTON_INPUT(Ui, Frameskip_Inc) },
+	{ IPT_UI_THROTTLE, BUTTON_INPUT(Ui, Throttle) },
+	{ IPT_UI_FAST_FORWARD, BUTTON_INPUT(Ui, Fast_Forward) },
+	{ IPT_UI_SHOW_FPS, BUTTON_INPUT(Ui, Show_Fps) },
+	{ IPT_UI_SNAPSHOT, BUTTON_INPUT(Ui, Snapshot) },
+	{ IPT_UI_RECORD_MOVIE, BUTTON_INPUT(Ui, Record_Movie) },
+	{ IPT_UI_TOGGLE_CHEAT, BUTTON_INPUT(Ui, Toggle_Cheat) },
+	{ IPT_UI_UP, BUTTON_INPUT(Ui, Up) },
+	{ IPT_UI_DOWN, BUTTON_INPUT(Ui, Down) },
+	{ IPT_UI_LEFT, BUTTON_INPUT(Ui, Left) },
+	{ IPT_UI_RIGHT, BUTTON_INPUT(Ui, Right) },
+	{ IPT_UI_HOME, BUTTON_INPUT(Ui, Home) },
+	{ IPT_UI_END, BUTTON_INPUT(Ui, End) },
+	{ IPT_UI_PAGE_UP, BUTTON_INPUT(Ui, Page_Up) },
+	{ IPT_UI_PAGE_DOWN, BUTTON_INPUT(Ui, Page_Down) },
+	{ IPT_UI_SELECT, BUTTON_INPUT(Ui, Select) },
+	{ IPT_UI_CANCEL, BUTTON_INPUT(Ui, Cancel) },
+	{ IPT_UI_DISPLAY_COMMENT, BUTTON_INPUT(Ui, Display_Comment) },
+	{ IPT_UI_CLEAR, BUTTON_INPUT(Ui, Clear) },
+	{ IPT_UI_ZOOM_IN, BUTTON_INPUT(Ui, Zoom_In) },
+	{ IPT_UI_ZOOM_OUT, BUTTON_INPUT(Ui, Zoom_Out) },
+	{ IPT_UI_PREV_GROUP, BUTTON_INPUT(Ui, Prev_Group) },
+	{ IPT_UI_NEXT_GROUP, BUTTON_INPUT(Ui, Next_Group) },
+	{ IPT_UI_ROTATE, BUTTON_INPUT(Ui, Rotate) },
+	{ IPT_UI_SHOW_PROFILER, BUTTON_INPUT(Ui, Show_Profiler) },
+	{ IPT_UI_TOGGLE_UI, BUTTON_INPUT(Ui, Toggle_Ui) },
+	{ IPT_UI_TOGGLE_DEBUG, BUTTON_INPUT(Ui, Toggle_Debug) },
+	{ IPT_UI_PASTE, BUTTON_INPUT(Ui, Paste) },
+	{ IPT_UI_SAVE_STATE, BUTTON_INPUT(Ui, Save_State) },
+	{ IPT_UI_LOAD_STATE, BUTTON_INPUT(Ui, Load_State) },
 };
             
 static int g_input_descriptor_count = 
@@ -479,14 +480,15 @@ static LibMame_RunGame_State g_state;
 static INT32 get_controller_state(void *, void *data)
 {
     int player = CBDATA_PLAYER(data);
-    int ipt_type = CBDATA_IPT(data);
+    int index = CBDATA_IPT(data);
 
-    if (ipt_type >= g_input_descriptor_count) {
+    if (index >= g_input_descriptor_count) {
         /* This is weird, we're being asked for something bogus */
         return 0;
     }
-    libmame_input_type input_type = g_input_descriptors[ipt_type].type;
-    int input_number = g_input_descriptors[ipt_type].number;
+
+    libmame_input_type input_type = g_input_descriptors[index].type;
+    int input_number = g_input_descriptors[index].number;
 
     /* Just in case we need these */
     LibMame_PerPlayerControlsState *perplayer_state =
@@ -595,7 +597,7 @@ static bool has_right_joystick_except(int controller_flags, int exception)
 
 static bool controllers_have_input
     (int num_players, const LibMame_AllControllers *controllers,
-     int player, int ipt_type)
+     int player, int index)
 {
     /* Game doesn't support this player, no need for this input */
     if (player >= num_players) {
@@ -604,12 +606,12 @@ static bool controllers_have_input
 
     /* If it's not an IPT_TYPE that we have in our table, then no need for
        this input as we can't handle it */
-    if (ipt_type >= g_input_descriptor_count) {
+    if (index >= g_input_descriptor_count) {
         return false;
     }
     
-    libmame_input_type input_type = g_input_descriptors[ipt_type].type;
-    int input_number = g_input_descriptors[ipt_type].number;
+    libmame_input_type input_type = g_input_descriptors[index].type;
+    int input_number = g_input_descriptors[index].number;
 
     switch (input_type) {
     case libmame_input_type_invalid:
@@ -711,11 +713,12 @@ static void startup_callback(running_machine &machine)
 
         ioport_list &ioportlist = g_state.machine->m_portlist;
 
-        const input_port_config *port;
-        const input_field_config *field;
+        input_port_config *port;
+        input_field_config *field;
 
         for (port = ioportlist.first(); port; port = port->next()) {
-            for (field = port->fieldlist; field; field = field->next) {
+            for (field = port->fieldlist().first(); field; 
+                 field = field->next()) {
                 if ((field->type != IPT_OTHER) || !field->name) {
                     continue;
                 }
@@ -724,26 +727,21 @@ static void startup_callback(running_machine &machine)
                     snprintf(namebuf, sizeof(namebuf), 
                              "libmame_virtual_special_keyboard_%d", 
                              keyboard_count++);
-                    keyboard = input_device_add
-                        (g_state.machine, DEVICE_CLASS_KEYBOARD, 
-                         namebuf, NULL);
+                    keyboard = machine.input().device_class
+                        (DEVICE_CLASS_KEYBOARD).add_device(namebuf);
                     keyboard_item = ITEM_ID_A;
                 }
-                keyboard_item++;
-                int input_code = 
-                    INPUT_CODE(DEVICE_CLASS_KEYBOARD,
-                               input_device_get_index(g_state.machine,
-                                                      keyboard),
+                input_code item_input_code = 
+                    input_code(DEVICE_CLASS_KEYBOARD,
+                               keyboard->devindex(),
                                ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE,
                                keyboard_item);
-                input_device_item_add(keyboard, "", 
-                                      (void *) special_button_index++,
-                                      keyboard_item, &get_special_state);
+                keyboard->add_item("", keyboard_item, &get_special_state,
+                                   (void *) (uintptr_t) special_button_index++);
+                keyboard_item++;
 
-                input_field_user_settings settings;
-                input_seq_set_1(&(settings.seq[SEQ_TYPE_STANDARD]), 
-                                input_code);
-                input_field_set_user_settings(field, &settings);
+                port->first_field()->seq[SEQ_TYPE_STANDARD].
+                    set(item_input_code);
             }
         }
     }
@@ -863,10 +861,13 @@ static void osd_init(running_machine *machine)
     g_state.target->set_bounds(10000, 10000, 1.0);
 
     /* Add a startup callback so that we can forward this info to users */
-    machine->add_notifier(MACHINE_NOTIFY_STARTUP, &startup_callback);
+    machine->add_notifier(MACHINE_NOTIFY_STARTUP, 
+                          machine_notify_delegate(FUNC(startup_callback), 
+                                                  machine));
 
     /* Add a callback so that we can know when the running game has paused */
-    machine->add_notifier(MACHINE_NOTIFY_PAUSE, &pause_callback);
+    machine->add_notifier(MACHINE_NOTIFY_PAUSE, machine_notify_delegate
+                          (FUNC(pause_callback), machine));
 }
 
 
@@ -911,7 +912,7 @@ static void osd_update_audio_stream(running_machine *machine,
     /**
      * Ask the callbacks to update the audio
      **/
-    (*(g_state.callbacks->UpdateAudio))(machine->sample_rate, 
+    (*(g_state.callbacks->UpdateAudio))(machine->sample_rate(), 
                                         samples_this_frame,
                                         buffer, g_state.callback_data);
 }
@@ -939,7 +940,8 @@ static void osd_set_mastervolume(int attenuation)
  * whatever they want to satisfy getting inputs for the various controllers
  * types.
  **/
-static void osd_customize_input_type_list(input_type_desc *typelist)
+static void
+osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
 {
     /**
      * For each input descriptor, create a keyboard key, or mouse axis, or
@@ -947,10 +949,10 @@ static void osd_customize_input_type_list(input_type_desc *typelist)
      * sequence to match the new item.  Also, set up the polling callback for
      * it to have the data it needs to get the right controller state.
      **/
-	input_type_desc *typedesc;
+	input_type_entry *entry;
     input_device *item_device;
     input_item_id item_id = ITEM_ID_INVALID;
-    int input_code = 0;
+    input_code item_input_code;
 
     /**
      * New keyboards are created as we run out of keys; the only keys we
@@ -983,32 +985,40 @@ static void osd_customize_input_type_list(input_type_desc *typelist)
     char namebuf[256];
 
 
-#define GET_ITEM_DEVICE_AND_ID(device_type, device_class, item_class)   \
+#define GET_ITEM_DEVICE_AND_ID(devices, deviceclass, item_class)        \
     do {                                                                \
-        if (device_type [typedesc->player] == 0) {                      \
+        if (devices [entry->player] == 0) {                             \
             snprintf(namebuf, sizeof(namebuf),                          \
-                     "libmame_virtual_" #device_type "_%d",             \
-                     typedesc->player);                                 \
-            device_type [typedesc->player] = input_device_add           \
-                (g_state.machine, device_class, namebuf, NULL);         \
+                     "libmame_virtual_" #devices "_%d",                 \
+                     entry->player);                                    \
+            devices [entry->player] = g_state.machine->input().         \
+                device_class(deviceclass).add_device(namebuf);          \
         }                                                               \
-        item_device = device_type [typedesc->player];                   \
-        item_id = g_input_descriptors[typedesc->type].item_id;          \
-        input_code = INPUT_CODE(device_class,                           \
-                                input_device_get_index                  \
-                                (g_state.machine,                       \
-                                 device_type [typedesc->player]),       \
-                                item_class, ITEM_MODIFIER_NONE,         \
-                                item_id);                               \
+        item_device = devices [entry->player];                          \
+        item_id = g_input_descriptors[entry->type].item_id;             \
+        item_input_code = input_code(deviceclass,                       \
+                                     devices [entry->player]->          \
+                                     devindex(),                        \
+                                     item_class, ITEM_MODIFIER_NONE,    \
+                                     item_id);                          \
     } while (0);
 
 
-	for (typedesc = typelist; typedesc; typedesc = typedesc->next) {
+	for (entry = typelist.first(); entry; entry = entry->next()) {
         item_device = NULL;
+        int index = 0;
+        for (index = 0; index < g_input_descriptor_count; index++) {
+            if (g_input_descriptors[index].ipt_port == entry->type) {
+                break;
+            }
+        }
+        if (index == g_input_descriptor_count) {
+            continue;
+        }
         if (controllers_have_input(g_state.maximum_player_count,
                                    &(g_state.controllers),
-                                   typedesc->player, typedesc->type)) {
-            switch (g_input_descriptors[typedesc->type].type) {
+                                   entry->player, index)) {
+            switch (g_input_descriptors[entry->type].type) {
             case libmame_input_type_invalid:
                 break;
 
@@ -1023,19 +1033,17 @@ static void osd_customize_input_type_list(input_type_desc *typelist)
                 if (!keyboard || (keyboard_item > ITEM_ID_Z)) {
                     snprintf(namebuf, sizeof(namebuf), 
                              "libmame_virtual_keyboard_%d", keyboard_count++);
-                    keyboard = input_device_add
-                        (g_state.machine, DEVICE_CLASS_KEYBOARD, 
-                         namebuf, NULL);
+                    keyboard = g_state.machine->input().device_class
+                        (DEVICE_CLASS_KEYBOARD).add_device(namebuf);
                     keyboard_item = ITEM_ID_A;
                 }
                 item_device = keyboard;
                 item_id = keyboard_item;
-                keyboard_item++;
-                input_code = INPUT_CODE(DEVICE_CLASS_KEYBOARD,
-                                        input_device_get_index(g_state.machine,
-                                                               keyboard),
-                                        ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE,
-                                        item_id);
+                keyboard_item = (input_item_id) (keyboard_item + 1);
+                item_input_code = 
+                    input_code(DEVICE_CLASS_KEYBOARD, keyboard->devindex(),
+                               ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE,
+                               item_id);
                 break;
 
                 /*
@@ -1103,10 +1111,8 @@ static void osd_customize_input_type_list(input_type_desc *typelist)
         }
 
         if (item_device) {
-            input_device_item_add
-                (item_device, "", 
-                 (void *) CBDATA_MAKE(typedesc->player, typedesc->type), 
-                 item_id, &get_controller_state);
+            item_device->add_item("", item_id, &get_controller_state,
+                                  CBDATA_MAKE(entry->player, index));
         }
         else {
             /* For some reason or another, we can't handle this input, so turn
@@ -1114,7 +1120,7 @@ static void osd_customize_input_type_list(input_type_desc *typelist)
             item_id = ITEM_ID_MAXIMUM;
         }
 
-        input_seq_set_1(&(typedesc->seq[SEQ_TYPE_STANDARD]), input_code);
+        entry->defseq[SEQ_TYPE_STANDARD].set(item_input_code);
     }
 }
 
@@ -1157,16 +1163,16 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
 
     /* Set up options stuff for MAME.  If none were supplied, use the
        defaults. */
-    core_options *mame_options;
+    emu_options mame_options;
     if (options == NULL) {
         LibMame_RunGameOptions default_options;
         LibMame_Set_Default_RunGameOptions(&default_options);
-        mame_options = get_mame_options
-            (&default_options, LibMame_Get_Game_Short_Name(gamenum));
+        get_mame_options(&default_options,
+                         LibMame_Get_Game_Short_Name(gamenum), mame_options);
     }
     else {
-        mame_options = get_mame_options
-            (options, LibMame_Get_Game_Short_Name(gamenum));
+        get_mame_options(options, LibMame_Get_Game_Short_Name(gamenum),
+                         mame_options);
     }
 
     /* Haven't configured special inputs yet */
@@ -1179,11 +1185,8 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
     int result;
     {
         libmame_rungame_osd_interface osd;
-        result = mame_execute(osd, mame_options, benchmarking);
+        result = mame_execute(mame_options, osd, benchmarking);
     }
-
-    /* Free the options */
-    options_free(mame_options);
 
     /* Convert the resulting MAME code to a libmame code and return */
     switch (result) {

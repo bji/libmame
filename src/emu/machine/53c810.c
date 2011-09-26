@@ -148,10 +148,9 @@ static OPCODE_HANDLER( dmaop_block_move )
 
 static OPCODE_HANDLER( dmaop_select )
 {
-	UINT32 operand;
+//  UINT32 operand;
 
-	operand = FETCH(machine);
-    (void) operand;
+//  operand = FETCH(machine);
 
 	if (lsi810.scntl0 & 0x01)
 	{
@@ -174,10 +173,9 @@ static OPCODE_HANDLER( dmaop_select )
 
 static OPCODE_HANDLER( dmaop_wait_disconnect )
 {
-	UINT32 operand;
+//  UINT32 operand;
 
-	operand = FETCH(machine);
-    (void) operand;
+//  operand = FETCH(machine);
 
 	if (lsi810.scntl0 & 0x01)
 	{
@@ -193,10 +191,9 @@ static OPCODE_HANDLER( dmaop_wait_disconnect )
 
 static OPCODE_HANDLER( dmaop_wait_reselect )
 {
-	UINT32 operand;
+  //  UINT32 operand;
 
-	operand = FETCH(machine);
-    (void) operand;
+//  operand = FETCH(machine);
 
 	if (lsi810.scntl0 & 0x01)
 	{
@@ -212,10 +209,9 @@ static OPCODE_HANDLER( dmaop_wait_reselect )
 
 static OPCODE_HANDLER( dmaop_set )
 {
-	UINT32 operand;
+//  UINT32 operand;
 
-	operand = FETCH(machine);
-    (void) operand;
+//  operand = FETCH(machine);
 
 	/* initiator mode */
 	if (lsi810.dcmd & 0x8)
@@ -242,10 +238,9 @@ static OPCODE_HANDLER( dmaop_set )
 
 static OPCODE_HANDLER( dmaop_clear )
 {
-	UINT32 operand;
+//  UINT32 operand;
 
-	operand = FETCH(machine);
-    (void) operand;
+//  operand = FETCH(machine);
 
 	/* initiator mode */
 	if (lsi810.dcmd & 0x8)

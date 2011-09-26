@@ -257,10 +257,9 @@ INLINE void store_pack_float80(m68ki_cpu_core *m68k, UINT32 ea, int k, floatx80 
 
 INLINE void SET_CONDITION_CODES(m68ki_cpu_core *m68k, floatx80 reg)
 {
-	UINT64 *regi;
+//  UINT64 *regi;
 
-	regi = (UINT64 *)&reg;
-    (void) regi;
+//  regi = (UINT64 *)&reg;
 
 	REG_FPSR &= ~(FPCC_N|FPCC_Z|FPCC_I|FPCC_NAN);
 
@@ -1342,8 +1341,7 @@ static void fpgen_rm_reg(m68ki_cpu_core *m68k, UINT16 w2)
 		}
 		case 0x1e:		// FGETEXP
 		{
-			floatx80 temp = source;
-            (void) temp;
+//          floatx80 temp = source;
 			INT16 temp2;
 
 			temp2 = source.high;	// get the exponent

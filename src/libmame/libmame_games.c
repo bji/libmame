@@ -13,6 +13,7 @@
 
 #include "hashtable.h"
 #include "emu.h"
+#include "emuopts.h"
 #include "config.h"
 #include "hash.h"
 #include "libmame.h"
@@ -20,6 +21,9 @@
 #include "sound/samples.h"
 #include <pthread.h>
 #include <string.h>
+
+// Sorry MAME, you don't get to tell me I can't use C++ delete
+#undef delete
 
 /**
  * MAME sources seem to follow 8.3 limits, so 16 should be enough
@@ -57,6 +61,43 @@ typedef struct GameInfo
     char source_file_name[SOURCE_FILE_NAME_MAX];
 } GameInfo;
 
+// MAME is getting really ugly in its use of C++.  This is very unfortunate.
+class MameDriversWrapper
+{
+public:
+
+    MameDriversWrapper()
+        : driversM(0)
+    {
+        pthread_mutex_init(&mutexM, 0);
+    }
+
+    ~MameDriversWrapper()
+    {
+        pthread_mutex_destroy(&mutexM);
+    }
+
+    driver_enumerator &Get()
+    {
+        pthread_mutex_lock(&mutexM);
+        
+        if (!driversM) {
+            emu_options options;
+            driversM = new driver_enumerator(options);
+        }
+
+        pthread_mutex_unlock(&mutexM);
+
+        return *driversM;
+    }
+
+private:
+
+    pthread_mutex_t mutexM;
+    driver_enumerator *driversM;
+};
+
+static MameDriversWrapper g_drivers;
 
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_game_count = 0;
@@ -197,10 +238,8 @@ static void convert_screen_info(const machine_config *machineconfig,
 {
     /* We assume that all screens are the same; and in any case, only report
        on the first screen, which is assumed to be the primary screen */
-    const device_config *devconfig = machineconfig->first_screen();
-    if (devconfig != NULL) {
-        const screen_device_config *screenconfig =
-            (const screen_device_config *) devconfig;
+    const screen_device *screenconfig = machineconfig->first_screen();
+    if (screenconfig != NULL) {
         switch (screenconfig->screen_type()) {
         case SCREEN_TYPE_RASTER:
             gameinfo->screen_type = LibMame_ScreenType_Raster;
@@ -223,7 +262,7 @@ static void convert_screen_info(const machine_config *machineconfig,
         gameinfo->screen_resolution.height = 
             ((visarea.max_y - visarea.min_y) + 1);
         gameinfo->screen_refresh_rate = 
-            ATTOSECONDS_TO_HZ(screenconfig->refresh());
+            ATTOSECONDS_TO_HZ(screenconfig->refresh_attoseconds());
     }
 }
 
@@ -232,7 +271,7 @@ static void convert_sound_channels(const machine_config *machineconfig,
                                    GameInfo *gameinfo)
 {
     gameinfo->sound_channel_count = 
-        machineconfig->m_devicelist.count(SPEAKER);
+        machineconfig->devicelist().count(SPEAKER);
 }
 
 
@@ -241,17 +280,11 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
 {
     const char **destsample = gameinfo->sound_samples;
 
-	const device_config_sound_interface *soundi;
-
-    for (bool b = machineconfig->m_devicelist.first(/* returns */ soundi); b;
-         b = soundi->next(/* returns */ soundi)) {
-        if (soundi->devconfig().type() != SAMPLES) {
-            continue;
-        }
+    for (const device_t *device = machineconfig->devicelist().first(SAMPLES);
+         device; device = device->typenext()) {
 
         const char * const *samplenames = 
-            ((const samples_interface *) soundi->devconfig().static_config())->
-            samplenames;
+            ((const samples_interface *) device->static_config())->samplenames;
 
         if (!samplenames) {
             continue;
@@ -360,14 +393,14 @@ static void convert_sound_samples(const machine_config *machineconfig,
 static void convert_chips(const machine_config *machineconfig,
                           GameInfo *gameinfo)
 {
-	const device_config_execute_interface *execi;
-	for (bool is_valid = machineconfig->m_devicelist.first(execi); is_valid;
+	const device_execute_interface *execi;
+	for (bool is_valid = machineconfig->devicelist().first(execi); is_valid;
          is_valid = execi->next(execi)) {
         gameinfo->chip_count++;
     }
 
-	const device_config_sound_interface *soundi;
-	for (bool is_valid = machineconfig->m_devicelist.first(soundi); is_valid;
+	const device_sound_interface *soundi;
+	for (bool is_valid = machineconfig->devicelist().first(soundi); is_valid;
          is_valid = soundi->next(soundi)) {
         gameinfo->chip_count++;
     }
@@ -381,23 +414,21 @@ static void convert_chips(const machine_config *machineconfig,
     
     LibMame_Chip *descriptor = gameinfo->chips;
 
-	for (bool is_valid = machineconfig->m_devicelist.first(execi); is_valid;
+	for (bool is_valid = machineconfig->devicelist().first(execi); is_valid;
          is_valid = execi->next(execi)) {
-        const device_config *devconfig = &(execi->devconfig());
         descriptor->is_sound = false;
-        descriptor->tag = copy_string(devconfig->tag());
-        descriptor->name = copy_string(devconfig->name());
-        descriptor->clock_hz = devconfig->clock();
+        descriptor->tag = copy_string(execi->device().tag());
+        descriptor->name = copy_string(execi->device().name());
+        descriptor->clock_hz = execi->device().clock();
         descriptor++;
     }        
     
-	for (bool is_valid = machineconfig->m_devicelist.first(soundi); is_valid;
+	for (bool is_valid = machineconfig->devicelist().first(soundi); is_valid;
          is_valid = soundi->next(soundi)) {
-        const device_config *devconfig = &(soundi->devconfig());
         descriptor->is_sound = true;
-        descriptor->tag = copy_string(devconfig->tag());
-        descriptor->name = copy_string(devconfig->name());
-        descriptor->clock_hz = devconfig->clock();
+        descriptor->tag = copy_string(soundi->device().tag());
+        descriptor->name = copy_string(soundi->device().name());
+        descriptor->clock_hz = soundi->device().clock();
         descriptor++;
     }        
 }
@@ -406,11 +437,11 @@ static void convert_chips(const machine_config *machineconfig,
 static void convert_settings(const ioport_list *ioportlist,
                              GameInfo *gameinfo)
 {
-	const input_port_config *port;
+	input_port_config *port;
 	const input_field_config *field;
     
 	for (port = ioportlist->first(); port; port = port->next()) {
-		for (field = port->fieldlist; field; field = field->next) {
+		for (field = port->fieldlist().first(); field; field = field->next()) {
             if (field->type == IPT_DIPSWITCH) {
                 gameinfo->dipswitch_count++;
             }
@@ -427,17 +458,17 @@ static void convert_settings(const ioport_list *ioportlist,
     LibMame_Dipswitch *desc = gameinfo->dipswitches;
 
 	for (port = ioportlist->first(); port; port = port->next()) {
-		for (field = port->fieldlist; field; field = field->next) {
+		for (field = port->fieldlist().first(); field; field = field->next()) {
             if (field->type != IPT_DIPSWITCH) {
                 continue;
             }
 
             desc->name = input_field_name(field);
-            desc->tag = port->tag;
+            desc->tag = field->port().tag();
             desc->mask = field->mask;
             const input_setting_config *setting;
-            for (setting = field->settinglist; setting; 
-                 setting = setting->next) {
+            for (setting = field->settinglist().first(); setting; 
+                 setting = setting->next()) {
                 desc->value_count++;
             }
 
@@ -450,8 +481,8 @@ static void convert_settings(const ioport_list *ioportlist,
                 (sizeof(const char *) * desc->value_count);
             const char **value_names = (const char **) desc->value_names;
             int index = 0;
-            for (setting = field->settinglist; setting; 
-                 setting = setting->next) {
+            for (setting = field->settinglist().first(); setting; 
+                 setting = setting->next()) {
                 value_names[index] = setting->name;
                 if (setting->value == field->defvalue) {
                     desc->default_value = index;
@@ -468,13 +499,13 @@ static void convert_settings(const ioport_list *ioportlist,
 static void convert_controllers(const ioport_list *ioportlist,
                                 GameInfo *gameinfo)
 {
-	const input_port_config *port;
+	input_port_config *port;
 	const input_field_config *field;
 
     int special_count = 0;
 
 	for (port = ioportlist->first(); port; port = port->next()) {
-		for (field = port->fieldlist; field; field = field->next) {
+		for (field = port->fieldlist().first(); field; field = field->next()) {
             if (field->flags & FIELD_FLAG_UNUSED) {
                 continue;
             }
@@ -924,11 +955,11 @@ static void convert_image_info(const game_driver *driver,
                 image->size_if_known = is_disk ? 0 : rom_file_size(rom);
                 image->clone_of_game = 0;
                 image->clone_of_rom = 0;
-                const game_driver *clone_of = driver_get_clone(driver);
-                if (clone_of) {
-                    machine_config config(*clone_of);
+
+                int clone_of = g_drivers.Get().find(driver->parent);
+                if (clone_of != -1) {
                     for (const rom_source *psource = rom_first_source
-                             (config); psource;
+                             (g_drivers.Get().config(clone_of)); psource;
                          psource = rom_next_source(*psource)) {
                         for (const rom_entry *pregion = 
                                  rom_first_region(*psource); pregion;
@@ -938,7 +969,7 @@ static void convert_image_info(const game_driver *driver,
                                  prom = rom_next_file(prom)) {
                                 if (hashes == 
                                     hash_collection(ROM_GETHASHDATA(prom))) {
-                                    image->clone_of_game = clone_of->name;
+                                    image->clone_of_game = driver->parent;
                                     image->clone_of_rom = ROM_GETNAME(prom);
                                     break;
                                 }
@@ -1052,62 +1083,62 @@ static void convert_source_file_name(const game_driver *driver,
 
 static void convert_game_info(GameInfo *gameinfo)
 {
-    const game_driver *driver = drivers[gameinfo->driver_index];
+    const game_driver &driver = g_drivers.Get().driver(gameinfo->driver_index);
 
-	machine_config machineconfig(*driver);
+	machine_config &machineconfig = g_drivers.Get().config(gameinfo->driver_index);
     ioport_list ioportlist;
-    input_port_list_init(ioportlist, driver->ipt, 0, 0, FALSE, 0);
+    astring errors;
+	for (device_t *device = machineconfig.devicelist().first(); device;
+         device = device->next()) {
+		input_port_list_init(*device, ioportlist, errors);
+    }
     /* Mame's code assumes the above succeeds, we will too */
 
-    convert_year(driver, gameinfo);
-    convert_working_flags(driver, gameinfo);
-    convert_orientation(driver, gameinfo);
+    convert_year(&driver, gameinfo);
+    convert_working_flags(&driver, gameinfo);
+    convert_orientation(&driver, gameinfo);
     convert_screen_info(&machineconfig, gameinfo);
     convert_sound_channels(&machineconfig, gameinfo);
     convert_sound_samples(&machineconfig, gameinfo);
     convert_chips(&machineconfig, gameinfo);
     convert_settings(&ioportlist, gameinfo);
     convert_controllers(&ioportlist, gameinfo);
-    convert_image_info(driver, &machineconfig, gameinfo);
-    convert_source_file_name(driver, gameinfo);
+    convert_image_info(&driver, &machineconfig, gameinfo);
+    convert_source_file_name(&driver, gameinfo);
 }
 
 
 static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
 {
     if (g_game_count == 0) {
-        const game_driver * const *pdriver = drivers;
-        while (*pdriver) {
-            const game_driver *driver = *pdriver;
-            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
-                                   GAME_MECHANICAL))) {
+        g_drivers.Get().reset();
+        while (g_drivers.Get().next()) {
+            const game_driver &driver = g_drivers.Get().driver();
+            if (!(driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
+                                  GAME_MECHANICAL))) {
                 g_game_count++;
             }
-            pdriver++;
         }
         g_gameinfos = (GameInfo *) osd_calloc
             (sizeof(GameInfo) * g_game_count);
-        int driver_index = 0;
+        int driver_count = g_drivers.Get().total();
         int gameinfo_index = 0;
-        while (true) {
-            const game_driver *driver = drivers[driver_index];
+        for (int driver_index = 0; driver_index < driver_count; 
+             driver_index++) {
+            const game_driver &driver = g_drivers.Get().driver(driver_index);
             GameInfo *gameinfo = &(g_gameinfos[gameinfo_index]);
-            if (driver == NULL) {
-                break;
-            }
             int *pHashValue;
-            g_drivers_hash.Put(driver->name, /* returns */ pHashValue);
+            g_drivers_hash.Put(driver.name, /* returns */ pHashValue);
             *pHashValue = driver_index;
-            if (!(driver->flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
-                                   GAME_MECHANICAL))) {
+            if (!(driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
+                                  GAME_MECHANICAL))) {
                 gameinfo->converted = false;
                 gameinfo->driver_index = driver_index;
                 gameinfo->gameinfo_index = gameinfo_index;
-                g_gameinfos_hash.Put(driver->name, /* returns */ pHashValue);
+                g_gameinfos_hash.Put(driver.name, /* returns */ pHashValue);
                 *pHashValue = gameinfo_index;
                 gameinfo_index++;
             }
-            driver_index++;
         }
     }
 
@@ -1134,9 +1165,9 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool converted)
 }
 
 
-static const game_driver *get_game_driver(int gamenum)
+static const game_driver &get_game_driver(int gamenum)
 {
-    return drivers[get_gameinfo_helper(gamenum, false)->driver_index];
+    return g_drivers.Get().driver(get_gameinfo_helper(gamenum, false)->driver_index);
 }
 
 
@@ -1147,8 +1178,8 @@ static const game_driver *get_game_driver_by_name(const char *name)
     if (pIndex == NULL) {
         return NULL;
     }
-
-    return drivers[*pIndex];
+    
+    return &(g_drivers.Get().driver(*pIndex));
 }
 
 
@@ -1269,19 +1300,20 @@ int LibMame_Get_Game_Matches(const char *short_name, int num_matches,
        created and hashed */
     (void) get_gameinfo_helper(0, false);
 
-    const game_driver *results[num_matches];
+    if (num_matches > 65536) {
+        num_matches = 65536;
+    }
 
-    driver_list_get_approx_matches(drivers, short_name, num_matches, results);
+    int results[num_matches], ret = 0;
 
-    const game_driver **pdriver, **pend = &(results[num_matches]);
-    
-    int ret = 0;
+    g_drivers.Get().find_approximate_matches(short_name, num_matches, results);
 
-    for (pdriver = results; pdriver < pend; pdriver++) {
-        if (*pdriver == NULL) {
+    for (int i = 0; i < num_matches; i++) {
+        if (results[i] == -1) {
             break;
         }
-        int *index = g_gameinfos_hash.Get((*pdriver)->name);
+        const game_driver &driver = g_drivers.Get().driver(results[i]);
+        int *index = g_gameinfos_hash.Get(driver.name);
         if (index) {
             gamenums[ret++] = *index;
         }
@@ -1293,13 +1325,13 @@ int LibMame_Get_Game_Matches(const char *short_name, int num_matches,
 
 const char *LibMame_Get_Game_Short_Name(int gamenum)
 {
-    return get_game_driver(gamenum)->name;
+    return get_game_driver(gamenum).name;
 }
 
 
 const char *LibMame_Get_Game_Full_Name(int gamenum)
 {
-    return get_game_driver(gamenum)->description;
+    return get_game_driver(gamenum).description;
 }
 
 
@@ -1311,7 +1343,7 @@ int32_t LibMame_Get_Game_Year_Of_Release(int gamenum)
 
 int LibMame_Get_Game_CloneOf(int gamenum)
 {
-    const char *parent = get_game_driver(gamenum)->parent;
+    const char *parent = get_game_driver(gamenum).parent;
     /* Not sure why MAME uses "0" to mean "no parent" ... */
     if (parent && *parent && strcmp(parent, "0")) {
         /* If the parent is a BIOS, then it's not a clone */
@@ -1332,7 +1364,7 @@ int LibMame_Get_Game_CloneOf(int gamenum)
 
 const char *LibMame_Get_Game_Manufacturer(int gamenum)
 {
-    return get_game_driver(gamenum)->manufacturer;
+    return get_game_driver(gamenum).manufacturer;
 }
 
 
