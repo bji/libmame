@@ -22,9 +22,6 @@
 #include <pthread.h>
 #include <string.h>
 
-// Sorry MAME, you don't get to tell me I can't use C++ delete
-#undef delete
-
 /**
  * MAME sources seem to follow 8.3 limits, so 16 should be enough
  **/
@@ -83,7 +80,7 @@ public:
         
         if (!driversM) {
             emu_options options;
-            driversM = new driver_enumerator(options);
+            driversM = global_alloc(driver_enumerator(options));
         }
 
         pthread_mutex_unlock(&mutexM);
@@ -1121,17 +1118,16 @@ static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
         }
         g_gameinfos = (GameInfo *) osd_calloc
             (sizeof(GameInfo) * g_game_count);
-        int driver_count = g_drivers.Get().total();
-        int gameinfo_index = 0;
-        for (int driver_index = 0; driver_index < driver_count; 
-             driver_index++) {
-            const game_driver &driver = g_drivers.Get().driver(driver_index);
-            GameInfo *gameinfo = &(g_gameinfos[gameinfo_index]);
+        int gameinfo_index = 0, driver_index = 0;
+        g_drivers.Get().reset();
+        while (g_drivers.Get().next()) {
+            const game_driver &driver = g_drivers.Get().driver();
             int *pHashValue;
             g_drivers_hash.Put(driver.name, /* returns */ pHashValue);
-            *pHashValue = driver_index;
+            *pHashValue = driver_index++;
             if (!(driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
                                   GAME_MECHANICAL))) {
+                GameInfo *gameinfo = &(g_gameinfos[gameinfo_index]);
                 gameinfo->converted = false;
                 gameinfo->driver_index = driver_index;
                 gameinfo->gameinfo_index = gameinfo_index;
