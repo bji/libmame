@@ -34,8 +34,11 @@ LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
 
 ifdef STATIC
 
-# TODO: Figure out how to successfully strip the unneeded symbols from
-# libmame.o
+# It would be nice to somehow resolve all symbols in libmame.a, leaving only
+# the LibMame_* symbols as undefined, but this doesn't seem possible with ld.
+# I don't understand why ld doesn't have an option for linking a bunch of
+# object files into another object file with all relocations done, and yet
+# leaving unresolved symbols unresolved; but it doesn't.
 LIBMAME = $(OBJ)/libmame.a
 $(LIBMAME): $(LIBMAMEOBJS)
 			$(ECHO) Archiving $@...
@@ -44,12 +47,15 @@ $(LIBMAME): $(LIBMAMEOBJS)
 
 else
 
+VERSION_SCRIPT := $(SRC)/libmame/libmame.version
+
 ifdef SYMBOLS
 
 LIBMAME = $(OBJ)/libmame.so
 $(LIBMAME): $(LIBMAMEOBJS)
 			$(ECHO) Linking $@...
-			@echo "-shared -o $@ $^" > $(OBJ)/libmame/ldargs
+			@echo "-shared -Wl,--version-script=$(VERSION_SCRIPT) -o $@ $^" \
+                > $(OBJ)/libmame/ldargs
 			$(LD) @$(OBJ)/libmame/ldargs
 
 else
@@ -57,10 +63,12 @@ else
 LIBMAME = $(OBJ)/libmame.so
 $(LIBMAME): $(LIBMAMEOBJS)
 			$(ECHO) Linking $@...
-			@echo "-shared -o $@ $^" > $(OBJ)/libmame/ldargs
+			@echo "-shared -Wl,--version-script=$(VERSION_SCRIPT) -o $@ $^" \
+                > $(OBJ)/libmame/ldargs
 			$(LD) @$(OBJ)/libmame/ldargs
 			$(ECHO) Stripping $@...
 			$(STRIP) --strip-unneeded $@
+
 endif
 
 endif
