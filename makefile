@@ -488,7 +488,9 @@ endif
 
 # CFLAGS is defined based on C or C++ targets
 # (remember, expansion only happens when used, so doing it here is ok)
-CFLAGS = $(CCOMFLAGS) $(CPPONLYFLAGS)
+# Additionally, any extra CFLAGS from the environment are used in
+# CFLAGS_EXTRA
+CFLAGS = $(CCOMFLAGS) $(CPPONLYFLAGS) $(CFLAGS_EXTRA)
 
 # we compile C-only to C89 standard with GNU extensions
 # we compile C++ code to C++98 standard with GNU extensions
@@ -605,12 +607,13 @@ endif
 #-------------------------------------------------
 
 # LDFLAGS are used generally; LDFLAGSEMULATOR are additional
-# flags only used when linking the core emulator
-LDFLAGS =
+# flags only used when linking the core emulator.  Allow LDFLAGS_EXTRA to
+# come from the environment.
+LDFLAGS = $(LDFLAGS_EXTRA)
 ifneq ($(TARGETOS),macosx)
 ifneq ($(TARGETOS),os2)
 ifneq ($(TARGETOS),solaris)
-LDFLAGS = -Wl,--warn-common
+LDFLAGS += -Wl,--warn-common
 endif
 endif
 endif
