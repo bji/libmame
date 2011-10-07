@@ -214,13 +214,13 @@ typedef struct LibMame_RunGame_State
  * This is a packed representation of everything necessary to identify the
  * controller that MAME is asking about.
  **/
-#define CBDATA_PLAYER_MASK              0x000F
-#define CBDATA_IPT_MASK                 0xFFF0
-#define CBDATA_PLAYER(d)                (((long) d) & CBDATA_PLAYER_MASK)
-#define CBDATA_IPT(d)                   ((((long) d) & CBDATA_IPT_MASK) >> 8)
-#define CBDATA_MAKE(player, ipt)        ((void *) (uintptr_t)                \
-                                         (((player) & CBDATA_PLAYER_MASK) |  \
-                                          ((ipt << 8) & CBDATA_IPT_MASK)))
+#define CBDATA_PLAYER_MASK           0x000F
+#define CBDATA_IPT_MASK              0xFFF0
+#define CBDATA_PLAYER(d)             (((uintptr_t) d) & CBDATA_PLAYER_MASK)
+#define CBDATA_IPT(d)                ((((uintptr_t) d) & CBDATA_IPT_MASK) >> 8)
+#define CBDATA_MAKE(player, ipt)     ((void *) (uintptr_t)                \
+                                      (((player) & CBDATA_PLAYER_MASK) |  \
+                                       ((ipt << 8) & CBDATA_IPT_MASK)))
 
 /* These macros make the following table definition more conscise */
 #define INVALID_INPUT \
