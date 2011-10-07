@@ -24,7 +24,15 @@ MAKELIST_TARGET = $(BUILDOUT)/makelist$(BUILD_EXE)
 PNG2BDC_TARGET = $(BUILDOUT)/png2bdc$(BUILD_EXE)
 VERINFO_TARGET = $(BUILDOUT)/verinfo$(BUILD_EXE)
 
+
+MUNGE_PATH :=
 ifeq ($(TARGETOS),win32)
+ifeq ($(findstring /sh, $(SHELL)),)
+MUNGE_PATH := true
+endif
+endif
+
+ifeq ($(MUNGE_PATH),true)
 FILE2STR = $(subst /,\,$(FILE2STR_TARGET))
 MAKEDEP = $(subst /,\,$(MAKEDEP_TARGET))
 MAKELIST = $(subst /,\,$(MAKELIST_TARGET))
