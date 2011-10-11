@@ -516,9 +516,6 @@ ifdef PROFILE
 CCOMFLAGS += -pg
 endif
 
-# add global new/delete tracking flags
-CCOMFLAGS += -DTRACK_STANDARD_NEW_AND_DELETE=$(TRACK_STANDARD_NEW_AND_DELETE)
-
 # add the optimization flag
 CCOMFLAGS += -O$(OPTIMIZE)
 
