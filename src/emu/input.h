@@ -407,6 +407,8 @@ private:
 };
 
 
+// ======================> input_code
+
 // a combined code that describes a particular input on a particular device
 class input_code
 {

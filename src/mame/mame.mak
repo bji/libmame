@@ -337,6 +337,8 @@ DRVLIBS += \
 	$(MAMEOBJ)/pinball.a \
 	$(MAMEOBJ)/shared.a \
 
+
+
 #-------------------------------------------------
 # the following files are general components and
 # shared across a number of drivers
@@ -1428,7 +1430,6 @@ DRVLIBOBJ_SEGA = \
 	$(DRIVERS)/hshavoc.o \
 	$(DRIVERS)/kopunch.o $(VIDEO)/kopunch.o \
 	$(MACHINE)/megadriv.o \
-	$(DRIVERS)/megadriv.o \
 	$(MACHINE)/md_cart.o \
 	$(DRIVERS)/megadrvb.o \
 	$(DRIVERS)/megaplay.o \

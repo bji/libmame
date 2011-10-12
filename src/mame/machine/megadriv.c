@@ -1000,7 +1000,6 @@ static void handle_dma_bits(running_machine &machine)
 		UINT32 source;
 		UINT16 length;
 		source = (MEGADRIVE_REG15_DMASOURCE1 | (MEGADRIVE_REG16_DMASOURCE2<<8) | ((MEGADRIVE_REG17_DMASOURCE3&0xff)<<16))<<1;
-        (void) source;
 		length = (MEGADRIVE_REG13_DMALENGTH1 | (MEGADRIVE_REG14_DMALENGTH2<<8))<<1;
 		mame_printf_debug("%s 68k DMAtran set source %06x length %04x dest %04x enabled %01x code %02x %02x\n", machine.describe_context(), source, length, megadrive_vdp_address,MEGADRIVE_REG01_DMA_ENABLE, megadrive_vdp_code,MEGADRIVE_REG0F_AUTO_INC);
 	}
@@ -1016,9 +1015,7 @@ static void handle_dma_bits(running_machine &machine)
 			UINT32 source;
 			UINT16 length;
 			source = (MEGADRIVE_REG15_DMASOURCE1 | (MEGADRIVE_REG16_DMASOURCE2<<8) | ((MEGADRIVE_REG17_DMASOURCE3&0x7f)<<16))<<1;
-            (void) source;
 			length = (MEGADRIVE_REG13_DMALENGTH1 | (MEGADRIVE_REG14_DMALENGTH2<<8))<<1;
-            (void) length;
 
 			/* The 68k is frozen during this transfer, it should be safe to throw a few cycles away and do 'instant' DMA because the 68k can't detect it being in progress (can the z80?) */
 			//mame_printf_debug("68k->VRAM DMA transfer source %06x length %04x dest %04x enabled %01x\n", source, length, megadrive_vdp_address,MEGADRIVE_REG01_DMA_ENABLE);

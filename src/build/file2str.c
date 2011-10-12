@@ -68,8 +68,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* read the source file */
-	int unused = fread(buffer, 1, bytes, src);
-    (void) unused;
+	fread(buffer, 1, bytes, src);
 	buffer[bytes] = 0;
 	fclose(src);
 

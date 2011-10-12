@@ -1116,8 +1116,7 @@ static void process_source_file(running_machine &machine)
 
 		/* fetch the next line */
 		memset(buf, 0, sizeof(buf));
-		char *res = fgets(buf, sizeof(buf), global->source_file);
-        (void) res;
+		fgets(buf, sizeof(buf), global->source_file);
 
 		/* strip out comments (text after '//') */
 		s = strstr(buf, "//");

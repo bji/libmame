@@ -2195,9 +2195,7 @@ static void build_optable(running_machine &machine)
 									UINT8 instrbuffer[10];
 									instrbuffer[0] = (opnum | eabits) >> 8;
 									instrbuffer[1] = (opnum | eabits);
-                                    (void) instrbuffer;
 									dummybuffer[0] = 0;
-                                    (void) dummybuffer;
 									assert(length == (m68k_disassemble_raw(dummybuffer, 0, instrbuffer, instrbuffer, M68K_CPU_TYPE_68000) & 0xff) / 2);
 								}
 								#endif
