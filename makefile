@@ -307,12 +307,15 @@ endif
 
 # extension for executables
 EXE = 
+SHLIB = .so
 
 ifeq ($(TARGETOS),win32)
 EXE = .exe
+SHLIB = .dll
 endif
 ifeq ($(TARGETOS),os2)
 EXE = .exe
+SHLIB = .dll
 endif
 
 ifndef BUILD_EXE

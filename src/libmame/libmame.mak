@@ -12,13 +12,9 @@ OBJDIRS += $(OBJ)/libmame
 # variable definitions
 #-------------------------------------------------
 
-# These are the object files and libraries whose contents will be combined
-# together to make the libmame library
-LIBMAMEOBJS = $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) \
-              $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(FORMATSOBJS) \
-              $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) $(ZLIBOBJS) \
-              $(SOFTFLOATOBJS) $(DRIVLISTOBJ) \
-              $(OBJ)/libmame/hashtable.o \
+# These are the libmame objects
+
+LIBMAMEOBJS = $(OBJ)/libmame/hashtable.o \
               $(OBJ)/libmame/libmame_idv.o \
               $(OBJ)/libmame/libmame_games.o \
               $(OBJ)/libmame/libmame_options.o \
@@ -40,7 +36,10 @@ ifdef STATIC
 # object files into another object file with all relocations done, and yet
 # leaving unresolved symbols unresolved; but it doesn't.
 LIBMAME = $(OBJ)/libmame.a
-$(LIBMAME): $(LIBMAMEOBJS)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) \
+            $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(FORMATSOBJS) \
+            $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) $(ZLIBOBJS) \
+            $(SOFTFLOATOBJS) $(DRIVLISTOBJ)
 			$(ECHO) Archiving $@...
 			@echo "crs $@ $^" > $(OBJ)/libmame/arargs
 			$(AR) @$(OBJ)/libmame/arargs
@@ -51,21 +50,23 @@ VERSION_SCRIPT := $(SRC)/libmame/libmame.version
 
 ifdef SYMBOLS
 
-LIBMAME = $(OBJ)/libmame.so
-$(LIBMAME): $(LIBMAMEOBJS)
+LIBMAME = $(OBJ)/libmame$(SHLIB)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) \
+            $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) \
+            $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
-			@echo "-shared -Wl,--version-script=$(VERSION_SCRIPT) -o $@ $^" \
-                > $(OBJ)/libmame/ldargs
-			$(LD) @$(OBJ)/libmame/ldargs
+			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT) \
+                -o $@ $^ -lpthread
 
 else
 
-LIBMAME = $(OBJ)/libmame.so
-$(LIBMAME): $(LIBMAMEOBJS)
+LIBMAME = $(OBJ)/libmame$(SHLIB)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) \
+            $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) \
+            $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
-			@echo "-shared -Wl,--version-script=$(VERSION_SCRIPT) -o $@ $^" \
-                > $(OBJ)/libmame/ldargs
-			$(LD) @$(OBJ)/libmame/ldargs
+			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT) \
+                -o $@ $^ -lpthread
 			$(ECHO) Stripping $@...
 			$(STRIP) --strip-unneeded $@
 
