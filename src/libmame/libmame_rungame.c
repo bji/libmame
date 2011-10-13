@@ -1166,7 +1166,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
     emu_options mame_options;
     if (options == NULL) {
         LibMame_RunGameOptions default_options;
-        LibMame_Set_Default_RunGameOptions(&default_options);
+        LibMame_Get_Default_RunGameOptions(&default_options);
         get_mame_options(&default_options,
                          LibMame_Get_Game_Short_Name(gamenum), mame_options);
     }

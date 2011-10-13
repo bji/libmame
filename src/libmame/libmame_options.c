@@ -199,7 +199,7 @@ void get_mame_options(const LibMame_RunGameOptions *options,
 }
 
 
-void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options)
+void LibMame_Get_Default_RunGameOptions(LibMame_RunGameOptions *options)
 {
     /* Create an options structure just to get the defaults out of it */
 	emu_options mame_defaults;

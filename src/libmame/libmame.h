@@ -80,7 +80,7 @@ extern "C" {
  *    functionality:
  *    - LibMame_Initialize
  *    - LibMame_Deinitialize
- *    - LibMame_Set_Default_RunGameOptions
+ *    - LibMame_Get_Default_RunGameOptions
  *
  *
  * In general, applications using libmame will follow this pattern:
@@ -94,7 +94,7 @@ extern "C" {
  *    LibMame_Get_Game_Number.
  *
  * 4. Set options for running the game by first calling 
- *    LibMame_Set_Default_RunGameOptions, and then customizing the resulting
+ *    LibMame_Get_Default_RunGameOptions, and then customizing the resulting
  *    options according to user preference.
  *
  * 5. Set up internal state for managing the display, sound, and controller
@@ -1232,7 +1232,7 @@ typedef struct LibMame_AllControlsState
 
 /**
  * These are the configuration options for LibMame_RunGame.  Defaults can
- * be loaded by calling LibMame_Set_Default_RunGameOptions, and then
+ * be loaded by calling LibMame_Get_Default_RunGameOptions, and then
  * customizations done before calling LibMame_RunGame with the resulting
  * options.
  **/
@@ -2059,7 +2059,7 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
  *
  * @param options is the options structure to set defaults in
  **/
-void LibMame_Set_Default_RunGameOptions(LibMame_RunGameOptions *options);
+void LibMame_Get_Default_RunGameOptions(LibMame_RunGameOptions *options);
 
 
 /** --------------------------------------------------------------------------
