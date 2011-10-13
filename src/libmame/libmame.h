@@ -1738,9 +1738,9 @@ void LibMame_Deinitialize();
 const char *LibMame_Get_Version_String();
 
 
-/** --------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
  * Functions for querying the supported games and their properties
- -------------------------------------------------------------------------- **/
+ ----------------------------------------------------------------------------*/
 
 /**
  * Returns the total number of games supported by this instance of libmame.
@@ -2050,9 +2050,9 @@ LibMame_Image LibMame_Get_Game_Hdd(int gamenum, int hddnum);
 const char *LibMame_Get_Game_SourceFileName(int gamenum);
 
 
-/** --------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
  * Functions for managing options
- -------------------------------------------------------------------------- **/
+ ----------------------------------------------------------------------------*/
 
 /**
  * Sets the LibMame_RunGameOptions structure to contain all default values.
@@ -2062,9 +2062,9 @@ const char *LibMame_Get_Game_SourceFileName(int gamenum);
 void LibMame_Get_Default_RunGameOptions(LibMame_RunGameOptions *options);
 
 
-/** --------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
  * Functions for running a game
- -------------------------------------------------------------------------- **/
+ ----------------------------------------------------------------------------*/
 
 /**
  * Runs a game.  Currently, this is a non-thread-safe call, so only one thread
@@ -2103,9 +2103,9 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
 const char *LibMame_RunningGame_GetSpeedText(LibMame_RunningGame *game);
 
 
-/** --------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
  * Functions for altering the state of a running game
- -------------------------------------------------------------------------- **/
+ ----------------------------------------------------------------------------*/
 
 /**
  * Requests that the currently running game be paused.  This will result in a
