@@ -1129,7 +1129,7 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
  * LibMame exported function implementations
  ************************************************************************** **/
 
-LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
+LibMame_RunGameStatus LibMame_RunGame(int gamenum, int benchmarking,
                                       const LibMame_RunGameOptions *options,
                                       const LibMame_RunGameCallbacks *cbs,
                                       void *callback_data)
@@ -1185,7 +1185,7 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
     int result;
     {
         libmame_rungame_osd_interface osd;
-        result = mame_execute(mame_options, osd, benchmarking);
+        result = mame_execute(mame_options, osd, benchmarking ? true : false);
     }
 
     /* Convert the resulting MAME code to a libmame code and return */

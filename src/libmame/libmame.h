@@ -2072,8 +2072,8 @@ void LibMame_Get_Default_RunGameOptions(LibMame_RunGameOptions *options);
  * to exit by a call to LibMame_RunningGame_ScheduleExit().
  *
  * @param gamenum is the game number of the game to run
- * @param benchmarking is a special parameter which should only be set to true
- *        by benchmarking programs that don't interact with the user
+ * @param benchmarking is a special parameter which should only be set to
+ *        nonzero by benchmarking programs that don't interact with the user
  * @param options if non-NULL, provides the options that the game will be run
  *        with.  If NULL, defaults will be used.
  * @param cbs is the set of callback functions that will be made as the game
@@ -2083,7 +2083,7 @@ void LibMame_Get_Default_RunGameOptions(LibMame_RunGameOptions *options);
  * @return the status that resulted from running (or attempting to run) the
  *         game
  **/
-LibMame_RunGameStatus LibMame_RunGame(int gamenum, bool benchmarking,
+LibMame_RunGameStatus LibMame_RunGame(int gamenum, int benchmarking,
                                       const LibMame_RunGameOptions *options,
                                       const LibMame_RunGameCallbacks *cbs,
                                       void *callback_data);
