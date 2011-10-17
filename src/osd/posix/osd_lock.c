@@ -26,14 +26,18 @@ osd_lock *osd_lock_alloc(void)
 
     if (ret == NULL)
     {
+        pthread_mutexattr_destroy(&mutexattr);
         return NULL;
     }
 
     if (pthread_mutex_init(ret, &mutexattr))
     {
+        pthread_mutexattr_destroy(&mutexattr);
         osd_free(ret);
         return NULL;
     }
+
+    pthread_mutexattr_destroy(&mutexattr);
 
     return (osd_lock *) ret;
 }

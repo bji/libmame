@@ -558,7 +558,7 @@ static INT32 get_controller_state(void *, void *data)
  **/
 static INT32 get_special_state(void *, void *data)
 {
-    int special_button_index = (long) data;
+    int special_button_index = (long) (uintptr_t) data;
 
     LibMame_SharedControlsState *shared_state =
         &(g_state.controls_state.shared);
