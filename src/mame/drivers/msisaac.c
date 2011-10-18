@@ -247,7 +247,7 @@ static WRITE8_DEVICE_HANDLER( sound_control_0_w )
 	//popmessage("SND0 0=%2x 1=%2x", state->m_snd_ctrl0, state->m_snd_ctrl1);
 
 	device_sound_interface *sound;
-	device->interface(sound);
+	device->get_interface(sound);
 	sound->set_output_gain(0, state->m_vol_ctrl[state->m_snd_ctrl0 & 15] / 100.0);	/* group1 from msm5232 */
 	sound->set_output_gain(1, state->m_vol_ctrl[state->m_snd_ctrl0 & 15] / 100.0);	/* group1 from msm5232 */
 	sound->set_output_gain(2, state->m_vol_ctrl[state->m_snd_ctrl0 & 15] / 100.0);	/* group1 from msm5232 */

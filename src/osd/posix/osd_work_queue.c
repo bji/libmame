@@ -6,9 +6,9 @@
  *
  ************************************************************************** **/
 
-#include "osdcore.h"
 #include <pthread.h>
 #include <unistd.h>
+#include "osdcore.h"
 
 /**
  * NOTE: Timeouts in work queue methods are pretty useless and should not be a

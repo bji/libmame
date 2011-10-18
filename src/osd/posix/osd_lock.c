@@ -6,9 +6,9 @@
  *
  ************************************************************************** **/
 
-#include "osdcore.h"
 #include <pthread.h>
 #include <stdlib.h>
+#include "osdcore.h"
 
 
 osd_lock *osd_lock_alloc(void)

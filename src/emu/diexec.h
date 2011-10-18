@@ -345,7 +345,7 @@ private:
 inline device_execute_interface *device_execute(device_t *device)
 {
 	device_execute_interface *intf;
-	if (!device->interface(intf))
+	if (!device->get_interface(intf))
 		throw emu_fatalerror("Device '%s' does not have execute interface", device->tag());
 	return intf;
 }

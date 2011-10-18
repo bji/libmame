@@ -331,7 +331,11 @@ MD = -mkdir$(EXE)
 RM = rm -f
 CP = cp -a
 STRIP = strip
+ifeq ($(OS),Windows_NT)
+ECHO = @rem
+else
 ECHO = @true
+endif
 else
 AR = @ar
 CC = @gcc

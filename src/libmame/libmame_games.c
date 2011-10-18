@@ -11,6 +11,8 @@
  * Support for getting game info
  **/
 
+#include <pthread.h>
+#include <string.h>
 #include "hashtable.h"
 #include "emu.h"
 #include "emuopts.h"
@@ -19,8 +21,6 @@
 #include "libmame.h"
 #include "osdcore.h"
 #include "sound/samples.h"
-#include <pthread.h>
-#include <string.h>
 
 /**
  * MAME sources seem to follow 8.3 limits, so 16 should be enough

@@ -214,23 +214,23 @@ public:
 	device_t *owner() const { return m_owner; }
 
 	// interface helpers
-	template<class _DeviceClass> bool interface(_DeviceClass *&intf) { intf = dynamic_cast<_DeviceClass *>(this); return (intf != NULL); }
-	template<class _DeviceClass> bool interface(_DeviceClass *&intf) const { intf = dynamic_cast<const _DeviceClass *>(this); return (intf != NULL); }
+	template<class _DeviceClass> bool get_interface(_DeviceClass *&intf) { intf = dynamic_cast<_DeviceClass *>(this); return (intf != NULL); }
+	template<class _DeviceClass> bool get_interface(_DeviceClass *&intf) const { intf = dynamic_cast<const _DeviceClass *>(this); return (intf != NULL); }
 	template<class _DeviceClass> bool next(_DeviceClass *&intf) const
 	{
 		for (device_t *cur = m_next; cur != NULL; cur = cur->m_next)
-			if (cur->interface(intf))
+			if (cur->get_interface(intf))
 				return true;
 		return false;
 	}
 
 	// specialized helpers for common core interfaces
-	bool interface(device_execute_interface *&intf) { intf = m_execute; return (intf != NULL); }
-	bool interface(device_execute_interface *&intf) const { intf = m_execute; return (intf != NULL); }
-	bool interface(device_memory_interface *&intf) { intf = m_memory; return (intf != NULL); }
-	bool interface(device_memory_interface *&intf) const { intf = m_memory; return (intf != NULL); }
-	bool interface(device_state_interface *&intf) { intf = m_state; return (intf != NULL); }
-	bool interface(device_state_interface *&intf) const { intf = m_state; return (intf != NULL); }
+	bool get_interface(device_execute_interface *&intf) { intf = m_execute; return (intf != NULL); }
+	bool get_interface(device_execute_interface *&intf) const { intf = m_execute; return (intf != NULL); }
+	bool get_interface(device_memory_interface *&intf) { intf = m_memory; return (intf != NULL); }
+	bool get_interface(device_memory_interface *&intf) const { intf = m_memory; return (intf != NULL); }
+	bool get_interface(device_state_interface *&intf) { intf = m_state; return (intf != NULL); }
+	bool get_interface(device_state_interface *&intf) const { intf = m_state; return (intf != NULL); }
 	device_execute_interface &execute() const { assert(m_execute != NULL); return *m_execute; }
 	device_memory_interface &memory() const { assert(m_memory != NULL); return *m_memory; }
 
@@ -536,7 +536,7 @@ template<class _InterfaceClass>
 bool device_list::first(_InterfaceClass *&intf) const
 {
 	for (device_t *cur = super::first(); cur != NULL; cur = cur->next())
-		if (cur->interface(intf))
+		if (cur->get_interface(intf))
 			return true;
 	return false;
 }

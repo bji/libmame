@@ -500,7 +500,7 @@ static CPU_INIT( scmp )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->interface(state);
+		device->get_interface(state);
 		state->state_add(SCMP_PC,     "PC",    cpustate->PC.w.l);
 		state->state_add(STATE_GENPC, "GENPC", cpustate->PC.w.l).noshow();
 		state->state_add(STATE_GENFLAGS, "GENFLAGS", cpustate->SR).noshow().formatstr("%8s");

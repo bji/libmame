@@ -7,9 +7,9 @@
  ************************************************************************** **/
 
 
+#include <string.h>
 #include "osdcore.h"
 #include "osd_util.h"
-#include <string.h>
 
 int convert_to_posix_path(const char *path, char *posix_path, int pathsize)
 {

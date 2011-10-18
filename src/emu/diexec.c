@@ -125,7 +125,7 @@ device_execute_interface::~device_execute_interface()
 void device_execute_interface::static_set_disable(device_t &device)
 {
 	device_execute_interface *exec;
-	if (!device.interface(exec))
+	if (!device.get_interface(exec))
 		throw emu_fatalerror("MCFG_DEVICE_DISABLE called on device '%s' with no execute interface", device.tag());
 	exec->m_disabled = true;
 }
@@ -139,7 +139,7 @@ void device_execute_interface::static_set_disable(device_t &device)
 void device_execute_interface::static_set_vblank_int(device_t &device, device_interrupt_func function, const char *tag, int rate)
 {
 	device_execute_interface *exec;
-	if (!device.interface(exec))
+	if (!device.get_interface(exec))
 		throw emu_fatalerror("MCFG_DEVICE_VBLANK_INT called on device '%s' with no execute interface", device.tag());
 	exec->m_vblank_interrupt = function;
 	exec->m_vblank_interrupts_per_frame = rate;
@@ -155,7 +155,7 @@ void device_execute_interface::static_set_vblank_int(device_t &device, device_in
 void device_execute_interface::static_set_periodic_int(device_t &device, device_interrupt_func function, attotime rate)
 {
 	device_execute_interface *exec;
-	if (!device.interface(exec))
+	if (!device.get_interface(exec))
 		throw emu_fatalerror("MCFG_DEVICE_PERIODIC_INT called on device '%s' with no execute interface", device.tag());
 	exec->m_timed_interrupt = function;
 	exec->m_timed_interrupt_period = rate;

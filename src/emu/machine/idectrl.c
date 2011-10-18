@@ -1844,7 +1844,7 @@ static DEVICE_START( ide_controller )
 		if (bmtarget == NULL)
 			throw emu_fatalerror("IDE controller '%s' bus master target '%s' doesn't exist!", device->tag(), config->bmcpu);
 		device_memory_interface *memory;
-		if (!bmtarget->interface(memory))
+		if (!bmtarget->get_interface(memory))
 			throw emu_fatalerror("IDE controller '%s' bus master target '%s' has no memory!", device->tag(), config->bmcpu);
 		ide->dma_space = memory->space(config->bmspace);
 		if (ide->dma_space == NULL)

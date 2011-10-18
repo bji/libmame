@@ -1951,7 +1951,7 @@ static CPU_INIT( z180 )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->interface(state);
+		device->get_interface(state);
 		state->state_add(Z180_PC,         "PC",        cpustate->PC.w.l);
 		state->state_add(STATE_GENPC,     "GENPC",     cpustate->_PCD).noshow();
 		state->state_add(STATE_GENPCBASE, "GENPCBASE", cpustate->PREPC.w.l).noshow();

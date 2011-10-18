@@ -6,8 +6,6 @@
  *
  ************************************************************************** **/
 
-#include "osdcore.h"
-#include "osdepend.h"
 #include <signal.h>
 #include <stdlib.h>
 #ifdef WINDOWS
@@ -17,6 +15,8 @@
 #endif
 #include <sys/time.h>
 #include <unistd.h>
+#include "osdcore.h"
+#include "osdepend.h"
 
 /**
  * Undo mame definition of malloc and free as macros.  That doesn't seem

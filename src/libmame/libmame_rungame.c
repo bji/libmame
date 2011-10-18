@@ -8,6 +8,8 @@
  *
  ************************************************************************** **/
 
+#include <stddef.h>
+#include <string.h>
 #include "emu.h"
 #include "emuopts.h"
 #include "libmame.h"
@@ -16,8 +18,6 @@
 #include "osdepend.h"
 #include "render.h"
 #include "video.h"
-#include <stddef.h>
-#include <string.h>
 
 
 /** **************************************************************************

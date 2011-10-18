@@ -7,9 +7,6 @@
  ************************************************************************** **/
 
 
-#include "osdcore.h"
-#include "osdepend.h"
-#include "osd_util.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +14,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "osdcore.h"
+#include "osdepend.h"
+#include "osd_util.h"
 
 struct _osd_file
 {

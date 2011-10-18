@@ -388,7 +388,7 @@ static WRITE8_DEVICE_HANDLER( ay_enable_w )
 	int output;
 
 	device_sound_interface *sound;
-	device->interface(sound);
+	device->get_interface(sound);
 	for (output = 0; output < 3; output++)
 		sound->set_output_gain(output, (data & 1) ? 1.0 : 0.0);
 }
@@ -397,7 +397,7 @@ static WRITE8_DEVICE_HANDLER( ay_enable_w )
 static WRITE8_DEVICE_HANDLER( speech_enable_w )
 {
 	device_sound_interface *sound;
-	device->interface(sound);
+	device->get_interface(sound);
 	sound->set_output_gain(0, (data & 1) ? 1.0 : 0.0);
 }
 
