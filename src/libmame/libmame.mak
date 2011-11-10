@@ -55,8 +55,7 @@ $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) \
             $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) \
             $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
-			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT) \
-                -o $@ $^ -lpthread
+			$(LD) $(LDFLAGS) -shared -o $@ $^ -lpthread
 
 else
 
