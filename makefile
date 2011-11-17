@@ -388,9 +388,13 @@ ifdef DEBUG
 SUFFIXDEBUG = d
 endif
 
-# static library builds get the 's' suffix
+# static library builds get the 's' suffix, but not on Windows, for
+# which all object files are PIC so the static and shared libraries can be
+# built from the same objects
+ifneq ($(TARGETOS),win32)
 ifdef STATIC
 SUFFIXSTATIC = s
+endif
 endif
 
 # gprof builds get an addition 'p' suffix

@@ -35,13 +35,18 @@ ifdef STATIC
 # I don't understand why ld doesn't have an option for linking a bunch of
 # object files into another object file with all relocations done, and yet
 # leaving unresolved symbols unresolved; but it doesn't.
+# Microsoft Windows builds have command line length limitations which require
+# using the @file option to GNU ar, and the built file has to be done line
+# by line to also avoid command line length limitations.
 LIBMAME = $(OBJ)/libmame.a
 $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) \
             $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(FORMATSOBJS) \
             $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) $(ZLIBOBJS) \
             $(SOFTFLOATOBJS) $(DRIVLISTOBJ)
-			$(ECHO) Archiving $@...
-			@echo "crs $@ $^" > $(OBJ)/libmame/arargs
+			$(ECHO) Archiving $@...\
+			$(RM) $(OBJ)/libmame/arargs
+			$(foreach word,crs $@ $^,$(shell echo $(word) >> \
+                $(OBJ)/libmame/arargs))
 			$(AR) @$(OBJ)/libmame/arargs
 
 else

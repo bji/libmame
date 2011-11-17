@@ -29,13 +29,13 @@ ifndef GNUMAKEFRAG_INCLUDED
 endif
 
 # MAME wants PTR64 to be defined on 64 bit systems
-ifeq ($(BUILD_ARCH),x86_64)
+ifeq ($(TARGET_ARCH),x86_64)
     PTR64 := 1
 else
-ifeq ($(BUILD_ARCH),x86)
+ifeq ($(TARGET_ARCH),x86)
     PTR64 := 0
 else
-    $(error "ERROR: Unknown BUILD_ARCH: $(BUILD_ARCH)")
+    $(error "ERROR: Unknown TARGET_ARCH: $(TARGET_ARCH)")
 endif
 endif
 
@@ -67,12 +67,16 @@ LIBMAME_SHARED_LIBRARY := $(INSTALL_DIR)/lib/libmame$(SE)
 
 # For Microsoft Windows platform, include special include path and library
 # link path.  Also define some stuff that pthreads-win32 needs to compile
-# without warnings.
-CFLAGS_EXTRA :=
-LDFLAGS_EXTRA :=
+# without warnings in 32 bit builds; weird.
+LIBMAME_CFLAGS_EXTRA :=
+LIBMAME_LDFLAGS_EXTRA :=
 ifeq ($(BUILD_OS),mswin)
-	CFLAGS_EXTRA := -Iz:/include -DHAVE_CONFIG_H=0 -DHAVE_SIGNAL_H=0 -DHAVE_STRUCT_TIMESPEC=1 -D_POSIX_C_SOURCE=200103
-	LDFLAGS_EXTRA := -Lz:/lib
+    ifeq ($(TARGET_ARCH),x86)
+	    LIBMAME_CFLAGS_EXTRA := -Iz:/include -DHAVE_CONFIG_H=0 -DHAVE_SIGNAL_H=0 -DHAVE_STRUCT_TIMESPEC=1 -D_POSIX_C_SOURCE=200103
+    else
+	    LIBMAME_CFLAGS_EXTRA := -Iz:/include
+    endif
+	LIBMAME_LDFLAGS_EXTRA := -Lz:/lib
 endif
 
 # -----------------------------------------------------------------------------
@@ -93,7 +97,12 @@ libmame-shared: $(LIBMAME_SHARED_LIBRARY)
 # Install targets
 $(INSTALL_DIR)/include/libmame/libmame.h:                                     \
                               $(LIBMAME_PROJECT_PREFIX)/src/libmame/libmame.h
+# mswin libmame target puts static library in same place as shared
+ifeq ($(TARGET_OS),mswin)
+$(LIBMAME_STATIC_LIBRARY): $(MAME_OUTPUT_DIRECTORY)/libmame.a
+else
 $(LIBMAME_STATIC_LIBRARY): $(MAME_OUTPUT_DIRECTORY)s/libmame.a
+endif
 $(LIBMAME_SHARED_LIBRARY): $(MAME_OUTPUT_DIRECTORY)/libmame$(SE)
 # -----------------------------------------------------------------------------
 
@@ -102,12 +111,12 @@ $(LIBMAME_SHARED_LIBRARY): $(MAME_OUTPUT_DIRECTORY)/libmame$(SE)
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
 $(MAME_OUTPUT_DIRECTORY)s/libmame.a: 
-	$(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA_LIBMAME=$(CFLAGS_EXTRA) LDFLAGS_EXTRA_LIBMAME=$(LDFLAGS_EXTRA) -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
 $(MAME_OUTPUT_DIRECTORY)/libmame$(SE):
-	$(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA_LIBMAME=$(CFLAGS_EXTRA) LDFLAGS_EXTRA_LIBMAME=$(LDFLAGS_EXTRA) -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+	$(\VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
