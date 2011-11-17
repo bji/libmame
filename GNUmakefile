@@ -32,7 +32,7 @@ endif
 ifeq ($(BUILD_ARCH),x86_64)
     PTR64 := 1
 else
-ifeq ($(BUILD_ARCH),i686)
+ifeq ($(BUILD_ARCH),x86)
     PTR64 := 0
 else
     $(error "ERROR: Unknown BUILD_ARCH: $(BUILD_ARCH)")
@@ -61,9 +61,9 @@ ifneq ($(PROFILE),)
     MAME_OUTPUT_DIRECTORY := $(MAME_OUTPUT_DIRECTORY)p
 endif
 
-export LIBMAME_INCLUDES := $(INSTALL_DIR)/include/libmame/libmame.h
-export LIBMAME_STATIC_LIBRARY := $(INSTALL_DIR)/lib/libmame.a
-export LIBMAME_SHARED_LIBRARY := $(INSTALL_DIR)/lib/libmame$(SE)
+LIBMAME_INCLUDES := $(INSTALL_DIR)/include/libmame/libmame.h
+LIBMAME_STATIC_LIBRARY := $(INSTALL_DIR)/lib/libmame.a
+LIBMAME_SHARED_LIBRARY := $(INSTALL_DIR)/lib/libmame$(SE)
 
 # For Microsoft Windows platform, include special include path and library
 # link path.  Also define some stuff that pthreads-win32 needs to compile
