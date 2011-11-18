@@ -40,21 +40,18 @@ LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) \
                        $(COTHREADOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
                        $(DRIVLISTOBJ)
 
-$(shell rm -f $(OBJ)/libmame/arargs)
-$(foreach word,crs $(LIBMAME) $(LIBMAME_STATIC_OBJS),$(shell echo $(word) >> $(OBJ)/libmame/arargs))
+$(shell rm -f libmame_arargs)
+$(foreach word,crs $(LIBMAME) $(LIBMAME_STATIC_OBJS),$(shell echo $(word) >> libmame_arargs))
 
 # It would be nice to somehow resolve all symbols in libmame.a, leaving only
 # the LibMame_* symbols as undefined, but this doesn't seem possible with ld.
 # I don't understand why ld doesn't have an option for linking a bunch of
 # object files into another object file with all relocations done, and yet
 # leaving unresolved symbols unresolved; but it doesn't.
-# Microsoft Windows builds have command line length limitations which require
-# using the @file option to GNU ar, and the built file has to be done line
-# by line to also avoid command line length limitations.
 
 $(LIBMAME): $(LIBMAME_STATIC_OBJS)
 			$(ECHO) Archiving $@...
-			$(AR) @$(OBJ)/libmame/arargs
+			$(AR) libmame_arargs
 
 else
 

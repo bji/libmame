@@ -797,6 +797,7 @@ ifdef SYMBOLS
 	@echo Deleting $(FULLNAME).sym...
 	$(RM) $(FULLNAME).sym
 endif
+	@rm -f libmame_arargs
 
 .PHONY: checkautodetect
 checkautodetect:
