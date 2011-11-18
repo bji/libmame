@@ -40,8 +40,9 @@ LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) \
                        $(COTHREADOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
                        $(DRIVLISTOBJ)
 
-$(shell rm -f libmame_arargs)
-$(foreach word,crs $(LIBMAME) $(LIBMAME_STATIC_OBJS),$(shell echo $(word) >> libmame_arargs))
+$(OBJ)/libmame/libmame_arargs:
+		$(shell rm -f $(OBJ)/libmame/libmame_arargs)
+		$(foreach word,crs $(LIBMAME) $(LIBMAME_STATIC_OBJS),$(shell echo $(word) >> $(OBJ)/libmame/libmame_arargs))
 
 # It would be nice to somehow resolve all symbols in libmame.a, leaving only
 # the LibMame_* symbols as undefined, but this doesn't seem possible with ld.
@@ -49,9 +50,9 @@ $(foreach word,crs $(LIBMAME) $(LIBMAME_STATIC_OBJS),$(shell echo $(word) >> lib
 # object files into another object file with all relocations done, and yet
 # leaving unresolved symbols unresolved; but it doesn't.
 
-$(LIBMAME): $(LIBMAME_STATIC_OBJS)
+$(LIBMAME): $(LIBMAME_STATIC_OBJS) | $(OBJ)/libmame/libmame_arargs
 			$(ECHO) Archiving $@...
-			$(AR) libmame_arargs
+			$(AR) @$(OBJ)/libmame/libmame_arargs
 
 else
 
