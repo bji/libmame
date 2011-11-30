@@ -731,26 +731,6 @@ typedef struct LibMame_ScreenResolution
 
 
 /**
- * This describes the name and location of a sound sample.
- **/
-typedef struct LibMame_SoundSample
-{
-    /**
-     * This is the name of the sample, which is a file name of a sound file as
-     * stored in a sound sample ZIP file.
-     **/
-    const char *name;
-
-    /**
-     * This is the game number of the game that has the actual sample.  Some
-     * games reference sound sample files from other games, and thus use a
-     * different source game number than their own game number.
-     **/
-    int source_gamenum;
-} LibMame_SoundSample;
-
-
-/**
  * This describes a chip that MAME emulates.
  **/
 typedef struct LibMame_Chip
