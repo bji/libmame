@@ -208,6 +208,10 @@ COTHREADOBJS = \
 
 $(OBJ)/libco.a: $(COTHREADOBJS)
 
+ifndef PROFILE
+COTHREAD_CFLAGS := -fomit-frame-pointer
+endif
+
 $(LIBOBJ)/cothread/%.o: $(LIBSRC)/cothread/%.c | $(OSPREBUILD)
 	@echo Compiling $<...
-	$(CC) $(CDEFS) $(CCOMFLAGS) -c -fomit-frame-pointer $< -o $@
+	$(CC) $(CDEFS) $(CCOMFLAGS) $(COTHREAD_CFLAGS) -c $< -o $@

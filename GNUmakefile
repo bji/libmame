@@ -93,6 +93,9 @@ libmame: $(LIBMAME_INCLUDES)                                                  \
          $(LIBMAME_STATIC_LIBRARY)                                            \
          $(LIBMAME_SHARED_LIBRARY) 
 
+.PHONY: libmame-force
+libmame-force: libmame-build-static libmame-build-shared
+
 .PHONY: libmame-static
 libmame-static: $(LIBMAME_STATIC_LIBRARY)
 
@@ -109,16 +112,25 @@ $(LIBMAME_SHARED_LIBRARY): $(MAME_OUTPUT_DIRECTORY)/libmame$(SE)
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
+# Build targets
+.PHONY: libmame-build-static
+libmame-build-static:
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+
+.PHONY: libmame-build-shared
+libmame-build-shared:
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # Library targets 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
-$(LIBMAME_STATIC_LIBRARY_BUILD):
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+$(LIBMAME_STATIC_LIBRARY_BUILD): libmame-build-static
 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
-$(MAME_OUTPUT_DIRECTORY)/libmame$(SE):
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+$(MAME_OUTPUT_DIRECTORY)/libmame$(SE): libmame-build-shared
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
