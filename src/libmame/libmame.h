@@ -926,7 +926,7 @@ typedef struct LibMame_BiosSet
 
     /**
      * These are the numbers of the game's ROMs that make up this BIOS set.
-     * To get the details of rom N, call LibMame_Get_Game_Image(gamenum, N).
+     * To get the details of rom N, call LibMame_Get_Game_Rom(gamenum, N).
      **/
     const int *rom_numbers;
 } LibMame_BiosSet;
