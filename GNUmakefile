@@ -12,9 +12,9 @@
 #   target.  It defines the following symbols to be used by the managing
 #   makefile:
 #   LIBMAME_INCLUDES: Set to the location of the libmame include files
+#   LIBMAME_LIBRARY: Set to the location of the built shared libmame
+#     library
 #   LIBMAME_STATIC_LIBRARY: Set to the location of the built static
-#     libmame library
-#   LIBMAME_SHARED_LIBRARY: Set to the location of the built shared
 #     libmame library
 # - Standalone Mode: in this mode, the GNUmakefile is used independent of
 #   any other project and defines the "all" target.
@@ -38,14 +38,15 @@ endif
 ifndef LIBMAME_PROJECT_PREFIX
 LIBMAME_PROJECT_PREFIX := .
 all: libmame
+all-static: libmame-static
 endif
 
 
 LIBMAME_INCLUDES := $(INSTALL_DIR)/include/libmame/libmame.h
 
-LIBMAME_STATIC_LIBRARY := $(INSTALL_DIR)/lib/libmame.a
+LIBMAME_LIBRARY := $(INSTALL_DIR)/lib/libmame$(SE)
 
-LIBMAME_SHARED_LIBRARY := $(INSTALL_DIR)/lib/libmame$(SE)
+LIBMAME_STATIC_LIBRARY := $(INSTALL_DIR)/lib/libmame.a
 
 # For Microsoft Windows platform, include special include path and library
 # link path.  Also define some stuff that pthreads-win32 needs to compile
@@ -92,50 +93,47 @@ ifeq ($(TARGET_SYSTEM),mswin)
 else
     LIBMAME_STATIC_LIBRARY_BUILD := $(MAME_OUTPUT_DIRECTORY)s/libmame.a
 endif
-LIBMAME_SHARED_LIBRARY_BUILD := $(MAME_OUTPUT_DIRECTORY)/libmame$(SE)
+LIBMAME_LIBRARY_BUILD := $(MAME_OUTPUT_DIRECTORY)/libmame$(SE)
 
-# Default rule: just the shared version
-.PHONY: libmame-shared
-libmame-shared: $(LIBMAME_INCLUDES) $(LIBMAME_SHARED_LIBRARY)
+# Shared rule
+.PHONY: libmame
+libmame: $(LIBMAME_INCLUDES) $(LIBMAME_LIBRARY)
 
 # Static rule
 .PHONY: libmame-static
 libmame-static: $(LIBMAME_INCLUDES) $(LIBMAME_STATIC_LIBRARY)
-
-# Everything rule
-.PHONY: libmame
-libmame: libmame-static libmame-shared
 
 
 # -----------------------------------------------------------------------------
 # Install targets
 $(INSTALL_DIR)/include/libmame/libmame.h:                                     \
                               $(LIBMAME_PROJECT_PREFIX)/src/libmame/libmame.h
+$(LIBMAME_LIBRARY): $(LIBMAME_LIBRARY_BUILD)
 $(LIBMAME_STATIC_LIBRARY): $(LIBMAME_STATIC_LIBRARY_BUILD)
-$(LIBMAME_SHARED_LIBRARY): $(LIBMAME_SHARED_LIBRARY_BUILD)
 # -----------------------------------------------------------------------------
 
-
-# -----------------------------------------------------------------------------
-# Build targets
-.PHONY: libmame-build-static
-libmame-build-static:
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
-
-.PHONY: libmame-build-shared
-libmame-build-shared:
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
-# -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
 # Library targets 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
-$(LIBMAME_STATIC_LIBRARY_BUILD): libmame-build-static
+$(LIBMAME_LIBRARY_BUILD): libmame-build
 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
-$(LIBMAME_SHARED_LIBRARY_BUILD): libmame-build-shared
+$(LIBMAME_STATIC_LIBRARY_BUILD): libmame-static-build
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# Build targets
+.PHONY: libmame-build
+libmame-build:
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+
+.PHONY: libmame-static-build
+libmame-static-build:
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
