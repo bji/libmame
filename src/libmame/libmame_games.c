@@ -164,22 +164,20 @@ static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
     const char *yearstr = driver->year;
 
+    gameinfo->year_of_release = 0;
+
     if (yearstr) {
-        gameinfo->year_of_release = 0;
         while (*yearstr) {
             if ((*yearstr >= '0') && (*yearstr <= '9')) {
                 gameinfo->year_of_release *= 10;
                 gameinfo->year_of_release += *yearstr - '0';
             }
             else {
-                gameinfo->year_of_release = -1;
+                gameinfo->year_of_release = 0;
                 break;
             }
             yearstr++;
         }
-    }
-    else {
-        gameinfo->year_of_release = -1;
     }
 }
 

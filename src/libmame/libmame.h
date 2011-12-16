@@ -1774,10 +1774,10 @@ const char *LibMame_Get_Game_Full_Name(int gamenum);
 
 
 /**
- * Returns the year that a game was released, or -1 if the year is unknown.
+ * Returns the year that a game was released, or 0 if the year is unknown.
  *
  * @param gamenum is the game number of the game
- * @return the year that a game was released, or -1 if the year is unknown.
+ * @return the year that a game was released, or 0 if the year is unknown.
  **/
 int LibMame_Get_Game_Year_Of_Release(int gamenum);
 
