@@ -37,7 +37,9 @@ endif
 # an 'all' target
 ifndef LIBMAME_PROJECT_PREFIX
 LIBMAME_PROJECT_PREFIX := .
+.PHONY: all
 all: libmame
+.PHONY: all
 all-static: libmame-static
 endif
 
