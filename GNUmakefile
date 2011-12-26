@@ -11,11 +11,10 @@
 #   project makefile.  This GNUmakefile declares does not define an "all"
 #   target.  It defines the following symbols to be used by the managing
 #   makefile:
-#   LIBMAME_INCLUDES: Set to the location of the libmame include files
-#   LIBMAME_LIBRARY: Set to the location of the built shared libmame
-#     library
-#   LIBMAME_STATIC_LIBRARY: Set to the location of the built static
-#     libmame library
+#   LIBMAME_TARGETS: Targets used to build all libmame installed files,
+#     in shared mode
+#   LIBMAME_STATIC_TARGETS: Targets used to build all libmame installed
+#     files, in static mode
 # - Standalone Mode: in this mode, the GNUmakefile is used independent of
 #   any other project and defines the "all" target.
 
@@ -49,6 +48,10 @@ LIBMAME_INCLUDES := $(INSTALL_DIR)/include/libmame/libmame.h
 LIBMAME_LIBRARY := $(INSTALL_DIR)/lib/libmame$(SE)
 
 LIBMAME_STATIC_LIBRARY := $(INSTALL_DIR)/lib/libmame.a
+
+LIBMAME_TARGETS := $(LIBMAME_INCLUDES) libmame
+
+LIBMAME_STATIC_TARGETS := $(LIBMAME_INCLUDES) libmame-static
 
 # For Microsoft Windows platform, include special include path and library
 # link path.  Also define some stuff that pthreads-win32 needs to compile
