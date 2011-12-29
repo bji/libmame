@@ -1,4 +1,5 @@
 /*----------- defined in drivers/stv.c -----------*/
+#define NEW_VIDEO_CODE 0
 
 class saturn_state : public driver_device
 {
@@ -8,12 +9,12 @@ public:
 
 	UINT32    *m_workram_l;
 	UINT32    *m_workram_h;
-	UINT8     *m_smpc_ram;
-	UINT32    *m_backupram;
+	UINT8     *m_backupram;
+	UINT8     *m_cart_backupram;
 	UINT32    *m_scu_regs;
 	UINT16    *m_sound_ram;
 	UINT16    *m_scsp_regs;
-	UINT32    *m_vdp2_regs;
+	UINT16    *m_vdp2_regs;
 	UINT32    *m_vdp2_vram;
 	UINT32    *m_vdp2_cram;
     UINT32    *m_vdp1_vram;
@@ -27,10 +28,12 @@ public:
 		UINT32    dst[3];		/* Destination DMA lv n address*/
 		UINT32    src_add[3];	/* Source Addition for DMA lv n*/
 		UINT32    dst_add[3];	/* Destination Addition for DMA lv n*/
-		INT32     size[3];		/* Transfer DMA size lv n*/
+		UINT32    size[3];		/* Transfer DMA size lv n*/
 		UINT32    index[3];
 		int       start_factor[3];
 		UINT8     enable_mask[3];
+		UINT32    ist;
+		UINT32    ism;
 	}m_scu;
 
 	int       m_minit_boost;
@@ -55,6 +58,7 @@ public:
 	    UINT8     *gfx_decode;
 		UINT16    lopr;
 		UINT16    copr;
+		UINT16    ewdr;
 
 		int       local_x;
 		int       local_y;
@@ -65,6 +69,12 @@ public:
 	    bitmap_t  *roz_bitmap[2];
 	    UINT8     dotsel;
 	    UINT8     pal;
+	    UINT16    h_count;
+	    UINT16    v_count;
+	    UINT8     exltfg;
+	    UINT8     exsyfg;
+		int       old_crmd;
+		int       old_tvmd;
 	}m_vdp2;
 
 	struct {
@@ -74,12 +84,23 @@ public:
         UINT8 EXLE2;
         UINT8 PDR1;
         UINT8 PDR2;
+        UINT8 DDR1;
+        UINT8 DDR2;
+        UINT8 SF;
+        UINT8 SR;
+        UINT8 IREG[7];
+        UINT8 OREG[32];
         int   intback_stage;
-        int   smpcSR;
         int   pmode;
         UINT8 SMEM[4];
         UINT8 intback;
+        UINT8 rtc_data[7];
 	}m_smpc;
+
+	struct {
+		UINT8 status;
+		UINT8 data;
+	}m_keyb;
 
 	/* Saturn specific*/
 	int m_saturn_region;
@@ -90,8 +111,9 @@ public:
 	UINT8     m_stv_multi_bank;
 	UINT8     m_prev_bankswitch;
     emu_timer *m_stv_rtc_timer;
-	UINT32    *m_ioga;
-	UINT8     m_instadma_hack;
+	UINT8     m_port_sel,m_mux_data;
+	UINT8     m_system_output;
+	UINT16    m_serial_tx;
 
 	legacy_cpu_device* m_maincpu;
 	legacy_cpu_device* m_slave;
@@ -108,13 +130,27 @@ public:
 #define STV_VDP1_VBE  ((STV_VDP1_TVMR & 0x0008) >> 3)
 #define STV_VDP1_TVM  ((STV_VDP1_TVMR & 0x0007) >> 0)
 
+#define IRQ_VBLANK_IN  1 << 0
+#define IRQ_VBLANK_OUT 1 << 1
+#define IRQ_HBLANK_IN  1 << 2
+#define IRQ_TIMER_0    1 << 3
+#define IRQ_TIMER_1    1 << 4
+#define IRQ_DSP_END    1 << 5
+#define IRQ_SOUND_REQ  1 << 6
+#define IRQ_SMPC       1 << 7
+#define IRQ_PAD        1 << 8
+#define IRQ_DMALV2     1 << 9
+#define IRQ_DMALV1     1 << 10
+#define IRQ_DMALV0     1 << 11
+#define IRQ_DMAILL     1 << 12
+#define IRQ_VDP1_END   1 << 13
+#define IRQ_ABUS       1 << 15
 
 DRIVER_INIT ( stv );
 
 
-/*----------- defined in drivers/stvinit.c -----------*/
+/*----------- defined in drivers/stv.c -----------*/
 
-UINT8 get_vblank(running_machine &machine);
 void install_stvbios_speedups(running_machine &machine);
 DRIVER_INIT(mausuke);
 DRIVER_INIT(puyosun);
@@ -179,12 +215,14 @@ WRITE32_HANDLER ( saturn_vdp1_framebuffer0_w );
 
 READ32_HANDLER ( saturn_vdp2_vram_r );
 READ32_HANDLER ( saturn_vdp2_cram_r );
-READ32_HANDLER ( saturn_vdp2_regs_r );
+READ16_HANDLER ( saturn_vdp2_regs_r );
 
 WRITE32_HANDLER ( saturn_vdp2_vram_w );
 WRITE32_HANDLER ( saturn_vdp2_cram_w );
-WRITE32_HANDLER ( saturn_vdp2_regs_w );
+WRITE16_HANDLER ( saturn_vdp2_regs_w );
 
 VIDEO_START ( stv_vdp2 );
 SCREEN_UPDATE( stv_vdp2 );
-
+#if NEW_VIDEO_CODE
+SCREEN_UPDATE( saturn );
+#endif

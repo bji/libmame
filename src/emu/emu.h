@@ -82,16 +82,17 @@ typedef device_t * (*machine_config_constructor)(machine_config &config, device_
 
 // I/O
 #include "input.h"
-#include "inptport.h"
+#include "ioport.h"
 #include "output.h"
 
 // devices and callbacks
-#include "devintrf.h"
+#include "device.h"
 #include "distate.h"
 #include "dimemory.h"
 #include "diexec.h"
 #include "opresolv.h"
 #include "diimage.h"
+#include "diserial.h"
 #include "dislot.h"
 #include "disound.h"
 #include "dinvram.h"
@@ -99,6 +100,7 @@ typedef device_t * (*machine_config_constructor)(machine_config &config, device_
 #include "didisasm.h"
 #include "schedule.h"
 #include "timer.h"
+#include "dinetwork.h"
 
 // timers, CPU and scheduling
 #include "devcpu.h"

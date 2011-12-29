@@ -2412,8 +2412,8 @@ static INPUT_PORTS_START( ultrax )
 	PORT_DIPSETTING(      0x0003, DEF_STR( Normal ) )	//$190
 	PORT_DIPSETTING(      0x0001, DEF_STR( Hard ) )		//$200
 	PORT_DIPSETTING(      0x0000, DEF_STR( Hardest ) )	//$300
-	PORT_DIPNAME( 0x0014, 0x0004, "Country" )				PORT_DIPLOCATION("DSW2:3,5")
-	PORT_DIPSETTING(      0x0000, "China" )
+	PORT_DIPNAME( 0x0014, 0x0004, DEF_STR( Region ) )				PORT_DIPLOCATION("DSW2:3,5")
+	PORT_DIPSETTING(      0x0000, DEF_STR( China ) )
 	PORT_DIPSETTING(      0x0014, DEF_STR( Japan ) )
 //PORT_DIPSETTING(      0x0010, DEF_STR( Japan ) )
 	PORT_DIPSETTING(      0x0004, DEF_STR( World ) )
@@ -4359,8 +4359,8 @@ STS0003 TWIN EAGLE
 | SETA ST010                          |
 |-------------------------------------|
 
-SX002-13 is GAL16V8B (undumped)
-SETA ST010 is some type of MCU/Math chip?
+  SX002-13: GAL16V8B (undumped)
+SETA ST010: Custom programmed uPD96050 MCU used for math caculations
 All roms are 16M Mask roms
 
 ***************************************************************************/

@@ -1,8 +1,6 @@
 #include "emu.h"
 #include "cpu/m6809/m6809.h"
 
-extern const char layout_pinball[];
-
 class wpc_dot_state : public driver_device
 {
 public:
@@ -32,9 +30,6 @@ static MACHINE_CONFIG_START( wpc_dot, wpc_dot_state )
 	MCFG_CPU_PROGRAM_MAP(wpc_dot_map)
 
 	MCFG_MACHINE_RESET( wpc_dot )
-
-	/* video hardware */
-	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
 /*-----------------
@@ -263,7 +258,7 @@ ROM_START(sf_l1)
 ROM_END
 
 /*-----------------
-/  Terminator 2: Judgement Day
+/  Terminator 2: Judgment Day
 /------------------*/
 ROM_START(t2_l8)
 	ROM_REGION(0x10000, "maincpu", ROMREGION_ERASEFF)
@@ -409,9 +404,9 @@ GAME(1991,	pz_l1,		pz_f4,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Bally",				"Party Zo
 GAME(1991,	pz_l2,		pz_f4,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Bally",				"Party Zone (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1991,	pz_l3,		pz_f4,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Bally",				"Party Zone (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1991,	sf_l1,		0,		wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Slugfest (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	t2_l8,		0,		wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgement Day (L-8)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	t2_l6,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgement Day (L-6)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	t2_p2f,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgement Day (P-2F) Profanity",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	t2_l4,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgement Day (L-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	t2_l3,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgement Day (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	t2_l2,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgement Day (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1991,	t2_l8,		0,		wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgment Day (L-8)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1991,	t2_l6,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgment Day (L-6)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1991,	t2_p2f,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgment Day (P-2F) Profanity",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1991,	t2_l4,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgment Day (L-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1991,	t2_l3,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgment Day (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1991,	t2_l2,		t2_l8,	wpc_dot,	wpc_dot,	wpc_dot,	ROT0,	"Williams",				"Terminator 2: Judgment Day (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

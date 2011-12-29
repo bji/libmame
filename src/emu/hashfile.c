@@ -213,11 +213,6 @@ static void start_handler(void *data, const char *tagname, const char **attribut
 						/* crc32 attribute */
 						functions = hash_collection::HASH_CRC;
 					}
-					else if (!strcmp(attributes[0], "md5"))
-					{
-						/* md5 attribute */
-						functions = hash_collection::HASH_MD5;
-					}
 					else if (!strcmp(attributes[0], "sha1"))
 					{
 						/* sha1 attribute */
@@ -561,7 +556,7 @@ const char *read_hash_config(device_image_interface &image, const char *sysname)
 		return NULL;
 	}
 
-	extra_info = auto_strdup(image.device().machine(),info->extrainfo);
+	extra_info = auto_strdup(image.device().machine(), info->extrainfo);
 	if (!extra_info)
 	{
 		hashfile_close(hashfile);
@@ -582,12 +577,24 @@ const char *hashfile_extrainfo(device_image_interface &image)
 	image.crc();
 	extra_info = NULL;
 	int drv = driver_list::find(image.device().machine().system());
+	int compat, open = drv;
 	do
 	{
-		rc = read_hash_config(image,driver_list::driver(drv).name);
-		drv = driver_list::compatible_with(drv);
+		rc = read_hash_config(image, driver_list::driver(open).name);
+		// first check if there are compatible systems
+		compat = driver_list::compatible_with(open);
+		// if so, try to open its hashfile
+		if (compat != -1)
+			open = compat;
+		// otherwise, try with the parent
+		else
+		{
+			drv = driver_list::clone(drv);
+			open = drv;
+		}
 	}
-	while(rc!=NULL && drv != -1);
+	// if no extrainfo has been found but we can try a compatible or a parent set, go back
+	while (rc == NULL && open != -1);
 	return rc;
 }
 

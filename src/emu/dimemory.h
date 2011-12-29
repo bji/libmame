@@ -155,7 +155,7 @@ protected:
 inline const address_space_config *device_get_space_config(const device_t &device, address_spacenum spacenum = AS_0)
 {
 	const device_memory_interface *intf;
-	if (!device.get_interface(intf))
+	if (!device.interface(intf))
 		throw emu_fatalerror("Device '%s' does not have memory interface", device.tag());
 	return intf->space_config(spacenum);
 }

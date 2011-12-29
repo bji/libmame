@@ -248,7 +248,7 @@ endif
 LDFLAGS += -static-libgcc
 
 # add the windows libraries
-LIBS += -luser32 -lgdi32 -ldsound -ldxguid -lwinmm -ladvapi32 -lcomctl32 -lshlwapi -ldinput8
+LIBS += -luser32 -lgdi32 -ldsound -ldxguid -lwinmm -ladvapi32 -lcomctl32 -lshlwapi -ldinput8 -lwsock32
 
 ifeq ($(DIRECTINPUT),8)
 LIBS += -ldinput8
@@ -275,6 +275,7 @@ OSDCOREOBJS = \
 	$(WINOBJ)/winutf8.o \
 	$(WINOBJ)/winutil.o \
 	$(WINOBJ)/winclip.o \
+	$(WINOBJ)/winsocket.o \
 	$(WINOBJ)/winwork.o
 
 
@@ -297,6 +298,12 @@ OSDOBJS = \
 	$(WINOBJ)/window.o \
 	$(WINOBJ)/winmenu.o \
 	$(WINOBJ)/winmain.o
+
+ifdef USE_NETWORK
+OSDOBJS += \
+	$(WINOBJ)/netdev.o \
+	$(WINOBJ)/netdev_pcap.o
+endif
 
 ifeq ($(DIRECT3D),9)
 CCOMFLAGS += -DDIRECT3D_VERSION=0x0900

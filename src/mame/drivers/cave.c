@@ -18,23 +18,23 @@ Other        :  93C46 EEPROM
 -----------------------------------------------------------------------------------------
 Year + Game           License       PCB         Tilemaps        Sprites         Other
 -----------------------------------------------------------------------------------------
-94 Mazinger Z         Banpresto     ?           038 9335EX706   013 9341E7009   Z80
-94 Power Instinct 2   Atlus         ATG02?      038 9429WX709   013             Z80 NMK 112
+94 Mazinger Z         Banpresto     BP943A      038 9335EX706   013 9341E7009   Z80
+94 Power Instinct 2   Atlus         ATG02?      038 9429WX709   013 9341E7009   Z80 NMK 112
 95 Gogetsuji Legends  Atlus         AT047G2-B   038 9429WX709   013 9341E7009   Z80 NMK 112
 95 Metamoqester       Banpresto     BP947A      038 9437WX711   013 9346E7002   Z80
 95 Sailor Moon        Banpresto     BP945A      038 9437WX711   013 9346E7002   Z80
-95 Donpachi           Atlus         AT-C01DP-2  038 9429WX727   013 8647-01     NMK 112
+95 Donpachi           Atlus         AT-C01DP-2  038 9429WX727   013 9347E7003   NMK 112
 96 Air Gallet         Banpresto     BP962A      038 9437WX711   013 9346E7002   Z80
-96 Hotdog Storm       Marble        ASTC9501    038 9341EX702                   Z80
+96 Hotdog Storm       Marble        ASTC9501    038 9341EX702   013             Z80
 96 Pac-Slot           Namco         A0442       038 9444WX010   013 9345E7006
-97 Dodonpachi         Atlus         ATC03D2     ?
-98 Dangun Feveron     Nihon System  CV01        038 9808WX003   013 9807EX004
-98 ESP Ra.De.         Atlus         ATC04       ?
+97 Dodonpachi         Atlus         ATC03D2     038             013
+98 Dangan Feveron     Nihon System  CV01        038 9808WX003   013 9807EX004
+98 ESP Ra.De.         Atlus         ATC04       038 9841WX002   013 9838EX002
 98 Uo Poko            Jaleco        CV02        038 9749WX001   013 9749EX004
-99 Guwange            Atlus         ATC05       ?
+99 Guwange            Atlus         ATC05       038 9919WX004   013
 99 Gaia Crusaders     Noise Factory ?           038 9838WX003   013 9918EX008
 99 Koro Koro Quest    Takumi        TUG-01B     038 9838WX004   013 9838EX004
-99 Crusher Makochan   Takumi        TUG-01B     ""              ""
+99 Crusher Makochan   Takumi        TUG-01B     038 9838WX004   013 9838EX004
 99 Tobikose! Jumpman  Namco         TJ0476      038 9919WX007   013 9934WX002
 01 Thunder Heroes     Primetek      ?           038 9838WX003   013 9918EX008
 -----------------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ Stephh's notes (based on the games M68000 code and some tests) :
   - Difficulty Dip Switch also affects "Bonus Life" Dip Switch
   - There are less degrees of difficulty in this version
   - DSW2 bit 5 effect remains unknown :
-      * it is checked at address 0x008d16 at the begining of each sub-level
+      * it is checked at address 0x008d16 at the beginning of each sub-level
       * it is checked at address 0x00c382 when you quickly push the joystick left or right twice
     Any info is welcome !
 
@@ -422,7 +422,7 @@ static const eeprom_interface eeprom_interface_93C46_pacslot =
     AFAIK)  */
 
 /***************************************************************************
-                                Dangun Feveron
+                                Dangan Feveron
 ***************************************************************************/
 
 static ADDRESS_MAP_START( dfeveron_map, AS_PROGRAM, 16 )
@@ -1396,7 +1396,7 @@ static INPUT_PORTS_START( theroes )
 	PORT_MODIFY("DSW")
 	PORT_DIPNAME( 0x0004, 0x0000, DEF_STR( Language ) )			PORT_DIPLOCATION("SW1:3")
 	PORT_DIPSETTING(      0x0000, DEF_STR( English ) )
-	PORT_DIPSETTING(      0x0004, "Chinese" )
+	PORT_DIPSETTING(      0x0004, DEF_STR( Chinese ) )
 	PORT_DIPNAME( 0x0400, 0x0400, DEF_STR( Bonus_Life ) )		PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(      0x0000, DEF_STR( Off ) )
 	PORT_DIPSETTING(      0x0400, "150k/300k" ) PORT_CONDITION("DSW", 0xc000, PORTCOND_EQUALS, 0x8000)
@@ -1636,7 +1636,7 @@ static const gfx_layout layout_sprites =
 #endif
 
 /***************************************************************************
-                                Dangun Feveron
+                                Dangan Feveron
 ***************************************************************************/
 
 static GFXDECODE_START( dfeveron )
@@ -1847,7 +1847,7 @@ static const ym2203_interface ym2203_config =
 };
 
 /***************************************************************************
-                                Dangun Feveron
+                                Dangan Feveron
 ***************************************************************************/
 
 static MACHINE_CONFIG_START( dfeveron, cave_state )
@@ -2782,7 +2782,7 @@ ROM_END
 
 /***************************************************************************
 
-              Fever SOS (International) / Dangun Feveron (Japan)
+              Fever SOS (International) / Dangan Feveron (Japan)
 
 Board:  CV01
 OSC:    28.0, 16.0, 16.9 MHz
@@ -2816,7 +2816,7 @@ ROM_END
 Fever SOS
 
   The program code checks for 0x05 & 0x19 at the 17th & 18th byte in the EEPROM.  Therefore
-  you cannot convert a Dangun Feveron over to a Fever SOS by changing the 2 program roms
+  you cannot convert a Dangan Feveron over to a Fever SOS by changing the 2 program roms
 
 Jumper JP1:
 INT Version - 2 & 3
@@ -3056,7 +3056,7 @@ ROM_START( donpachi )
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-donpachi.u10", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) ) /* ATMEL 93C46 */
 
-    ROM_REGION( 0x0155, "pal", 0 )
+	ROM_REGION( 0x0155, "pal", 0 )
 	ROM_LOAD( "peel18cv8p-15.u18", 0x0000, 0x0155, CRC(3f4787e9) SHA1(fc7da25c9f36c9cbc6ba5a7314c4828d405d1261) ) /* PEEL18CV8P-15 */
 ROM_END
 
@@ -3088,6 +3088,9 @@ ROM_START( donpachij )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-donpachi.bin", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) )
+
+	ROM_REGION( 0x0155, "pal", 0 )
+	ROM_LOAD( "peel18cv8p-15.u18", 0x0000, 0x0155, CRC(3f4787e9) SHA1(fc7da25c9f36c9cbc6ba5a7314c4828d405d1261) ) /* PEEL18CV8P-15 */
 ROM_END
 
 ROM_START( donpachikr )
@@ -3118,6 +3121,9 @@ ROM_START( donpachikr )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-donpachi.bin", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) )
+
+	ROM_REGION( 0x0155, "pal", 0 )
+	ROM_LOAD( "peel18cv8p-15.u18", 0x0000, 0x0155, CRC(3f4787e9) SHA1(fc7da25c9f36c9cbc6ba5a7314c4828d405d1261) ) /* PEEL18CV8P-15 */
 ROM_END
 
 ROM_START( donpachihk )
@@ -3148,6 +3154,9 @@ ROM_START( donpachihk )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-donpachi.bin", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) )
+
+	ROM_REGION( 0x0155, "pal", 0 )
+	ROM_LOAD( "peel18cv8p-15.u18", 0x0000, 0x0155, CRC(3f4787e9) SHA1(fc7da25c9f36c9cbc6ba5a7314c4828d405d1261) ) /* PEEL18CV8P-15 */
 ROM_END
 
 
@@ -3166,24 +3175,24 @@ ROM_START( esprade )
 	ROM_LOAD16_BYTE( "u41.int", 0x000001, 0x080000, CRC(97c1b649) SHA1(37a56b7b9662219a356aee3f4b5cbb774ac4950e) )
 
 	ROM_REGION( 0x1000000, "sprites", 0 )		/* Sprites */
-	ROM_LOAD16_BYTE( "u63.bin", 0x000000, 0x400000, CRC(2f2fe92c) SHA1(9519e365248bcec8419786eabb16fe4aae299af5) )
-	ROM_LOAD16_BYTE( "u64.bin", 0x000001, 0x400000, CRC(491a3da4) SHA1(53549a2bd3edc7b5e73fb46e1421b156bb0c190f) )
-	ROM_LOAD16_BYTE( "u65.bin", 0x800000, 0x400000, CRC(06563efe) SHA1(94e72da1f542b4e0525b4b43994242816b43dbdc) )
-	ROM_LOAD16_BYTE( "u66.bin", 0x800001, 0x400000, CRC(7bbe4cfc) SHA1(e77d0ed7a11b5abca1df8a0eb20ac9360cf79e76) )
+	ROM_LOAD16_BYTE( "esp_u63.u63", 0x000000, 0x400000, CRC(2f2fe92c) SHA1(9519e365248bcec8419786eabb16fe4aae299af5) )
+	ROM_LOAD16_BYTE( "esp_u64.u64", 0x000001, 0x400000, CRC(491a3da4) SHA1(53549a2bd3edc7b5e73fb46e1421b156bb0c190f) )
+	ROM_LOAD16_BYTE( "esp_u65.u65", 0x800000, 0x400000, CRC(06563efe) SHA1(94e72da1f542b4e0525b4b43994242816b43dbdc) )
+	ROM_LOAD16_BYTE( "esp_u66.u66", 0x800001, 0x400000, CRC(7bbe4cfc) SHA1(e77d0ed7a11b5abca1df8a0eb20ac9360cf79e76) )
 
 	ROM_REGION( 0x800000, "layer0", 0 )	/* Layer 0 */
-	ROM_LOAD( "u54.bin", 0x000000, 0x400000, CRC(e7ca6936) SHA1(b7f5ab67071a1d9dd3d2c1cd2304d9cdad68850c) )
-	ROM_LOAD( "u55.bin", 0x400000, 0x400000, CRC(f53bd94f) SHA1(d0a74fb3d36fe522ef075e5ae44a9980da8abe2f) )
+	ROM_LOAD( "esp_u54.u54", 0x000000, 0x400000, CRC(e7ca6936) SHA1(b7f5ab67071a1d9dd3d2c1cd2304d9cdad68850c) )
+	ROM_LOAD( "esp_u55.u55", 0x400000, 0x400000, CRC(f53bd94f) SHA1(d0a74fb3d36fe522ef075e5ae44a9980da8abe2f) )
 
 	ROM_REGION( 0x800000, "layer1", 0 )	/* Layer 1 */
-	ROM_LOAD( "u52.bin", 0x000000, 0x400000, CRC(e7abe7b4) SHA1(e98da45497e1aaf0d6ab352ec3e43c7438ed792a) )
-	ROM_LOAD( "u53.bin", 0x400000, 0x400000, CRC(51a0f391) SHA1(8b7355cbad119f4e1add14e5cd5e343ec6706104) )
+	ROM_LOAD( "esp_u52.u52", 0x000000, 0x400000, CRC(e7abe7b4) SHA1(e98da45497e1aaf0d6ab352ec3e43c7438ed792a) )
+	ROM_LOAD( "esp_u53.u53", 0x400000, 0x400000, CRC(51a0f391) SHA1(8b7355cbad119f4e1add14e5cd5e343ec6706104) )
 
 	ROM_REGION( 0x400000, "layer2", 0 )	/* Layer 2 */
-	ROM_LOAD( "u51.bin", 0x000000, 0x400000, CRC(0b9b875c) SHA1(ef05447cd8565ae24bb71db42342724622ad1e3e) )
+	ROM_LOAD( "esp_u51.u51", 0x000000, 0x400000, CRC(0b9b875c) SHA1(ef05447cd8565ae24bb71db42342724622ad1e3e) )
 
 	ROM_REGION( 0x400000, "ymz", 0 )	/* Samples */
-	ROM_LOAD( "u19.bin", 0x000000, 0x400000, CRC(f54b1cab) SHA1(34d70bb5798de85d892c062001d9ac1d6604fd9f) )
+	ROM_LOAD( "esp_u19.u19", 0x000000, 0x400000, CRC(f54b1cab) SHA1(34d70bb5798de85d892c062001d9ac1d6604fd9f) )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-esprade.bin", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) )
@@ -3195,24 +3204,24 @@ ROM_START( espradej )
 	ROM_LOAD16_BYTE( "u41_ver.2", 0x000001, 0x080000, CRC(734b3ef0) SHA1(f584227b85c347d62d5f179445011ce0f607bcfd) )
 
 	ROM_REGION( 0x1000000, "sprites", 0 )		/* Sprites */
-	ROM_LOAD16_BYTE( "u63.bin", 0x000000, 0x400000, CRC(2f2fe92c) SHA1(9519e365248bcec8419786eabb16fe4aae299af5) )
-	ROM_LOAD16_BYTE( "u64.bin", 0x000001, 0x400000, CRC(491a3da4) SHA1(53549a2bd3edc7b5e73fb46e1421b156bb0c190f) )
-	ROM_LOAD16_BYTE( "u65.bin", 0x800000, 0x400000, CRC(06563efe) SHA1(94e72da1f542b4e0525b4b43994242816b43dbdc) )
-	ROM_LOAD16_BYTE( "u66.bin", 0x800001, 0x400000, CRC(7bbe4cfc) SHA1(e77d0ed7a11b5abca1df8a0eb20ac9360cf79e76) )
+	ROM_LOAD16_BYTE( "esp_u63.u63", 0x000000, 0x400000, CRC(2f2fe92c) SHA1(9519e365248bcec8419786eabb16fe4aae299af5) )
+	ROM_LOAD16_BYTE( "esp_u64.u64", 0x000001, 0x400000, CRC(491a3da4) SHA1(53549a2bd3edc7b5e73fb46e1421b156bb0c190f) )
+	ROM_LOAD16_BYTE( "esp_u65.u65", 0x800000, 0x400000, CRC(06563efe) SHA1(94e72da1f542b4e0525b4b43994242816b43dbdc) )
+	ROM_LOAD16_BYTE( "esp_u66.u66", 0x800001, 0x400000, CRC(7bbe4cfc) SHA1(e77d0ed7a11b5abca1df8a0eb20ac9360cf79e76) )
 
 	ROM_REGION( 0x800000, "layer0", 0 )	/* Layer 0 */
-	ROM_LOAD( "u54.bin", 0x000000, 0x400000, CRC(e7ca6936) SHA1(b7f5ab67071a1d9dd3d2c1cd2304d9cdad68850c) )
-	ROM_LOAD( "u55.bin", 0x400000, 0x400000, CRC(f53bd94f) SHA1(d0a74fb3d36fe522ef075e5ae44a9980da8abe2f) )
+	ROM_LOAD( "esp_u54.u54", 0x000000, 0x400000, CRC(e7ca6936) SHA1(b7f5ab67071a1d9dd3d2c1cd2304d9cdad68850c) )
+	ROM_LOAD( "esp_u55.u55", 0x400000, 0x400000, CRC(f53bd94f) SHA1(d0a74fb3d36fe522ef075e5ae44a9980da8abe2f) )
 
 	ROM_REGION( 0x800000, "layer1", 0 )	/* Layer 1 */
-	ROM_LOAD( "u52.bin", 0x000000, 0x400000, CRC(e7abe7b4) SHA1(e98da45497e1aaf0d6ab352ec3e43c7438ed792a) )
-	ROM_LOAD( "u53.bin", 0x400000, 0x400000, CRC(51a0f391) SHA1(8b7355cbad119f4e1add14e5cd5e343ec6706104) )
+	ROM_LOAD( "esp_u52.u52", 0x000000, 0x400000, CRC(e7abe7b4) SHA1(e98da45497e1aaf0d6ab352ec3e43c7438ed792a) )
+	ROM_LOAD( "esp_u53.u53", 0x400000, 0x400000, CRC(51a0f391) SHA1(8b7355cbad119f4e1add14e5cd5e343ec6706104) )
 
 	ROM_REGION( 0x400000, "layer2", 0 )	/* Layer 2 */
-	ROM_LOAD( "u51.bin", 0x000000, 0x400000, CRC(0b9b875c) SHA1(ef05447cd8565ae24bb71db42342724622ad1e3e) )
+	ROM_LOAD( "esp_u51.u51", 0x000000, 0x400000, CRC(0b9b875c) SHA1(ef05447cd8565ae24bb71db42342724622ad1e3e) )
 
 	ROM_REGION( 0x400000, "ymz", 0 )	/* Samples */
-	ROM_LOAD( "u19.bin", 0x000000, 0x400000, CRC(f54b1cab) SHA1(34d70bb5798de85d892c062001d9ac1d6604fd9f) )
+	ROM_LOAD( "esp_u19.u19", 0x000000, 0x400000, CRC(f54b1cab) SHA1(34d70bb5798de85d892c062001d9ac1d6604fd9f) )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-esprade.bin", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) )
@@ -3224,24 +3233,24 @@ ROM_START( espradejo )
 	ROM_LOAD16_BYTE( "u41.bin", 0x000001, 0x080000, CRC(def30539) SHA1(957ad0b06f06689ae71393572592f6b8f818603a) )
 
 	ROM_REGION( 0x1000000, "sprites", 0 )		/* Sprites */
-	ROM_LOAD16_BYTE( "u63.bin", 0x000000, 0x400000, CRC(2f2fe92c) SHA1(9519e365248bcec8419786eabb16fe4aae299af5) )
-	ROM_LOAD16_BYTE( "u64.bin", 0x000001, 0x400000, CRC(491a3da4) SHA1(53549a2bd3edc7b5e73fb46e1421b156bb0c190f) )
-	ROM_LOAD16_BYTE( "u65.bin", 0x800000, 0x400000, CRC(06563efe) SHA1(94e72da1f542b4e0525b4b43994242816b43dbdc) )
-	ROM_LOAD16_BYTE( "u66.bin", 0x800001, 0x400000, CRC(7bbe4cfc) SHA1(e77d0ed7a11b5abca1df8a0eb20ac9360cf79e76) )
+	ROM_LOAD16_BYTE( "esp_u63.u63", 0x000000, 0x400000, CRC(2f2fe92c) SHA1(9519e365248bcec8419786eabb16fe4aae299af5) )
+	ROM_LOAD16_BYTE( "esp_u64.u64", 0x000001, 0x400000, CRC(491a3da4) SHA1(53549a2bd3edc7b5e73fb46e1421b156bb0c190f) )
+	ROM_LOAD16_BYTE( "esp_u65.u65", 0x800000, 0x400000, CRC(06563efe) SHA1(94e72da1f542b4e0525b4b43994242816b43dbdc) )
+	ROM_LOAD16_BYTE( "esp_u66.u66", 0x800001, 0x400000, CRC(7bbe4cfc) SHA1(e77d0ed7a11b5abca1df8a0eb20ac9360cf79e76) )
 
 	ROM_REGION( 0x800000, "layer0", 0 )	/* Layer 0 */
-	ROM_LOAD( "u54.bin", 0x000000, 0x400000, CRC(e7ca6936) SHA1(b7f5ab67071a1d9dd3d2c1cd2304d9cdad68850c) )
-	ROM_LOAD( "u55.bin", 0x400000, 0x400000, CRC(f53bd94f) SHA1(d0a74fb3d36fe522ef075e5ae44a9980da8abe2f) )
+	ROM_LOAD( "esp_u54.u54", 0x000000, 0x400000, CRC(e7ca6936) SHA1(b7f5ab67071a1d9dd3d2c1cd2304d9cdad68850c) )
+	ROM_LOAD( "esp_u55.u55", 0x400000, 0x400000, CRC(f53bd94f) SHA1(d0a74fb3d36fe522ef075e5ae44a9980da8abe2f) )
 
 	ROM_REGION( 0x800000, "layer1", 0 )	/* Layer 1 */
-	ROM_LOAD( "u52.bin", 0x000000, 0x400000, CRC(e7abe7b4) SHA1(e98da45497e1aaf0d6ab352ec3e43c7438ed792a) )
-	ROM_LOAD( "u53.bin", 0x400000, 0x400000, CRC(51a0f391) SHA1(8b7355cbad119f4e1add14e5cd5e343ec6706104) )
+	ROM_LOAD( "esp_u52.u52", 0x000000, 0x400000, CRC(e7abe7b4) SHA1(e98da45497e1aaf0d6ab352ec3e43c7438ed792a) )
+	ROM_LOAD( "esp_u53.u53", 0x400000, 0x400000, CRC(51a0f391) SHA1(8b7355cbad119f4e1add14e5cd5e343ec6706104) )
 
 	ROM_REGION( 0x400000, "layer2", 0 )	/* Layer 2 */
-	ROM_LOAD( "u51.bin", 0x000000, 0x400000, CRC(0b9b875c) SHA1(ef05447cd8565ae24bb71db42342724622ad1e3e) )
+	ROM_LOAD( "esp_u51.u51", 0x000000, 0x400000, CRC(0b9b875c) SHA1(ef05447cd8565ae24bb71db42342724622ad1e3e) )
 
 	ROM_REGION( 0x400000, "ymz", 0 )	/* Samples */
-	ROM_LOAD( "u19.bin", 0x000000, 0x400000, CRC(f54b1cab) SHA1(34d70bb5798de85d892c062001d9ac1d6604fd9f) )
+	ROM_LOAD( "esp_u19.u19", 0x000000, 0x400000, CRC(f54b1cab) SHA1(34d70bb5798de85d892c062001d9ac1d6604fd9f) )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-esprade.bin", 0x0000, 0x0080, CRC(315fb546) SHA1(7f597107d1610fc286413e0e93c794c80c0c554f) )
@@ -3400,7 +3409,7 @@ ROM_START( guwange )
 	ROM_RELOAD(                  0x1800000, 0x400000 )
 	ROM_LOAD16_BYTE( "u085.bin", 0x1000001, 0x400000, CRC(a7d5659e) SHA1(10abac022ebe106a3ca7186ff18ca2757f903033) )
 	ROM_RELOAD(                  0x1800001, 0x400000 )
-//sprite bug fix?
+//  sprite bug fix?
 //  ROM_FILL(                    0x1800000, 0x800000, 0xff )
 
 	ROM_REGION( 0x800000, "layer0", 0 )	/* Layer 0 */
@@ -3415,11 +3424,48 @@ ROM_START( guwange )
 	ROM_REGION( 0x400000, "ymz", 0 )	/* Samples */
 	ROM_LOAD( "u0462.bin", 0x000000, 0x400000, CRC(b3d75691) SHA1(71d8dae92be1542a3cff50efeec0bf3c14ab59f5) )
 
-    ROM_REGION( 0x0004, "plds", 0 )
-    ROM_LOAD( "atc05-1.bin", 0x0000, 0x0001, NO_DUMP ) /* GAL16V8D-15LP located at U159 */
-    ROM_LOAD( "u0259.bin",   0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U0249. (Chip label different then label silk screened onto the board.) */
-    ROM_LOAD( "u108.bin",    0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U108. */
-    ROM_LOAD( "u084.bin",    0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U084. */
+	ROM_REGION( 0x0004, "plds", 0 )
+	ROM_LOAD( "atc05-1.bin", 0x0000, 0x0001, NO_DUMP ) /* GAL16V8D-15LP located at U159 */
+	ROM_LOAD( "u0259.bin",   0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U0249. (Chip label different then label silk screened onto the board.) */
+	ROM_LOAD( "u108.bin",    0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U108. */
+	ROM_LOAD( "u084.bin",    0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U084. */
+
+	ROM_REGION16_BE( 0x80, "eeprom", 0 )
+	ROM_LOAD16_WORD( "eeprom-guwange.bin", 0x0000, 0x0080, CRC(c3174959) SHA1(29b5c94722756481e4f84bfd75dee15fdb5c8cf7) )
+ROM_END
+
+ROM_START( guwanges )
+	ROM_REGION( 0x100000, "maincpu", 0 )		/* 68000 Code */
+	ROM_LOAD16_BYTE( "gu-u0127b.bin", 0x000000, 0x080000, CRC(64667d2e) SHA1(a5893eb38e309e2bced4a46559f02850ab39afe7) )
+	ROM_LOAD16_BYTE( "gu-u0129b.bin", 0x000001, 0x080000, CRC(a99C6b6c) SHA1(614a3cd1de9b325f73e461eaf250ff9cf773f4a5) )
+
+	ROM_REGION( 0x2000000, "sprites", 0 )		/* Sprites */
+	ROM_LOAD16_BYTE( "u083.bin", 0x0000000, 0x800000, CRC(adc4b9c4) SHA1(3f9fb004e19187bbfa87ddfe8cfc69740656a1bd) )
+	ROM_LOAD16_BYTE( "u082.bin", 0x0000001, 0x800000, CRC(3d75876c) SHA1(705b8c2dbdc31e9516f429969f87988beec796d7) )
+	ROM_LOAD16_BYTE( "u086.bin", 0x1000000, 0x400000, CRC(188e4f81) SHA1(626074d81782a6de0b52406331b4b8561d3e36f5) )
+	ROM_RELOAD(                  0x1800000, 0x400000 )
+	ROM_LOAD16_BYTE( "u085.bin", 0x1000001, 0x400000, CRC(a7d5659e) SHA1(10abac022ebe106a3ca7186ff18ca2757f903033) )
+	ROM_RELOAD(                  0x1800001, 0x400000 )
+//  sprite bug fix?
+//  ROM_FILL(                    0x1800000, 0x800000, 0xff )
+
+	ROM_REGION( 0x800000, "layer0", 0 )	/* Layer 0 */
+	ROM_LOAD( "u101.bin", 0x000000, 0x800000, CRC(0369491f) SHA1(ca6b1345506f13a17c9bace01637d1f61a278644) )
+
+	ROM_REGION( 0x400000, "layer1", 0 )	/* Layer 1 */
+	ROM_LOAD( "u10102.bin", 0x000000, 0x400000, CRC(e28d6855) SHA1(7001a6e298c6a1fcceb79586bf5f4bf0f30027f6) )
+
+	ROM_REGION( 0x400000, "layer2", 0 )	/* Layer 2 */
+	ROM_LOAD( "u10103.bin", 0x000000, 0x400000, CRC(0fe91b8e) SHA1(8b71ebeef5e4d2b00fdaaab97776d74e1c96dc59) )
+
+	ROM_REGION( 0x400000, "ymz", 0 )	/* Samples */
+	ROM_LOAD( "u0462.bin", 0x000000, 0x400000, CRC(b3d75691) SHA1(71d8dae92be1542a3cff50efeec0bf3c14ab59f5) )
+
+	ROM_REGION( 0x0004, "plds", 0 )
+	ROM_LOAD( "atc05-1.bin", 0x0000, 0x0001, NO_DUMP ) /* GAL16V8D-15LP located at U159 */
+	ROM_LOAD( "u0259.bin",   0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U0249. (Chip label different then label silk screened onto the board.) */
+	ROM_LOAD( "u108.bin",    0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U108. */
+	ROM_LOAD( "u084.bin",    0x0000, 0x0001, NO_DUMP ) /* XC9536-15PC44C Located at U084. */
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-guwange.bin", 0x0000, 0x0080, CRC(c3174959) SHA1(29b5c94722756481e4f84bfd75dee15fdb5c8cf7) )
@@ -3428,49 +3474,76 @@ ROM_END
 
 /***************************************************************************
 
-                                Hot Dog Storm
+Hotdog Storm
 Marble 1996
 
-6264 6264 MP7 6264 6264 MP6 6264 6264 MP5  32MHz
-                                                6264
-                                                6264
-                                                  MP4
-                                                  MP3
-                                                       93C46
-                                      68257
-                                      68257 68000-12
-                                             YM2203
-                                          Z80
-  MP8 MP9
-  68257
-  68257                         U19    MP1      6296
++------------------------------------------------------+
+|       6296   MP1     MP2        6264 6264  LED 68257 |
+|                     68257                      68257 |
+|  VOL          Z80               +--------+           |
+|            YM2203               |        |       9 8 |
+|                                 |  013   |       P P |
+|                                 |        |       M M |
+|                     68257       +--------+           |
+|           68000-16  68257                            |
+|                                                      |
+|                                                      |
+|J 93C46     MP3        +------+  +------+  +------+   |
+|A           MP4        | 038  |  | 038  |  | 038  |   |
+|M                      |      |  |      |  |      |   |
+|M                      +------+  +------+  +------+   |
+|A                                                     |
+|                             4  4      4  4      4  4 |
+|                 6264     5  6  6   6  6  6   7  6  6 |
+| P1 P2           6264     P  2  2   P  2  2   P  2  2 |
+|                    32MHz M  6  6   M  6  6   M  6  6 |
++------------------------------------------------------+
+
+BOARD #:      ASTC9501
+CPU:          TMP68HC000-16
+Sound:        M6295 + YM2203
+OSC:          32.000MHz
+EEPROM:       ATMEL 93C46
+CUSTOM:       038 9341EX702 x3
+              013 ?????
+P1 & P2       Pushbuttons for Reset & Service
+VOL           Volume pot
+LED           Power indicator LED
+
+Have seen bootleg boards without the standard JAMMA "key" slot and with a
+small daughter card that splits MP8 & MP9 into two roms each:
++-------------+
+| 8 9 8 9   ::|
+| P P P P   ::|
+| M M M M   ::|
++-------------+
 
 ***************************************************************************/
 
 ROM_START( hotdogst )
 	ROM_REGION( 0x100000, "maincpu", 0 )	/* 68000 code */
-	ROM_LOAD16_BYTE( "mp3u29", 0x00000, 0x80000, CRC(1f4e5479) SHA1(5c3d7b36b1eda4c87c53e4f7cf89951cc5bcc871) )
-	ROM_LOAD16_BYTE( "mp4u28", 0x00001, 0x80000, CRC(6f1c3c4b) SHA1(ab4e4d9b2ef74a2eefda718e120bef05fd0346ff) )
+	ROM_LOAD16_BYTE( "mp3.u29", 0x00000, 0x80000, CRC(1f4e5479) SHA1(5c3d7b36b1eda4c87c53e4f7cf89951cc5bcc871) )
+	ROM_LOAD16_BYTE( "mp4.u28", 0x00001, 0x80000, CRC(6f1c3c4b) SHA1(ab4e4d9b2ef74a2eefda718e120bef05fd0346ff) )
 
 	ROM_REGION( 0x48000, "audiocpu", 0 )	/* Z80 code */
-	ROM_LOAD( "mp2u19", 0x00000, 0x08000, CRC(ff979ebe) SHA1(4cb80086cfdc69a321c7f75455cef89e20488b76) )	// FIRST AND SECOND HALF IDENTICAL
-	ROM_CONTINUE(       0x10000, 0x38000             )
+	ROM_LOAD( "mp2.u19", 0x00000, 0x08000, CRC(ff979ebe) SHA1(4cb80086cfdc69a321c7f75455cef89e20488b76) )	// FIRST AND SECOND HALF IDENTICAL
+	ROM_CONTINUE(        0x10000, 0x38000             )
 
 	ROM_REGION( 0x400000 * 2, "sprites", 0 )		/* Sprites: * 2 */
-	ROM_LOAD( "mp9u55", 0x000000, 0x200000, CRC(258d49ec) SHA1(f39e30c82d8f680f248e1eb59d7c5acb479fa277) )
-	ROM_LOAD( "mp8u54", 0x200000, 0x200000, CRC(bdb4d7b8) SHA1(0dd490988aa84b0e9a21ade5fd606b03eca13f6c) )
+	ROM_LOAD( "mp9.u55", 0x000000, 0x200000, CRC(258d49ec) SHA1(f39e30c82d8f680f248e1eb59d7c5acb479fa277) )
+	ROM_LOAD( "mp8.u54", 0x200000, 0x200000, CRC(bdb4d7b8) SHA1(0dd490988aa84b0e9a21ade5fd606b03eca13f6c) )
 
 	ROM_REGION( 0x80000, "layer0", 0 )	/* Layer 0 */
-	ROM_LOAD( "mp7u56", 0x00000, 0x80000, CRC(87c21c50) SHA1(fc0eea79abdd96edb4fa2c7047aaa728ef838234) )
+	ROM_LOAD( "mp7.u56", 0x00000, 0x80000, CRC(87c21c50) SHA1(fc0eea79abdd96edb4fa2c7047aaa728ef838234) )
 
 	ROM_REGION( 0x80000, "layer1", 0 )	/* Layer 1 */
-	ROM_LOAD( "mp6u61", 0x00000, 0x80000, CRC(4dafb288) SHA1(4756259adfe49ba42cde25e7902655b0f0731a6c) )
+	ROM_LOAD( "mp6.u61", 0x00000, 0x80000, CRC(4dafb288) SHA1(4756259adfe49ba42cde25e7902655b0f0731a6c) )
 
 	ROM_REGION( 0x80000, "layer2", 0 )	/* Layer 2 */
-	ROM_LOAD( "mp5u64", 0x00000, 0x80000, CRC(9b26458c) SHA1(acef62422fa3f92e6ca1eba0ee6fb914cd1ee190) )
+	ROM_LOAD( "mp5.u64", 0x00000, 0x80000, CRC(9b26458c) SHA1(acef62422fa3f92e6ca1eba0ee6fb914cd1ee190) )
 
 	ROM_REGION( 0x80000, "oki", 0 )	/* Samples */
-	ROM_LOAD( "mp1u65", 0x00000, 0x80000, CRC(4868be1b) SHA1(32b8234b19fdbe07fa5057fa7965e36807e35e77) )	// 1xxxxxxxxxxxxxxxxxx = 0xFF, 4 x 0x20000
+	ROM_LOAD( "mp1.u65", 0x00000, 0x80000, CRC(4868be1b) SHA1(32b8234b19fdbe07fa5057fa7965e36807e35e77) )	// 1xxxxxxxxxxxxxxxxxx = 0xFF, 4 x 0x20000
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD16_WORD( "eeprom-hotdogst.bin", 0x0000, 0x0080, CRC(12b4f934) SHA1(5b28d8fbd78869db78ce49e541a9d65558841966) )
@@ -4756,7 +4829,7 @@ GAME( 1996, pacslot,    0,        pacslot,  pacslot,  tjumpman, ROT0,   "Namco",
 GAME( 1997, ddonpach,   0,        ddonpach, cave,     ddonpach, ROT270, "Cave (Atlus license)",                   "DoDonPachi (International, Master Ver. 97/02/05)", GAME_SUPPORTS_SAVE )
 GAME( 1997, ddonpachj,  ddonpach, ddonpach, cave,     ddonpach, ROT270, "Cave (Atlus license)",                   "DoDonPachi (Japan, Master Ver. 97/02/05)",         GAME_SUPPORTS_SAVE )
 
-GAME( 1998, dfeveron,   feversos, dfeveron, cave,     dfeveron, ROT270, "Cave (Nihon System license)",            "Dangun Feveron (Japan, Ver. 98/09/17)",    GAME_SUPPORTS_SAVE )
+GAME( 1998, dfeveron,   feversos, dfeveron, cave,     dfeveron, ROT270, "Cave (Nihon System license)",            "Dangan Feveron (Japan, Ver. 98/09/17)",    GAME_SUPPORTS_SAVE )
 GAME( 1998, feversos,   0,        dfeveron, cave,     feversos, ROT270, "Cave (Nihon System license)",            "Fever SOS (International, Ver. 98/09/25)", GAME_SUPPORTS_SAVE )
 
 GAME( 1998, esprade,    0,        esprade,  cave,     esprade,  ROT270, "Cave (Atlus license)",                   "ESP Ra.De. (International, Ver. 98/04/22)", GAME_SUPPORTS_SAVE )
@@ -4766,7 +4839,8 @@ GAME( 1998, espradejo,  esprade,  esprade,  cave,     esprade,  ROT270, "Cave (A
 GAME( 1998, uopoko,     0,        uopoko,   cave,     uopoko,   ROT0,   "Cave (Jaleco license)",                  "Puzzle Uo Poko (International)", GAME_SUPPORTS_SAVE )
 GAME( 1998, uopokoj,    uopoko,   uopoko,   cave,     uopoko,   ROT0,   "Cave (Jaleco license)",                  "Puzzle Uo Poko (Japan)",         GAME_SUPPORTS_SAVE )
 
-GAME( 1999, guwange,    0,        guwange,  guwange,  guwange,  ROT270, "Cave (Atlus license)",                   "Guwange (Japan, Master Ver. 99/06/24)", GAME_SUPPORTS_SAVE )
+GAME( 1999, guwange,    0,        guwange,  guwange,  guwange,  ROT270, "Cave (Atlus license)",                   "Guwange (Japan, Master Ver. 99/06/24)",  GAME_SUPPORTS_SAVE )
+GAME( 1999, guwanges,   guwange,  guwange,  guwange,  guwange,  ROT270, "Cave (Atlus license)",                   "Guwange (Japan, Special Ver. 00/01/01)", GAME_SUPPORTS_SAVE )
 
 GAME( 1999, gaia,       0,        gaia,     gaia,     gaia,     ROT0,   "Noise Factory",                          "Gaia Crusaders", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND ) // cuts out occasionally
 

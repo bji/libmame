@@ -1,8 +1,6 @@
 #include "emu.h"
 #include "cpu/z80/z80.h"
 
-extern const char layout_pinball[];
-
 class jp_state : public driver_device
 {
 public:
@@ -32,9 +30,6 @@ static MACHINE_CONFIG_START( jp, jp_state )
 	MCFG_CPU_PROGRAM_MAP(jp_map)
 
 	MCFG_MACHINE_RESET( jp )
-
-	/* video hardware */
-	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
 /*-------------------------------------------------------------------
@@ -91,6 +86,20 @@ ROM_END
 /*-------------------------------------------------------------------
 / Halley Comet
 /-------------------------------------------------------------------*/
+ROM_START(halley)
+	ROM_REGION(0x10000, "maincpu", 0)
+	ROM_LOAD("halley.cpu", 0x0000, 0x2000, CRC(b158a0d7) SHA1(ad071ac3d06a99a8fbd4df461071fe03dc1e1a26))
+	ROM_REGION(0x10000, "cpu2", 0)
+	ROM_LOAD("hcsnd0.dat", 0x00000, 0x4000, CRC(39b9107a) SHA1(8a11fa0c1558d0b1d309446b8a6f97e761b6559d))
+	ROM_REGION(0x40000, "sound1", 0)
+	ROM_LOAD("hcsnd1.dat", 0x0000, 0x8000, NO_DUMP)
+	ROM_LOAD("hcsnd2.dat", 0x8000, 0x8000, NO_DUMP)
+	ROM_LOAD("hcsnd3.dat", 0x10000, 0x8000, NO_DUMP)
+	ROM_LOAD("hcsnd4.dat", 0x18000, 0x8000, NO_DUMP)
+	ROM_LOAD("hcsnd5.dat", 0x20000, 0x8000, NO_DUMP)
+	ROM_LOAD("hcsnd6.dat", 0x28000, 0x8000, NO_DUMP)
+	ROM_LOAD("hcsnd7.dat", 0x30000, 0x8000, NO_DUMP)
+ROM_END
 
 /*-------------------------------------------------------------------
 / Lortium
@@ -102,11 +111,20 @@ ROM_START(lortium)
 ROM_END
 
 /*-------------------------------------------------------------------
+/ Pimbal
+/-------------------------------------------------------------------*/
+ROM_START(pimbal)
+	ROM_REGION(0x10000, "maincpu", 0)
+	ROM_LOAD("p3000.r1", 0x0000, 0x2000, CRC(57fb5958) SHA1(536d6564c184f214edf821b83a27aa7f75c7ad00))
+	ROM_LOAD("p3000.r2", 0x2000, 0x2000, CRC(b8aae5ad) SHA1(8639b132aa69281f4460f80e84e0d30a5dc298d0))
+ROM_END
+
+/*-------------------------------------------------------------------
 / Olympus
 /-------------------------------------------------------------------*/
 ROM_START(olympus)
 	ROM_REGION(0x10000, "maincpu", 0)
-	ROM_LOAD("olympus.dat", 0x0000, 0x2000, NO_DUMP)
+	ROM_LOAD("olympus.dat", 0x0000, 0x2000, CRC(08b021e8) SHA1(9662d37ccef94b6e6bc3c8c81dea0c0a34c8052d))
 	ROM_REGION(0x10000, "cpu2", 0)
 	ROM_LOAD("cs.128", 0x00000, 0x4000, CRC(39b9107a) SHA1(8a11fa0c1558d0b1d309446b8a6f97e761b6559d))
 	ROM_REGION(0x40000, "sound1", 0)
@@ -150,6 +168,8 @@ GAME(1986,	america,	0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"America 1492",
 GAME(1986,	aqualand,	0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Aqualand",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1985,	faeton,		0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Faeton",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1987,	lortium,	0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Lortium",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(19??,	pimbal,		0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Pimbal (Pinball 3000)",GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1984,	petaco,		0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Petaco",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1985,	petaco2,	0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Petaco 2",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1986,	halley,		0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Halley Comet",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1986,	olympus,	0,		jp,	jp,	jp,	ROT0,	"Juegos Populares",				"Olympus",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

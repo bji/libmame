@@ -2497,9 +2497,9 @@ static void contextswitchX(tms99xx_state *cpustate, UINT16 addr)
 #endif
 
 /*
- * decipheraddr : compute and return the effective adress in word instructions.
+ * decipheraddr : compute and return the effective address in word instructions.
  *
- * NOTA : the LSBit is always ignored in word adresses,
+ * NOTA : the LSBit is always ignored in word addresses,
  * but we do not set it to 0 because of XOP...
  */
 static UINT16 decipheraddr(tms99xx_state *cpustate, UINT16 opcode)
@@ -2548,7 +2548,7 @@ static UINT16 decipheraddr(tms99xx_state *cpustate, UINT16 opcode)
 	}
 }
 
-/* decipheraddrbyte : compute and return the effective adress in byte instructions. */
+/* decipheraddrbyte : compute and return the effective address in byte instructions. */
 static UINT16 decipheraddrbyte(tms99xx_state *cpustate, UINT16 opcode)
 {
 	register UINT16 ts = opcode & 0x30;
@@ -2919,7 +2919,7 @@ static void h0200(tms99xx_state *cpustate, UINT16 opcode)
 			/* Used by the memory mapper on ti990/10 with mapping option, ti990/12, and the TIM99610
             mapper chip to be associated with tms99000.
             Syntax: "LMF Rn,m" loads map file m (0 or 1) with six words of memory, starting at address
-            specified in workspace register Rn (0 thru 15). */
+            specified in workspace register Rn (0 through 15). */
 			#if HAS_PRIVILEGE
 				if (cpustate->STATUS & ST_PR)
 				{
@@ -4252,23 +4252,26 @@ static void ldcr_stcr(tms99xx_state *cpustate, UINT16 opcode)
 		if (cnt <= 8)
 		{
 #if (TMS99XX_MODEL != TMS9995_ID)
-				(void)readbyteX(cpustate, addr, src_map);	/*dummy read*/
 
-				(void)READREG(cnt+cnt); /*dummy read (reasonnable guess for TMS9995 & TMS9900, ti990/10)*/
+				(void)READREG(cnt+cnt); /*dummy read (reasonable guess for TMS9995 & TMS9900, ti990/10)*/
+				// MZ: Read before write
+				int value2 = readwordX(cpustate, addr & ~1, src_map);
 
 				#if HAS_PRIVILEGE
 					value = readCRU(cpustate, (READREG(R12) >> 1), cnt);
+
 					if (value == CRU_PRIVILEGE_VIOLATION)
 						HANDLE_PRIVILEGE_VIOLATION
 					else
 					{
 						setst_byte_laep(cpustate, value);
-						writebyteX(cpustate, addr, value, src_map);
+						writewordX(cpustate, addr, ((value << 8) & 0xff00) | (value2 & 0x00ff), src_map);
 					}
 				#else
 			value = readCRU(cpustate, (READREG(R12) >> 1), cnt);
 			setst_byte_laep(cpustate, value);
-					writebyteX(cpustate, addr, value, src_map);
+
+				writewordX(cpustate, addr, ((value << 8) & 0xff00) | (value2 & 0x00ff), src_map);
 				#endif
 				CYCLES(18+cnt, (cnt != 8) ? 42 : 44, 19 + cnt);
 #else
@@ -4276,7 +4279,7 @@ static void ldcr_stcr(tms99xx_state *cpustate, UINT16 opcode)
 			/* this must be because instruction decoding is too complex */
 				int value2 = readwordX(cpustate, addr & ~1, src_map);
 
-				(void)READREG(cnt+cnt); /*dummy read (reasonnable guess for TMS9995 & TMS9900, ti990/10)*/
+				(void)READREG(cnt+cnt); /*dummy read (reasonable guess for TMS9995 & TMS9900, ti990/10)*/
 
 			value = readCRU(cpustate, (READREG(R12) >> 1), cnt);
 			setst_byte_laep(cpustate, value);

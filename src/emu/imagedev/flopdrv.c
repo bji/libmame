@@ -82,7 +82,7 @@ struct _floppy_drive
 
 	device_t *controller;
 
-	floppy_image *floppy;
+	floppy_image_legacy *floppy;
 	int track;
 	void (*load_proc)(device_image_interface &image);
 	void (*unload_proc)(device_image_interface &image);
@@ -128,11 +128,11 @@ const device_type FLOPPY_APPLE = 0, FLOPPY_SONY = 0;
 INLINE floppy_drive *get_safe_token(device_t *device)
 {
 	assert( device != NULL );
-	assert( device->type() == FLOPPY || device->type() == FLOPPY_APPLE || device->type() == FLOPPY_SONY);
+	assert( device->type() == LEGACY_FLOPPY || device->type() == FLOPPY_APPLE || device->type() == FLOPPY_SONY);
 	return (floppy_drive *) downcast<legacy_device_base *>(device)->token();
 }
 
-floppy_image *flopimg_get_image(device_t *image)
+floppy_image_legacy *flopimg_get_image(device_t *image)
 {
 	return get_safe_token(image)->floppy;
 }
@@ -347,7 +347,7 @@ int	floppy_drive_get_flag_state(device_t *img, int flag)
 
 	drive_flags = drv->flags;
 
-	/* these flags are independant of a real drive/disk image */
+	/* these flags are independent of a real drive/disk image */
     flags |= drive_flags & (FLOPPY_DRIVE_READY | FLOPPY_DRIVE_INDEX);
 
     flags &= flag;
@@ -1073,4 +1073,4 @@ DEVICE_GET_INFO(floppy)
 	}
 }
 
-DEFINE_LEGACY_IMAGE_DEVICE(FLOPPY, floppy);
+DEFINE_LEGACY_IMAGE_DEVICE(LEGACY_FLOPPY, floppy);

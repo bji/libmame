@@ -16,6 +16,9 @@
 #define M68K_IRQ_6    6
 #define M68K_IRQ_7    7
 
+// special input lines
+#define M68K_LINE_BUSERROR 16
+
 /* CPU types for use in m68k_set_cpu_type() */
 enum
 {
@@ -30,7 +33,9 @@ enum
 	M68K_CPU_TYPE_68EC040,
 	M68K_CPU_TYPE_68LC040,
 	M68K_CPU_TYPE_68040,
-	M68K_CPU_TYPE_SCC68070
+	M68K_CPU_TYPE_SCC68070,
+	M68K_CPU_TYPE_68340,
+    M68K_CPU_TYPE_COLDFIRE
 };
 
 // function codes
@@ -100,6 +105,8 @@ DECLARE_LEGACY_CPU_DEVICE(M68EC040, m68ec040);
 DECLARE_LEGACY_CPU_DEVICE(M68LC040, m68lc040);
 DECLARE_LEGACY_CPU_DEVICE(M68040, m68040);
 DECLARE_LEGACY_CPU_DEVICE(SCC68070, scc68070);
+DECLARE_LEGACY_CPU_DEVICE(M68340, m68340);
+DECLARE_LEGACY_CPU_DEVICE(MCF5206E, mcf5206e);
 
 
 void m68k_set_encrypted_opcode_range(device_t *device, offs_t start, offs_t end);

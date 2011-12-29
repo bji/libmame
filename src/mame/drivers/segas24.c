@@ -10,6 +10,8 @@
 /* Missing:
    - linescroll in special modes (qgh title, mahmajn2/qrouka attract mode)
    - screen flipping (mix register 13 & 2)
+   - FRC timer IRQ is currently in a slight off-beat (timer should be resetted every time
+     that the mode changes, but current MAME framework doesn't seem to like it)
 */
 
 /*
@@ -341,13 +343,25 @@ Notes:
 #include "machine/nvram.h"
 #include "video/segaic24.h"
 #include "includes/segas24.h"
+#include "includes/segaipt.h"
 
 #define MASTER_CLOCK		XTAL_20MHz
 #define VIDEO_CLOCK			XTAL_32MHz
 #define TIMER_CLOCK         (VIDEO_CLOCK/4)
 #define HSYNC_CLOCK         (VIDEO_CLOCK/2/656.0)
+/* TODO: understand why divisors doesn't match at all with the reference */
+#define FRC_CLOCK_MODE0		(MASTER_CLOCK/2)/24 // /16 according to Charles
+#define FRC_CLOCK_MODE1		(MASTER_CLOCK/2)/1536 // /1024 according to Charles, but /1536 sounds better
 
-// Floppy Fisk Controller
+enum {
+	IRQ_YM2151 = 1,
+	IRQ_TIMER  = 2,
+	IRQ_VBLANK = 3,
+	IRQ_SPRITE = 4,
+	IRQ_FRC = 5
+};
+
+// Floppy Disk Controller
 
 void segas24_state::fdc_init()
 {
@@ -720,6 +734,33 @@ WRITE16_MEMBER( segas24_state::curbank_w )
 	}
 }
 
+READ8_MEMBER( segas24_state::frc_mode_r )
+{
+	return frc_mode & 1;
+}
+
+WRITE8_MEMBER( segas24_state::frc_mode_w )
+{
+	/* reset frc if a write happens here */
+	frc_cnt_timer->reset();
+	frc_mode = data & 1;
+}
+
+READ8_MEMBER( segas24_state::frc_r )
+{
+	INT32 result = (frc_cnt_timer->time_elapsed() * (frc_mode ? FRC_CLOCK_MODE1 : FRC_CLOCK_MODE0)).as_double();
+
+	result %= ((frc_mode) ? 0x67 : 0x100);
+
+	return result;
+}
+
+WRITE8_MEMBER( segas24_state::frc_w )
+{
+	/* Undocumented behaviour, Bonanza Bros. seems to use this for irq ack'ing ... */
+	cputag_set_input_line(machine(), "maincpu", IRQ_FRC+1, CLEAR_LINE);
+	cputag_set_input_line(machine(), "sub", IRQ_FRC+1, CLEAR_LINE);
+}
 
 
 // Protection magic latch
@@ -765,13 +806,6 @@ WRITE16_MEMBER( segas24_state::mlatch_w )
 
 
 // Timers and IRQs
-
-enum {
-	IRQ_YM2151 = 1,
-	IRQ_TIMER  = 2,
-	IRQ_VBLANK = 3,
-	IRQ_SPRITE = 4
-};
 
 void segas24_state::irq_timer_sync()
 {
@@ -860,6 +894,17 @@ static TIMER_DEVICE_CALLBACK( irq_timer_clear_cb )
 	cputag_set_input_line(timer.machine(), "sub", IRQ_SPRITE+1, CLEAR_LINE);
 }
 
+static TIMER_DEVICE_CALLBACK( irq_frc_cb )
+{
+	segas24_state *state = timer.machine().driver_data<segas24_state>();
+
+	if(state->irq_allow0 & (1 << IRQ_FRC) && state->frc_mode == 1)
+		cputag_set_input_line(timer.machine(), "maincpu", IRQ_FRC+1, ASSERT_LINE);
+
+	if(state->irq_allow1 & (1 << IRQ_FRC) && state->frc_mode == 1)
+		cputag_set_input_line(timer.machine(), "sub", IRQ_FRC+1, ASSERT_LINE);
+}
+
 void segas24_state::irq_init()
 {
 	irq_tdata = 0;
@@ -896,20 +941,22 @@ WRITE16_MEMBER(segas24_state::irq_w)
 		}
 		break;
 	case 2:
-		irq_allow0 = data & 0x1f;
+		irq_allow0 = data & 0x3f;
 		irq_timer_pend0 = 0;
 		cputag_set_input_line(machine(), "maincpu", IRQ_TIMER+1, CLEAR_LINE);
 		cputag_set_input_line(machine(), "maincpu", IRQ_YM2151+1, irq_yms && (irq_allow0 & (1 << IRQ_YM2151)) ? ASSERT_LINE : CLEAR_LINE);
 		cputag_set_input_line(machine(), "maincpu", IRQ_VBLANK+1, irq_vblank && (irq_allow0 & (1 << IRQ_VBLANK)) ? ASSERT_LINE : CLEAR_LINE);
 		cputag_set_input_line(machine(), "maincpu", IRQ_SPRITE+1, irq_sprite && (irq_allow0 & (1 << IRQ_SPRITE)) ? ASSERT_LINE : CLEAR_LINE);
+		//cputag_set_input_line(machine(), "maincpu", IRQ_FRC+1, irq_frc && (irq_allow0 & (1 << IRQ_FRC)) ? ASSERT_LINE : CLEAR_LINE);
 		break;
 	case 3:
-		irq_allow1 = data & 0x1f;
+		irq_allow1 = data & 0x3f;
 		irq_timer_pend1 = 0;
 		cputag_set_input_line(machine(), "sub", IRQ_TIMER+1, CLEAR_LINE);
 		cputag_set_input_line(machine(), "sub", IRQ_YM2151+1, irq_yms && (irq_allow1 & (1 << IRQ_YM2151)) ? ASSERT_LINE : CLEAR_LINE);
 		cputag_set_input_line(machine(), "sub", IRQ_VBLANK+1, irq_vblank && (irq_allow1 & (1 << IRQ_VBLANK)) ? ASSERT_LINE : CLEAR_LINE);
 		cputag_set_input_line(machine(), "sub", IRQ_SPRITE+1, irq_sprite && (irq_allow1 & (1 << IRQ_SPRITE)) ? ASSERT_LINE : CLEAR_LINE);
+		//cputag_set_input_line(machine(), "sub", IRQ_FRC+1, irq_frc && (irq_allow1 & (1 << IRQ_FRC)) ? ASSERT_LINE : CLEAR_LINE);
 		break;
 	}
 }
@@ -1152,10 +1199,14 @@ static ADDRESS_MAP_START( system24_cpu1_map, AS_PROGRAM, 16, segas24_state )
 	AM_RANGE(0xb00008, 0xb0000f) AM_MIRROR(0x07fff0) AM_READWRITE(fdc_status_r, fdc_ctrl_w)
 	AM_RANGE(0xb80000, 0xbbffff) AM_ROMBANK("bank1")
 	AM_RANGE(0xbc0000, 0xbc0001) AM_MIRROR(0x03fff8) AM_READWRITE(curbank_r, curbank_w)
+	AM_RANGE(0xbc0002, 0xbc0003) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_mode_r, frc_mode_w,0x00ff)
+	AM_RANGE(0xbc0004, 0xbc0005) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_r, frc_w,0x00ff)
 	AM_RANGE(0xbc0006, 0xbc0007) AM_MIRROR(0x03fff8) AM_READWRITE(mlatch_r, mlatch_w)
 	AM_RANGE(0xc00000, 0xc00011) AM_MIRROR(0x07ffe0) AM_READWRITE(hotrod3_ctrl_r, hotrod3_ctrl_w)
 	AM_RANGE(0xc80000, 0xcbffff) AM_ROMBANK("bank2")
 	AM_RANGE(0xcc0000, 0xcc0001) AM_MIRROR(0x03fff8) AM_READWRITE(curbank_r, curbank_w)
+	AM_RANGE(0xcc0002, 0xcc0003) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_mode_r, frc_mode_w,0x00ff)
+	AM_RANGE(0xcc0004, 0xcc0005) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_r, frc_w,0x00ff)
 	AM_RANGE(0xcc0006, 0xcc0007) AM_MIRROR(0x03fff8) AM_READWRITE(mlatch_r, mlatch_w)
 	AM_RANGE(0xf00000, 0xf3ffff) AM_MIRROR(0x040000) AM_RAM AM_SHARE("share2")
 	AM_RANGE(0xf80000, 0xfbffff) AM_MIRROR(0x040000) AM_RAM AM_SHARE("share1")
@@ -1189,10 +1240,14 @@ static ADDRESS_MAP_START( system24_cpu2_map, AS_PROGRAM, 16, segas24_state )
 	AM_RANGE(0xb00008, 0xb0000f) AM_MIRROR(0x07fff0) AM_READWRITE(fdc_status_r, fdc_ctrl_w)
 	AM_RANGE(0xb80000, 0xbbffff) AM_ROMBANK("bank1")
 	AM_RANGE(0xbc0000, 0xbc0001) AM_MIRROR(0x03fff8) AM_READWRITE(curbank_r, curbank_w)
+	AM_RANGE(0xbc0002, 0xbc0003) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_mode_r, frc_mode_w,0x00ff)
+	AM_RANGE(0xbc0004, 0xbc0005) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_r, frc_w,0x00ff)
 	AM_RANGE(0xbc0006, 0xbc0007) AM_MIRROR(0x03fff8) AM_READWRITE(mlatch_r, mlatch_w)
 	AM_RANGE(0xc00000, 0xc00011) AM_MIRROR(0x07ffe0) AM_READWRITE(hotrod3_ctrl_r, hotrod3_ctrl_w)
 	AM_RANGE(0xc80000, 0xcbffff) AM_ROMBANK("bank2")
 	AM_RANGE(0xcc0000, 0xcc0001) AM_MIRROR(0x03fff8) AM_READWRITE(curbank_r, curbank_w)
+	AM_RANGE(0xcc0002, 0xcc0003) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_mode_r, frc_mode_w,0x00ff)
+	AM_RANGE(0xcc0004, 0xcc0005) AM_MIRROR(0x03fff8) AM_READWRITE8(frc_r, frc_w,0x00ff)
 	AM_RANGE(0xcc0006, 0xcc0007) AM_MIRROR(0x03fff8) AM_READWRITE(mlatch_r, mlatch_w)
 	AM_RANGE(0xf00000, 0xf3ffff) AM_MIRROR(0x040000) AM_RAM AM_SHARE("share2")
 	AM_RANGE(0xf80000, 0xfbffff) AM_MIRROR(0x040000) AM_RAM AM_SHARE("share1")
@@ -1234,6 +1289,9 @@ static MACHINE_RESET( system24 )
 	state->reset_bank();
 	state->irq_init();
 	state->mlatch = 0x00;
+	state->frc_mode = 0;
+	state->frc_cnt_timer = machine.device<timer_device>("frc_timer");
+	state->frc_cnt_timer->reset();
 }
 
 /*************************************
@@ -1278,66 +1336,17 @@ INPUT_PORTS_END
 
 static INPUT_PORTS_START( system24_DSW )
 	PORT_START("COINAGE")
-	PORT_DIPNAME( 0x0f, 0x0f, DEF_STR( Coin_A ) ) PORT_DIPLOCATION("SWA:1,2,3,4")
-	PORT_DIPSETTING(    0x07, DEF_STR( 4C_1C ) )
-	PORT_DIPSETTING(    0x08, DEF_STR( 3C_1C ) )
-	PORT_DIPSETTING(    0x09, DEF_STR( 2C_1C ) )
-	PORT_DIPSETTING(    0x05, "2 Coins/1 Credit 5/3 6/4" )
-	PORT_DIPSETTING(    0x04, "2 Coins/1 Credit 4/3" )
-	PORT_DIPSETTING(    0x0f, DEF_STR( 1C_1C ) )
-	PORT_DIPSETTING(    0x01, "1 Coin/1 Credit 2/3" )
-	PORT_DIPSETTING(    0x02, "1 Coin/1 Credit 4/5" )
-	PORT_DIPSETTING(    0x03, "1 Coin/1 Credit 5/6" )
-	PORT_DIPSETTING(    0x06, DEF_STR( 2C_3C ) )
-	PORT_DIPSETTING(    0x0e, DEF_STR( 1C_2C ) )
-	PORT_DIPSETTING(    0x0d, DEF_STR( 1C_3C ) )
-	PORT_DIPSETTING(    0x0c, DEF_STR( 1C_4C ) )
-	PORT_DIPSETTING(    0x0b, DEF_STR( 1C_5C ) )
-	PORT_DIPSETTING(    0x0a, DEF_STR( 1C_6C ) )
-	PORT_DIPSETTING(    0x00, "Free Play (if Coin B too) or 1/1" )
-	PORT_DIPNAME( 0xf0, 0xf0, DEF_STR( Coin_B ) ) PORT_DIPLOCATION("SWA:5,6,7,8")
-	PORT_DIPSETTING(    0x70, DEF_STR( 4C_1C ) )
-	PORT_DIPSETTING(    0x80, DEF_STR( 3C_1C ) )
-	PORT_DIPSETTING(    0x90, DEF_STR( 2C_1C ) )
-	PORT_DIPSETTING(    0x50, "2 Coins/1 Credit 5/3 6/4" )
-	PORT_DIPSETTING(    0x40, "2 Coins/1 Credit 4/3" )
-	PORT_DIPSETTING(    0xf0, DEF_STR( 1C_1C ) )
-	PORT_DIPSETTING(    0x10, "1 Coin/1 Credit 2/3" )
-	PORT_DIPSETTING(    0x20, "1 Coin/1 Credit 4/5" )
-	PORT_DIPSETTING(    0x30, "1 Coin/1 Credit 5/6" )
-	PORT_DIPSETTING(    0x60, DEF_STR( 2C_3C ) )
-	PORT_DIPSETTING(    0xe0, DEF_STR( 1C_2C ) )
-	PORT_DIPSETTING(    0xd0, DEF_STR( 1C_3C ) )
-	PORT_DIPSETTING(    0xc0, DEF_STR( 1C_4C ) )
-	PORT_DIPSETTING(    0xb0, DEF_STR( 1C_5C ) )
-	PORT_DIPSETTING(    0xa0, DEF_STR( 1C_6C ) )
-	PORT_DIPSETTING(    0x00, "Free Play (if Coin A too) or 1/1" )
+	SEGA_COINAGE_LOC(SW1)
 
 	PORT_START("DSW")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:1")
-	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:2")
-	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:3")
-	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:4")
-	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:5")
-	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:6")
-	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:7")
-	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:8")
-	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPUNUSED_DIPLOC( 0x01, IP_ACTIVE_LOW, "SW2:1" )
+	PORT_DIPUNUSED_DIPLOC( 0x02, IP_ACTIVE_LOW, "SW2:2" )
+	PORT_DIPUNUSED_DIPLOC( 0x04, IP_ACTIVE_LOW, "SW2:3" )
+	PORT_DIPUNUSED_DIPLOC( 0x08, IP_ACTIVE_LOW, "SW2:4" )
+	PORT_DIPUNUSED_DIPLOC( 0x10, IP_ACTIVE_LOW, "SW2:5" )
+	PORT_DIPUNUSED_DIPLOC( 0x20, IP_ACTIVE_LOW, "SW2:6" )
+	PORT_DIPUNUSED_DIPLOC( 0x40, IP_ACTIVE_LOW, "SW2:7" )
+	PORT_DIPUNUSED_DIPLOC( 0x80, IP_ACTIVE_LOW, "SW2:8" )
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( system24_generic )
@@ -1376,13 +1385,18 @@ static INPUT_PORTS_START( hotrod )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x20, 0x20, "Start Credit" ) PORT_DIPLOCATION("SWB:6")
+	//"SW2:1" unused
+	//"SW2:2" unused
+	//"SW2:3" unused
+	//"SW2:4" unused
+	//"SW2:5" unused
+	PORT_DIPNAME( 0x20, 0x20, "Start Credit" ) PORT_DIPLOCATION("SW2:6")
 	PORT_DIPSETTING(    0x20, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x40, 0x40, "Coin Chute" ) PORT_DIPLOCATION("SWB:7")
+	PORT_DIPNAME( 0x40, 0x40, "Coin Chute" ) PORT_DIPLOCATION("SW2:7")
 	PORT_DIPSETTING(    0x40, "Separate" )
 	PORT_DIPSETTING(    0x00, "Common" )
-	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:8")
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 
@@ -1415,42 +1429,46 @@ static INPUT_PORTS_START( hotrodj )
 	PORT_INCLUDE( hotrod )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x04, 0x04, "Start Credit" ) PORT_DIPLOCATION("SWB:3")
+	//"SW2:1" unused
+	//"SW2:2" unused
+	PORT_DIPNAME( 0x04, 0x04, "Start Credit" ) PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x04, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x08, 0x08, "Play Mode" ) PORT_DIPLOCATION("SWB:4")
+	PORT_DIPNAME( 0x08, 0x08, "Play Mode" ) PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, "4 Player" )
 	PORT_DIPSETTING(    0x00, "2 Player" )
-	PORT_DIPNAME( 0x10, 0x10, "Game Style" ) PORT_DIPLOCATION("SWB:5")
+	PORT_DIPNAME( 0x10, 0x10, "Game Style" ) PORT_DIPLOCATION("SW2:5")
 	PORT_DIPSETTING(    0x10, "4 Sides" )
 	PORT_DIPSETTING(    0x00, "2 Sides" )
-	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Language ) ) PORT_DIPLOCATION("SWB:6")
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Language ) ) PORT_DIPLOCATION("SW2:6")
 	PORT_DIPSETTING(    0x20, DEF_STR( Japanese ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( English ) )
+	//"SW2:7" not divert from "hotrod"
+	//"SW2:8" not divert from "hotrod"
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( bnzabros )
 	PORT_INCLUDE( system24_generic )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, "Start Credit" ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x02, "Start Credit" ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x04, 0x04, "Coin Chute" ) PORT_DIPLOCATION("SWB:3")
+	PORT_DIPNAME( 0x04, 0x04, "Coin Chute" ) PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x04, "Common" )
 	PORT_DIPSETTING(    0x00, "Individual" )
-	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:4")
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:5,6")
+	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x20, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x30, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Lives ) ) PORT_DIPLOCATION("SWB:7,8")
+	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:7,8")
 	PORT_DIPSETTING(    0x00, "1" )
 	PORT_DIPSETTING(    0x40, "2" )
 	PORT_DIPSETTING(    0xc0, "3" )
@@ -1461,10 +1479,16 @@ static INPUT_PORTS_START( crkdown )
 	PORT_INCLUDE( system24_generic )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x40, 0x40, "Coin Chute" ) PORT_DIPLOCATION("SWB:7")
-	PORT_DIPSETTING(    0x40, "Common" )
-	PORT_DIPSETTING(    0x00, "Separate" )
-	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:8")
+	//"SW2:1" unused
+	//"SW2:2" unused
+	//"SW2:3" unused
+	//"SW2:4" unused
+	//"SW2:5" unused
+	//"SW2:6" unused
+	PORT_DIPNAME( 0x40, 0x40, "Coin Chute" ) PORT_DIPLOCATION("SW2:7")
+	PORT_DIPSETTING(    0x40, "Common" ) // Japanese manual says "Single"
+	PORT_DIPSETTING(    0x00, "Separate" ) // Japanese manual says "Twin"
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 INPUT_PORTS_END
@@ -1473,27 +1497,27 @@ static INPUT_PORTS_START( roughrac )
 	PORT_INCLUDE( system24_generic )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:3")
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x08, 0x08, "Game Instruction" ) PORT_DIPLOCATION("SWB:4")
+	PORT_DIPNAME( 0x08, 0x08, "Game Instruction" ) PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( On ) )
-	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:5,6")
+	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x20, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x30, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
-	PORT_DIPNAME( 0x40, 0x40, "Start Money" ) PORT_DIPLOCATION("SWB:7")
+	PORT_DIPNAME( 0x40, 0x40, "Start Money" ) PORT_DIPLOCATION("SW2:7")
 	PORT_DIPSETTING(    0x40, "15000" )
 	PORT_DIPSETTING(    0x00, "20000" )
-	PORT_DIPNAME( 0x80, 0x80, "Start Intro" ) PORT_DIPLOCATION("SWB:8")
+	PORT_DIPNAME( 0x80, 0x80, "Start Intro" ) PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, "10" )
 	PORT_DIPSETTING(    0x00, "15" )
 
@@ -1508,23 +1532,23 @@ static INPUT_PORTS_START( sspirits )
 	PORT_INCLUDE( system24_generic )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x0c, 0x0c, DEF_STR( Lives ) ) PORT_DIPLOCATION("SWB:3,4")
+	PORT_DIPNAME( 0x0c, 0x0c, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(    0x00, "2" )
 	PORT_DIPSETTING(    0x0c, "3" )
 	PORT_DIPSETTING(    0x08, "4" )
 	PORT_DIPSETTING(    0x04, "5" )
-	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SWB:5,6")
+	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x20, "500K" )
 	PORT_DIPSETTING(    0x30, "600K" )
 	PORT_DIPSETTING(    0x10, "800K" )
 	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:7,8")
+	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:7,8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0xc0, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )
@@ -1535,43 +1559,46 @@ static INPUT_PORTS_START( qgh )
 	PORT_INCLUDE( system24_generic )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x0c, 0x0c, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:3,4")
+	PORT_DIPNAME( 0x0c, 0x0c, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(    0x08, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x0c, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hard ) )
-	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Lives ) ) PORT_DIPLOCATION("SWB:5,6")
+	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x10, "3" )
 	PORT_DIPSETTING(    0x00, "3" )
 	PORT_DIPSETTING(    0x20, "4" )
 	PORT_DIPSETTING(    0x30, "5" )
+	//"SW2:7" unused
+	//"SW2:8" unused
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( qsww )
 	PORT_INCLUDE( system24_generic )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:3")
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Lives ) ) PORT_DIPLOCATION("SWB:5,6")
+	//"SW2:4" unused
+	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x10, "2" )
 	PORT_DIPSETTING(    0x00, "3" )
 	PORT_DIPSETTING(    0x30, "4" )
 	PORT_DIPSETTING(    0x20, "5" )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:7,8")
+	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:7,8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0xc0, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )
@@ -1588,25 +1615,25 @@ static INPUT_PORTS_START( dcclub ) /* In the Japan set missing angle input */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_PLAYER(1)
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:3")
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x08, 0x08, "Timing Meter" ) PORT_DIPLOCATION("SWB:4")
+	PORT_DIPNAME( 0x08, 0x08, "Timing Meter" ) PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Easy ) )
-	PORT_DIPNAME( 0x10, 0x10, "Initial Balls" ) PORT_DIPLOCATION("SWB:5")
+	PORT_DIPNAME( 0x10, 0x10, "Initial Balls" ) PORT_DIPLOCATION("SW2:5")
 	PORT_DIPSETTING(    0x00, "1" )
 	PORT_DIPSETTING(    0x10, "2" )
-	PORT_DIPNAME( 0x20, 0x20, "Balls Limit" ) PORT_DIPLOCATION("SWB:6")
+	PORT_DIPNAME( 0x20, 0x20, "Balls Limit" ) PORT_DIPLOCATION("SW2:6")
 	PORT_DIPSETTING(    0x00, "3" )
 	PORT_DIPSETTING(    0x20, "4" )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:7,8")
+	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:7,8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0xc0, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )
@@ -1631,36 +1658,42 @@ static INPUT_PORTS_START( sgmast )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_8WAY PORT_PLAYER(1)
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x01, "Start Credit" ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:3")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x08, 0x08, "Gameplay" ) PORT_DIPLOCATION("SWB:4")
+	PORT_DIPNAME( 0x08, 0x08, "Gameplay" ) PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, "1 Hole 1 Credit" )
 	PORT_DIPSETTING(    0x00, "Lose Ball Game Over" )
-	PORT_DIPNAME( 0xe0, 0xe0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:6,7,8")
-	PORT_DIPSETTING(    0x80, DEF_STR( Easiest ) )
-	PORT_DIPSETTING(    0xa0, DEF_STR( Easier ) )
-	PORT_DIPSETTING(    0xc0, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0xe0, DEF_STR( Normal ) )
-	PORT_DIPSETTING(    0x60, "Little Hard" )
-	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )
-	PORT_DIPSETTING(    0x20, DEF_STR( Harder ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
+	//"SW2:5" unused
+	PORT_DIPNAME( 0xe0, 0xe0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7,8") // MeterWidth WindVelocity MeterSpeed
+	PORT_DIPSETTING(    0x80, DEF_STR( Easiest ) )                                  //        64%          30%        50%
+	PORT_DIPSETTING(    0xa0, DEF_STR( Easier ) )                                   //        64%          50%        75%
+	PORT_DIPSETTING(    0xc0, DEF_STR( Easy ) )                                     //       100%          75%        75%
+	PORT_DIPSETTING(    0xe0, DEF_STR( Normal ) )                                   //       100%         100%       100%
+	PORT_DIPSETTING(    0x60, "Little Hard" )                                       //       118%          75%       100%
+	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )                                     //       118%         100%       100%
+	PORT_DIPSETTING(    0x20, DEF_STR( Harder ) )                                   //       136%          75%       100%
+	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )                                  //       136%         100%       100%
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( sgmastj )
 	PORT_INCLUDE( sgmast )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unused ) ) PORT_DIPLOCATION("SWB:4")
-	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	//"SW2:1" not divert from "sgmast"
+	//"SW2:2" not divert from "sgmast"
+	//"SW2:3" not divert from "sgmast"
+	PORT_DIPUNUSED_DIPLOC( 0x08, IP_ACTIVE_LOW, "SW2:4" )
+	//"SW2:5" unused
+	//"SW2:6" not divert from "sgmast"
+	//"SW2:7" not divert from "sgmast"
+	//"SW2:8" not divert from "sgmast"
 
 	PORT_START("DIAL1")
 	PORT_BIT( 0xfff, 0x000, IPT_DIAL ) PORT_MINMAX(0x000,0xfff) PORT_SENSITIVITY(25) PORT_KEYDELTA(15) PORT_PLAYER(2)
@@ -1693,24 +1726,24 @@ static INPUT_PORTS_START( quizmeku )
 	PORT_INCLUDE( system24_DSW )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x00, "Play Mode" ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x00, "Play Mode" ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "2 Player" )
 	PORT_DIPSETTING(    0x00, "4 Player" )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x0c, 0x00, DEF_STR( Lives ) ) PORT_DIPLOCATION("SWB:3,4")
+	PORT_DIPNAME( 0x0c, 0x00, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(    0x08, "2" )
 	PORT_DIPSETTING(    0x0c, "3" )
 	PORT_DIPSETTING(    0x04, "4" )
 	PORT_DIPSETTING(    0x00, "5" )
-	PORT_DIPNAME( 0x10, 0x10, "Answer Counts" ) PORT_DIPLOCATION("SWB:5")
+	PORT_DIPNAME( 0x10, 0x10, "Answer Counts" ) PORT_DIPLOCATION("SW2:5")
 	PORT_DIPSETTING(    0x10, "Every" )
 	PORT_DIPSETTING(    0x00, "3" )
-	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:6")
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:6")
 	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:7,8")
+	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:7,8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0xc0, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )
@@ -1759,24 +1792,22 @@ static INPUT_PORTS_START( qrouka )
 	PORT_INCLUDE( system24_DSW )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x00, "Play Mode" ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x00, "Play Mode" ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "2 Player" )
 	PORT_DIPSETTING(    0x00, "4 Player" )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unknown ) ) PORT_DIPLOCATION("SWB:3")
-	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x08, 0x08, "Coin Chute" ) PORT_DIPLOCATION("SWB:4")
+	//"SW2:3" unused
+	PORT_DIPNAME( 0x08, 0x08, "Coin Chute" ) PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, "Common" )
 	PORT_DIPSETTING(    0x00, "Separate" )
-	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Lives ) ) PORT_DIPLOCATION("SWB:5,6")
+	PORT_DIPNAME( 0x30, 0x30, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x10, "2" )
 	PORT_DIPSETTING(    0x00, "3" )
 	PORT_DIPSETTING(    0x30, "4" )
 	PORT_DIPSETTING(    0x20, "5" )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:7,8")
+	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:7,8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0xc0, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Hard ) )
@@ -1832,22 +1863,24 @@ static INPUT_PORTS_START( mahmajn )
 	PORT_INCLUDE( system24_DSW )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:1")
+	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, "Start Score" ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x02, "Start Score" ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x00, "2000" )
 	PORT_DIPSETTING(    0x02, "3000" )
-	PORT_DIPNAME( 0x0c, 0x0c, "Difficulty (computer)" ) PORT_DIPLOCATION("SWB:3,4")
+	PORT_DIPNAME( 0x0c, 0x0c, "Difficulty (computer)" ) PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(    0x08, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x0c, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
-	PORT_DIPNAME( 0x30, 0x30, "Difficulty (player)" ) PORT_DIPLOCATION("SWB:5,6")
+	PORT_DIPNAME( 0x30, 0x30, "Difficulty (player)" ) PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x20, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x30, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
+	//"SW2:7" unused
+	//"SW2:8" unused
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( gground )
@@ -1867,13 +1900,16 @@ static INPUT_PORTS_START( gground )
 	PORT_INCLUDE( system24_DSW )
 
 	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SWB:1")
+	// Here is known problem.
+	// Service mode works as I hoped.
+	// But game mode doesn't. It works as all dipswitches are On.
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SWB:2")
+	PORT_DIPNAME( 0x02, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x1c, 0x1c, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SWB:3,4,5")
+	PORT_DIPNAME( 0x1c, 0x1c, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:3,4,5")
 	PORT_DIPSETTING(    0x00, DEF_STR( Easiest ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Easier ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( Easy ) )
@@ -1882,12 +1918,12 @@ static INPUT_PORTS_START( gground )
 	PORT_DIPSETTING(    0x0c, "Little Hard" )
 	PORT_DIPSETTING(    0x14, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Hardest ) )
-	PORT_DIPNAME( 0x60, 0x60, "Time Limit Per Stage" ) PORT_DIPLOCATION("SWB:6,7")
+	PORT_DIPNAME( 0x60, 0x60, "Time Limit Per Stage" ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x20, DEF_STR( Easiest ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x60, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hard ) )
-	PORT_DIPNAME( 0x80, 0x80, "Clock Of Time Limit" ) PORT_DIPLOCATION("SWB:8")
+	PORT_DIPNAME( 0x80, 0x80, "Clock Of Time Limit" ) PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, "1.00 sec" )
 	PORT_DIPSETTING(    0x00, "0.80 sec" )
 INPUT_PORTS_END
@@ -1927,6 +1963,8 @@ static MACHINE_CONFIG_START( system24, segas24_state )
 
 	MCFG_TIMER_ADD("irq_timer", irq_timer_cb)
 	MCFG_TIMER_ADD("irq_timer_clear", irq_timer_clear_cb)
+	MCFG_TIMER_ADD("frc_timer", NULL)
+	MCFG_TIMER_ADD_PERIODIC("irq_frc", irq_frc_cb, attotime::from_hz(FRC_CLOCK_MODE1))
 
 	MCFG_VIDEO_ATTRIBUTES(VIDEO_UPDATE_AFTER_VBLANK)
 
@@ -2481,27 +2519,29 @@ static DRIVER_INIT( roughrac )
  *
  *************************************/
 
+//            YEAR, NAME,      PARENT,   MACHINE,         INPUT,    INIT,     MONITOR,COMPANY,FULLNAME,FLAGS
 /* Disk Based Games */
-/* 01 */GAME( 1988, hotrod,   0,        system24_floppy, hotrod,   hotrod,   ROT0,   "Sega", "Hot Rod (World, 3 Players, Turbo set 1, Floppy Based)", 0 )
-/* 01 */GAME( 1988, hotroda,  hotrod,   system24_floppy, hotrod,   hotrod,   ROT0,   "Sega", "Hot Rod (World, 3 Players, Turbo set 2, Floppy Based)", 0 )
-/* 01 */GAME( 1988, hotrodj,  hotrod,   system24_floppy, hotrodj,  hotrod,   ROT0,   "Sega", "Hot Rod (Japan, 4 Players, Floppy Based)", 0 )
-/* 02 */GAME( 1988, sspirits, 0,        system24_floppy, sspirits, sspirits, ROT270, "Sega", "Scramble Spirits (World, Floppy Based)", 0 )
-/* 02 */GAME( 1988, sspiritj, sspirits, system24_floppy, sspirits, sspiritj, ROT270, "Sega", "Scramble Spirits (Japan, Floppy DS3-5000-02-REV-A Based)", 0 )
-/* 02 */GAME( 1988, sspirtfc, sspirits, system24_floppy, sspirits, sspirits, ROT270, "Sega", "Scramble Spirits (World, Floppy Based, FD1094 317-0058-02c)",GAME_NOT_WORKING ) /* MISSING disk image */
-/* 03 */GAME( 1988, gground,  0,        system24_floppy, gground,  gground,  ROT270, "Sega", "Gain Ground (World, 3 Players, Floppy Based, FD1094 317-0058-03d Rev A)", 0 )
-/* 03 */GAME( 1988, ggroundj, gground,  system24_floppy, gground,  gground,  ROT270, "Sega", "Gain Ground (Japan, 2 Players, Floppy Based, FD1094 317-0058-03b)", 0 )
-/* 04 */GAME( 1989, crkdown,  0,        system24_floppy, crkdown,  crkdown,  ROT0,   "Sega", "Crack Down (World, Floppy Based, FD1094 317-0058-04c)", GAME_IMPERFECT_GRAPHICS ) // clipping probs / solid layer probs? (radar display)
-/* 04 */GAME( 1989, crkdownu, crkdown,  system24_floppy, crkdown,  crkdown,  ROT0,   "Sega", "Crack Down (US, Floppy Based, FD1094 317-0058-04d)", GAME_IMPERFECT_GRAPHICS ) // clipping probs / solid layer probs? (radar display)
-/* 04 */GAME( 1989, crkdownj, crkdown,  system24_floppy, crkdown,  crkdown,  ROT0,   "Sega", "Crack Down (Japan, Floppy Based, FD1094 317-0058-04b Rev A)", GAME_IMPERFECT_GRAPHICS ) // clipping probs / solid layer probs? (radar display)
-/* 05 */GAME( 1989, sgmast,   0,        system24_floppy, sgmast,   sgmast,   ROT0,   "Sega", "Super Masters Golf (World?, Floppy Based, FD1094 317-0058-05d?)", GAME_NOT_WORKING|GAME_UNEMULATED_PROTECTION ) // NOT decrypted
-/* 05 */GAME( 1989, sgmastc,  sgmast,   system24_floppy, sgmast,   sgmast,   ROT0,   "Sega", "Jumbo Ozaki Super Masters Golf (World, Floppy Based, FD1094 317-0058-05c)", GAME_IMPERFECT_GRAPHICS ) // some gfx offset / colour probs?
-/* 05 */GAME( 1989, sgmastj,  sgmast,   system24_floppy, sgmastj,  sgmast,   ROT0,   "Sega", "Jumbo Ozaki Super Masters Golf (Japan, Floppy Based, FD1094 317-0058-05b)", GAME_IMPERFECT_GRAPHICS ) // some gfx offset / colour probs?
-/* 06 */GAME( 1990, roughrac, 0,        system24_floppy, roughrac, roughrac, ROT0,   "Sega", "Rough Racer (Japan, Floppy Based, FD1094 317-0058-06b)", 0 )
-/* 07 */GAME( 1990, bnzabros, 0,        system24_floppy, bnzabros, bnzabros, ROT0,   "Sega", "Bonanza Bros (US, Floppy DS3-5000-07d? Based)", 0 )
-/* 07 */GAME( 1990, bnzabrosj,bnzabros, system24_floppy, bnzabros, bnzabros, ROT0,   "Sega", "Bonanza Bros (Japan, Floppy DS3-5000-07b Based)", 0 )
-/* 08 */GAME( 1991, qsww,     0,        system24_floppy, qsww,     qsww,     ROT0,   "Sega", "Quiz Syukudai wo Wasuremashita (Japan, Floppy Based, FD1094 317-0058-08b)", GAME_IMPERFECT_GRAPHICS ) // wrong bg colour on title
-/* 09 */GAME( 1991, dcclubfd, dcclub,   system24_floppy, dcclub,   dcclubfd, ROT0,   "Sega", "Dynamic Country Club (US, Floppy Based, FD1094 317-0058-09d)", 0 )
+/* 01 */GAME( 1988, hotrod,    0,        system24_floppy, hotrod,   hotrod,   ROT0,   "Sega", "Hot Rod (World, 3 Players, Turbo set 1, Floppy Based)", 0 )
+/* 01 */GAME( 1988, hotroda,   hotrod,   system24_floppy, hotrod,   hotrod,   ROT0,   "Sega", "Hot Rod (World, 3 Players, Turbo set 2, Floppy Based)", 0 )
+/* 01 */GAME( 1988, hotrodj,   hotrod,   system24_floppy, hotrodj,  hotrod,   ROT0,   "Sega", "Hot Rod (Japan, 4 Players, Floppy Based)", 0 )
+/* 02 */GAME( 1988, sspirits,  0,        system24_floppy, sspirits, sspirits, ROT270, "Sega", "Scramble Spirits (World, Floppy Based)", 0 )
+/* 02 */GAME( 1988, sspiritj,  sspirits, system24_floppy, sspirits, sspiritj, ROT270, "Sega", "Scramble Spirits (Japan, Floppy DS3-5000-02-REV-A Based)", 0 )
+/* 02 */GAME( 1988, sspirtfc,  sspirits, system24_floppy, sspirits, sspirits, ROT270, "Sega", "Scramble Spirits (World, Floppy Based, FD1094 317-0058-02c)", GAME_NOT_WORKING ) /* MISSING disk image */
+/* 03 */GAME( 1988, gground,   0,        system24_floppy, gground,  gground,  ROT270, "Sega", "Gain Ground (World, 3 Players, Floppy Based, FD1094 317-0058-03d Rev A)", 0 )
+/* 03 */GAME( 1988, ggroundj,  gground,  system24_floppy, gground,  gground,  ROT270, "Sega", "Gain Ground (Japan, 2 Players, Floppy Based, FD1094 317-0058-03b)", 0 )
+/* 04 */GAME( 1989, crkdown,   0,        system24_floppy, crkdown,  crkdown,  ROT0,   "Sega", "Crack Down (World, Floppy Based, FD1094 317-0058-04c)", GAME_IMPERFECT_GRAPHICS ) // clipping probs / solid layer probs? (radar display)
+/* 04 */GAME( 1989, crkdownu,  crkdown,  system24_floppy, crkdown,  crkdown,  ROT0,   "Sega", "Crack Down (US, Floppy Based, FD1094 317-0058-04d)", GAME_IMPERFECT_GRAPHICS ) // clipping probs / solid layer probs? (radar display)
+/* 04 */GAME( 1989, crkdownj,  crkdown,  system24_floppy, crkdown,  crkdown,  ROT0,   "Sega", "Crack Down (Japan, Floppy Based, FD1094 317-0058-04b Rev A)", GAME_IMPERFECT_GRAPHICS ) // clipping probs / solid layer probs? (radar display)
+/* 05 */GAME( 1989, sgmast,    0,        system24_floppy, sgmast,   sgmast,   ROT0,   "Sega", "Super Masters Golf (World?, Floppy Based, FD1094 317-0058-05d?)", GAME_NOT_WORKING|GAME_UNEMULATED_PROTECTION ) // NOT decrypted
+/* 05 */GAME( 1989, sgmastc,   sgmast,   system24_floppy, sgmast,   sgmast,   ROT0,   "Sega", "Jumbo Ozaki Super Masters Golf (World, Floppy Based, FD1094 317-0058-05c)", GAME_IMPERFECT_GRAPHICS ) // some gfx offset / colour probs?
+/* 05 */GAME( 1989, sgmastj,   sgmast,   system24_floppy, sgmastj,  sgmast,   ROT0,   "Sega", "Jumbo Ozaki Super Masters Golf (Japan, Floppy Based, FD1094 317-0058-05b)", GAME_IMPERFECT_GRAPHICS ) // some gfx offset / colour probs?
+/* 06 */GAME( 1990, roughrac,  0,        system24_floppy, roughrac, roughrac, ROT0,   "Sega", "Rough Racer (Japan, Floppy Based, FD1094 317-0058-06b)", 0 )
+/* 07 */GAME( 1990, bnzabros,  0,        system24_floppy, bnzabros, bnzabros, ROT0,   "Sega", "Bonanza Bros (US, Floppy DS3-5000-07d? Based)", 0 )
+/* 07 */GAME( 1990, bnzabrosj, bnzabros, system24_floppy, bnzabros, bnzabros, ROT0,   "Sega", "Bonanza Bros (Japan, Floppy DS3-5000-07b Based)", 0 )
+/* 08 */GAME( 1991, qsww,      0,        system24_floppy, qsww,     qsww,     ROT0,   "Sega", "Quiz Syukudai wo Wasuremashita (Japan, Floppy Based, FD1094 317-0058-08b)", GAME_IMPERFECT_GRAPHICS ) // wrong bg colour on title
+/* 09 */GAME( 1991, dcclubfd,  dcclub,   system24_floppy, dcclub,   dcclubfd, ROT0,   "Sega", "Dynamic Country Club (US, Floppy Based, FD1094 317-0058-09d)", 0 )
 
+//    YEAR, NAME,     PARENT,   MACHINE,  INPUT,    INIT,     MONITOR,COMPANY,FULLNAME,FLAGS
 /* ROM Based */
 GAME( 1991, dcclub,   0,        system24, dcclub,   dcclub,   ROT0,   "Sega", "Dynamic Country Club (World, ROM Based)", 0 )
 GAME( 1991, dcclubj,  dcclub,   system24, dcclub,   dcclub,   ROT0,   "Sega", "Dynamic Country Club (Japan, ROM Based)", 0 )

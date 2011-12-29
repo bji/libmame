@@ -439,7 +439,7 @@ $(CPUOBJ)/hd6309/hd6309.o:	$(CPUSRC)/hd6309/hd6309.c \
 
 ifneq ($(filter H83002,$(CPUS)),)
 OBJDIRS += $(CPUOBJ)/h83002
-CPUOBJS += $(CPUOBJ)/h83002/h8_16.o $(CPUOBJ)/h83002/h8periph.o
+CPUOBJS += $(CPUOBJ)/h83002/h8_16.o $(CPUOBJ)/h83002/h8periph.o $(CPUOBJ)/h83002/h8speriph.o
 DASMOBJS += $(CPUOBJ)/h83002/h8disasm.o
 endif
 
@@ -451,7 +451,12 @@ $(CPUOBJ)/h83002/h8_16.o:		$(CPUSRC)/h83002/h8_16.c \
 $(CPUOBJ)/h83002/h8disasm.o:	$(CPUSRC)/h83002/h8disasm.c
 
 $(CPUOBJ)/h83002/h8periph.o:	$(CPUSRC)/h83002/h8periph.c \
-								$(CPUSRC)/h83002/h8priv.h
+								$(CPUSRC)/h83002/h8priv.h \
+								$(CPUSRC)/h83002/h8.h
+
+$(CPUOBJ)/h83002/h8speriph.o:	$(CPUSRC)/h83002/h8speriph.c \
+								$(CPUSRC)/h83002/h8priv.h \
+								$(CPUSRC)/h83002/h8.h
 
 
 #-------------------------------------------------
@@ -460,7 +465,7 @@ $(CPUOBJ)/h83002/h8periph.o:	$(CPUSRC)/h83002/h8periph.c \
 
 ifneq ($(filter H83334,$(CPUS)),)
 OBJDIRS += $(CPUOBJ)/h83002
-CPUOBJS += $(CPUOBJ)/h83002/h8_8.o $(CPUOBJ)/h83002/h8periph.o
+CPUOBJS += $(CPUOBJ)/h83002/h8_8.o $(CPUOBJ)/h83002/h8periph.o $(CPUOBJ)/h83002/h8speriph.o
 DASMOBJS += $(CPUOBJ)/h83002/h8disasm.o
 endif
 
@@ -472,7 +477,12 @@ $(CPUOBJ)/h83002/h8_8.o:		$(CPUSRC)/h83002/h8_8.c \
 $(CPUOBJ)/h83002/h8disasm.o:	$(CPUSRC)/h83002/h8disasm.c
 
 $(CPUOBJ)/h83002/h8periph.o:	$(CPUSRC)/h83002/h8periph.c \
-								$(CPUSRC)/h83002/h8priv.h
+								$(CPUSRC)/h83002/h8priv.h \
+								$(CPUSRC)/h83002/h8.h
+
+$(CPUOBJ)/h83002/h8speriph.o:	$(CPUSRC)/h83002/h8speriph.c \
+								$(CPUSRC)/h83002/h8priv.h \
+								$(CPUSRC)/h83002/h8.h
 
 #-------------------------------------------------
 # Hitachi HCD62121
@@ -522,19 +532,43 @@ $(CPUOBJ)/sh2/sh2fe.o:	$(CPUSRC)/sh2/sh2fe.c \
 
 ifneq ($(filter SH4,$(CPUS)),)
 OBJDIRS += $(CPUOBJ)/sh4
-CPUOBJS += $(CPUOBJ)/sh4/sh4.o $(CPUOBJ)/sh4/sh4comn.o
+CPUOBJS += $(CPUOBJ)/sh4/sh4.o $(CPUOBJ)/sh4/sh4comn.o $(CPUOBJ)/sh4/sh3comn.o $(CPUOBJ)/sh4/sh4tmu.o $(CPUOBJ)/sh4/sh4dmac.o
 DASMOBJS += $(CPUOBJ)/sh4/sh4dasm.o
 endif
 
 $(CPUOBJ)/sh4/sh4.o:	$(CPUSRC)/sh4/sh4.c \
 			$(CPUSRC)/sh4/sh4.h \
 			$(CPUSRC)/sh4/sh4regs.h \
-			$(CPUSRC)/sh4/sh4comn.h
+			$(CPUSRC)/sh4/sh4comn.h \
+			$(CPUSRC)/sh4/sh3comn.h
 
 $(CPUOBJ)/sh4/sh4comn.o:  $(CPUSRC)/sh4/sh4comn.c \
 			$(CPUSRC)/sh4/sh4comn.h \
 			$(CPUSRC)/sh4/sh4regs.h \
 			$(CPUSRC)/sh4/sh4.h
+
+$(CPUOBJ)/sh4/sh3comn.o:  $(CPUSRC)/sh4/sh3comn.c \
+			$(CPUSRC)/sh4/sh3comn.h \
+
+$(CPUOBJ)/sh4/sh4tmu.o: $(CPUSRC)/sh4/sh4tmu.c \
+			$(CPUSRC)/sh4/sh4tmu.h \
+			$(CPUSRC)/sh4/sh3comn.c \
+			$(CPUSRC)/sh4/sh3comn.h \
+			$(CPUSRC)/sh4/sh4.c \
+			$(CPUSRC)/sh4/sh4.h \
+			$(CPUSRC)/sh4/sh4regs.h \
+			$(CPUSRC)/sh4/sh4comn.h \
+			$(CPUSRC)/sh4/sh3comn.h
+
+$(CPUOBJ)/sh4/sh4dmac.o: $(CPUSRC)/sh4/sh4dmac.c \
+			$(CPUSRC)/sh4/sh4dmac.h \
+			$(CPUSRC)/sh4/sh3comn.c \
+			$(CPUSRC)/sh4/sh3comn.h \
+			$(CPUSRC)/sh4/sh4.c \
+			$(CPUSRC)/sh4/sh4.h \
+			$(CPUSRC)/sh4/sh4regs.h \
+			$(CPUSRC)/sh4/sh4comn.h \
+			$(CPUSRC)/sh4/sh3comn.h
 
 #-------------------------------------------------
 # Hudsonsoft 6280
@@ -1073,7 +1107,7 @@ $(CPUOBJ)/m68000/%.o: $(CPUSRC)/m68000/%.c | $(OSPREBUILD)
 # when we compile generated files we need to include stuff from the src directory
 $(CPUOBJ)/m68000/%.o: $(CPUOBJ)/m68000/%.c | $(OSPREBUILD)
 	$(ECHO) Compiling $<...
-	$(CC) $(CDEFS) $(CFLAGS) -I$(CPUSRC)/m68000 -c $< -o $@
+	$(CC) $(CDEFS) $(CFLAGS) -I$(CPUSRC)/m68000 -I$(CPUOBJ)/m68000 -c $< -o $@
 
 # rule to generate the C files
 $(CPUOBJ)/m68000/m68kops.c: $(M68KMAKE) $(CPUSRC)/m68000/m68k_in.c

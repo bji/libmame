@@ -201,13 +201,13 @@ Notes:
       6734         : MAX734 +12V 120mA Flash Memory Programming Supply Switching Regulator (SOIC8)
       3414A        : NJM3414A 70mA Dual Op Amp (SOIC8)
       LC78832M     : Sanyo LM78832M 2-Channel 16-Bit D/A Converter LSI with 2 On-Chip Digital Filters (SOIC20)
-      2061ASC-1    : IC Designs 2061ASC-1 Programmable Clock Generator (SOIC16)
+      2061ASC-1    : IC Designs 2061ASC-1 Programmable Clock Generator (SOIC16), master input of 14.7456MHz
       R4543        : EPSON Real Time Clock Module (SOIC14)
       DSW(2)       : 2-Position DIP Switch (All OFF)
       N341256      : NKK N341256 32k x8 SRAM (x2, SOJ28)
       H8/3002      : Sound CPU, Hitachi H8/3002 HD6413002F17 (QFP100), clocked at 16.737MHz
       C416         : Namco custom C416 (QFP176)
-      C352         : Namco custom C352 PCM sound chip (QFP100)
+      C352         : Namco custom C352 PCM sound chip (QFP100), clocked at 29.168MHz, from 2061 pin 9
       MOT1         : PALCE 22V10H (PLCC28, labelled 'S12MOT1A')
                      *Replaced by PALCE 22V10H (PLCC28, labelled 'S12MOT1C') on MOTHER (C) PCB
       MOT2         : PALCE 22V10H (PLCC28, labelled 'S12MOT2A')
@@ -1217,6 +1217,11 @@ static void namcos12_rom_read( namcos12_state *state, UINT32 n_address, INT32 n_
 	}
 }
 
+static void namcos12_sub_irq( namcos12_state *state, screen_device &screen, bool vblank_state )
+{
+	irq1_line_pulse( state->machine().device( "sub" ) );
+}
+
 static WRITE32_HANDLER( s12_dma_bias_w )
 {
 	namcos12_state *state = space->machine().driver_data<namcos12_state>();
@@ -1651,35 +1656,23 @@ static MACHINE_CONFIG_START( coh700, namcos12_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD( "maincpu", CXD8661R, XTAL_100MHz )
 	MCFG_CPU_PROGRAM_MAP( namcos12_map)
-	MCFG_CPU_VBLANK_INT("screen", psx_vblank)
 
 	MCFG_PSX_DMA_CHANNEL_READ( "maincpu", 5, psx_dma_read_delegate( FUNC( namcos12_rom_read ), (namcos12_state *) owner ) )
 
 	MCFG_CPU_ADD("sub", H83002, 16737350 )
 	MCFG_CPU_PROGRAM_MAP( s12h8rwmap)
 	MCFG_CPU_IO_MAP( s12h8iomap)
-	MCFG_CPU_VBLANK_INT("screen", irq1_line_pulse)
 
 	MCFG_MACHINE_RESET( namcos12 )
 
 	/* video hardware */
-	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_REFRESH_RATE( 60 )
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE( 1024, 1024 )
-	MCFG_SCREEN_VISIBLE_AREA( 0, 639, 0, 479 )
-	MCFG_SCREEN_UPDATE( psx )
-
-	MCFG_PALETTE_LENGTH( 65536 )
-
-	MCFG_PALETTE_INIT( psx )
-	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8654Q, 0 )
+	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8654Q, 0x200000, XTAL_53_693175MHz )
+	MCFG_PSXGPU_VBLANK_CALLBACK( vblank_state_delegate( FUNC( namcos12_sub_irq ), (namcos12_state *) owner ) )
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
 
-	MCFG_C352_ADD("c352", 16737350)
+	MCFG_C352_ADD("c352", 16737350*1.5 ) // measured at 29.168MHz, but that's too highpitched
 	MCFG_SOUND_ROUTE(0, "rspeaker", 1.00)
 	MCFG_SOUND_ROUTE(1, "lspeaker", 1.00)
 	MCFG_SOUND_ROUTE(2, "rspeaker", 1.00)
@@ -1733,6 +1726,20 @@ static INPUT_PORTS_START( namcos12 )
 	PORT_BIT( 0x2000, IP_ACTIVE_LOW, IPT_COIN1 )
 	PORT_SERVICE_NO_TOGGLE( 0x4000, IP_ACTIVE_LOW )
 	PORT_BIT( 0x8000, IP_ACTIVE_LOW, IPT_SERVICE1 )
+INPUT_PORTS_END
+
+static INPUT_PORTS_START( namcos124w )
+	PORT_INCLUDE( namcos12 )
+
+	PORT_MODIFY("IN0")
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x0004, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x0100, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY PORT_PLAYER(2)
+	PORT_BIT( 0x0200, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY PORT_PLAYER(2)
+	PORT_BIT( 0x0400, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY PORT_PLAYER(2)
+	PORT_BIT( 0x0800, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_4WAY PORT_PLAYER(2)
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( ptblank2 )
@@ -2794,7 +2801,7 @@ GAME( 1999, tektagtjb, tektagt,  coh700,   namcos12, namcos12, ROT0, "Namco",   
 GAME( 1999, tektagtja, tektagt,  coh700,   namcos12, namcos12, ROT0, "Namco",           "Tekken Tag Tournament (Japan, TEG1/VER.A3)", GAME_IMPERFECT_SOUND | GAME_NOT_WORKING ) /* KC044 */
 GAME( 1999, ghlpanic,  0,        coh700,   ghlpanic, ghlpanic, ROT0, "Eighting / Raizing / Namco", "Ghoul Panic (Asia, OB2/VER.A)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND ) /* KC045 */
 GAME( 1999, pacapp2,   0,        coh700,   namcos12, namcos12, ROT0, "Produce / Namco", "Paca Paca Passion 2 (Japan, PKS1/VER.A)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND ) /* KC046 */
-GAME( 1999, mrdrillr,  0,        coh700,   namcos12, namcos12, ROT0, "Namco",           "Mr. Driller (Japan, DRI1/VER.A2)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND ) /* KC048 */
+GAME( 1999, mrdrillr,  0,        coh700,   namcos124w,namcos12,ROT0, "Namco",           "Mr. Driller (Japan, DRI1/VER.A2)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND ) /* KC048 */
 GAME( 1999, kaiunqz,   0,        coh700,   namcos12, namcos12, ROT0, "Namco",           "Kaiun Quiz (Japan, KW1/VER.A)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND | GAME_NOT_WORKING ) /* KC050 */
 GAME( 1999, pacappsp,  0,        coh700,   namcos12, namcos12, ROT0, "Produce / Namco", "Paca Paca Passion Special (Japan, PSP1/VER.A)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND ) /* KC052 */
 GAME( 1999, aquarush,  0,        coh700,   namcos12, namcos12, ROT0, "Namco",           "Aqua Rush (Japan, AQ1/VER.A1)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND ) /* KC053 */

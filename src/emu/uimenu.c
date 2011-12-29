@@ -286,7 +286,6 @@ static int CLIB_DECL menu_input_compare_items(const void *i1, const void *i2);
 static void menu_input_populate_and_sort(running_machine &machine, ui_menu *menu, input_item_data *itemlist, input_menu_state *menustate);
 static void menu_settings_dip_switches(running_machine &machine, ui_menu *menu, void *parameter, void *state);
 static void menu_settings_driver_config(running_machine &machine, ui_menu *menu, void *parameter, void *state);
-static void menu_settings_categories(running_machine &machine, ui_menu *menu, void *parameter, void *state);
 static void menu_settings_common(running_machine &machine, ui_menu *menu, void *state, UINT32 type);
 static void menu_settings_populate(running_machine &machine, ui_menu *menu, settings_menu_state *menustate, UINT32 type);
 static void menu_analog(running_machine &machine, ui_menu *menu, void *parameter, void *state);
@@ -857,7 +856,7 @@ static void ui_menu_draw(running_machine &machine, ui_menu *menu, int customonly
 		for (linenum = 0; linenum < visible_lines; linenum++)
 		{
 			float line_y = visible_top + (float)linenum * line_height;
-			int itemnum = top_line + linenum;
+			itemnum = top_line + linenum;
 			const ui_menu_item *item = &menu->item[itemnum];
 			const char *itemtext = item->text;
 			rgb_t fgcolor = UI_TEXT_COLOR;
@@ -992,7 +991,7 @@ static void ui_menu_draw(running_machine &machine, ui_menu *menu, int customonly
 	{
 		const ui_menu_item *item = &menu->item[menu->selected];
 		int subitem_invert = item->flags & MENU_FLAG_INVERT;
-		int linenum = menu->selected - top_line;
+		linenum = menu->selected - top_line;
 		float line_y = visible_top + (float)linenum * line_height;
 		float target_width, target_height;
 		float target_x, target_y;
@@ -1552,6 +1551,7 @@ const char *ui_slot_get_prev(running_machine &machine, device_slot_interface *sl
 	int idx = ui_slot_get_current_index(machine, slot) - 1;
 	if (idx==-1) return "";
 	if (idx==-2) idx = ui_slot_get_length(machine,slot) -1;
+	if (idx==-1) return "";
 	return slot->get_slot_interfaces()[idx].name;
 }
 
@@ -1635,7 +1635,6 @@ static void menu_main_populate(running_machine &machine, ui_menu *menu, void *st
 {
 	input_field_config *field;
 	input_port_config *port;
-	int has_categories = FALSE;
 	int has_configs = FALSE;
 	int has_analog = FALSE;
 	int has_dips = FALSE;
@@ -1648,8 +1647,6 @@ static void menu_main_populate(running_machine &machine, ui_menu *menu, void *st
 				has_dips = TRUE;
 			if (field->type == IPT_CONFIG)
 				has_configs = TRUE;
-			if (field->category > 0)
-				has_categories = TRUE;
 			if (input_type_is_analog(field->type))
 				has_analog = TRUE;
 		}
@@ -1663,8 +1660,6 @@ static void menu_main_populate(running_machine &machine, ui_menu *menu, void *st
 		ui_menu_item_append(menu, "Dip Switches", NULL, 0, (void *)menu_settings_dip_switches);
 	if (has_configs)
 		ui_menu_item_append(menu, "Driver Configuration", NULL, 0, (void *)menu_settings_driver_config);
-	if (has_categories)
-		ui_menu_item_append(menu, "Categories", NULL, 0, (void *)menu_settings_categories);
 	if (has_analog)
 		ui_menu_item_append(menu, "Analog Controls", NULL, 0, (void *)menu_analog);
 
@@ -1869,7 +1864,6 @@ static void menu_input_specific_populate(running_machine &machine, ui_menu *menu
 
 			/* add if we match the group and we have a valid name */
 			if (name != NULL && input_condition_true(machine, &field->condition, port->owner()) &&
-				(field->category == 0 || input_category_active(machine, field->category)) &&
 				((field->type == IPT_OTHER && field->name != NULL) || input_type_group(machine, field->type, field->player) != IPG_INVALID))
 			{
 				input_seq_type seqtype;
@@ -2128,17 +2122,6 @@ static void menu_settings_driver_config(running_machine &machine, ui_menu *menu,
 
 
 /*-------------------------------------------------
-    menu_settings_categories - handle the
-    categories menu
--------------------------------------------------*/
-
-static void menu_settings_categories(running_machine &machine, ui_menu *menu, void *parameter, void *state)
-{
-	menu_settings_common(machine, menu, state, IPT_CATEGORY);
-}
-
-
-/*-------------------------------------------------
     menu_settings_common - handle one of the
     switches menus
 -------------------------------------------------*/
@@ -2259,7 +2242,8 @@ static void menu_settings_populate(running_machine &machine, ui_menu *menu, sett
 							dip->mask = dip->state = 0;
 							*diplist_tailptr = dip;
 							diplist_tailptr = &dip->next;
-							dipcount++;
+							if (mame_stricmp(dip->name, "FAKE") != 0)
+								dipcount++;
 						}
 
 						/* apply the bits */
@@ -2301,18 +2285,21 @@ static void menu_settings_custom_render(running_machine &machine, ui_menu *menu,
 	/* iterate over DIP switches */
 	for (dip = menustate->diplist; dip != NULL; dip = dip->next)
 	{
-		const input_field_diplocation *diploc;
-		UINT32 selectedmask = 0;
+		if (mame_stricmp(dip->name, "FAKE") != 0)
+		{
+			const input_field_diplocation *diploc;
+			UINT32 selectedmask = 0;
 
-		/* determine the mask of selected bits */
-		if (field != NULL)
-			for (diploc = field->diploclist().first(); diploc != NULL; diploc = diploc->next())
-				if (strcmp(dip->name, diploc->swname) == 0)
-					selectedmask |= 1 << (diploc->swnum - 1);
+			/* determine the mask of selected bits */
+			if (field != NULL)
+				for (diploc = field->diploclist().first(); diploc != NULL; diploc = diploc->next())
+					if (strcmp(dip->name, diploc->swname) == 0)
+						selectedmask |= 1 << (diploc->swnum - 1);
 
-		/* draw one switch */
-		menu_settings_custom_render_one(menu->container, x1, y1, x2, y1 + DIP_SWITCH_HEIGHT, dip, selectedmask);
-		y1 += (float)(DIP_SWITCH_SPACING + DIP_SWITCH_HEIGHT);
+			/* draw one switch */
+			menu_settings_custom_render_one(menu->container, x1, y1, x2, y1 + DIP_SWITCH_HEIGHT, dip, selectedmask);
+			y1 += (float)(DIP_SWITCH_SPACING + DIP_SWITCH_HEIGHT);
+		}
 	}
 }
 
@@ -2484,14 +2471,14 @@ static void menu_analog_populate(running_machine &machine, ui_menu *menu)
 						if (field->flags & ANALOG_FLAG_WRAPS)
 							break;
 
-					case IPT_PEDAL:
-					case IPT_PEDAL2:
-					case IPT_PEDAL3:
-					case IPT_PADDLE:
-					case IPT_PADDLE_V:
 					case IPT_AD_STICK_X:
 					case IPT_AD_STICK_Y:
 					case IPT_AD_STICK_Z:
+					case IPT_PADDLE:
+					case IPT_PADDLE_V:
+					case IPT_PEDAL:
+					case IPT_PEDAL2:
+					case IPT_PEDAL3:
 						use_autocenter = TRUE;
 						break;
 				}
@@ -3882,7 +3869,7 @@ static void menu_select_game_custom_render(running_machine &machine, ui_menu *me
 	else
 	{
 		const char *s = COPYRIGHT;
-		int line = 0;
+		line = 0;
 		int col = 0;
 
 		/* first line is version string */
@@ -3985,7 +3972,7 @@ static void menu_render_triangle(bitmap_t &dest, const bitmap_t &source, const r
 		{
 			int dalpha;
 
-			/* first colum we only consume one pixel */
+			/* first column we only consume one pixel */
 			if (x == 0)
 			{
 				dalpha = MIN(0xff, linewidth);

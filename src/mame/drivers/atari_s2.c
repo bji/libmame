@@ -4,8 +4,6 @@
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
-extern const char layout_pinball[];
-
 class atari_s2_state : public driver_device
 {
 public:
@@ -39,9 +37,6 @@ static MACHINE_CONFIG_START( atari_s2, atari_s2_state )
 	MCFG_CPU_PROGRAM_MAP(atari_s2_map)
 
 	MCFG_MACHINE_RESET( atari_s2 )
-
-	/* video hardware */
-	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
 /*-------------------------------------------------------------------
@@ -56,6 +51,8 @@ ROM_START(supermap)
 	ROM_LOAD("atari_j.rom", 0x3800, 0x0800, CRC(26521779) SHA1(2cf1c66441aee99b9d01859d495c12025b5ef094))
 	ROM_RELOAD(0xb800, 0x0800)
 	ROM_RELOAD(0xf800, 0x0800)
+	ROM_REGION(0x1000, "sound1", 0)
+    ROM_LOAD("82s130.bin", 0x0000, 0x0200, CRC(da1f77b4) SHA1(b21fdc1c6f196c320ec5404013d672c35f95890b))
 ROM_END
 
 /*-------------------------------------------------------------------
@@ -70,6 +67,8 @@ ROM_START(hercules)
 	ROM_LOAD("atari_j.rom", 0x3800, 0x0800, CRC(26521779) SHA1(2cf1c66441aee99b9d01859d495c12025b5ef094))
 	ROM_RELOAD(0xb800, 0x0800)
 	ROM_RELOAD(0xf800, 0x0800)
+	ROM_REGION(0x1000, "sound1", 0)
+    ROM_LOAD("82s130.bin", 0x0000, 0x0200, CRC(da1f77b4) SHA1(b21fdc1c6f196c320ec5404013d672c35f95890b))
 ROM_END
 
 GAME( 1979, supermap, 0, atari_s2, atari_s2, atari_s2, ROT0, "Atari","Superman (Pinball)", GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

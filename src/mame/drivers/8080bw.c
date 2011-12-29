@@ -60,7 +60,7 @@
             - has the main B&W video generation logic on it
             - has the larger connection to the PSU, and B&W composite output "T" connector
         * 2 layer pcb set details:
-          * This pcb set came in one version: PVN, and is entirely exchangable
+          * This pcb set came in one version: PVN, and is entirely exchangeable
             with the 3 layer PVN pcb set.
           * Top pcb is same as 3 layer pcb set
           * Bottom pcb combines the function of the Middle and Bottom pcbs
@@ -189,6 +189,7 @@
 
 #include "invrvnge.lh"
 #include "shuttlei.lh"
+#include "cosmicm.lh"
 
 /*******************************************************/
 /*                                                     */
@@ -2360,7 +2361,7 @@ This game was officially only distributed in Brazil.
 Not much information is avaliable. It is speculated that the original is "Space Missile", whose manufacturer was sued by Taito in Japan.
 Release date is unknown, maybe even before Galaxian?!
 
-ROM dump came from a collection of old 5 1/4 disks (Apple II) that used to be in the posession of an arcade operator in the early 80s.
+ROM dump came from a collection of old 5 1/4 disks (Apple II) that used to be in the possession of an arcade operator in the early 80s.
 
 TODO sound (currently same as invaders):
 - sound mutes when a few aliens are left?
@@ -3232,7 +3233,7 @@ ROM_START( solfight )
 	ROM_LOAD( "solfight.t",   0x4800, 0x0800, CRC(3b6fb206) SHA1(db631f4a0bd5344d130ff8d723d949e9914b6f92) )
 ROM_END
 
-ROM_START( spaceph )
+ROM_START( spaceph ) /* Also seen in a 6-rom version which matches contents exactly (sv01+sv02, sv03+sv04, etc)*/
 	ROM_REGION( 0x10000, "maincpu", 0 )
 	ROM_LOAD( "sv01.bin",     0x0000, 0x0400, CRC(de84771d) SHA1(13a7e5eedb826cca4d59634d38db9fcf5e65b732) )
 	ROM_LOAD( "sv02.bin",     0x0400, 0x0400, CRC(957fc661) SHA1(ac0edc901d8033619f62967f8eaf53a02947e109) )
@@ -3443,8 +3444,8 @@ GAMEL(1978, invaderl, invaders, invaders, sicv,     0, ROT270, "bootleg? (Logite
 GAMEL(1978, invader4, invaders, invaders, sicv,     0, ROT270, "bootleg", "Space Invaders Part Four", GAME_SUPPORTS_SAVE, layout_invaders )
 GAMEL(1979, jspecter, invaders, invaders, jspecter, 0, ROT270, "bootleg (Jatre)", "Jatre Specter (set 1)", GAME_SUPPORTS_SAVE, layout_invaders )
 GAMEL(1979, jspecter2,invaders, invaders, jspecter, 0, ROT270, "bootleg (Jatre)", "Jatre Specter (set 2)", GAME_SUPPORTS_SAVE, layout_invaders )
-GAMEL(1979, cosmicmo, invaders, invaders, cosmicmo, 0, ROT270, "Universal", "Cosmic Monsters", GAME_SUPPORTS_SAVE, layout_invaders )
-GAMEL(1979, cosmicm2, invaders, invaders, cosmicmo, 0, ROT270, "Universal", "Cosmic Monsters 2", GAME_SUPPORTS_SAVE, layout_invaders )
+GAMEL(1979, cosmicmo, invaders, invaders, cosmicmo, 0, ROT270, "Universal", "Cosmic Monsters", GAME_SUPPORTS_SAVE, layout_cosmicm )
+GAMEL(1979, cosmicm2, invaders, invaders, cosmicmo, 0, ROT270, "Universal", "Cosmic Monsters 2", GAME_SUPPORTS_SAVE, layout_cosmicm )
 GAMEL(19??, superinv, invaders, invaders, superinv, 0, ROT270, "bootleg", "Super Invaders", GAME_SUPPORTS_SAVE, layout_invaders )
 GAMEL(19??, invasion, invaders, invaders, invasion, 0, ROT270, "Sidam",   "Invasion (Sidam)", GAME_SUPPORTS_SAVE, layout_invaders )
 GAMEL(19??, invasiona,invaders, invaders, invasion, 0, ROT270, "bootleg", "Invasion (bootleg, set 1, normal graphics)", GAME_SUPPORTS_SAVE, layout_invaders ) // has Sidam replaced with 'Ufo Monster Attack' and standard GFX

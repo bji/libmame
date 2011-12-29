@@ -23,6 +23,7 @@ public:
 	UINT8 m_irq_vectorbase;
 	UINT32 m_raster_irq_position;
 	UINT16 *m_vram_data;
+	UINT16 m_videocontrol;
 	UINT16 *m_spritecontrol;
 	UINT8 m_sprite_buffer_busy;
 	UINT8 m_game_kludge;
@@ -52,3 +53,5 @@ WRITE16_HANDLER( m92_master_control_w );
 
 VIDEO_START( m92 );
 SCREEN_UPDATE( m92 );
+VIDEO_START( ppan );
+SCREEN_UPDATE( ppan );

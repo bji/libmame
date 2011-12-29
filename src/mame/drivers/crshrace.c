@@ -46,7 +46,7 @@ Stephh's notes (based on the games M68000 code and some tests) :
       Off On  On       1C_5C
       On  On  On       1C_6C
 
-  - DSW 3 bit 7 is tested only if an error has occured during P.O.S.T. :
+  - DSW 3 bit 7 is tested only if an error has occurred during P.O.S.T. :
       * when Off, the game is reset
       * when On,  don't bother with the error and continue
 
@@ -346,11 +346,11 @@ static INPUT_PORTS_START( crshrace )
 	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_START3 )
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x0f00, 0x0100, "Country" )
+	PORT_DIPNAME( 0x0f00, 0x0100, DEF_STR( Region ) )
 	PORT_DIPSETTING(      0x0100, DEF_STR( World ) )
 	PORT_DIPSETTING(      0x0800, "USA & Canada" )
 	PORT_DIPSETTING(      0x0000, DEF_STR( Japan ) )
-	PORT_DIPSETTING(      0x0200, "Korea" )
+	PORT_DIPSETTING(      0x0200, DEF_STR( Korea ) )
 	PORT_DIPSETTING(      0x0400, "Hong Kong & Taiwan" )
 /*
     the following are all the same and seem to act like the World setting, possibly

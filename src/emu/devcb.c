@@ -128,7 +128,7 @@ device_execute_interface *devcb_resolver::resolve_execute_interface(const char *
 
 	// make sure the target device has an execute interface
 	device_execute_interface *exec;
-	if (!targetdev->get_interface(exec))
+	if (!targetdev->interface(exec))
 		throw emu_fatalerror("Device '%s' (requested by %s '%s') has no execute interface", tag, current.name(), current.tag());
 
 	return exec;
@@ -149,7 +149,7 @@ address_space *devcb_resolver::resolve_space(int index, const char *tag, device_
 
 	// make sure the target device has a memory interface
 	device_memory_interface *memory;
-	if (!targetdev->get_interface(memory))
+	if (!targetdev->interface(memory))
 		throw emu_fatalerror("Device '%s' (requested by %s '%s') has no memory interface", tag, current.name(), current.tag());
 
 	// set the real target and function, then prime a delegate

@@ -1,10 +1,8 @@
 #include "video/poly.h"
 
-#define USE_NAMCOS22_SPEED_HACK
-
-#define MAX_LIT_SURFACES 32
+#define NAMCOS22_PALETTE_SIZE 0x8000
+#define MAX_LIT_SURFACES 0x80
 #define MAX_RENDER_CMD_SEQ 0x1c
-
 
 #define GFX_CHAR               0
 #define GFX_TEXTURE_TILE       1
@@ -29,12 +27,6 @@ enum
 	NAMCOS22_AQUA_JET,
 	NAMCOS22_DIRT_DASH
 };
-
-#define NAMCOS22_NUM_ROWS 30
-#define NAMCOS22_NUM_COLS 40
-
-#define NAMCOS22_PALETTE_SIZE 0x8000
-
 
 class namcos22_state : public driver_device
 {
@@ -63,13 +55,15 @@ public:
 	UINT16 m_mRenderBufData[MAX_RENDER_CMD_SEQ];
 	UINT32 m_mSys22PortBits;
 	int m_mFrameCount;
-	UINT8 m_stick_input;
-	UINT8 m_prev_stick_state;
+	int m_irq_state;
 	int m_mDspUploadState;
 	int m_mUploadDestIdx;
 	UINT32 m_mAlpineSurferProtData;
+	int m_motor_status;
+	emu_timer *m_motor_timer;
 	int m_p4;
 	UINT16 m_su_82;
+	UINT16 m_keycus_id;
 	int m_gametype;
 	int m_mbSuperSystem22;
 	UINT32 *m_cgram;
@@ -80,8 +74,16 @@ public:
 	UINT32 *m_vics_control;
 	UINT32 *m_czattr;
 	UINT32 *m_tilemapattr;
-	int m_mbSpotlightEnable;
-	UINT16 *m_czram[4];
+	int m_chipselect;
+	int m_spot_enable;
+	int m_spot_read_address;
+	int m_spot_write_address;
+	UINT16 *m_spotram;
+	UINT32 *m_czram;
+	UINT16 *m_banked_czram[4];
+	UINT8 *m_recalc_czram[4];
+	UINT32 m_cz_was_written[4];
+	int m_cz_adjust;
 	poly_manager *m_poly;
 	UINT16 *m_mpTextureTileMap16;
 	UINT8 *m_mpTextureTileMapAttr;
@@ -103,6 +105,7 @@ public:
 	const UINT8 *m_mpPolyM;
 	const UINT8 *m_mpPolyL;
 	UINT8 *m_dirtypal;
+	bitmap_t *m_mix_bitmap;
 	tilemap_t *m_bgtilemap;
 };
 
@@ -116,10 +119,11 @@ WRITE16_HANDLER( namcos22_dspram16_w );
 READ32_HANDLER( namcos22_cgram_r );
 WRITE32_HANDLER( namcos22_cgram_w );
 
-READ32_HANDLER( namcos22_czram_r );
-WRITE32_HANDLER( namcos22_czram_w );
+READ32_HANDLER( namcos22s_czram_r );
+WRITE32_HANDLER( namcos22s_czram_w );
 
-WRITE32_HANDLER(namcos22_port800000_w);
+READ32_HANDLER( namcos22s_spotram_r );
+WRITE32_HANDLER( namcos22s_spotram_w );
 
 READ32_HANDLER( namcos22_paletteram_r );
 WRITE32_HANDLER( namcos22_paletteram_w );
@@ -127,8 +131,14 @@ WRITE32_HANDLER( namcos22_paletteram_w );
 READ32_HANDLER( namcos22_textram_r );
 WRITE32_HANDLER( namcos22_textram_w );
 
+READ32_HANDLER( namcos22s_vics_control_r );
+WRITE32_HANDLER( namcos22s_vics_control_w );
+
 READ32_HANDLER( namcos22_gamma_r );
 WRITE32_HANDLER( namcos22_gamma_w );
+
+READ32_HANDLER( namcos22_tilemapattr_r );
+WRITE32_HANDLER( namcos22_tilemapattr_w );
 
 READ32_HANDLER( namcos22_dspram_r );
 WRITE32_HANDLER( namcos22_dspram_w );
@@ -142,4 +152,4 @@ SCREEN_UPDATE( namcos22s );
 
 void namcos22_draw_direct_poly( running_machine &machine, const UINT16 *pSource );
 UINT32 namcos22_point_rom_r( running_machine &machine, offs_t offs );
-void namcos22_enable_slave_simulation( running_machine &machine );
+void namcos22_enable_slave_simulation( running_machine &machine, int enable );

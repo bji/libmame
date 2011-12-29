@@ -30,7 +30,7 @@ Changes:
 
     0.94 (2007-06-14):
             Zsolt Vasvari
-            - Removed unneccessary checks from MVP and MVN
+            - Removed unnecessary checks from MVP and MVN
 
     0.93 (2003-07-05):
             Angelo Salese
@@ -331,7 +331,7 @@ static CPU_INIT( g65816 )
 {
 	g65816i_cpu_struct *cpustate = get_safe_token(device);
 
-	memset(cpustate, 0, sizeof(cpustate));
+	memset(cpustate, 0, sizeof(*cpustate));
 
 	g65816_set_irq_callback(cpustate, irqcallback);
 	cpustate->device = device;

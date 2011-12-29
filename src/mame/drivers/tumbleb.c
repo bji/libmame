@@ -164,7 +164,7 @@ Stephh's notes (based on the games M68000 code and some tests) :
 
   - I can't determine what's the effect of DSW 1-7 to DSW 1-5 :(
     All I can tell is that the computed value (from 0x0000 to 0x0007) is stored at 0x12279c.w
-    and it is compared with the contents of adresses 0x1207c6.w and 0x12153c.w .
+    and it is compared with the contents of addresses 0x1207c6.w and 0x12153c.w .
 
   - DSW 1-4 changes the color of the field, but I don't know if it has
     some other effects. Please check this out and let me know.
@@ -1087,7 +1087,7 @@ static INPUT_PORTS_START( metlsavr )
 	PORT_DIPSETTING(      0x0000, DEF_STR( On ) )
 	PORT_DIPNAME( 0x0800, 0x0800, DEF_STR( Language ) )         PORT_DIPLOCATION("SW2:5")
 	PORT_DIPSETTING(      0x0800, DEF_STR( English ) )
-	PORT_DIPSETTING(      0x0000, "Korean" )
+	PORT_DIPSETTING(      0x0000, DEF_STR( Korean ) )
 	PORT_DIPNAME( 0x3000, 0x3000, "Life Meter" )                PORT_DIPLOCATION("SW2:4,3")
 	PORT_DIPSETTING(      0x0000, "66%" )
 	PORT_DIPSETTING(      0x3000, "100%" )
@@ -1195,7 +1195,7 @@ static INPUT_PORTS_START( fncywld )
 	PORT_DIPSETTING(      0x0000, DEF_STR( On ) )
 	PORT_DIPNAME( 0x0004, 0x0004, DEF_STR( Language ) )		// only seems to the title screen
 	PORT_DIPSETTING(      0x0004, DEF_STR( English ) )
-	PORT_DIPSETTING(      0x0000, "Korean" )
+	PORT_DIPSETTING(      0x0000, DEF_STR( Korean ) )
 	PORT_DIPNAME( 0x0002, 0x0002, DEF_STR( Flip_Screen ) )
 	PORT_DIPSETTING(      0x0002, DEF_STR( Off ) )
 	PORT_DIPSETTING(      0x0000, DEF_STR( On ) )
@@ -1428,7 +1428,7 @@ static INPUT_PORTS_START( chokchok )
 	PORT_DIPSETTING(      0x1800, DEF_STR( 1C_2C ) )
 	PORT_DIPSETTING(      0x0800, DEF_STR( 1C_3C ) )
 	PORT_DIPNAME( 0x4000, 0x0000, DEF_STR( Language ) )	PORT_DIPLOCATION("SW2:2")
-	PORT_DIPSETTING(      0x4000, "Korean" )
+	PORT_DIPSETTING(      0x4000, DEF_STR( Korean ) )
 	PORT_DIPSETTING(      0x0000, DEF_STR( English ) )
 	PORT_DIPNAME( 0x8000, 0x0000, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(      0x8000, DEF_STR( Off ) )
@@ -2686,7 +2686,7 @@ ROM_END
 
             SemiCom Games
 
- Uses simular hardware with 87c52 MCU for protection
+ Uses similar hardware with 87c52 MCU for protection
 
  SemiCom used the name "Mijin" in 1995
 

@@ -452,7 +452,7 @@ static void i80286_interrupt_descriptor(i80286_state *cpustate,UINT16 number, in
 		if (!CODE(r) || !SEGDESC(r)) throw TRAP(GENERAL_PROTECTION_FAULT,(IDXTBL(gatesel)+(hwint&&1)));
 		if (DPL(r)>CPL) throw TRAP(GENERAL_PROTECTION_FAULT,(IDXTBL(gatesel)+(hwint&&1)));
 		if (!PRES(r)) throw TRAP(SEG_NOT_PRESENT,(IDXTBL(gatesel)+(hwint&&1)));
-		if (GATEOFF(desc) > LIMIT(gatedesc)) throw TRAP(GENERAL_PROTECTION_FAULT,(hwint&&1));
+		if (GATEOFF(desc) > LIMIT(gatedesc)) throw TRAP(GENERAL_PROTECTION_FAULT,(int)(hwint&&1));
 
 		if (!CONF(r)&&(DPL(r)<CPL)) {  // inner call
 			UINT16 tss_ss, tss_sp, oldss, oldsp;
@@ -666,7 +666,6 @@ static void PREFIX286(_0fpre)(i8086_state *cpustate)
 		cpustate->regs.w[DX] = ReadWord(0x830);
 		cpustate->regs.w[CX] = ReadWord(0x832);
 		cpustate->regs.w[AX] = ReadWord(0x834);
-		UINT16 desc[3];
 // loadall uses base-rights-limit order
 #define LOADDESC(addr, sreg) {  desc[1] = ReadWord(addr); desc[2] = ReadWord(addr+2); desc[0] = ReadWord(addr+4); \
 				cpustate->base[sreg] = BASE(desc); cpustate->rights[sreg] = RIGHTS(desc); \

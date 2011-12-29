@@ -75,7 +75,7 @@ else
 UNAME = $(shell uname -a)
 
 ifeq ($(firstword $(filter Linux,$(UNAME))),Linux)
-TARGETOS = unix
+TARGETOS = linux
 endif
 ifeq ($(firstword $(filter Solaris,$(UNAME))),Solaris)
 TARGETOS = solaris
@@ -465,6 +465,10 @@ ifdef PROFILER
 DEFS += -DMAME_PROFILER
 endif
 
+# define USE_NETWORK if we are a making network enabled build
+ifdef USE_NETWORK
+DEFS += -DUSE_NETWORK
+endif
 
 
 #-------------------------------------------------
@@ -667,6 +671,8 @@ LIBOSD = $(OBJ)/libosd.a
 VERSIONOBJ = $(OBJ)/version.o
 DRIVLISTSRC = $(OBJ)/drivlist.c
 DRIVLISTOBJ = $(OBJ)/drivlist.o
+DEVLISTSRC = $(OBJ)/devlist.c
+DEVLISTOBJ = $(OBJ)/devlist.o
 
 
 
@@ -820,7 +826,7 @@ ifndef EXECUTABLE_DEFINED
 # always recompile the version string
 $(VERSIONOBJ): $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(ZLIB) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(RESFILE)
 
-$(EMULATOR): $(VERSIONOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB) $(RESFILE)
+$(EMULATOR): $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB) $(RESFILE)
 	@echo Linking $@...
 	$(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@
 ifeq ($(TARGETOS),win32)
@@ -862,9 +868,17 @@ $(DRIVLISTOBJ): $(DRIVLISTSRC)
 	@echo Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -c $< -o $@
 
+$(DEVLISTOBJ): $(DEVLISTSRC)
+	@echo Compiling $<...
+	$(CC) $(CDEFS) $(CFLAGS) -c $< -o $@
+
 $(DRIVLISTSRC): $(SRC)/$(TARGET)/$(SUBTARGET).lst $(MAKELIST_TARGET)
 	@echo Building driver list $<...
 	@$(MAKELIST) $< >$@
+
+$(DEVLISTSRC): $(SRC)/$(TARGET)/$(SUBTARGET)_dev.lst $(MAKEDEV_TARGET)
+	@echo Building device list $<...
+	@$(MAKEDEV) $< >$@
 
 $(OBJ)/%.a:
 	$(ECHO) Archiving $@...

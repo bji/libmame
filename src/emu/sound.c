@@ -101,7 +101,7 @@ sound_stream::sound_stream(device_t &device, int inputs, int outputs, int sample
 {
 	// get the device's sound interface
 	device_sound_interface *sound;
-	if (!device.get_interface(sound))
+	if (!device.interface(sound))
 		throw emu_fatalerror("Attempted to create a sound_stream with a non-sound device");
 
 	// this is also the implicit parameter if we are using our internal stub
@@ -186,7 +186,7 @@ const char *sound_stream::input_name(int inputnum, astring &string) const
 
 		// get the sound interface; if there is more than 1 output we need to figure out which one
 		device_sound_interface *sound;
-		if (source.get_interface(sound) && sound->outputs() > 1)
+		if (source.interface(sound) && sound->outputs() > 1)
 		{
 			// iterate over outputs until we find the stream that matches our source
 			// then look for a match on the output number
@@ -1011,9 +1011,9 @@ void sound_manager::update()
 	UINT32 finalmix_offset = 0;
 	INT16 *finalmix = m_finalmix;
 	int sample;
-	for (sample = m_finalmix_leftover; sample < samples_this_update * 100; sample += finalmix_step)
+	for (sample = m_finalmix_leftover; sample < samples_this_update * 1000; sample += finalmix_step)
 	{
-		int sampindex = sample / 100;
+		int sampindex = sample / 1000;
 
 		// clamp the left side
 		INT32 samp = m_leftmix[sampindex];
@@ -1031,7 +1031,7 @@ void sound_manager::update()
 			samp = 32767;
 		finalmix[finalmix_offset++] = samp;
 	}
-	m_finalmix_leftover = sample - samples_this_update * 100;
+	m_finalmix_leftover = sample - samples_this_update * 1000;
 
 	// play the result
 	if (finalmix_offset > 0)

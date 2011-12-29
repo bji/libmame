@@ -12,6 +12,7 @@ Video  :    DX-101
             DX-102 x3
 
 Sound  :    X1-010
+            OKI M9810 for later EVA2 & EVA3 PCBs
 
 OSC    :    50.00000MHz
             32.53047MHz
@@ -28,15 +29,17 @@ PO-113A                 1994    Mobile Suit Gundam EX Revue             Banprest
 P0-123A                 1996    Wakakusamonogatari Mahjong Yonshimai    Maboroshi Ware
 P0-125A ; KE (Namco)    1996    Kosodate Quiz My Angel                  Namco
 P0-136A ; KL (Namco)    1997    Kosodate Quiz My Angel 2                Namco
+P0-140B                 2000    Namco Stars                             Namco
 P0-142A                 1999    Puzzle De Bowling                       Nihon System / Moss
 P0-142A + extra parts   2000    Penguin Brothers                        Subsino
 B0-003A (or B0-003B)    2000    Deer Hunting USA                        Sammy
 B0-003A (or B0-003B)    2001    Turkey Hunting USA                      Sammy
 B0-006B                 2001    Funcube 2                               Namco
+B0-006B?                2001    Funcube 3                               Namco
 B0-006B                 2001    Funcube 4                               Namco
 B0-010A                 2001    Wing Shooting Championship              Sammy
 B0-010A                 2002    Trophy Hunting - Bear & Moose           Sammy
--                       ????    Reel'N Quake                            <unknown>
+P-FG-02                 ????    Reel'N Quake                            <unknown>
 -------------------------------------------------------------------------------------------
 
 TODO:
@@ -448,6 +451,20 @@ ADDRESS_MAP_END
 
 
 /***************************************************************************
+                                Namco Stars
+***************************************************************************/
+
+// To be done:
+static ADDRESS_MAP_START( namcostr_map, AS_PROGRAM, 16 )
+	AM_RANGE(0x000000, 0x07ffff) AM_ROM								// ROM
+	AM_RANGE(0x200000, 0x20ffff) AM_RAM								// RAM
+	AM_RANGE(0xc00000, 0xc3ffff) AM_RAM AM_BASE_SIZE_MEMBER(seta2_state, m_spriteram, m_spriteram_size)		// Sprites
+	AM_RANGE(0xc60000, 0xc6003f) AM_WRITE(seta2_vregs_w) AM_BASE_MEMBER(seta2_state, m_vregs)	// Video Registers
+	AM_RANGE(0xfffc00, 0xffffff) AM_READWRITE(tmp68301_regs_r, tmp68301_regs_w)	// TMP68301 Registers
+ADDRESS_MAP_END
+
+
+/***************************************************************************
                             Sammy Outdoor Shooting
 ***************************************************************************/
 
@@ -590,6 +607,10 @@ static READ32_HANDLER( funcube_debug_r )
 	return ret;
 }
 
+static READ32_DEVICE_HANDLER( oki_read )
+{
+	return downcast<okim9810_device *>(device)->read_status() << 16;
+}
 static WRITE32_DEVICE_HANDLER( oki_write )
 {
 	if (ACCESSING_BITS_0_7)
@@ -612,7 +633,7 @@ static ADDRESS_MAP_START( funcube_map, AS_PROGRAM, 32 )
 	AM_RANGE( 0x00500000, 0x00500003 ) AM_READ( funcube_debug_r )
 	AM_RANGE( 0x00500004, 0x00500007 ) AM_READ( watchdog_reset32_r ) AM_WRITENOP
 
-	AM_RANGE( 0x00600000, 0x00600003 ) AM_DEVWRITE("oki", oki_write)
+	AM_RANGE( 0x00600000, 0x00600003 ) AM_DEVREADWRITE("oki", oki_read, oki_write)
 
 	AM_RANGE( 0x00800000, 0x0083ffff ) AM_READWRITE( spriteram32_dword_r,  spriteram32_dword_w  ) AM_BASE_SIZE_MEMBER(seta2_state, m_spriteram, m_spriteram_size)
 	AM_RANGE( 0x00840000, 0x0084ffff ) AM_READWRITE( paletteram32_dword_r, paletteram32_dword_w ) AM_BASE_GENERIC(paletteram)
@@ -1771,43 +1792,31 @@ static INPUT_PORTS_START( funcube )
 	PORT_BIT( 0x00000020, IP_ACTIVE_LOW, IPT_BUTTON2        ) PORT_PLAYER(2)
 
 	// 500000.w
-	PORT_DIPNAME(    0x00010000, 0x00010000, "Debug 0" )
+	PORT_DIPNAME(    0x00010000, 0x00000000, "Debug 0" )
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00010000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00020000, 0x00020000, "Debug 1" )
+	PORT_DIPNAME(    0x00020000, 0x00000000, "Debug 1" )
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00020000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00040000, 0x00040000, "Debug 2" )	// Touch-Screen
+	PORT_DIPNAME(    0x00040000, 0x00000000, "Debug 2" )	// Touch-Screen
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00040000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00080000, 0x00080000, "Debug 3" )
+	PORT_DIPNAME(    0x00080000, 0x00000000, "Debug 3" )
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00080000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00100000, 0x00100000, "Debug 4" )
+	PORT_DIPNAME(    0x00100000, 0x00000000, "Debug 4" )
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00100000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00200000, 0x00200000, "Debug 5" )
+	PORT_DIPNAME(    0x00200000, 0x00000000, "Debug 5" )
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00200000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00400000, 0x00400000, "Debug 6" )
-	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
-	PORT_DIPSETTING( 0x00400000, DEF_STR( On ) )
-	PORT_DIPNAME(    0x00800000, 0x00800000, "Debug 7" )
-	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
-	PORT_DIPSETTING( 0x00800000, DEF_STR( On ) )
-INPUT_PORTS_END
-
-static INPUT_PORTS_START( funcube4 )
-        PORT_INCLUDE(funcube)
-
-// Inverted this dip by default to allow game to be played
-
-	PORT_MODIFY("DEBUG")
 	PORT_DIPNAME(    0x00400000, 0x00000000, "Debug 6" )
 	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
 	PORT_DIPSETTING( 0x00400000, DEF_STR( On ) )
+	PORT_DIPNAME(    0x00800000, 0x00000000, "Debug 7" )
+	PORT_DIPSETTING( 0x00000000, DEF_STR( Off ) )
+	PORT_DIPSETTING( 0x00800000, DEF_STR( On ) )
 INPUT_PORTS_END
-
 
 
 /***************************************************************************
@@ -1913,7 +1922,8 @@ static const gfx_layout funcube_layout_4bpp_lo =
 	8,8,
 	RGN_FRAC(1,1),
 	4,
-	{ STEP4(7*8, -8) },
+//  { STEP4(7*8, -8) },
+	{ STEP4(0*8, 8) },	// needed by funcube3 text
 	{ STEP8(0, 1) },
 	{ STEP8(0, 8*8) },
 	8*8*8
@@ -2210,7 +2220,7 @@ static MACHINE_RESET( funcube )
 
 static MACHINE_CONFIG_START( funcube, seta2_state )
 
-	MCFG_CPU_ADD("maincpu", M68040, XTAL_25_447MHz) // !! XCF5206 actually !!
+	MCFG_CPU_ADD("maincpu", MCF5206E, XTAL_25_447MHz)
 	MCFG_CPU_PROGRAM_MAP(funcube_map)
 	MCFG_CPU_VBLANK_INT_HACK(funcube_interrupt,2)
 
@@ -2230,6 +2240,43 @@ static MACHINE_CONFIG_START( funcube, seta2_state )
 	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x200, 0x200)
 	MCFG_SCREEN_VISIBLE_AREA(0x0, 0x140-1, 0x80, 0x170-1)
+	MCFG_SCREEN_UPDATE(seta2)
+	MCFG_SCREEN_EOF(seta2)
+
+	MCFG_GFXDECODE(funcube)
+	MCFG_PALETTE_LENGTH(0x8000+0xf0)	// extra 0xf0 because we might draw 256-color object with 16-color granularity
+
+	MCFG_VIDEO_START(seta2)
+
+	// sound hardware
+	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
+
+	MCFG_OKIM9810_ADD("oki", XTAL_4_096MHz)
+	MCFG_SOUND_ROUTE(0, "lspeaker", 0.80)
+	MCFG_SOUND_ROUTE(1, "rspeaker", 0.80)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( funcube3, funcube )
+	// video hardware
+	MCFG_SCREEN_MODIFY("screen")
+	MCFG_SCREEN_VISIBLE_AREA(0x0, 0x140-1, 0x80-0x40, 0x170-1-0x40)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_START( namcostr, seta2_state )
+	MCFG_CPU_ADD("maincpu", M68000, XTAL_50MHz/3)	// !! TMP68301 !!
+	MCFG_CPU_PROGRAM_MAP(namcostr_map)
+	MCFG_CPU_VBLANK_INT("screen", seta2_interrupt)
+
+	MCFG_MACHINE_START( tmp68301 )
+	MCFG_MACHINE_RESET( tmp68301 )
+
+	// video hardware
+	MCFG_SCREEN_ADD("screen", RASTER)
+	MCFG_SCREEN_REFRESH_RATE(60)
+	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
+	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
+	MCFG_SCREEN_SIZE(0x200, 0x200)
+	MCFG_SCREEN_VISIBLE_AREA(0x40, 0x1c0-1, 0x80, 0x170-1)
 	MCFG_SCREEN_UPDATE(seta2)
 	MCFG_SCREEN_EOF(seta2)
 
@@ -2364,6 +2411,24 @@ ROM_START( funcube2 )
 	ROM_LOAD( "fc21_voi0.u47", 0x000000, 0x400000, CRC(25b5fc3f) SHA1(18b16a14e9ee62f3fea382e9d3fdcd43bdb165f5) )
 ROM_END
 
+ROM_START( funcube3 )
+	ROM_REGION( 0x80000, "maincpu", 0 ) // XCF5206 Code
+	ROM_LOAD( "fc31prg-0a.u4", 0x00000, 0x80000, CRC(ed7d70dd) SHA1(4ebfca9e60ab5e8de22821f0475abf515c83ce53) )
+
+	ROM_REGION( 0x20000, "sub", 0 )		// H8/3007 Code
+	ROM_LOAD( "fc21iopr-0.u49", 0x00000, 0x20000, CRC(314555ef) SHA1(b17e3926c8ef7f599856c198c330d2051aae13ad) )
+
+	ROM_REGION( 0x400, "pic", 0 )		// PIC12C508? Code
+	ROM_LOAD( "fc31a.u57", 0x000, 0x400, NO_DUMP )
+
+	ROM_REGION( 0x800000, "sprites", 0 )
+	ROM_LOAD32_WORD( "fc31obj-0.u43", 0x000000, 0x400000, CRC(08c5eb6f) SHA1(016d8f3067db487ccd47188142743897c9722b1f) )
+	ROM_LOAD32_WORD( "fc31obj-1.u42", 0x000002, 0x400000, CRC(4dadc76e) SHA1(cf82296b38dc22a618fd178816316af05f2459b3) )
+
+	ROM_REGION( 0x1000000, "oki", 0 )
+	ROM_LOAD( "fc31snd-0.u47", 0x000000, 0x400000, CRC(319e8c32) SHA1(65fe58d762efb7c092a226ecbfed04c174af35a5) )
+ROM_END
+
 ROM_START( funcube4 )
 	ROM_REGION( 0x80000, "maincpu", 0 ) // XCF5206 Code
 	ROM_LOAD( "fc41_prg-0.u3", 0x00000, 0x80000, CRC(ef870874) SHA1(dcb8dc3f780ca135df55e4b4f3c95620597ad28f) )
@@ -2387,12 +2452,7 @@ static DRIVER_INIT( funcube2 )
 	UINT32 *main_cpu = (UINT32 *) machine.region("maincpu")->base();
 	UINT16 *sub_cpu  = (UINT16 *) machine.region("sub")->base();
 
-	main_cpu[0x810/4] = 0xe0214e71;
-	main_cpu[0x814/4] = 0x4e71203c;
-
-	main_cpu[0x81c/4] = 0x4e714e71;
-
-	main_cpu[0xa5c/4] = 0x4e713e3c;
+	main_cpu[0xa5c/4] = 0x4e713e3c;       // PIC protection?
 	main_cpu[0xa74/4] = 0x4e713e3c;
 	main_cpu[0xa8c/4] = 0x4e7141f9;
 
@@ -2408,20 +2468,14 @@ static DRIVER_INIT( funcube2 )
     }
 }
 
-// Note: same as funcube2
-static DRIVER_INIT( funcube4 )
+static DRIVER_INIT( funcube3 )
 {
 	UINT32 *main_cpu = (UINT32 *) machine.region("maincpu")->base();
 	UINT16 *sub_cpu  = (UINT16 *) machine.region("sub")->base();
 
-	main_cpu[0x810/4] = 0xe0214e71;
-	main_cpu[0x814/4] = 0x4e71203c;
-
-	main_cpu[0x81c/4] = 0x4e714e71;
-
-	main_cpu[0xa5c/4] = 0x4e713e3c;
-	main_cpu[0xa74/4] = 0x4e713e3c;
-	main_cpu[0xa8c/4] = 0x4e7141f9;
+	main_cpu[0x008bc/4] = 0x4a804e71;
+	main_cpu[0x19f0c/4] = 0x4e714e71;
+	main_cpu[0x19fb8/4] = 0x4e714e71;
 
 	// Sub CPU
 	sub_cpu[0x4d4/2] = 0x5470;	// rte -> rts
@@ -2680,6 +2734,38 @@ ROM_END
 
 /***************************************************************************
 
+  Namco Stars
+
+  EVA2B PCB (8829970101 P0-140B Serial Z033):
+
+  TMP68301AF-16 CPU
+  DX101
+  DX102 x 2
+  OKI M9810
+  GAL 16V8d x 2
+  MAX232
+  DSW8
+  Coin Battery
+  Reset Button
+  OSC: 25.447 MHz @ XM1, 50.000 MHz @ XM2, 32.53005 MHz @ X2
+  Volume Trimmer
+
+***************************************************************************/
+
+ROM_START( namcostr )
+	ROM_REGION( 0x80000, "maincpu", 0 )	// TMP68301 Code
+	ROM_LOAD( "ns1mpr0.u08", 0x00000, 0x80000, BAD_DUMP CRC(008d23fe) SHA1(8c77a34dd0285c06809e99d20b9d8b31b81bfc68) )	// FIXED BITS (xxxxx1xxxxxxxxxx)
+
+	ROM_REGION( 0x800000, "sprites", 0 )
+	ROM_LOAD32_WORD( "ns1cha0.u39", 0x000000, 0x400000, BAD_DUMP CRC(372d1651) SHA1(355553992e5a474ae1e45bcdeb88804d5b75f802) )	// FIXED BITS (xxxxx1xxxxxxxxxx)
+	ROM_LOAD32_WORD( "ns1cha1.u38", 0x000002, 0x400000, BAD_DUMP CRC(82e67809) SHA1(6b25726cd3683e1691e4d4e1628c13998f20933d) )	// FIXED BITS (xxxxx1xxxxxxxxxx)
+
+	ROM_REGION( 0x1000000, "oki", 0 )
+	ROM_LOAD( "ns1voi0.u40", 0x000000, 0x400000, BAD_DUMP CRC(fe5c2b16) SHA1(21e4423cc91e8833297d4588343237b8b3155196) )	// FIXED BITS (xxxxx1xxxxxxxxxx)
+ROM_END
+
+/***************************************************************************
+
                             Puzzle De Bowling (Japan)
 
 (c)1999 Nihon System / Moss
@@ -2852,35 +2938,71 @@ ROM_END
 
 Reel'N Quake!
 
-Board:
-  0594 (Sticker)
+   CPU: Toshiba TMP68301AF-16 (100 Pin PQFP)
+ Video: NEC DX-101 (240 Pin PQFP, @ U10)
+        NEC DX-102 (52 Pin PQFP x3, @ U28 U30 & U45)
+ Sound: X1-010 (Mitsubishi M60016 Gate Array, 80 Pin PQFP @ U26)
+   OSC: 50MHz & 28MHz
+ Other: 8 Position Dipswitch x 2
+        Push Button SW1
+        3.6V Battery at BT1
+        GAL 16V8 - labeled "KF-001" at U38
 
-CPU:
-  TMP68301AF-16 CPU
-  50MHz Osc.
+Memory:
+M1 are TC551001BFL-70L at U42 & U43
+M2 is  W2465K-70LL at U27
+M3 are LH5168D-10L at U8 & U9
+M4 are UT62256SC-70L at U6, U7, U13 & U14
 
-Video:
-  NEC DX-101? 9546KK002 (@ U10)
-  3 x NEC DX-102? (@ U28, U30 & U45)
-  28MHz Osc.
+PCB Number: P-FG-02
++-----------------------------------------------------------+
+|             +------+      U  U                            |
+| VOL         |Seta  |   M  5  5            +--------------+|
+|             |X1-010|   2  8  7    +-+  M  |KF-001-005 U16||
+|             +------+      *  *    | |  1  +--------------+|
++-+                                 |U|                     |
+  |  +-+    +-+           BT1       |3|            U20*     |
++-+  | |    | |         M           |2|  M                  |
+|  C |U| U  |U| U  M M  4           | |  1  +--------------+|
+|J N |3| 5  |2| 4  3 3              +-+     |KF-001-006 U15||
+|A 1 | | *  | | *       M                   +--------------+|
+|M   +-+    +-+         4                                   |
+|M C                                               U19*     |
+|A N                                                        |
+|  2                                        +--------------+|
+|C 1                                        |KF-001-007 U18||
+|o                           +----------+   +--------------+|
+|n C        +-------+        |          |                   |
+|n N        |Toshiba|        |   NEC    |          U22*     |
+|e 2        |  TMP  |        |  DX-101  |                   |
+|c 2        | 68301 |        |          |   +--------------+|
+|t        U +-------+        |          |   |KF-001-008 U17||
+|e C      5                  +----------+   +--------------+|
+|r N      6                                                 |
+|  3      *                                        U21*     |
++-+   +---+    +---+       U  50MHz 32MHz*                  |
+  |   |DX | S  |DX |       3                                |
+  |   |102| W  |102|       8                   +---+   28MHz|
++-+   +---+ 1  +---+                    M  M   |DX |        |
+|              D D                      4  4   |102|        |
+|              S S                             +---+        |
+|              W W                                          |
+|              2 1                                          |
++-----------------------------------------------------------+
 
-Sound:
-  Seta X1-010 (@ U32)
-  Volume Trimmer
+CN1   - 7 Pin connector
+CN2-1 - 3 Pin connector
+CN2-2 - 3 Pin connector
+CN3   - 10 Pin connector
 
-Other:
-  Push Button (@ SW1)
-  2 x DSW8 (@ DSW1 & DSW2)
-  3.6V Battery (@ BT1)
-  MAX232CPE (@ U60)
+* Denotes not populated. U56 is unpopulated 93C45 EEPROM
 
-ROMs:
-  2 x 27C4001 (@ U2-3)
-  5 x 23C32000 (@ U15-18, U32)
-  GAL 16V8? (@ U38)
+    U3-U5 silkscreened 27C4001
+  U57-U58 silkscreened 23C8001E
+  U15-U22 silkscreened 23C32000
+      U32 silkscreened 23C32000
 
 Note:
-
   The PCB is silkscreened with 23C32000 which would be equal to the 27C322.
   The graphics roms dumped that way have the first half as a bad mirror
   of the second half (even <- odd, odd <- FF). They seem OK dumped as 27C160.
@@ -3177,6 +3299,7 @@ GAME( 1996, myangel,  0,        myangel,  myangel,  0,        ROT0, "Namco",    
 GAME( 1997, myangel2, 0,        myangel2, myangel2, 0,        ROT0, "Namco",                 "Kosodate Quiz My Angel 2 (Japan)",             GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
 GAME( 1999, pzlbowl,  0,        pzlbowl,  pzlbowl,  0,        ROT0, "Nihon System / Moss",   "Puzzle De Bowling (Japan)",                    GAME_NO_COCKTAIL )
 GAME( 2000, penbros,  0,        penbros,  penbros,  0,        ROT0, "Subsino",               "Penguin Brothers (Japan)",                     GAME_NO_COCKTAIL )
+GAME( 2000, namcostr, 0,        namcostr, funcube,  0,        ROT0, "Namco",                 "Namco Stars",                                  GAME_NO_COCKTAIL | GAME_NOT_WORKING )
 GAME( 2000, deerhunt, 0,        samshoot, deerhunt, 0,        ROT0, "Sammy USA Corporation", "Deer Hunting USA V4.3",                        GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
 GAME( 2000, deerhunta,deerhunt, samshoot, deerhunt, 0,        ROT0, "Sammy USA Corporation", "Deer Hunting USA V4.2",                        GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
 GAME( 2000, deerhuntb,deerhunt, samshoot, deerhunt, 0,        ROT0, "Sammy USA Corporation", "Deer Hunting USA V4.0",                        GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
@@ -3185,6 +3308,7 @@ GAME( 2001, turkhunt, 0,        samshoot, turkhunt, 0,        ROT0, "Sammy USA C
 GAME( 2001, wschamp,  0,        samshoot, wschamp,  0,        ROT0, "Sammy USA Corporation", "Wing Shooting Championship V2.00",             GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
 GAME( 2001, wschampa, wschamp,  samshoot, wschamp,  0,        ROT0, "Sammy USA Corporation", "Wing Shooting Championship V1.01",             GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
 GAME( 2002, trophyh,  0,        samshoot, trophyh,  0,        ROT0, "Sammy USA Corporation", "Trophy Hunting - Bear & Moose V1.0",           GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )
-GAME( 2001, funcube2, 0,        funcube,  funcube,  funcube2, ROT0, "Namco",                 "Funcube 2 (v1.1)",                             GAME_NOT_WORKING | GAME_IMPERFECT_GRAPHICS )
-GAME( 2001, funcube4, 0,        funcube,  funcube4, funcube4, ROT0, "Namco",                 "Funcube 4 (v1.0)",                             GAME_NOT_WORKING | GAME_IMPERFECT_GRAPHICS )
+GAME( 2001, funcube2, 0,        funcube,  funcube,  funcube2, ROT0, "Namco",                 "Funcube 2 (v1.1)",                             GAME_NO_COCKTAIL )
+GAME( 2001, funcube3, 0,        funcube3, funcube,  funcube3, ROT0, "Namco",                 "Funcube 3 (v1.1)",                             GAME_NO_COCKTAIL )
+GAME( 2001, funcube4, 0,        funcube,  funcube,  funcube2, ROT0, "Namco",                 "Funcube 4 (v1.0)",                             GAME_NO_COCKTAIL )
 GAME( ????, reelquak, 0,        reelquak, reelquak, 0,        ROT0, "<unknown>",             "Reel'N Quake! (Ver. 1.05)",                    GAME_NO_COCKTAIL | GAME_IMPERFECT_GRAPHICS )

@@ -83,7 +83,6 @@ romcmp$(EXE): $(ROMCMPOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDE
 
 CHDMANOBJS = \
 	$(TOOLSOBJ)/chdman.o \
-	$(TOOLSOBJ)/chdcd.o \
 
 chdman$(EXE): $(VERSIONOBJ) $(CHDMANOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
 	@echo Linking $@...

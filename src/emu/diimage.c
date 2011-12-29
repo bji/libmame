@@ -490,7 +490,7 @@ void device_image_interface::image_checkhash()
     if (m_hash.first() == NULL && m_readonly && !m_created)
     {
         /* do not cause a linear read of 600 megs please */
-        /* TODO: use SHA/MD5 in the CHD header as the hash */
+        /* TODO: use SHA1 in the CHD header as the hash */
         if (image_type() == IO_CDROM)
             return;
 
@@ -811,7 +811,7 @@ bool device_image_interface::load_internal(const char *path, bool is_create, int
 	/* Check if there's a software list defined for this device and use that if we're not creating an image */
 	if (!filename_has_period)
 	{
-		softload = load_software_part( this, path, &m_software_info_ptr, &m_software_part_ptr, &m_full_software_name );
+		softload = load_software_part( device().machine().options(), this, path, &m_software_info_ptr, &m_software_part_ptr, &m_full_software_name );
 		// if we had launched from softlist with a specified part, e.g. "shortname:part"
 		// we would have recorded the wrong name, so record it again based on software_info
 		if (m_software_info_ptr && m_software_info_ptr->shortname)
@@ -999,7 +999,8 @@ void device_image_interface::clear()
 
 void device_image_interface::unload()
 {
-	if (is_loaded()) {
+	if (is_loaded() || m_software_info_ptr)
+	{
 		call_unload();
 	}
     clear();

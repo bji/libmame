@@ -172,13 +172,29 @@ READ16_HANDLER( saturn_vdp1_regs_r )
 
 	switch(offset)
 	{
+		case 0x02/2:
+			return 0;
 		case 0x10/2:
 			break;
 		case 0x12/2: return state->m_vdp1.lopr;
 		case 0x14/2: return state->m_vdp1.copr;
+		/* MODR register, read register for the other VDP1 regs
+           (Shienryu SS version abuses of this during intro) */
 		case 0x16/2:
-			printf ("cpu %s (PC=%08X) VDP1: Read from Registers, Offset %04x\n", space->device().tag(), cpu_get_pc(&space->device()), offset*2);
+			UINT16 modr;
 
+			modr = 0x1000; //vdp1 VER
+			modr |= (STV_VDP1_PTM >> 1) << 8; // PTM1
+			modr |= STV_VDP1_EOS << 7; // EOS
+			modr |= STV_VDP1_DIE << 6; // DIE
+			modr |= STV_VDP1_DIL << 5; // DIL
+			modr |= STV_VDP1_FCM << 4; //FCM
+			modr |= STV_VDP1_VBE << 3; //VBE
+			modr |= STV_VDP1_TVM & 7; //TVM
+
+			return modr;
+		default:
+			printf ("cpu %s (PC=%08X) VDP1: Read from Registers, Offset %04x\n", space->device().tag(), cpu_get_pc(&space->device()), offset*2);
 			break;
 	}
 
@@ -190,7 +206,7 @@ static void stv_clear_framebuffer( running_machine &machine, int which_framebuff
 	saturn_state *state = machine.driver_data<saturn_state>();
 
 	if ( VDP1_LOG ) logerror( "Clearing %d framebuffer\n", state->m_vdp1.framebuffer_current_draw );
-	memset( state->m_vdp1.framebuffer[ which_framebuffer ], 0, 1024 * 256 * sizeof(UINT16) * 2 );
+	memset( state->m_vdp1.framebuffer[ which_framebuffer ], state->m_vdp1.ewdr, 1024 * 256 * sizeof(UINT16) * 2 );
 }
 
 
@@ -212,7 +228,6 @@ static void stv_prepare_framebuffers( running_machine &machine )
 			state->m_vdp1.framebuffer_draw_lines[i] = &state->m_vdp1.framebuffer[0][0];
 			state->m_vdp1.framebuffer_display_lines[i] = &state->m_vdp1.framebuffer[1][0];
 		}
-
 	}
 	else
 	{
@@ -281,8 +296,6 @@ WRITE16_HANDLER( saturn_vdp1_regs_w )
 		case 0x00/2:
 			stv_set_framebuffer_config(space->machine());
 			if ( VDP1_LOG ) logerror( "VDP1: Access to register TVMR = %1X\n", STV_VDP1_TVMR );
-			if ( STV_VDP1_VBE && get_vblank(space->machine()) )
-				state->m_vdp1.framebuffer_clear_on_next_frame = 1;
 
 			break;
 		case 0x02/2:
@@ -299,15 +312,16 @@ WRITE16_HANDLER( saturn_vdp1_regs_w )
 		case 0x06/2:
 			if ( VDP1_LOG ) logerror( "VDP1: Erase data set %08X\n", data );
 
-			if(data && data != 0x8000)
-				popmessage("EWDR set %08x, contact MAMEdev",STV_VDP1_EWDR);
-
+			state->m_vdp1.ewdr = STV_VDP1_EWDR;
 			break;
 		case 0x08/2:
 			if ( VDP1_LOG ) logerror( "VDP1: Erase upper-left coord set: %08X\n", data );
 			break;
 		case 0x0a/2:
 			if ( VDP1_LOG ) logerror( "VDP1: Erase lower-right coord set: %08X\n", data );
+			break;
+		case 0x0c/2:
+			if ( VDP1_LOG ) logerror( "VDP1: Draw forced termination register write: %08X\n", data );
 			break;
 		default:
 			printf("Warning: write to unknown VDP1 reg %08x %08x\n",offset*2,data);
@@ -350,7 +364,27 @@ WRITE32_HANDLER ( saturn_vdp1_framebuffer0_w )
 	if ( STV_VDP1_TVM & 1 )
 	{
 		/* 8-bit mode */
-		printf("%08x %02x\n",offset,data);
+		//printf("VDP1 8-bit mode %08x %02x\n",offset,data);
+		if ( ACCESSING_BITS_24_31 )
+		{
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2] &= 0x00ff;
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2] |= data & 0xff00;
+		}
+		if ( ACCESSING_BITS_16_23 )
+		{
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2] &= 0xff00;
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2] |= data & 0x00ff;
+		}
+		if ( ACCESSING_BITS_8_15 )
+		{
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2+1] &= 0x00ff;
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2+1] |= data & 0xff00;
+		}
+		if ( ACCESSING_BITS_0_7 )
+		{
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2+1] &= 0xff00;
+			state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2+1] |= data & 0x00ff;
+		}
 	}
 	else
 	{
@@ -374,7 +408,15 @@ READ32_HANDLER ( saturn_vdp1_framebuffer0_r )
 	if ( STV_VDP1_TVM & 1 )
 	{
 		/* 8-bit mode */
-		printf("%08x\n",offset);
+		//printf("VDP1 8-bit mode %08x\n",offset);
+		if ( ACCESSING_BITS_24_31 )
+			result |= ((state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2] & 0xff00) << 16);
+		if ( ACCESSING_BITS_16_23 )
+			result |= ((state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2] & 0x00ff) << 16);
+		if ( ACCESSING_BITS_8_15 )
+			result |= ((state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2+1] & 0xff00));
+		if ( ACCESSING_BITS_0_7 )
+			result |= ((state->m_vdp1.framebuffer[state->m_vdp1.framebuffer_current_draw][offset*2+1] & 0x00ff));
 	}
 	else
 	{
@@ -848,6 +890,11 @@ static void (*drawpixel)(running_machine &machine, int x, int y, int patterndata
 static void drawpixel_poly(running_machine &machine, int x, int y, int patterndata, int offsetcnt)
 {
 	saturn_state *state = machine.driver_data<saturn_state>();
+
+	/* Capcom Collection Dai 4 uses a dummy polygon to clear VDP1 framebuffer that goes over our current max size ... */
+	if(x >= 1024 || y >= 512)
+		return;
+
 	state->m_vdp1.framebuffer_draw_lines[y][x] = stv2_current_sprite.CMDCOLR;
 }
 
@@ -1897,7 +1944,10 @@ static void stv_vdp1_process_list(running_machine &machine)
 		{
 			if ( stv2_current_sprite.CMDPMOD & 0x0400 )
 			{
-				cliprect = &state->m_vdp1.user_cliprect;
+				//if(stv2_current_sprite.CMDPMOD & 0x0200) /* TODO: Bio Hazard inventory screen uses outside cliprect */
+				//  cliprect = &state->m_vdp1.system_cliprect;
+				//else
+					cliprect = &state->m_vdp1.user_cliprect;
 			}
 			else
 			{
@@ -1909,19 +1959,25 @@ static void stv_vdp1_process_list(running_machine &machine)
 			switch (stv2_current_sprite.CMDCTRL & 0x000f)
 			{
 				case 0x0000:
-					if (VDP1_LOG) logerror ("Sprite List Normal Sprite\n");
+					if (VDP1_LOG) logerror ("Sprite List Normal Sprite (%d %d)\n",stv2_current_sprite.CMDXA,stv2_current_sprite.CMDYA);
 					stv2_current_sprite.ispoly = 0;
 					stv_vpd1_draw_normal_sprite(machine, cliprect, 0);
 					break;
 
 				case 0x0001:
-					if (VDP1_LOG) logerror ("Sprite List Scaled Sprite\n");
+					if (VDP1_LOG) logerror ("Sprite List Scaled Sprite (%d %d)\n",stv2_current_sprite.CMDXA,stv2_current_sprite.CMDYA);
 					stv2_current_sprite.ispoly = 0;
 					stv_vpd1_draw_scaled_sprite(machine, cliprect);
 					break;
 
 				case 0x0002:
 					if (VDP1_LOG) logerror ("Sprite List Distorted Sprite\n");
+					if (VDP1_LOG) logerror ("(A: %d %d)\n",stv2_current_sprite.CMDXA,stv2_current_sprite.CMDYA);
+					if (VDP1_LOG) logerror ("(B: %d %d)\n",stv2_current_sprite.CMDXB,stv2_current_sprite.CMDYB);
+					if (VDP1_LOG) logerror ("(C: %d %d)\n",stv2_current_sprite.CMDXC,stv2_current_sprite.CMDYC);
+					if (VDP1_LOG) logerror ("(D: %d %d)\n",stv2_current_sprite.CMDXD,stv2_current_sprite.CMDYD);
+					if (VDP1_LOG) logerror ("CMDPMOD = %04x\n",stv2_current_sprite.CMDPMOD);
+
 					stv2_current_sprite.ispoly = 0;
 					stv_vpd1_draw_distorted_sprite(machine, cliprect);
 					break;
@@ -1961,7 +2017,7 @@ static void stv_vdp1_process_list(running_machine &machine)
 					break;
 
 				case 0x000a:
-					if (VDP1_LOG) logerror ("Sprite List Local Co-Ordinate Set\n");
+					if (VDP1_LOG) logerror ("Sprite List Local Co-Ordinate Set (%d %d)\n",(INT16)stv2_current_sprite.CMDXA,(INT16)stv2_current_sprite.CMDYA);
 					state->m_vdp1.local_x = (INT16)stv2_current_sprite.CMDXA;
 					state->m_vdp1.local_y = (INT16)stv2_current_sprite.CMDYA;
 					break;
@@ -2062,7 +2118,7 @@ void video_update_vdp1(running_machine &machine)
 		case 1:/*Draw by request*/
 			break;
 		case 2:/*Automatic Draw*/
-			if ( framebuffer_changed )
+			if ( framebuffer_changed || VDP1_LOG )
 			{
 				/*set CEF to 1*/
 				stv_vdp1_process_list(machine);
@@ -2124,8 +2180,11 @@ int stv_vdp1_start ( running_machine &machine )
 
 	state->m_vdp1.system_cliprect.min_x = state->m_vdp1.system_cliprect.max_x = 0;
 	state->m_vdp1.system_cliprect.min_y = state->m_vdp1.system_cliprect.max_y = 0;
-	state->m_vdp1.user_cliprect.min_x = state->m_vdp1.user_cliprect.max_x = 0;
-	state->m_vdp1.user_cliprect.min_y = state->m_vdp1.user_cliprect.max_y = 0;
+	/* Kidou Senshi Z Gundam - Zenpen Zeta no Kodou loves to use the user cliprect vars in an undefined state ... */
+	state->m_vdp1.user_cliprect.min_x = 0;
+	state->m_vdp1.user_cliprect.min_y = 0;
+	state->m_vdp1.user_cliprect.max_x = 512;
+	state->m_vdp1.user_cliprect.max_y = 256;
 
 	// save state
 	state_save_register_global_pointer(machine, state->m_vdp1_regs, 0x020/2);

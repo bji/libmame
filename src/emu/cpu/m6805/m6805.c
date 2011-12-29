@@ -74,7 +74,8 @@ INLINE m6805_Regs *get_safe_token(device_t *device)
 	assert(device != NULL);
 	assert(device->type() == M6805 ||
 		   device->type() == M68705 ||
-		   device->type() == HD63705);
+		   device->type() == HD63705 ||
+		   device->type() == M68HC05EG);
 	return (m6805_Regs *)downcast<legacy_cpu_device *>(device)->token();
 }
 
@@ -487,7 +488,7 @@ static CPU_RESET( m6805 )
 	m6805_Regs *cpustate = get_safe_token(device);
 
 	device_irq_callback save_irqcallback = cpustate->irq_callback;
-	memset(cpustate, 0, sizeof(m6805_Regs));
+	memset(cpustate, 0, sizeof(*cpustate));
 
 	cpustate->iCount=50000;		/* Used to be global */
 	cpustate->irq_callback = save_irqcallback;

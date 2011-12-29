@@ -524,7 +524,7 @@ static CPU_INIT( i8008 )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->get_interface(state);
+		device->interface(state);
 		state->state_add(I8008_PC,    "PC",    cpustate->PC.w.l).mask(0x3fff);
 		state->state_add(STATE_GENPC, "GENPC", cpustate->PC.w.l).mask(0x3fff).noshow();
 		state->state_add(STATE_GENFLAGS, "GENFLAGS", cpustate->flags).mask(0x0f).callimport().callexport().noshow().formatstr("%4s");
@@ -719,6 +719,8 @@ CPU_GET_INFO( i8008 )
 		case DEVINFO_STR_VERSION:					strcpy(info->s, "1.0");					break;
 		case DEVINFO_STR_SOURCE_FILE:				strcpy(info->s, __FILE__);				break;
 		case DEVINFO_STR_CREDITS:					strcpy(info->s, "Copyright Miodrag Milanovic"); break;
+
+		case CPUINFO_IS_OCTAL:						info->i = true;							break;
 	}
 }
 

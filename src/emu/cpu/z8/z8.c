@@ -645,7 +645,7 @@ static CPU_INIT( z8 )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->get_interface(state);
+		device->interface(state);
 		state->state_add(Z8_PC,         "PC",        cpustate->pc);
 		state->state_add(STATE_GENPC,   "GENPC",     cpustate->pc).noshow();
 		state->state_add(Z8_SP,         "SP",        cpustate->fake_sp).callimport().callexport();

@@ -142,7 +142,7 @@ device_memory_interface::~device_memory_interface()
 void device_memory_interface::static_set_addrmap(device_t &device, address_spacenum spacenum, address_map_constructor map)
 {
 	device_memory_interface *memory;
-	if (!device.get_interface(memory))
+	if (!device.interface(memory))
 		throw emu_fatalerror("MCFG_DEVICE_ADDRESS_MAP called on device '%s' with no memory interface", device.tag());
 	if (spacenum >= ARRAY_LENGTH(memory->m_address_map))
 		throw emu_fatalerror("MCFG_DEVICE_ADDRESS_MAP called with out-of-range space number %d", device.tag(), spacenum);
@@ -313,15 +313,24 @@ bool device_memory_interface::interface_validity_check(emu_options &options, con
 					for (const rom_source *source = rom_first_source(device().mconfig()); source != NULL && !found; source = rom_next_source(*source))
 						for (const rom_entry *romp = rom_first_region(*source); !ROMENTRY_ISEND(romp) && !found; romp++)
 						{
-							const char *regiontag = ROMREGION_GETTAG(romp);
-							if (regiontag != NULL)
+							const char *regiontag_c = ROMREGION_GETTAG(romp);
+							if (regiontag_c != NULL)
 							{
 								astring fulltag;
 								astring regiontag;
-								if (strchr(entry->m_region,':')) {
-									regiontag = entry->m_region;
-								} else {
-									device().siblingtag(regiontag, entry->m_region);
+
+								// a leading : on a region name indicates an absolute region, so fix up accordingly
+								if (entry->m_region[0] == ':')
+								{
+									regiontag = &entry->m_region[1];
+								}
+								else
+								{
+									if (strchr(entry->m_region,':')) {
+										regiontag = entry->m_region;
+									} else {
+										device().siblingtag(regiontag, entry->m_region);
+									}
 								}
 								rom_region_name(fulltag, &driver, source, romp);
 								if (fulltag.cmp(regiontag) == 0)

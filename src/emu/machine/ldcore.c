@@ -999,12 +999,9 @@ static STREAM_UPDATE( custom_stream_callback )
 	rightand = (ldcore->audiosquelch & 2) ? 0x0000 : 0xffff;
 
 	/* see if we have enough samples to fill the buffer; if not, drop out */
-	if (ld != NULL)
-	{
-		samples_avail = ldcore->audiobufin - ldcore->audiobufout;
-		if (samples_avail < 0)
-			samples_avail += ldcore->audiobufsize;
-	}
+	samples_avail = ldcore->audiobufin - ldcore->audiobufout;
+	if (samples_avail < 0)
+		samples_avail += ldcore->audiobufsize;
 
 	/* if no attached ld, just clear the buffers */
 	if (samples_avail < samples)
@@ -1036,7 +1033,7 @@ static STREAM_UPDATE( custom_stream_callback )
 		/* clear out the rest of the buffer */
 		if (samples > 0)
 		{
-			int sampout = (ldcore->audiobufout == 0) ? ldcore->audiobufsize - 1 : ldcore->audiobufout - 1;
+			sampout = (ldcore->audiobufout == 0) ? ldcore->audiobufsize - 1 : ldcore->audiobufout - 1;
 			stream_sample_t fill0 = buffer0[sampout] & leftand;
 			stream_sample_t fill1 = buffer1[sampout] & rightand;
 

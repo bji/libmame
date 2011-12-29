@@ -87,7 +87,7 @@ struct chrn_id
 
 /* set if drive is ready */
 #define FLOPPY_DRIVE_READY						0x0010
-/* set if index has just occured */
+/* set if index has just occurred */
 #define FLOPPY_DRIVE_INDEX						0x0020
 
 /* a callback which will be executed if the ready state of the drive changes e.g. not ready->ready, ready->not ready */
@@ -128,7 +128,7 @@ void floppy_drive_set_rpm(device_t *image, float rpm);
 
 void floppy_drive_set_controller(device_t *img, device_t *controller);
 
-floppy_image *flopimg_get_image(device_t *image);
+floppy_image_legacy *flopimg_get_image(device_t *image);
 
 /* hack for apple II; replace this when we think of something better */
 void floppy_install_unload_proc(device_t *image, void (*proc)(device_image_interface &image));
@@ -180,7 +180,7 @@ READ_LINE_DEVICE_HANDLER( floppy_index_r );
 // drive ready
 READ_LINE_DEVICE_HANDLER( floppy_ready_r );
 
-DECLARE_LEGACY_IMAGE_DEVICE(FLOPPY, floppy);
+DECLARE_LEGACY_IMAGE_DEVICE(LEGACY_FLOPPY, floppy);
 
 extern DEVICE_START( floppy );
 extern DEVICE_IMAGE_LOAD( floppy );
@@ -196,25 +196,25 @@ extern DEVICE_IMAGE_UNLOAD( floppy );
 #define FLOPPY_3 "floppy3"
 
 
-#define MCFG_FLOPPY_DRIVE_ADD(_tag, _config)	\
-	MCFG_DEVICE_ADD(_tag, FLOPPY, 0)			\
+#define MCFG_LEGACY_FLOPPY_DRIVE_ADD(_tag, _config)	\
+	MCFG_DEVICE_ADD(_tag, LEGACY_FLOPPY, 0)			\
 	MCFG_DEVICE_CONFIG(_config)
 
-#define MCFG_FLOPPY_DRIVE_MODIFY(_tag, _config)	\
+#define MCFG_LEGACY_FLOPPY_DRIVE_MODIFY(_tag, _config)	\
 	MCFG_DEVICE_MODIFY(_tag)		\
 	MCFG_DEVICE_CONFIG(_config)
 
-#define MCFG_FLOPPY_4_DRIVES_ADD(_config)	\
-	MCFG_DEVICE_ADD(FLOPPY_0, FLOPPY, 0)		\
+#define MCFG_LEGACY_FLOPPY_4_DRIVES_ADD(_config)	\
+	MCFG_DEVICE_ADD(FLOPPY_0, LEGACY_FLOPPY, 0)		\
 	MCFG_DEVICE_CONFIG(_config)	\
-	MCFG_DEVICE_ADD(FLOPPY_1, FLOPPY, 0)		\
+	MCFG_DEVICE_ADD(FLOPPY_1, LEGACY_FLOPPY, 0)		\
 	MCFG_DEVICE_CONFIG(_config)	\
-	MCFG_DEVICE_ADD(FLOPPY_2, FLOPPY, 0)		\
+	MCFG_DEVICE_ADD(FLOPPY_2, LEGACY_FLOPPY, 0)		\
 	MCFG_DEVICE_CONFIG(_config)	\
-	MCFG_DEVICE_ADD(FLOPPY_3, FLOPPY, 0)		\
+	MCFG_DEVICE_ADD(FLOPPY_3, LEGACY_FLOPPY, 0)		\
 	MCFG_DEVICE_CONFIG(_config)
 
-#define MCFG_FLOPPY_4_DRIVES_MODIFY(_config)	\
+#define MCFG_LEGACY_FLOPPY_4_DRIVES_MODIFY(_config)	\
 	MCFG_DEVICE_MODIFY(FLOPPY_0)		\
 	MCFG_DEVICE_CONFIG(_config)	\
 	MCFG_DEVICE_MODIFY(FLOPPY_1)		\
@@ -224,25 +224,25 @@ extern DEVICE_IMAGE_UNLOAD( floppy );
 	MCFG_DEVICE_MODIFY(FLOPPY_3)		\
 	MCFG_DEVICE_CONFIG(_config)
 
-#define MCFG_FLOPPY_4_DRIVES_REMOVE()	\
+#define MCFG_LEGACY_FLOPPY_4_DRIVES_REMOVE()	\
 	MCFG_DEVICE_REMOVE(FLOPPY_0)		\
 	MCFG_DEVICE_REMOVE(FLOPPY_1)		\
 	MCFG_DEVICE_REMOVE(FLOPPY_2)		\
 	MCFG_DEVICE_REMOVE(FLOPPY_3)
 
-#define MCFG_FLOPPY_2_DRIVES_ADD(_config)	\
-	MCFG_DEVICE_ADD(FLOPPY_0, FLOPPY, 0)		\
+#define MCFG_LEGACY_FLOPPY_2_DRIVES_ADD(_config)	\
+	MCFG_DEVICE_ADD(FLOPPY_0, LEGACY_FLOPPY, 0)		\
 	MCFG_DEVICE_CONFIG(_config)	\
-	MCFG_DEVICE_ADD(FLOPPY_1, FLOPPY, 0)		\
+	MCFG_DEVICE_ADD(FLOPPY_1, LEGACY_FLOPPY, 0)		\
 	MCFG_DEVICE_CONFIG(_config)
 
-#define MCFG_FLOPPY_2_DRIVES_MODIFY(_config)	\
+#define MCFG_LEGACY_FLOPPY_2_DRIVES_MODIFY(_config)	\
 	MCFG_DEVICE_MODIFY(FLOPPY_0)		\
 	MCFG_DEVICE_CONFIG(_config)	\
 	MCFG_DEVICE_MODIFY(FLOPPY_1)		\
 	MCFG_DEVICE_CONFIG(_config)
 
-#define MCFG_FLOPPY_2_DRIVES_REMOVE()	\
+#define MCFG_LEGACY_FLOPPY_2_DRIVES_REMOVE()	\
 	MCFG_DEVICE_REMOVE(FLOPPY_0)		\
 	MCFG_DEVICE_REMOVE(FLOPPY_1)
 

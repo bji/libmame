@@ -375,10 +375,10 @@ static void execute_one(scmp_state *cpustate, int opcode)
 			case 0x3c:	case 0x3d :case 0x3e: case 0x3f:
 						// XPPC
 						{
-							UINT16 tmp = ADD12(cpustate->PC.w.l,-1); // Since PC is incremented we need to fix it
+							UINT16 tmp16 = ADD12(cpustate->PC.w.l,-1); // Since PC is incremented we need to fix it
 							cpustate->icount -= 7;
 							cpustate->PC.w.l = GET_PTR_REG(cpustate,ptr)->w.l;
-							GET_PTR_REG(cpustate,ptr)->w.l = tmp;
+							GET_PTR_REG(cpustate,ptr)->w.l = tmp16;
 							// After exchange CPU increment PC
 							cpustate->PC.w.l = ADD12(cpustate->PC.w.l,1);
 						}
@@ -500,7 +500,7 @@ static CPU_INIT( scmp )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->get_interface(state);
+		device->interface(state);
 		state->state_add(SCMP_PC,     "PC",    cpustate->PC.w.l);
 		state->state_add(STATE_GENPC, "GENPC", cpustate->PC.w.l).noshow();
 		state->state_add(STATE_GENFLAGS, "GENFLAGS", cpustate->SR).noshow().formatstr("%8s");

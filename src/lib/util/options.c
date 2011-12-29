@@ -224,7 +224,11 @@ core_options::~core_options()
 {
 	// delete all entries from the list
 	while (m_entrylist != NULL)
+	{
+		core_options::entry *e = m_entrylist;
 		remove_entry(*m_entrylist);
+		delete e;
+	}
 }
 
 
@@ -290,7 +294,11 @@ void core_options::add_entries(const options_entry *entrylist, bool override_exi
 			{
 				// if we're overriding existing entries, then remove the old one
 				if (override_existing)
+				{
+					core_options::entry *e = m_entrylist;
 					remove_entry(*existing);
+					delete e;
+				}
 
 				// otherwise, just override the default and current values and throw out the new entry
 				else
@@ -338,6 +346,7 @@ bool core_options::parse_command_line(int argc, char **argv, int priority, astri
 
 	// iterate through arguments
 	int unadorned_index = 0;
+	bool retVal = true;
 	for (int arg = 1; arg < argc; arg++)
 	{
 		// determine the entry name to search for
@@ -350,7 +359,9 @@ bool core_options::parse_command_line(int argc, char **argv, int priority, astri
 		if (curentry == NULL)
 		{
 			error_string.catprintf("Error: unknown option: %s\n", curarg);
-			return false;
+			retVal = false;
+			if (!is_unadorned) arg++;
+			continue;
 		}
 
 		// process commands first
@@ -383,7 +394,7 @@ bool core_options::parse_command_line(int argc, char **argv, int priority, astri
 		// set the new data
 		validate_and_set_data(*curentry, newdata, priority, error_string);
 	}
-	return true;
+	return retVal;
 }
 
 
@@ -476,10 +487,24 @@ const char *core_options::output_ini(astring &buffer, const core_options *diff)
 	// INI files are complete, so always start with a blank buffer
 	buffer.reset();
 
-	// loop over all items
+	int num_valid_headers = 0;
+	int unadorned_index = 0;
 	const char *last_header = NULL;
+
+	// loop over all items
 	for (entry *curentry = m_entrylist; curentry != NULL; curentry = curentry->next())
 	{
+		const char *name = curentry->name();
+		const char *value = curentry->value();
+		bool is_unadorned = false;
+
+		// check if it's unadorned
+		if (name && strlen(name) && !strcmp(name, core_options::unadorned(unadorned_index)))
+		{
+			unadorned_index++;
+			is_unadorned = true;
+		}
+
 		// header: record description
 		if (curentry->is_header())
 			last_header = curentry->description();
@@ -488,22 +513,25 @@ const char *core_options::output_ini(astring &buffer, const core_options *diff)
 		else if (!curentry->is_command())
 		{
 			// look up counterpart in diff, if diff is specified
-			const char *name = curentry->name();
-			const char *value = curentry->value();
 			if (diff == NULL || strcmp(value, diff->value(name)) != 0)
 			{
 				// output header, if we have one
 				if (last_header != NULL)
 				{
-					buffer.catprintf("\n#\n# %s\n#\n", last_header);
+					if (num_valid_headers++)
+						buffer.catprintf("\n");
+					buffer.catprintf("#\n# %s\n#\n", last_header);
 					last_header = NULL;
 				}
 
-				// and finally output the data
-				if (strchr(value, ' ') != NULL)
-					buffer.catprintf("%-25s \"%s\"\n", name, value);
-				else
-					buffer.catprintf("%-25s %s\n", name, value);
+				// and finally output the data, skip if unadorned
+				if (!is_unadorned)
+				{
+					if (strchr(value, ' ') != NULL)
+						buffer.catprintf("%-25s \"%s\"\n", name, value);
+					else
+						buffer.catprintf("%-25s %s\n", name, value);
+				}
 			}
 		}
 	}
@@ -608,7 +636,11 @@ void core_options::reset()
 {
 	// remove all entries from the list
 	while (m_entrylist != NULL)
+	{
+		core_options::entry *e = m_entrylist;
 		remove_entry(*m_entrylist);
+		delete e;
+	}
 
 	// reset the map
 	m_entrymap.reset();

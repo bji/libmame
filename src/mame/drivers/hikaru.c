@@ -7,7 +7,7 @@ Sega Hikaru Hardware Overview (last updated 5th August 2009 at 3:45pm)
 
 Note! This document will be updated from time to time when more dumps are available.
 
-This document covers all the known Sega Hikaru games. The graphics are quite breath-taking
+This document covers all the known Sega Hikaru games. The graphics are quite breathtaking
 and this system is said to be one of the most expensive arcade boards developed by Sega.
 The games on this system include....
 Air Trix                     (C) Sega, 2001
@@ -341,25 +341,63 @@ static INPUT_PORTS_START( hikaru )
 	PORT_START("IN0")
 INPUT_PORTS_END
 
+/*
+ Area 0
+  00000000-00200000    boot ROM
+  00400000-00400003    ?
+  00800000-0083ffff    MIE + Service/Test switches and more
+  00c00000-00c0ffff    backup RAM
+  01000000-01000003    ?
+  01000100-01000103    ?
+  02000000-02ffffff    banked area (ROMBD+AICA+COMM+other devices)
+  03000000-03ffffff    banked area (ROMBD+EEPROM+COMM+other devices)
+ Area 1
+  04000000-0400003f    Memory controller (Master)
+ Area 3
+  0c000000-0dffffff    RAM
+ Area 5
+  14000000-140000ff    Master/Slave COMM
+  14000100-143fffff    GPU command RAM
+  15000000-150000ff    GPU Regs
+  16000000-163fffff x2 ? \ these two overlap [selected by 040000xx = 0x04,0x06,0x40]
+  16010000-17ffffff    Slave RAM /
+ Area 6
+  18001000-1800101f    ?
+  1a000000-1a000103    GPU Regs
+  1a000180-150001bf    GPU Texture Regs A
+  1a000200-1500023f    GPU Texture Regs B
+  1a040000-1a04000f    GPU Texture fIfO (?)
+  1b000000-1b7fffff    GPU Texture RAM and framebuffer (a 2048x2048x16-bit sheet?)
+
+*/
+
 static ADDRESS_MAP_START( hikaru_map, AS_PROGRAM, 64 )
-	AM_RANGE(0x00000000, 0x001FFFFF) AM_ROM AM_SHARE("share1")
-	AM_RANGE(0x00400000, 0x004000FF) AM_NOP // unknown
-	AM_RANGE(0x00800000, 0x008000FF) AM_NOP // unknown
-	AM_RANGE(0x00830000, 0x00831FFF) AM_NOP // unknown
-	AM_RANGE(0x00838000, 0x008380ff) AM_NOP // unknown
-	AM_RANGE(0x0082F000, 0x0082F0ff) AM_NOP // unknown
-	AM_RANGE(0x00C00000, 0x00C002FF) AM_RAM // unknown nvram?
-	AM_RANGE(0x01000000, 0x010001FF) AM_NOP // unknown
-	AM_RANGE(0x02000000, 0x020000FF) AM_NOP // unknown
-	AM_RANGE(0x02710000, 0x027100FF) AM_NOP // unknown
-	AM_RANGE(0x03000000, 0x030000FF) AM_NOP // unknown
-	AM_RANGE(0x04000000, 0x040000FF) AM_NOP // unknown
-	AM_RANGE(0x0C000000, 0x0DFFFFFF) AM_RAM
-	AM_RANGE(0x14000000, 0x140000FF) AM_NOP // unknown
-	AM_RANGE(0x14004000, 0x140041FF) AM_RAM // unknown
-	AM_RANGE(0x15000000, 0x150000FF) AM_NOP // unknown
-	AM_RANGE(0x16001000, 0x160010FF) AM_RAM // unknown
-	AM_RANGE(0x1A000000, 0x1A0000FF) AM_NOP // unknown
+//  Area 0
+	AM_RANGE(0x00000000, 0x001fffff) AM_ROM AM_SHARE("share1")  // boot ROM
+	AM_RANGE(0x00400000, 0x00400007) AM_NOP // unknown
+	AM_RANGE(0x00800000, 0x0083ffff) AM_NOP // MIE + Service/Test switches and more
+	AM_RANGE(0x00c00000, 0x00c0ffff) AM_RAM // backup RAM
+	AM_RANGE(0x01000000, 0x01000007) AM_NOP // unknown
+	AM_RANGE(0x01000100, 0x01000107) AM_NOP // unknown
+	AM_RANGE(0x02000000, 0x02ffffff) AM_NOP // banked area (ROMBD + AICA + COMM + other devices)
+	AM_RANGE(0x03000000, 0x03ffffff) AM_NOP // banked area (ROMBD + EEPROM + COMM + other devices)
+//  Area 1
+	AM_RANGE(0x04000000, 0x0400003f) AM_NOP // memory controller (Master)
+//  Area 3
+	AM_RANGE(0x0c000000, 0x0dffffff) AM_RAM // main Work RAM
+//  Area 5
+	AM_RANGE(0x14000000, 0x140000ff) AM_NOP // Master/Slave COMM
+	AM_RANGE(0x14000100, 0x143fffff) AM_RAM // GPU command RAM
+	AM_RANGE(0x15000000, 0x150000ff) AM_NOP // GPU Regs
+	AM_RANGE(0x16001000, 0x163fffff) AM_RAM // ? \ these two overlap [selected by 040000xx = 0x04,0x06,0x40]
+	AM_RANGE(0x16010000, 0x17ffffff) AM_RAM // Slave Work RAM
+//  Area 6
+	AM_RANGE(0x18001000, 0x1800101f) AM_NOP // unknown
+	AM_RANGE(0x1a000000, 0x1a000107) AM_NOP // GPU Regs
+	AM_RANGE(0x1a000180, 0x1a0001bf) AM_NOP // GPU Texture Regs A
+	AM_RANGE(0x1a000200, 0x1a00023f) AM_NOP // GPU Texture Regs B
+	AM_RANGE(0x1a040000, 0x1a04000f) AM_NOP // GPU Texture FIFO (?)
+	AM_RANGE(0x1b000000, 0x1b7fffff) AM_NOP // GPU Texture RAM and framebuffer (a 2048x2048x16-bit sheet?)
 ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( hikaru_map_slave, AS_PROGRAM, 64 )
@@ -374,12 +412,12 @@ ADDRESS_MAP_END
 
 static MACHINE_CONFIG_START( hikaru, driver_device )
 	/* basic machine hardware */
-	MCFG_CPU_ADD("maincpu", SH4, CPU_CLOCK)
+	MCFG_CPU_ADD("maincpu", SH4LE, CPU_CLOCK)
 //  MCFG_CPU_CONFIG(sh4cpu_config)
 	MCFG_CPU_PROGRAM_MAP(hikaru_map)
 //  MCFG_CPU_IO_MAP(hikaru_port)
 //  MCFG_CPU_VBLANK_INT("screen", hikaru,vblank)
-	MCFG_CPU_ADD("slave", SH4, CPU_CLOCK)
+	MCFG_CPU_ADD("slave", SH4LE, CPU_CLOCK)
 	MCFG_CPU_PROGRAM_MAP(hikaru_map_slave)
 
 //  MCFG_MACHINE_START( hikaru )
@@ -417,9 +455,12 @@ MACHINE_CONFIG_END
 	ROM_LOAD16_WORD_SWAP_BIOS( 0, "epr23400a.ic94",   0x000000, 0x200000, CRC(2aa906a7) SHA1(098c9909b123ed6c338ac874f2ee90e3b2da4c02) ) \
 	ROM_SYSTEM_BIOS( 1, "bios1", "epr23400" ) \
 	ROM_LOAD16_WORD_SWAP_BIOS( 1, "epr-23400.ic94",   0x000000, 0x200000, CRC(3d557104) SHA1(d39879f5a1acbd54ad8ee4fbd412f870c9ff4aa5) ) \
+	ROM_SYSTEM_BIOS( 2, "bios2", "epr21904" ) \
+	ROM_LOAD16_WORD_SWAP_BIOS( 1, "epr-21904.ic94",   0x000000, 0x200000, CRC(d96298b6) SHA1(d10d837bc7d68eb7125c34beffe21a91305627b0) ) \
 
 // bios 0 is SAMURAI boot rom 0.96 / 2000/8/10
 // bios 1 is SAMURAI boot rom 0.92 / 1999/7/2
+// bios 2 is SAMURAI boot rom 0.84 / 1999/7/22
 
 
 ROM_START( hikaru )

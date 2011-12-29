@@ -270,32 +270,30 @@ static INPUT_PORTS_START( pbillrd )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_COIN2 )
 
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x01, 0x01, "Balls" )
+	PORT_DIPNAME( 0x01, 0x01, "Balls" )			PORT_DIPLOCATION("SW1:1")
 	PORT_DIPSETTING(    0x01, "3" )
 	PORT_DIPSETTING(    0x00, "5" )
-	PORT_DIPNAME( 0x06, 0x06, "Bonus Ball" )
+	PORT_DIPNAME( 0x06, 0x06, "Bonus Ball" )		PORT_DIPLOCATION("SW1:2,3")
 	PORT_DIPSETTING(    0x06, "10000, 30000 & 50000 Points"  )
 	PORT_DIPSETTING(    0x02, "20000 & 60000 Points" )
 	PORT_DIPSETTING(    0x04, "30000 & 80000 Points" )
 	PORT_DIPSETTING(    0x00, "Only 20000 Points" )
-	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Allow_Continue ) )
+	PORT_DIPUNUSED_DIPLOC( 0x08, IP_ACTIVE_LOW, "SW1:4" )
+	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Allow_Continue ) )	PORT_DIPLOCATION("SW1:5")
 	PORT_DIPSETTING(    0x00, DEF_STR( No ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Yes ) )
-	PORT_DIPNAME( 0x20, 0x00, "Shot" )
+	PORT_DIPNAME( 0x20, 0x00, "Shot" )			PORT_DIPLOCATION("SW1:6")
 	PORT_DIPSETTING(    0x00, "2" )
 	PORT_DIPSETTING(    0x20, "3" )
-	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW1:7")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Flip_Screen ) )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Flip_Screen ) )	PORT_DIPLOCATION("SW1:8")
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x80, DEF_STR( On ) )
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x0f, 0x0f, DEF_STR( Coin_A ) )
+	PORT_DIPNAME( 0x0f, 0x0f, DEF_STR( Coin_A ) )	PORT_DIPLOCATION("SW2:1,2,3,4")
 	PORT_DIPSETTING(    0x00, DEF_STR( 5C_1C ) )
 	PORT_DIPSETTING(    0x0c, DEF_STR( 4C_1C ) )
 	PORT_DIPSETTING(    0x0e, DEF_STR( 3C_1C ) )
@@ -312,7 +310,7 @@ static INPUT_PORTS_START( pbillrd )
 	PORT_DIPSETTING(    0x0b, DEF_STR( 1C_3C ) )
 	PORT_DIPSETTING(    0x03, DEF_STR( 1C_4C ) )
 	PORT_DIPSETTING(    0x0d, DEF_STR( 1C_5C ) )
-	PORT_DIPNAME( 0xf0, 0xf0, DEF_STR( Coin_B ) )
+	PORT_DIPNAME( 0xf0, 0xf0, DEF_STR( Coin_B ) )	PORT_DIPLOCATION("SW2:5,6,7,8")
 	PORT_DIPSETTING(    0x00, DEF_STR( 5C_1C ) )
 	PORT_DIPSETTING(    0xc0, DEF_STR( 4C_1C ) )
 	PORT_DIPSETTING(    0xe0, DEF_STR( 3C_1C ) )
@@ -334,6 +332,12 @@ INPUT_PORTS_END
 static INPUT_PORTS_START( gigas )
 	PORT_INCLUDE( pbillrd )
 
+	PORT_MODIFY("IN0")
+	PORT_BIT( 0x3c, IP_ACTIVE_LOW, IPT_UNUSED )
+
+	PORT_MODIFY("IN1")
+	PORT_BIT( 0x3c, IP_ACTIVE_LOW, IPT_UNUSED )
+
 	PORT_START("IN2")
 	PORT_BIT( 0xff, 0x00, IPT_DIAL ) PORT_SENSITIVITY(30) PORT_KEYDELTA(15) PORT_REVERSE
 
@@ -341,20 +345,20 @@ static INPUT_PORTS_START( gigas )
 	PORT_BIT( 0xff, 0x00, IPT_DIAL ) PORT_SENSITIVITY(30) PORT_KEYDELTA(15) PORT_REVERSE PORT_COCKTAIL
 
 	PORT_MODIFY("DSW1")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )			PORT_DIPLOCATION("SW1:1")
 	PORT_DIPSETTING(    0x01, "3" )
 	PORT_DIPSETTING(    0x00, "5" )
-	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )		PORT_DIPLOCATION("SW1:2,3")
 	PORT_DIPSETTING(    0x06, "20000 & 60000, Every 60000 Points" )
 	PORT_DIPSETTING(    0x02, "20000 & 60000 Points" )
 	PORT_DIPSETTING(    0x04, "30000 & 80000, Every 80000 Points" )
 	PORT_DIPSETTING(    0x00, "Only 20000 Points" )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Difficulty ) )		PORT_DIPLOCATION("SW1:4,5")
 	PORT_DIPSETTING(    0x18, DEF_STR( Easy ) )    /* level 1 */
 	PORT_DIPSETTING(    0x10, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) ) /* level 4 */
-	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Allow_Continue ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Allow_Continue ) )		PORT_DIPLOCATION("SW1:6")
 	PORT_DIPSETTING(    0x00, DEF_STR( No ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Yes ) )
 INPUT_PORTS_END
@@ -363,7 +367,7 @@ static INPUT_PORTS_START( gigasm2 )
 	PORT_INCLUDE( gigas )
 
 	PORT_MODIFY("DSW1")
-	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )		PORT_DIPLOCATION("SW1:2,3")
 	PORT_DIPSETTING(    0x06, "20000 & 60000, Every 60000 Points" )
 	PORT_DIPSETTING(    0x02, "20000 & 60000 Points" )
 	PORT_DIPSETTING(    0x04, "30000 & 90000, Every 90000 Points" )
@@ -372,31 +376,31 @@ INPUT_PORTS_END
 
 static INPUT_PORTS_START( freekck )
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW1:1")
 	PORT_DIPSETTING(    0x01, "3" )
 	PORT_DIPSETTING(    0x00, "5" )
-	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW1:2,3")
 	PORT_DIPSETTING(    0x06, "2-3-4-5-60000 Points" )
 	PORT_DIPSETTING(    0x02, "3-4-5-6-7-80000 Points" )
 	PORT_DIPSETTING(    0x04, "20000 & 60000 Points" )
 	PORT_DIPSETTING(    0x00, "ONLY 20000 Points" )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW1:4,5")
 	PORT_DIPSETTING(    0x18, DEF_STR( Easy ) )    /* level 1 */
 	PORT_DIPSETTING(    0x10, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) ) /* level 4 */
-	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Allow_Continue ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Allow_Continue ) )	PORT_DIPLOCATION("SW1:6")
 	PORT_DIPSETTING(    0x00, DEF_STR( No ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Yes ) )
-	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW1:7")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Flip_Screen ) )
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Flip_Screen ) )	PORT_DIPLOCATION("SW1:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x0f, 0x0f, DEF_STR( Coin_A ) )
+	PORT_DIPNAME( 0x0f, 0x0f, DEF_STR( Coin_A ) )	PORT_DIPLOCATION("SW2:1,2,3,4")
 	PORT_DIPSETTING(    0x00, DEF_STR( 5C_1C ) )
 	PORT_DIPSETTING(    0x0c, DEF_STR( 4C_1C ) )
 	PORT_DIPSETTING(    0x0e, DEF_STR( 3C_1C ) )
@@ -413,7 +417,7 @@ static INPUT_PORTS_START( freekck )
 	PORT_DIPSETTING(    0x0b, DEF_STR( 1C_3C ) )
 	PORT_DIPSETTING(    0x03, DEF_STR( 1C_4C ) )
 	PORT_DIPSETTING(    0x0d, DEF_STR( 1C_5C ) )
-	PORT_DIPNAME( 0xf0, 0xf0, DEF_STR( Coin_B ) )
+	PORT_DIPNAME( 0xf0, 0xf0, DEF_STR( Coin_B ) )	PORT_DIPLOCATION("SW2:5,6,7,8")
 	PORT_DIPSETTING(    0x00, DEF_STR( 5C_1C ) )
 	PORT_DIPSETTING(    0xe0, DEF_STR( 3C_1C ) )
 	PORT_DIPSETTING(    0x50, DEF_STR( 2C_1C ) )
@@ -432,28 +436,16 @@ static INPUT_PORTS_START( freekck )
 	PORT_DIPSETTING(    0x80, "1 Coin/50 Credits" )
 
 	PORT_START("DSW3")
-	PORT_DIPNAME( 0x01, 0x00, "Manufacturer" )
+	PORT_DIPNAME( 0x01, 0x00, "Manufacturer" )	PORT_DIPLOCATION("SW3:1")
 	PORT_DIPSETTING(    0x00, "Nihon System" )
 	PORT_DIPSETTING(    0x01, "Sega/Nihon System" )
-	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x80, 0x80, "Coin Slots" )
+	PORT_DIPUNUSED_DIPLOC( 0x02, 0x02, "SW3:2" )
+	PORT_DIPUNUSED_DIPLOC( 0x04, 0x04, "SW3:3" )
+	PORT_DIPUNUSED_DIPLOC( 0x08, 0x08, "SW3:4" )
+	PORT_DIPUNUSED_DIPLOC( 0x10, 0x10, "SW3:5" )
+	PORT_DIPUNUSED_DIPLOC( 0x20, 0x20, "SW3:6" )
+	PORT_DIPUNUSED_DIPLOC( 0x40, 0x40, "SW3:7" )
+	PORT_DIPNAME( 0x80, 0x80, "Coin Slots" )	PORT_DIPLOCATION("SW3:8")
 	PORT_DIPSETTING(    0x00, "1" )
 	PORT_DIPSETTING(    0x80, "2" )
 
@@ -488,19 +480,17 @@ static INPUT_PORTS_START( countrun )
 	PORT_INCLUDE( freekck )
 
 	PORT_MODIFY("DSW1")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW1:1")
 	PORT_DIPSETTING(    0x01, "3" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x06, 0x06, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW1:2,3")
 	PORT_DIPSETTING(    0x06, "20000, 60000 and every 60000 Points" )
 	PORT_DIPSETTING(    0x02, "30000, 80000 and every 80000 Points" )
 	PORT_DIPSETTING(    0x04, "20000 & 60000 Points" )
 	PORT_DIPSETTING(    0x00, "ONLY 20000 Points" )
 
 	PORT_MODIFY("DSW3")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Unused ) )
-	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPUNUSED_DIPLOC( 0x01, 0x01, "SW3:1" )
 INPUT_PORTS_END
 
 
@@ -789,16 +779,18 @@ ROM_END
 
 /*
 
-original sets don't work, they're missing the main cpu code which is probably inside
-the custom cpu, battery backed too so hopefully somebody can work out how to get it
-from an original counter run board before they all die :-(
+The original Freekick boards have the main CPU code inside a custom CPU "block". This code is stored in battery
+backed RAM. There is 64K of RAM, but only 52K is program code while the remaining RAM is actually used as RAM.
+
+There is known to exist a Nihon System version without the Merit license, but has the Sega license enabled
+through a dipswitch. Hopefully this version can be found and dumped before they all die.
 
 */
 
 ROM_START( freekick )
-	ROM_REGION( 0x10000, "maincpu", 0 ) /* Z80 Code */
-	// Custom CPU (pack) No. NS6201-A 1987.9 FREE KICK (also found NS6201-A 1987.10 FREE KICK)
-	ROM_LOAD( "freekick.cpu", 0x00000, 0x10000, NO_DUMP ) // missing, might be the same as the bootleg but not confirmed
+	ROM_REGION( 0x0d000, "maincpu", 0 ) /* Z80 Code, internal program RAM is 52K in custom cpu module */
+	// Custom CPU (pack) No. NS6201-A 1987.10 FREE KICK (also found NS6201-A 1987.9 FREE KICK)
+	ROM_LOAD( "ns6201-a_1987.10_free_kick.cpu", 0x00000, 0x0d000, CRC(6d172850) SHA1(ac461bff9da263681085920ad6acd778241dedd3) )
 
 	ROM_REGION( 0x08000, "user1", 0 ) /* sound data */
 	ROM_LOAD( "11.1e", 0x00000, 0x08000, CRC(a6030ba9) SHA1(f363100f54a7a80701a6395c7539b8daa60db054) )
@@ -824,7 +816,7 @@ ROM_END
 
 ROM_START( freekickb )
 	ROM_REGION( 0x10000, "maincpu", 0 ) /* Z80 Code */
-	ROM_LOAD( "freekbl8.q7", 0x00000, 0x10000, CRC(4208cfe5) SHA1(21628cbe8a217fbae30a6c24c9cc4c790fe45d65) ) // this was on the bootleg, would normally be battery backed inside cpu?
+	ROM_LOAD( "freekbl8.q7", 0x00000, 0x10000, CRC(4208cfe5) SHA1(21628cbe8a217fbae30a6c24c9cc4c790fe45d65) )
 
 	ROM_REGION( 0x08000, "user1", 0 ) /* sound data */
 	ROM_LOAD( "11.1e", 0x00000, 0x08000, CRC(a6030ba9) SHA1(f363100f54a7a80701a6395c7539b8daa60db054) ) // freekbl1.e2
@@ -850,7 +842,7 @@ ROM_END
 
 ROM_START( freekickb2 )
 	ROM_REGION( 0x10000, "maincpu", 0 ) /* Z80 Code */
-	ROM_LOAD( "15.bin", 0x00000, 0x10000, CRC(6569f2b0) SHA1(9306e316e6ae659bae3759a12a4e445b555a8893) ) // this was on the bootleg, would normally be battery backed inside cpu?
+	ROM_LOAD( "15.bin", 0x00000, 0x10000, CRC(6569f2b0) SHA1(9306e316e6ae659bae3759a12a4e445b555a8893) )
 
 	ROM_REGION( 0x08000, "user1", 0 ) /* sound data */
 	ROM_LOAD( "1.bin", 0x00000, 0x08000, CRC(a6030ba9) SHA1(f363100f54a7a80701a6395c7539b8daa60db054) )
@@ -883,6 +875,13 @@ ROM_START( freekickb2 )
 	ROM_LOAD( "24s10n.7h", 0x0500, 0x0100, CRC(a507f941) SHA1(97619959ee4c366cb010525636ab5eefe5a3127a) )
 ROM_END
 
+/*
+
+The original Counter Run set doesn't work, it's missing the main CPU code which is inside a custom CPU "block"
+just like the original Freekick boards. Hopefully an original Counter Run board can be found and dumped (using
+the same method as used for Freekick) before they all die, batteries don't last for ever :-(
+
+*/
 
 ROM_START( countrun )
 	ROM_REGION( 0x10000, "maincpu", 0 ) /* Z80 Code */
@@ -1138,7 +1137,7 @@ GAME( 1986, oigas,     gigas ,   oigas,     gigas,    gigasb,   ROT270, "bootleg
 GAME( 1986, gigasm2b,  0,        gigas,     gigasm2,  gigasb,   ROT270, "bootleg", "Gigas Mark II (bootleg)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
 GAME( 1987, pbillrd,   0,        pbillrd,   pbillrd,  0,        ROT0,   "Nihon System", "Perfect Billiard", GAME_SUPPORTS_SAVE )
 GAME( 1987, pbillrds,  pbillrd,  pbillrd,   pbillrd,  pbillrds, ROT0,   "Nihon System", "Perfect Billiard (MC-8123, 317-0030)", GAME_SUPPORTS_SAVE )
-GAME( 1987, freekick,  0,        freekickb, freekck,  0,        ROT270, "Nihon System (Sega license)", "Free Kick", GAME_NOT_WORKING | GAME_SUPPORTS_SAVE )
+GAME( 1987, freekick,  0,        freekickb, freekck,  0,        ROT270, "Nihon System (Merit license)", "Free Kick", GAME_SUPPORTS_SAVE )
 GAME( 1987, freekickb, freekick, freekickb, freekck,  0,        ROT270, "bootleg", "Free Kick (bootleg set 1)", GAME_SUPPORTS_SAVE )
 GAME( 1987, freekickb2,freekick, freekickb, freekck,  0,        ROT270, "bootleg", "Free Kick (bootleg set 2)", GAME_SUPPORTS_SAVE )
 GAME( 1988, countrun,  0,        freekickb, countrun, 0,        ROT0,   "Nihon System (Sega license)", "Counter Run", GAME_NOT_WORKING | GAME_SUPPORTS_SAVE )

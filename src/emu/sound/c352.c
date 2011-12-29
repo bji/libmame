@@ -10,7 +10,7 @@
     32 voices
     Supports 8-bit linear and 8-bit muLaw samples
     Output: digital, 16 bit, 4 channels
-    Output sample rate is the input clock / 384.
+    Output sample rate is the input clock / (288 * 2).
  */
 
 #include "emu.h"
@@ -366,13 +366,16 @@ void c352_device::write_reg16(unsigned long address, unsigned short val)
 				{
 					if ( m_c352_ch[i].flag & C352_FLG_KEYON )
 					{
-						m_c352_ch[i].current_addr = (m_c352_ch[i].bank << 16) + m_c352_ch[i].start_addr;
-						m_c352_ch[i].start = m_c352_ch[i].start_addr;
-						m_c352_ch[i].repeat = m_c352_ch[i].repeat_addr;
-						m_c352_ch[i].noisebuf = 0;
-						m_c352_ch[i].noisecnt = 0;
-						m_c352_ch[i].flag &= ~(C352_FLG_KEYON | C352_FLG_LOOPHIST);
-						m_c352_ch[i].flag |= C352_FLG_BUSY;
+						if (m_c352_ch[i].start_addr != m_c352_ch[i].end_addr)
+						{
+							m_c352_ch[i].current_addr = (m_c352_ch[i].bank << 16) + m_c352_ch[i].start_addr;
+							m_c352_ch[i].start = m_c352_ch[i].start_addr;
+							m_c352_ch[i].repeat = m_c352_ch[i].repeat_addr;
+							m_c352_ch[i].noisebuf = 0;
+							m_c352_ch[i].noisecnt = 0;
+							m_c352_ch[i].flag &= ~(C352_FLG_KEYON | C352_FLG_LOOPHIST);
+							m_c352_ch[i].flag |= C352_FLG_BUSY;
+						}
 					}
 					else if ( m_c352_ch[i].flag & C352_FLG_KEYOFF )
 					{
@@ -460,7 +463,7 @@ void c352_device::device_start()
 	// find our direct access
 	m_direct = &space()->direct();
 
-	m_sample_rate_base = clock() / 192;
+	m_sample_rate_base = clock() / 288;
 
 	m_stream = machine().sound().stream_alloc(*this, 0, 4, m_sample_rate_base, this);
 

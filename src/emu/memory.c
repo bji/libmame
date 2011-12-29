@@ -931,11 +931,16 @@ private:
 	template<typename _UintType>
 	_UintType unmap_r(address_space &space, offs_t offset, _UintType mask)
 	{
+		device_execute_interface *intf;
+		bool is_octal = false;
+		if (m_space.device().interface(intf))
+			is_octal = intf->is_octal();
+
 		if (m_space.log_unmap() && !m_space.debugger_access())
 			logerror("%s: unmapped %s memory read from %s & %s\n",
 						m_space.machine().describe_context(), m_space.name(),
-						core_i64_hex_format(m_space.byte_to_address(offset * sizeof(_UintType)), m_space.addrchars()),
-						core_i64_hex_format(mask, 2 * sizeof(_UintType)));
+						core_i64_format(m_space.byte_to_address(offset * sizeof(_UintType)), m_space.addrchars(),is_octal),
+						core_i64_format(mask, 2 * sizeof(_UintType),is_octal));
 		return m_space.unmap();
 	}
 
@@ -997,12 +1002,17 @@ private:
 	template<typename _UintType>
 	void unmap_w(address_space &space, offs_t offset, _UintType data, _UintType mask)
 	{
+		device_execute_interface *intf;
+		bool is_octal = false;
+		if (m_space.device().interface(intf))
+			is_octal = intf->is_octal();
+
 		if (m_space.log_unmap() && !m_space.debugger_access())
 			logerror("%s: unmapped %s memory write to %s = %s & %s\n",
 					m_space.machine().describe_context(), m_space.name(),
-					core_i64_hex_format(m_space.byte_to_address(offset * sizeof(_UintType)), m_space.addrchars()),
-					core_i64_hex_format(data, 2 * sizeof(_UintType)),
-					core_i64_hex_format(mask, 2 * sizeof(_UintType)));
+					core_i64_format(m_space.byte_to_address(offset * sizeof(_UintType)), m_space.addrchars(),is_octal),
+					core_i64_format(data, 2 * sizeof(_UintType),is_octal),
+					core_i64_format(mask, 2 * sizeof(_UintType),is_octal));
 	}
 
 	template<typename _UintType>
@@ -2154,6 +2164,9 @@ void address_space::prepare_map()
 	// allocate the address map
 	m_map = global_alloc(address_map(m_device, m_spacenum));
 
+	// merge in the submaps
+	m_map->uplift_submaps(machine(), m_device, endianness());
+
 	// extract global parameters specified by the map
 	m_unmap = (m_map->m_unmapval == 0) ? 0 : ~0;
 	if (m_map->m_globalmask != 0)
@@ -2195,10 +2208,19 @@ void address_space::prepare_map()
 		if (entry->m_region != NULL && entry->m_share == NULL && entry->m_baseptr == NULL)
 		{
 			astring regiontag;
-			if (strchr(entry->m_region,':')) {
-				regiontag = entry->m_region;
-			} else {
-				m_device.siblingtag(regiontag, entry->m_region);
+
+			// a leading : on a region name indicates an absolute region, so fix up accordingly
+			if (entry->m_region[0] == ':')
+			{
+				regiontag = &entry->m_region[1];
+			}
+			else
+			{
+				if (strchr(entry->m_region,':')) {
+					regiontag = entry->m_region;
+				} else {
+					m_device.siblingtag(regiontag, entry->m_region);
+				}
 			}
 			const memory_region *region = machine().region(regiontag.cstr());
 			if (region == NULL)
@@ -2366,6 +2388,9 @@ void address_space::populate_map_entry(const address_map_entry &entry, read_or_w
 							(readorwrite == ROW_READ) ? data.m_tag : NULL,
 							(readorwrite == ROW_WRITE) ? data.m_tag : NULL);
 			break;
+
+		case AMH_DEVICE_SUBMAP:
+			throw emu_fatalerror("Internal mapping error: leftover mapping of '%s'.\n", data.m_tag);
 	}
 }
 

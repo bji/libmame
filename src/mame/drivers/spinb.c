@@ -1,8 +1,6 @@
 #include "emu.h"
 #include "cpu/mcs51/mcs51.h"
 
-extern const char layout_pinball[];
-
 class spinb_state : public driver_device
 {
 public:
@@ -32,13 +30,10 @@ static MACHINE_CONFIG_START( spinb, spinb_state )
 	MCFG_CPU_PROGRAM_MAP(spinb_map)
 
 	MCFG_MACHINE_RESET( spinb )
-
-	/* video hardware */
-	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
 /*-------------------------------------------------------------------
-/ Bushido (1993) - ( Last game by Inder - before becomming Spinball - but same hardware)
+/ Bushido (1993) - ( Last game by Inder - before becoming Spinball - but same hardware)
 /-------------------------------------------------------------------*/
 ROM_START(bushido)
 	ROM_REGION(0x10000, "maincpu", 0)

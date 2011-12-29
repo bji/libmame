@@ -82,6 +82,7 @@
 #define IDE_COMMAND_VERIFY_NORETRY		0x41
 #define IDE_COMMAND_ATAPI_IDENTIFY		0xa1
 #define IDE_COMMAND_RECALIBRATE			0x10
+#define IDE_COMMAND_SEEK				0x70
 #define IDE_COMMAND_IDLE_IMMEDIATE		0xe1
 #define IDE_COMMAND_IDLE				0xe3
 #define IDE_COMMAND_TAITO_GNET_UNLOCK_1 0xfe
@@ -154,6 +155,7 @@ struct _ide_state
 
 	chd_file       *handle;
 	hard_disk_file *disk;
+	bool			is_image_device;
 	emu_timer *		last_status_timer;
 	emu_timer *		reset_timer;
 
@@ -163,6 +165,7 @@ struct _ide_state
 	const UINT8 *	user_password;
 
 	UINT8			gnetreadlock;
+	ide_hardware *	hardware;
 };
 
 
@@ -732,6 +735,9 @@ static void read_sector_done(ide_state *ide)
 	/* now do the read */
 	if (ide->disk)
 		count = hard_disk_read(ide->disk, lba, ide->buffer);
+	else if (ide->hardware != NULL) {
+		count = ide->hardware->read_sector(ide->device, lba, ide->buffer);
+	}
 
 	/* by default, mark the buffer ready and the seek complete */
 	if (!ide->verify_only)
@@ -930,6 +936,9 @@ static void write_sector_done(ide_state *ide)
 	/* now do the write */
 	if (ide->disk)
 		count = hard_disk_write(ide->disk, lba, ide->buffer);
+	else if (ide->hardware != NULL) {
+		count = ide->hardware->write_sector(ide->device, lba, ide->buffer);
+	}
 
 	/* by default, mark the buffer ready and the seek complete */
 	ide->status |= IDE_STATUS_BUFFER_READY;
@@ -1252,6 +1261,22 @@ static void handle_command(ide_state *ide, UINT8 command)
 			ide->status &= ~IDE_STATUS_ERROR;
 			signal_interrupt(ide);
 			break;
+
+		case IDE_COMMAND_SEEK:
+			/*
+                cur_cylinder, cur_sector and cur_head
+                are all already set in this case so no need
+                so that implements actual seek
+            */
+			/* clear the error too */
+			ide->error = IDE_ERROR_NONE;
+
+			/* for timeout disabled value is 0 */
+			ide->sector_count = 0;
+			/* signal an interrupt */
+			signal_interrupt(ide);
+			break;
+
 
 		default:
 			LOGPRINT(("IDE unknown command (%02X)\n", command));
@@ -1835,6 +1860,7 @@ static DEVICE_START( ide_controller )
 	config = (const ide_config *)downcast<const legacy_device_base *>(device)->inline_config();
 	ide->handle = get_disk_handle(device->machine(), (config->master != NULL) ? config->master : device->tag());
 	ide->disk = hard_disk_open(ide->handle);
+	ide->is_image_device = false;
 	assert_always(config->slave == NULL, "IDE controller does not yet support slave drives\n");
 
 	/* find the bus master space */
@@ -1844,7 +1870,7 @@ static DEVICE_START( ide_controller )
 		if (bmtarget == NULL)
 			throw emu_fatalerror("IDE controller '%s' bus master target '%s' doesn't exist!", device->tag(), config->bmcpu);
 		device_memory_interface *memory;
-		if (!bmtarget->get_interface(memory))
+		if (!bmtarget->interface(memory))
 			throw emu_fatalerror("IDE controller '%s' bus master target '%s' has no memory!", device->tag(), config->bmcpu);
 		ide->dma_space = memory->space(config->bmspace);
 		if (ide->dma_space == NULL)
@@ -1866,6 +1892,10 @@ static DEVICE_START( ide_controller )
 
 		/* build the features page */
 		ide_build_features(ide);
+	} else if (config->hardware != NULL) {
+		ide->hardware = (ide_hardware *)config->hardware;
+		ide->hardware->get_info(ide->device, ide->features, ide->num_cylinders, ide->num_sectors, ide->num_heads);
+		ide_generate_features (ide);
 	}
 
 	/* create a timer for timing status */
@@ -1927,10 +1957,11 @@ static DEVICE_START( ide_controller )
 static DEVICE_STOP( ide_controller )
 {
 	ide_state *ide = get_safe_token(device);
-
-	/* close the hard disk */
-	if (ide->disk != NULL)
-		hard_disk_close(ide->disk);
+	if (!ide->is_image_device) {
+		/* close the hard disk */
+		if (ide->disk != NULL)
+			hard_disk_close(ide->disk);
+	}
 }
 
 
@@ -1943,15 +1974,18 @@ static DEVICE_RESET( ide_controller )
 	ide_state *ide = get_safe_token(device);
 
 	LOG(("IDE controller reset performed\n"));
+	astring hardtag;
+	device->siblingtag(hardtag, "harddisk");
 
-	if (device->machine().device( "harddisk" )) {
+	if (device->machine().device( hardtag.cstr() )) {
 		if (!ide->disk)
 		{
-			ide->handle = device->machine().device<harddisk_image_device>("harddisk")->get_chd_file();	// should be config->master
+			ide->handle = device->machine().device<harddisk_image_device>(hardtag.cstr())->get_chd_file();	// should be config->master
 
 			if (ide->handle)
 			{
-				ide->disk = device->machine().device<harddisk_image_device>("harddisk")->get_hard_disk_file();	// should be config->master
+				ide->disk = device->machine().device<harddisk_image_device>(hardtag.cstr())->get_hard_disk_file();	// should be config->master
+				ide->is_image_device = true;
 
 				if (ide->disk != NULL)
 				{
@@ -1971,6 +2005,9 @@ static DEVICE_RESET( ide_controller )
 				}
 			}
 		}
+	} else if (ide->hardware != NULL) {
+		ide->hardware->get_info(ide->device, ide->features, ide->num_cylinders, ide->num_sectors, ide->num_heads);
+		ide_generate_features (ide);
 	}
 
 	/* reset the drive state */

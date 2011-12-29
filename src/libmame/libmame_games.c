@@ -993,12 +993,6 @@ static void convert_image_info(const game_driver *driver,
                             }
                             // Else weirdness???
                         }
-                        else if (id == hash_collection::HASH_MD5) {
-                            if (!image->md5) {
-                                image->md5 = copy_string(value);
-                            }
-                            // Else weirdness???
-                        }
                         // Else weirdness???
                     }
                 }

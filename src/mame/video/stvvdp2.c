@@ -1,7 +1,7 @@
 /* Sega Saturn VDP2 */
 
-/*Debug features,remember to zero it if you publish this file.*/
 #define DEBUG_MODE 0
+#define TEST_FUNCTIONS 0
 
 /*
 
@@ -105,6 +105,7 @@ In other words,the first three types uses the offset and not the color allocated
 #include "profiler.h"
 #include "includes/stv.h"
 
+static UINT8 get_vblank(running_machine &machine);
 static UINT8 get_hblank(running_machine &machine);
 static int get_vblank_duration(running_machine &machine);
 static int get_hblank_duration(running_machine &machine);
@@ -151,7 +152,7 @@ enum
 | Pattern Name     | 1 word , 2 words                                                                        |
 | Data Size        |                                                                                         |
 -------------------------------------------------|-----------------------------|------------------------------
-| Plane Size       | 1 H x 1 V 1 Pages ; 2 H x 1 V 1 Pages ; 2 H x 2 V Pages (I don't understand ... )       |
+| Plane Size       | 1 H x 1 V 1 Pages ; 2 H x 1 V 1 Pages ; 2 H x 2 V Pages                                 |
 -------------------------------------------------|-----------------------------|------------------------------
 | Plane Count      | 4                                                         | 16                          |
 -------------------------------------------------|-----------------------------|------------------------------
@@ -182,7 +183,7 @@ enum
        | LSMD1    | LSMD0    | VRESO1   | VRESO0   |    --    | HRESO2   | HRESO1   | HRESO0   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_TVMD	((state->m_vdp2_regs[0x000/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_TVMD	(state->m_vdp2_regs[0x000/2])
 
 	#define STV_VDP2_DISP   ((STV_VDP2_TVMD & 0x8000) >> 15)
 	#define STV_VDP2_BDCLMD	((STV_VDP2_TVMD & 0x0100) >> 8)
@@ -196,6 +197,10 @@ enum
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    | DASEL    | EXBGEN   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
+
+	#define STV_VDP2_EXTEN  (state->m_vdp2_regs[0x002/2])
+
+	#define STV_VDP2_EXLTEN ((STV_VDP2_EXTEN & 0x0200) >> 9)
 
 /* 180004 - r/o - TVSTAT - Screen Status
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -211,7 +216,7 @@ enum
        |    --    |    --    |    --    |    --    | VER3     | VER2     | VER1     | VER0     |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_VRSIZE ((state->m_vdp2_regs[0x004/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_VRSIZE (state->m_vdp2_regs[0x006/2])
 
 	#define STV_VDP2_VRAMSZ ((STV_VDP2_VRSIZE & 0x8000) >> 15)
 
@@ -222,7 +227,7 @@ enum
        | HCT7     | HCT6     | HCT5     | HCT4     | HCT3     | HCT2     | HCT1     | HCT0     |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_HCNT ((state->m_vdp2_regs[0x008/4] >> 16)&0x000003ff)
+	#define STV_VDP2_HCNT (state->m_vdp2_regs[0x008/2])
 
 /* 18000A - r/o - VCNT - V-Counter
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -231,7 +236,7 @@ enum
        | VCT7     | VCT6     | VCT5     | VCT4     | VCT3     | VCT2     | VCT1     | VCT0     |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_VCNT ((state->m_vdp2_regs[0x008/4] >> 0)&0x000003ff)
+	#define STV_VDP2_VCNT (state->m_vdp2_regs[0x00a/2])
 
 /* 18000C - RESERVED
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -247,7 +252,7 @@ enum
        | RDBSB11  | RDBSB10  | RDBSB01  | RDBSB00  | RDBSA11  | RDBSA10  | RDBSA01  | RDBSA00  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_RAMCTL ((state->m_vdp2_regs[0x00c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_RAMCTL (state->m_vdp2_regs[0x00e/2])
 
 	#define STV_VDP2_CRKTE ((STV_VDP2_RAMCTL & 0x8000) >> 15)
 	#define STV_VDP2_CRMD  ((STV_VDP2_RAMCTL & 0x3000) >> 12)
@@ -264,7 +269,7 @@ enum
        | VCP2A03  | VCP2A02  | VCP2A01  | VCP2A00  | VCP3A03  | VCP3A02  | VCP3A01  | VCP3A00  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA0L	((state->m_vdp2_regs[0x010/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CYCA0L	(state->m_vdp2_regs[0x010/2])
 
 /* 180012 - r/w - -CYCA0U - VRAM CYCLE PATTERN (BANK A0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -273,7 +278,7 @@ enum
        | VCP6A03  | VCP6A02  | VCP6A01  | VCP6A00  | VCP7A03  | VCP7A02  | VCP7A01  | VCP7A00  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA0U	((state->m_vdp2_regs[0x10/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CYCA0U	(state->m_vdp2_regs[0x012/2])
 
 /* 180014 - r/w - -CYCA1L - VRAM CYCLE PATTERN (BANK A1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -282,7 +287,7 @@ enum
        | VCP2A13  | VCP2A12  | VCP2A11  | VCP2A10  | VCP3A13  | VCP3A12  | VCP3A11  | VCP3A10  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA1L	((state->m_vdp2_regs[0x014/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CYCA1L	(state->m_vdp2_regs[0x014/2])
 
 /* 180016 - r/w - -CYCA1U - VRAM CYCLE PATTERN (BANK A1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -291,7 +296,7 @@ enum
        | VCP6A13  | VCP6A12  | VCP6A11  | VCP6A10  | VCP7A13  | VCP7A12  | VCP7A11  | VCP7A10  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA1U	((state->m_vdp2_regs[0x14/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CYCA1U	(state->m_vdp2_regs[0x016/2])
 
 /* 180018 - r/w - -CYCB0L - VRAM CYCLE PATTERN (BANK B0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -300,7 +305,7 @@ enum
        | VCP2B03  | VCP2B02  | VCP2B01  | VCP2B00  | VCP3B03  | VCP3B02  | VCP3B01  | VCP3B00  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA2L	((state->m_vdp2_regs[0x018/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CYCA2L	(state->m_vdp2_regs[0x018/2])
 
 /* 18001A - r/w - -CYCB0U - VRAM CYCLE PATTERN (BANK B0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -309,7 +314,7 @@ enum
        | VCP6B03  | VCP6B02  | VCP6B01  | VCP6B00  | VCP7B03  | VCP7B02  | VCP7B01  | VCP7B00  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA2U	((state->m_vdp2_regs[0x18/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CYCA2U	(state->m_vdp2_regs[0x01a/2])
 
 /* 18001C - r/w - -CYCB1L - VRAM CYCLE PATTERN (BANK B1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -318,7 +323,7 @@ enum
        | VCP2B13  | VCP2B12  | VCP2B11  | VCP2B10  | VCP3B13  | VCP3B12  | VCP3B11  | VCP3B10  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA3L	((state->m_vdp2_regs[0x01c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CYCA3L	(state->m_vdp2_regs[0x01c/2])
 
 /* 18001E - r/w - -CYCB1U - VRAM CYCLE PATTERN (BANK B1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -327,7 +332,7 @@ enum
        | VCP6B13  | VCP6B12  | VCP6B11  | VCP6B10  | VCP7B13  | VCP7B12  | VCP7B11  | VCP7B10  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CYCA3U	((state->m_vdp2_regs[0x1c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CYCA3U	(state->m_vdp2_regs[0x01e/2])
 
 /* 180020 - r/w - BGON - SCREEN DISPLAY ENABLE
 
@@ -339,7 +344,7 @@ enum
        |    --    |    --    | R1ON     | R0ON     | N3ON     | N2ON     | N1ON     | N0ON     |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_BGON ((state->m_vdp2_regs[0x020/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_BGON (state->m_vdp2_regs[0x020/2])
 
 	// NxOn - Layer Enable Register
 	#define STV_VDP2_xxON ((STV_VDP2_BGON & 0x001f) >> 0) /* to see if anything is enabled */
@@ -366,8 +371,10 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MZCTL ((state->m_vdp2_regs[0x020/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MZCTL (state->m_vdp2_regs[0x022/2])
 
+	#define STV_VDP2_MZSZV ((STV_VDP2_MZCTL & 0xf000) >> 12)
+	#define STV_VDP2_MZSZH ((STV_VDP2_MZCTL & 0x0f00) >> 8)
 	#define STV_VDP2_R0MZE ((STV_VDP2_MZCTL & 0x0010) >> 4)
 	#define STV_VDP2_N3MZE ((STV_VDP2_MZCTL & 0x0008) >> 3)
 	#define STV_VDP2_N2MZE ((STV_VDP2_MZCTL & 0x0004) >> 2)
@@ -376,8 +383,18 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
 
 /*180024 - Special Function Code Select
 
-180026 - Special Function Code
+*/
 
+	#define STV_VDP2_SFSEL (state->m_vdp2_regs[0x024/2])
+
+/*180026 - Special Function Code
+
+*/
+
+	#define STV_VDP2_SFCODE (state->m_vdp2_regs[0x026/2])
+
+
+/*
 180028 - CHCTLA - Character Control (NBG0, NBG1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    | N1CHCN1  | N1CHCN0  | N1BMSZ1  | N1BMSZ0  | N1BMEN   | N1CHSZ   |
@@ -385,7 +402,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    | N0CHCN2  | N0CHCN1  | N0CHCN0  | N0BMSZ1  | N0BMSZ0  | N0BMEN   | N0CHSZ   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CHCTLA ((state->m_vdp2_regs[0x028/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CHCTLA (state->m_vdp2_regs[0x028/2])
 
 /* -------------------------- NBG0 Character Control Registers -------------------------- */
 
@@ -451,7 +468,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    | N3CHCN   | N3CHSZ   |    --    |    --    | N2CHCN   | N2CHSZ   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CHCTLB ((state->m_vdp2_regs[0x028/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CHCTLB (state->m_vdp2_regs[0x02a/2])
 
 /* -------------------------- RBG0 Character Control Registers -------------------------- */
 
@@ -477,7 +494,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
     1 - use bitmap mode   */
 	#define STV_VDP2_R0BMEN ((STV_VDP2_CHCTLB & 0x0200) >> 9)
 
-/*  R0CHSZ - NBG0 Character (Tile) Size
+/*  R0CHSZ - RBG0 Character (Tile) Size
     0 - 1 cell  x 1 cell  (8x8)
     1 - 2 cells x 2 cells (16x16)  */
 	#define STV_VDP2_R0CHSZ ((STV_VDP2_CHCTLB & 0x0100) >> 8)
@@ -496,7 +513,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_BMPNA ((state->m_vdp2_regs[0x02c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_BMPNA (state->m_vdp2_regs[0x02c/2])
 
 	#define STV_VDP2_N1BMP ((STV_VDP2_BMPNA & 0x0700) >> 8)
 	#define STV_VDP2_N0BMP ((STV_VDP2_BMPNA & 0x0007) >> 0)
@@ -508,7 +525,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_BMPNB ((state->m_vdp2_regs[0x02c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_BMPNB (state->m_vdp2_regs[0x02e/2])
 
 	#define STV_VDP2_R0BMP ((STV_VDP2_BMPNB & 0x0007) >> 0)
 
@@ -519,7 +536,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        | N0SPLT6  | N0SPLT5  | N0SPLT4  | N0SPCN4  | N0SPCN3  | N0SPCN2  | N0SPCN1  | N0SPCN0  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PNCN0 ((state->m_vdp2_regs[0x030/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_PNCN0 (state->m_vdp2_regs[0x030/2])
 
 /*  Pattern Data Size
     0 = 2 bytes
@@ -550,7 +567,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PNCN1 ((state->m_vdp2_regs[0x030/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_PNCN1 (state->m_vdp2_regs[0x032/2])
 
 /*  Pattern Data Size
     0 = 2 bytes
@@ -582,7 +599,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PNCN2 ((state->m_vdp2_regs[0x034/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_PNCN2 (state->m_vdp2_regs[0x034/2])
 
 /*  Pattern Data Size
     0 = 2 bytes
@@ -614,7 +631,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        | N3SPLT6  | N3SPLT5  | N3SPLT4  | N3SPCN4  | N3SPCN3  | N3SPCN2  | N3SPCN1  | N3SPCN0  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PNCN3 ((state->m_vdp2_regs[0x034/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_PNCN3 (state->m_vdp2_regs[0x036/2])
 
 /*  Pattern Data Size
     0 = 2 bytes
@@ -646,7 +663,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PNCR ((state->m_vdp2_regs[0x038/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_PNCR (state->m_vdp2_regs[0x038/2])
 
 /*  Pattern Data Size
     0 = 2 bytes
@@ -670,14 +687,14 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
 /*  Supplementary Character Bits (in 1 byte mode) */
 	#define STV_VDP2_R0SPCN ((STV_VDP2_PNCR & 0x001f) >> 0)
 
-/* 18003A - PLSZ - Plane Size (incomplete)
+/* 18003A - PLSZ - Plane Size
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        | N3PLSZ1  | N3PLSZ0  |    --    |    --    | N1PLSZ1  | N1PLSZ0  | N0PLSZ1  | N0PLSZ0  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PLSZ ((state->m_vdp2_regs[0x038/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_PLSZ (state->m_vdp2_regs[0x03a/2])
 
 	/* NBG0 Plane Size
     00 1H Page x 1V Page
@@ -685,13 +702,13 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
     10 invalid
     11 2H Pages x 2V Pages  */
 	#define STV_VDP2_RBOVR	((STV_VDP2_PLSZ & 0xc000) >> 14)
-	#define STV_VDP2_RAOVR	((STV_VDP2_PLSZ & 0x0c00) >> 10)
-	#define STV_VDP2_N0PLSZ ((STV_VDP2_PLSZ & 0x0003) >> 0)
-	#define STV_VDP2_N1PLSZ ((STV_VDP2_PLSZ & 0x000c) >> 2)
-	#define STV_VDP2_N2PLSZ ((STV_VDP2_PLSZ & 0x0030) >> 4)
-	#define STV_VDP2_N3PLSZ ((STV_VDP2_PLSZ & 0x00c0) >> 6)
-	#define STV_VDP2_RAPLSZ ((STV_VDP2_PLSZ & 0x0300) >> 8)
 	#define STV_VDP2_RBPLSZ ((STV_VDP2_PLSZ & 0x3000) >> 12)
+	#define STV_VDP2_RAOVR	((STV_VDP2_PLSZ & 0x0c00) >> 10)
+	#define STV_VDP2_RAPLSZ ((STV_VDP2_PLSZ & 0x0300) >> 8)
+	#define STV_VDP2_N3PLSZ ((STV_VDP2_PLSZ & 0x00c0) >> 6)
+	#define STV_VDP2_N2PLSZ ((STV_VDP2_PLSZ & 0x0030) >> 4)
+	#define STV_VDP2_N1PLSZ ((STV_VDP2_PLSZ & 0x000c) >> 2)
+	#define STV_VDP2_N0PLSZ ((STV_VDP2_PLSZ & 0x0003) >> 0)
 
 /* 18003C - MPOFN - Map Offset (NBG0, NBG1, NBG2, NBG3)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -700,13 +717,13 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    | N1MP8    | N1MP7    | N1MP6    |    --    | N0MP8    | N0MP7    | N0MP6    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPOFN_ ((state->m_vdp2_regs[0x03c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPOFN_ (state->m_vdp2_regs[0x03c/2])
 
 	/* Higher 3 bits of the map offset for each layer */
-	#define STV_VDP2_N0MP_ ((STV_VDP2_MPOFN_ & 0x0007) >> 0)
-	#define STV_VDP2_N1MP_ ((STV_VDP2_MPOFN_ & 0x0070) >> 4)
-	#define STV_VDP2_N2MP_ ((STV_VDP2_MPOFN_ & 0x0700) >> 8)
 	#define STV_VDP2_N3MP_ ((STV_VDP2_MPOFN_ & 0x7000) >> 12)
+	#define STV_VDP2_N2MP_ ((STV_VDP2_MPOFN_ & 0x0700) >> 8)
+	#define STV_VDP2_N1MP_ ((STV_VDP2_MPOFN_ & 0x0070) >> 4)
+	#define STV_VDP2_N0MP_ ((STV_VDP2_MPOFN_ & 0x0007) >> 0)
 
 
 
@@ -718,7 +735,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPOFR_ ((state->m_vdp2_regs[0x03c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPOFR_ (state->m_vdp2_regs[0x03e/2])
 
 	#define STV_VDP2_RAMP_ ((STV_VDP2_MPOFR_ & 0x0007) >> 0)
 	#define STV_VDP2_RBMP_ ((STV_VDP2_MPOFR_ & 0x0070) >> 4)
@@ -730,7 +747,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    | N0MPA5   | N0MPA4   | N0MPA3   | N0MPA2   | N0MPA1   | N0MPA0   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPABN0 ((state->m_vdp2_regs[0x040/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPABN0 (state->m_vdp2_regs[0x040/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap NBG0 */
 	#define STV_VDP2_N0MPB ((STV_VDP2_MPABN0 & 0x3f00) >> 8)
@@ -746,7 +763,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    | N0MPC5   | N0MPC4   | N0MPC3   | N0MPC2   | N0MPC1   | N0MPC0   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPCDN0 ((state->m_vdp2_regs[0x040/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPCDN0 (state->m_vdp2_regs[0x042/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane D of Tilemap NBG0 */
 	#define STV_VDP2_N0MPD ((STV_VDP2_MPCDN0 & 0x3f00) >> 8)
@@ -762,7 +779,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPABN1 ((state->m_vdp2_regs[0x044/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPABN1 (state->m_vdp2_regs[0x044/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap NBG1 */
 	#define STV_VDP2_N1MPB ((STV_VDP2_MPABN1 & 0x3f00) >> 8)
@@ -777,7 +794,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPCDN1 ((state->m_vdp2_regs[0x044/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPCDN1 (state->m_vdp2_regs[0x046/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane D of Tilemap NBG0 */
 	#define STV_VDP2_N1MPD ((STV_VDP2_MPCDN1 & 0x3f00) >> 8)
@@ -793,7 +810,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPABN2 ((state->m_vdp2_regs[0x048/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPABN2 (state->m_vdp2_regs[0x048/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap NBG2 */
 	#define STV_VDP2_N2MPB ((STV_VDP2_MPABN2 & 0x3f00) >> 8)
@@ -808,7 +825,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPCDN2 ((state->m_vdp2_regs[0x048/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPCDN2 (state->m_vdp2_regs[0x04a/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane D of Tilemap NBG2 */
 	#define STV_VDP2_N2MPD ((STV_VDP2_MPCDN2 & 0x3f00) >> 8)
@@ -823,7 +840,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPABN3 ((state->m_vdp2_regs[0x04c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPABN3 (state->m_vdp2_regs[0x04c/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap NBG1 */
 	#define STV_VDP2_N3MPB ((STV_VDP2_MPABN3 & 0x3f00) >> 8)
@@ -839,7 +856,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPCDN3 ((state->m_vdp2_regs[0x04c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPCDN3 (state->m_vdp2_regs[0x04e/2])
 
 	/* N0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap NBG0 */
 	#define STV_VDP2_N3MPD ((STV_VDP2_MPCDN3 & 0x3f00) >> 8)
@@ -854,7 +871,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPABRA ((state->m_vdp2_regs[0x050/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPABRA (state->m_vdp2_regs[0x050/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap RBG0 */
 	#define STV_VDP2_RAMPB ((STV_VDP2_MPABRA & 0x3f00) >> 8)
@@ -870,7 +887,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPCDRA ((state->m_vdp2_regs[0x050/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPCDRA (state->m_vdp2_regs[0x052/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane D of Tilemap RBG0 */
 	#define STV_VDP2_RAMPD ((STV_VDP2_MPCDRA & 0x3f00) >> 8)
@@ -884,7 +901,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPEFRA ((state->m_vdp2_regs[0x054/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPEFRA (state->m_vdp2_regs[0x054/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane F of Tilemap RBG0 */
 	#define STV_VDP2_RAMPF ((STV_VDP2_MPEFRA & 0x3f00) >> 8)
@@ -898,7 +915,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPGHRA ((state->m_vdp2_regs[0x054/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPGHRA (state->m_vdp2_regs[0x056/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane H of Tilemap RBG0 */
 	#define STV_VDP2_RAMPH ((STV_VDP2_MPGHRA & 0x3f00) >> 8)
@@ -912,7 +929,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPIJRA ((state->m_vdp2_regs[0x058/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPIJRA (state->m_vdp2_regs[0x058/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane J of Tilemap RBG0 */
 	#define STV_VDP2_RAMPJ ((STV_VDP2_MPIJRA & 0x3f00) >> 8)
@@ -926,7 +943,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPKLRA ((state->m_vdp2_regs[0x058/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPKLRA (state->m_vdp2_regs[0x05a/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane L of Tilemap RBG0 */
 	#define STV_VDP2_RAMPL ((STV_VDP2_MPKLRA & 0x3f00) >> 8)
@@ -940,7 +957,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPMNRA ((state->m_vdp2_regs[0x05c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPMNRA (state->m_vdp2_regs[0x05c/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane N of Tilemap RBG0 */
 	#define STV_VDP2_RAMPN ((STV_VDP2_MPMNRA & 0x3f00) >> 8)
@@ -954,7 +971,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_MPOPRA ((state->m_vdp2_regs[0x05c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPOPRA (state->m_vdp2_regs[0x05e/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane P of Tilemap RBG0 */
 	#define STV_VDP2_RAMPP ((STV_VDP2_MPOPRA & 0x3f00) >> 8)
@@ -969,7 +986,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPABRB ((state->m_vdp2_regs[0x060/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPABRB (state->m_vdp2_regs[0x060/2])
 
 	/* R0MPB5 = lower 6 bits of Map Address of Plane B of Tilemap RBG0 */
 	#define STV_VDP2_RBMPB ((STV_VDP2_MPABRB & 0x3f00) >> 8)
@@ -985,7 +1002,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPCDRB ((state->m_vdp2_regs[0x060/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPCDRB (state->m_vdp2_regs[0x062/2])
 
 	/* R0MPD5 = lower 6 bits of Map Address of Plane D of Tilemap RBG0 */
 	#define STV_VDP2_RBMPD ((STV_VDP2_MPCDRB & 0x3f00) >> 8)
@@ -1000,7 +1017,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPEFRB ((state->m_vdp2_regs[0x064/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPEFRB (state->m_vdp2_regs[0x064/2])
 
 	/* R0MPF5 = lower 6 bits of Map Address of Plane F of Tilemap RBG0 */
 	#define STV_VDP2_RBMPF ((STV_VDP2_MPEFRB & 0x3f00) >> 8)
@@ -1015,7 +1032,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPGHRB ((state->m_vdp2_regs[0x064/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPGHRB (state->m_vdp2_regs[0x066/2])
 
 	/* R0MPH5 = lower 6 bits of Map Address of Plane H of Tilemap RBG0 */
 	#define STV_VDP2_RBMPH ((STV_VDP2_MPGHRB & 0x3f00) >> 8)
@@ -1030,7 +1047,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPIJRB ((state->m_vdp2_regs[0x068/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPIJRB (state->m_vdp2_regs[0x068/2])
 
 	/* R0MPJ5 = lower 6 bits of Map Address of Plane J of Tilemap RBG0 */
 	#define STV_VDP2_RBMPJ ((STV_VDP2_MPIJRB & 0x3f00) >> 8)
@@ -1045,7 +1062,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPKLRB ((state->m_vdp2_regs[0x068/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPKLRB (state->m_vdp2_regs[0x06a/2])
 
 	/* R0MPL5 = lower 6 bits of Map Address of Plane L of Tilemap RBG0 */
 	#define STV_VDP2_RBMPL ((STV_VDP2_MPKLRB & 0x3f00) >> 8)
@@ -1060,7 +1077,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPMNRB ((state->m_vdp2_regs[0x06c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_MPMNRB (state->m_vdp2_regs[0x06c/2])
 
 	/* R0MPN5 = lower 6 bits of Map Address of Plane N of Tilemap RBG0 */
 	#define STV_VDP2_RBMPN ((STV_VDP2_MPMNRB & 0x3f00) >> 8)
@@ -1075,7 +1092,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_MPOPRB ((state->m_vdp2_regs[0x06c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_MPOPRB (state->m_vdp2_regs[0x06e/2])
 
 	/* R0MPP5 = lower 6 bits of Map Address of Plane P of Tilemap RBG0 */
 	#define STV_VDP2_RBMPP ((STV_VDP2_MPOPRB & 0x3f00) >> 8)
@@ -1090,7 +1107,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCXIN0 ((state->m_vdp2_regs[0x070/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SCXIN0 (state->m_vdp2_regs[0x070/2])
 
 
 /* 180072 - Screen Scroll (NBG0, Horizontal Fractional Part)
@@ -1106,7 +1123,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_SCYIN0 ((state->m_vdp2_regs[0x074/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SCYIN0 (state->m_vdp2_regs[0x074/2])
 
 
 /* 180076 - Screen Scroll (NBG0, Vertical Fractional Part)
@@ -1123,8 +1140,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMXIN0 ((state->m_vdp2_regs[0x078/4] >> 16)&0x0000ffff)
-	#define STV_VDP2_ZMXN0	(state->m_vdp2_regs[0x078/4] & 0x007ff00)
+	#define STV_VDP2_ZMXIN0 (state->m_vdp2_regs[0x078/2])
 
 	#define STV_VDP2_N0ZMXI ((STV_VDP2_ZMXIN0 & 0x0007) >> 0)
 
@@ -1135,9 +1151,11 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMXDN0 ((state->m_vdp2_regs[0x078/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_ZMXDN0 (state->m_vdp2_regs[0x07a/2])
 
 	#define STV_VDP2_N0ZMXD ((STV_VDP2_ZMXDN0 >> 8)& 0xff)
+	#define STV_VDP2_ZMXN0	(((STV_VDP2_N0ZMXI<<16) | (STV_VDP2_N0ZMXD<<8))  & 0x0007ff00)
+
 
 /* 18007c - Coordinate Inc (NBG0, Vertical Integer Part)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1146,8 +1164,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMYIN0 ((state->m_vdp2_regs[0x07c/4] >> 16)&0x0000ffff)
-	#define STV_VDP2_ZMYN0	(state->m_vdp2_regs[0x07c/4] & 0x007ff00)
+	#define STV_VDP2_ZMYIN0 (state->m_vdp2_regs[0x07c/2])
 
 	#define STV_VDP2_N0ZMYI ((STV_VDP2_ZMYIN0 & 0x0007) >> 0)
 
@@ -1158,9 +1175,10 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMYDN0 ((state->m_vdp2_regs[0x07c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_ZMYDN0 (state->m_vdp2_regs[0x07e/2])
 
 	#define STV_VDP2_N0ZMYD ((STV_VDP2_ZMYDN0 >> 8)& 0xff)
+	#define STV_VDP2_ZMYN0	(((STV_VDP2_N0ZMYI<<16) | (STV_VDP2_N0ZMYD<<8))  & 0x0007ff00)
 
 /* 180080 - SCXIN1 - Screen Scroll (NBG1, Horizontal Integer Part)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1169,7 +1187,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCXIN1 ((state->m_vdp2_regs[0x080/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SCXIN1 (state->m_vdp2_regs[0x080/2])
 
 /* 180082 - Screen Scroll (NBG1, Horizontal Fractional Part)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1185,7 +1203,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCYIN1 ((state->m_vdp2_regs[0x084/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SCYIN1 (state->m_vdp2_regs[0x084/2])
 
 /* 180086 - Screen Scroll (NBG1, Vertical Fractional Part)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1201,8 +1219,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMXIN1 ((state->m_vdp2_regs[0x088/4] >> 16)&0x0000ffff)
-	#define STV_VDP2_ZMXN1	(state->m_vdp2_regs[0x088/4] & 0x007ff00)
+	#define STV_VDP2_ZMXIN1 (state->m_vdp2_regs[0x088/2])
 
 	#define STV_VDP2_N1ZMXI ((STV_VDP2_ZMXIN1 & 0x0007) >> 0)
 
@@ -1213,9 +1230,10 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMXDN1 ((state->m_vdp2_regs[0x088/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_ZMXDN1 (state->m_vdp2_regs[0x08a/2])
 
 	#define STV_VDP2_N1ZMXD ((STV_VDP2_ZMXDN1 >> 8)& 0xff)
+	#define STV_VDP2_ZMXN1	(((STV_VDP2_N1ZMXI<<16) | (STV_VDP2_N1ZMXD<<8)) & 0x0007ff00)
 
 /* 18008c - Coordinate Inc (NBG1, Vertical Integer Part)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1224,8 +1242,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMYIN1 ((state->m_vdp2_regs[0x08c/4] >> 16)&0x0000ffff)
-	#define STV_VDP2_ZMYN1	(state->m_vdp2_regs[0x08c/4] & 0x007ff00)
+	#define STV_VDP2_ZMYIN1 (state->m_vdp2_regs[0x08c/2])
 
 	#define STV_VDP2_N1ZMYI ((STV_VDP2_ZMYIN1 & 0x0007) >> 0)
 
@@ -1236,9 +1253,10 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMYDN1 ((state->m_vdp2_regs[0x08c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_ZMYDN1 (state->m_vdp2_regs[0x08e/2])
 
 	#define STV_VDP2_N1ZMYD ((STV_VDP2_ZMYDN1 >> 8)& 0xff)
+	#define STV_VDP2_ZMYN1	(((STV_VDP2_N1ZMYI<<16) | (STV_VDP2_N1ZMYD<<8)) & 0x007ff00)
 
 /* 180090 - SCXN2 - Screen Scroll (NBG2, Horizontal)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1247,7 +1265,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCXN2 ((state->m_vdp2_regs[0x090/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SCXN2 (state->m_vdp2_regs[0x090/2])
 
 /* 180092 - SCYN2 - Screen Scroll (NBG2, Vertical)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1256,7 +1274,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCYN2 ((state->m_vdp2_regs[0x090/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_SCYN2 (state->m_vdp2_regs[0x092/2])
 
 /* 180094 - SCXN3 - Screen Scroll (NBG3, Horizontal)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1265,7 +1283,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCXN3 ((state->m_vdp2_regs[0x094/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SCXN3 (state->m_vdp2_regs[0x094/2])
 
 /* 180096 - SCYN3 - Screen Scroll (NBG3, Vertical)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1274,7 +1292,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCYN3 ((state->m_vdp2_regs[0x094/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_SCYN3 (state->m_vdp2_regs[0x096/2])
 
 /* 180098 - Reduction Enable
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1283,7 +1301,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    | N0ZMQT   | N0ZMHF   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_ZMCTL ((state->m_vdp2_regs[0x098/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_ZMCTL (state->m_vdp2_regs[0x098/2])
 
 	#define STV_VDP2_N1ZMQT  ((STV_VDP2_ZMCTL & 0x0200) >> 9)
 	#define STV_VDP2_N1ZMHF  ((STV_VDP2_ZMCTL & 0x0100) >> 8)
@@ -1297,7 +1315,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SCRCTL ((state->m_vdp2_regs[0x098/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_SCRCTL (state->m_vdp2_regs[0x09a/2])
 
 	#define STV_VDP2_N1LSS  ((STV_VDP2_SCRCTL & 0x3000) >> 12)
 	#define STV_VDP2_N1LZMX ((STV_VDP2_SCRCTL & 0x0800) >> 11)
@@ -1317,12 +1335,18 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_VCSTAU (state->m_vdp2_regs[0x09c/2] & 7)
+
+
 /* 18009e - Vertical Cell Table Address (NBG0, NBG1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
+
+	#define STV_VDP2_VCSTAL (state->m_vdp2_regs[0x09e/2])
+
 
 /* 1800a0 - LSTA0U - Line Scroll Table Address (NBG0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1332,7 +1356,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
 	/*bit 2 unused when VRAM = 4 Mbits*/
-	#define STV_VDP2_LSTA0U ((state->m_vdp2_regs[0x0a0/4] >> 16)&0x00000003)
+	#define STV_VDP2_LSTA0U (state->m_vdp2_regs[0x0a0/2] & 7)
 
 /* 1800a2 - LSTA0L - Line Scroll Table Address (NBG0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1341,7 +1365,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_LSTA0L ((state->m_vdp2_regs[0x0a0/4] >> 0)&0x0000fffe)
+	#define STV_VDP2_LSTA0L (state->m_vdp2_regs[0x0a2/2])
 
 /* 1800a4 - LSTA1U - Line Scroll Table Address (NBG1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1351,7 +1375,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
 	/*bit 2 unused when VRAM = 4 Mbits*/
-	#define STV_VDP2_LSTA1U ((state->m_vdp2_regs[0x0a4/4] >> 16)&0x00000003)
+	#define STV_VDP2_LSTA1U (state->m_vdp2_regs[0x0a4/2] & 7)
 
 /* 1800a6 - LSTA1L - Line Scroll Table Address (NBG1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1360,7 +1384,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_LSTA1L ((state->m_vdp2_regs[0x0a4/4] >> 0)&0x0000fffe)
+	#define STV_VDP2_LSTA1L (state->m_vdp2_regs[0x0a6/2])
 
 /* 1800a8 - LCTAU - Line Colour Screen Table Address
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1369,7 +1393,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_LCTAU	((state->m_vdp2_regs[0x0a8/4] >> 16) & 0xffff)
+	#define STV_VDP2_LCTAU	(state->m_vdp2_regs[0x0a8/2])
 	#define STV_VDP2_LCCLMD	((STV_VDP2_LCTAU & 0x8000) >> 15)
 
 /* 1800aa - LCTAL - Line Colour Screen Table Address
@@ -1378,9 +1402,9 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_LCTAL	((state->m_vdp2_regs[0x0a8/4] >> 0) & 0xffff)
+	#define STV_VDP2_LCTAL	(state->m_vdp2_regs[0x0aa/2])
 
-	#define STV_VDP2_LCTA	(state->m_vdp2_regs[0x0a8/4] & 0x0003ffff)
+	#define STV_VDP2_LCTA	(((STV_VDP2_LCTAU & 0x0007) << 16) | (STV_VDP2_LCTAL & 0xffff))
 
 /* 1800ac - Back Screen Table Address
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1389,6 +1413,11 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |  BKTA18  |  BKTA17  |  BKTA16  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_BKTAU	(state->m_vdp2_regs[0x0ac/2])
+
+	#define STV_VDP2_BKCLMD ((STV_VDP2_BKTAU & 0x8000) >> 15)
+
+
 /* 1800ae - Back Screen Table Address
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |  BKTA15  |  BKTA14  |  BKTA13  |  BKTA12  |  BKTA11  |  BKTA10  |  BKTA9   |  BKTA8   |
@@ -1396,12 +1425,9 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |  BKTA7   |  BKTA7   |  BKTA6   |  BKTA5   |  BKTA4   |  BKTA3   |  BKTA2   |  BKTA0   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_BKTA_UL (state->m_vdp2_regs[0x0ac/4])
+	#define STV_VDP2_BKTAL	(state->m_vdp2_regs[0x0ae/2])
 
-	#define STV_VDP2_BKCLMD ((STV_VDP2_BKTA_UL & 0x80000000) >> 31)
-	#define STV_VDP2_BKTA   ((STV_VDP2_BKTA_UL & 0x0003ffff) >> 0)
-	/*MSB of this register is used when the extra RAM cart is used,ignore it for now.*/
-	//  #define STV_VDP2_BKTA   ((STV_VDP2_BKTA_UL & 0x0007ffff) >> 0)
+	#define STV_VDP2_BKTA	(((STV_VDP2_BKTAU & 0x0007) << 16) | (STV_VDP2_BKTAL & 0xffff))
 
 /* 1800b0 - RPMD - Rotation Parameter Mode
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1410,7 +1436,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_RPMD	((state->m_vdp2_regs[0x0b0/4] >> 16) & 0x00000003)
+	#define STV_VDP2_RPMD	((state->m_vdp2_regs[0x0b0/2]) & 0x0003)
 
 /* 1800b2 - RPRCTL - Rotation Parameter Read Control
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1419,7 +1445,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    | RAKASTRE | RAYSTRE  | RBXSTRE  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_RPRCTL		((state->m_vdp2_regs[0x0b0/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_RPRCTL		(state->m_vdp2_regs[0x0b2/2])
 	#define STV_VDP2_RBKASTRE	((STV_VDP2_RPRCTL & 0x0400) >> 10)
 	#define STV_VDP2_RBYSTRE	((STV_VDP2_RPRCTL & 0x0200) >> 9)
 	#define STV_VDP2_RBXSTRE	((STV_VDP2_RPRCTL & 0x0100) >> 8)
@@ -1434,7 +1460,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |  RAKLCE  |  RAKMD1  |  RAKMD0  |  RAKDBS  |   RAKTE  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define	STV_VDP2_KTCTL	((state->m_vdp2_regs[0x0b4/4] >> 16) & 0x0000ffff)
+	#define	STV_VDP2_KTCTL	(state->m_vdp2_regs[0x0b4/2])
 	#define STV_VDP2_RBKLCE	((STV_VDP2_KTCTL & 0x1000) >> 12)
 	#define STV_VDP2_RBKMD	((STV_VDP2_KTCTL & 0x0c00) >> 10)
 	#define STV_VDP2_RBKDBS	((STV_VDP2_KTCTL & 0x0200) >> 9)
@@ -1451,7 +1477,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    | RAKTAOS2 | RAKTAOS1 | RAKTAOS0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_KTAOF	((state->m_vdp2_regs[0x0b4/4] >> 0) & 0x0000ffff)
+	#define STV_VDP2_KTAOF	(state->m_vdp2_regs[0x0b6/2])
 	#define STV_VDP2_RBKTAOS ((STV_VDP2_KTAOF & 0x0700) >> 8)
 	#define STV_VDP2_RAKTAOS ((STV_VDP2_KTAOF & 0x0007) >> 0)
 
@@ -1462,7 +1488,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_OVPNRA	((state->m_vdp2_regs[0x0b8/4] >> 16) & 0x0000ffff)
+	#define STV_VDP2_OVPNRA	(state->m_vdp2_regs[0x0b8/2])
 
 /* 1800ba - Screen Over Pattern Name (Rotation Parameter B)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1471,7 +1497,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_OVPNRB ((state->m_vdp2_regs[0x0b8/4] >> 0) & 0x0000ffff)
+	#define STV_VDP2_OVPNRB (state->m_vdp2_regs[0x0ba/2])
 
 /* 1800bc - RPTAU - Rotation Parameter Table Address (Rotation Parameter A,B)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1479,7 +1505,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |  RPTA18  |  RPTA17  |  RPTA16  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_RPTAU	((state->m_vdp2_regs[0x0bc/4] >> 16) & 0x00000007)
+	#define STV_VDP2_RPTAU	(state->m_vdp2_regs[0x0bc/2] & 7)
 
 /* 1800be - RPTAL - Rotation Parameter Table Address (Rotation Parameter A,B)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1488,7 +1514,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |   RPTA7  |   RPTA6  |   RPTA5  |   RPTA4  |   RPTA3  |   RPTA2  |   RPTA1  |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_RPTAL	((state->m_vdp2_regs[0x0bc/4] >> 0) & 0x0000fffe)
+	#define STV_VDP2_RPTAL	(state->m_vdp2_regs[0x0be/2] & 0x0000ffff)
 
 /* 1800c0 - Window Position (W0, Horizontal Start Point)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1497,7 +1523,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPSX0 ((state->m_vdp2_regs[0x0c0/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_WPSX0 (state->m_vdp2_regs[0x0c0/2])
 
 	#define STV_VDP2_W0SX ((STV_VDP2_WPSX0 & 0x03ff) >> 0)
 
@@ -1508,7 +1534,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPSY0 ((state->m_vdp2_regs[0x0c0/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_WPSY0 (state->m_vdp2_regs[0x0c2/2])
 
 	#define STV_VDP2_W0SY ((STV_VDP2_WPSY0 & 0x03ff) >> 0)
 
@@ -1519,7 +1545,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPEX0 ((state->m_vdp2_regs[0x0c4/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_WPEX0 (state->m_vdp2_regs[0x0c4/2])
 
 	#define STV_VDP2_W0EX ((STV_VDP2_WPEX0 & 0x03ff) >> 0)
 
@@ -1530,7 +1556,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPEY0 ((state->m_vdp2_regs[0x0c4/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_WPEY0 (state->m_vdp2_regs[0x0c6/2])
 
 	#define STV_VDP2_W0EY ((STV_VDP2_WPEY0 & 0x03ff) >> 0)
 
@@ -1541,7 +1567,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPSX1 ((state->m_vdp2_regs[0x0c8/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_WPSX1 (state->m_vdp2_regs[0x0c8/2])
 
 	#define STV_VDP2_W1SX ((STV_VDP2_WPSX1 & 0x03ff) >> 0)
 
@@ -1552,7 +1578,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPSY1 ((state->m_vdp2_regs[0x0c8/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_WPSY1 (state->m_vdp2_regs[0x0ca/2])
 
 	#define STV_VDP2_W1SY ((STV_VDP2_WPSY1 & 0x03ff) >> 0)
 
@@ -1563,7 +1589,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPEX1 ((state->m_vdp2_regs[0x0cc/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_WPEX1 (state->m_vdp2_regs[0x0cc/2])
 
 	#define STV_VDP2_W1EX ((STV_VDP2_WPEX1 & 0x03ff) >> 0)
 
@@ -1574,7 +1600,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WPEY1 ((state->m_vdp2_regs[0x0cc/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_WPEY1 (state->m_vdp2_regs[0x0ce/2])
 
 	#define STV_VDP2_W1EY ((STV_VDP2_WPEY1 & 0x03ff) >> 0)
 
@@ -1585,7 +1611,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WCTLA ((state->m_vdp2_regs[0x0d0/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_WCTLA (state->m_vdp2_regs[0x0d0/2])
 	#define STV_VDP2_N1LOG ((STV_VDP2_WCTLA & 0x8000) >> 15)
 	#define STV_VDP2_N1SWE ((STV_VDP2_WCTLA & 0x2000) >> 13)
 	#define STV_VDP2_N1SWA ((STV_VDP2_WCTLA & 0x1000) >> 12)
@@ -1608,7 +1634,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WCTLB ((state->m_vdp2_regs[0x0d0/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_WCTLB (state->m_vdp2_regs[0x0d2/2])
 	#define STV_VDP2_N3LOG ((STV_VDP2_WCTLB & 0x8000) >> 15)
 	#define STV_VDP2_N3SWE ((STV_VDP2_WCTLB & 0x2000) >> 13)
 	#define STV_VDP2_N3SWA ((STV_VDP2_WCTLB & 0x1000) >> 12)
@@ -1631,7 +1657,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_WCTLC ((state->m_vdp2_regs[0x0d4/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_WCTLC (state->m_vdp2_regs[0x0d4/2])
 	#define STV_VDP2_SPLOG ((STV_VDP2_WCTLC & 0x8000) >> 15)
 	#define STV_VDP2_SPSWE ((STV_VDP2_WCTLC & 0x2000) >> 13)
 	#define STV_VDP2_SPSWA ((STV_VDP2_WCTLC & 0x1000) >> 12)
@@ -1654,12 +1680,30 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_WCTLD (state->m_vdp2_regs[0x0d6/2])
+	#define STV_VDP2_CCLOG ((STV_VDP2_WCTLD & 0x8000) >> 15)
+	#define STV_VDP2_CCSWE ((STV_VDP2_WCTLD & 0x2000) >> 13)
+	#define STV_VDP2_CCSWA ((STV_VDP2_WCTLD & 0x1000) >> 12)
+	#define STV_VDP2_CCW1E ((STV_VDP2_WCTLD & 0x0800) >> 11)
+	#define STV_VDP2_CCW1A ((STV_VDP2_WCTLD & 0x0400) >> 10)
+	#define STV_VDP2_CCW0E ((STV_VDP2_WCTLD & 0x0200) >> 9)
+	#define STV_VDP2_CCW0A ((STV_VDP2_WCTLD & 0x0100) >> 8)
+	#define STV_VDP2_RPLOG ((STV_VDP2_WCTLD & 0x0080) >> 7)
+	#define STV_VDP2_RPW1E ((STV_VDP2_WCTLD & 0x0008) >> 3)
+	#define STV_VDP2_RPW1A ((STV_VDP2_WCTLD & 0x0004) >> 2)
+	#define STV_VDP2_RPW0E ((STV_VDP2_WCTLD & 0x0002) >> 1)
+	#define STV_VDP2_RPW0A ((STV_VDP2_WCTLD & 0x0001) >> 0)
+
 /* 1800d8 - Line Window Table Address (W0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
+
+	#define STV_VDP2_LWTA0U (state->m_vdp2_regs[0x0d8/2])
+
+	#define STV_VDP2_W0LWE  ((STV_VDP2_LWTA0U & 0x8000) >> 15)
 
 /* 1800da - Line Window Table Address (W0)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1668,12 +1712,23 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_LWTA0L (state->m_vdp2_regs[0x0da/2])
+
+	/* bit 19 isn't used when VRAM = 4 Mbit */
+	#define STV_VDP2_W0LWTA	(((STV_VDP2_LWTA0U & 0x0007) << 16) | (STV_VDP2_LWTA0L & 0xfffe))
+
+
 /* 1800dc - Line Window Table Address (W1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
+
+	#define STV_VDP2_LWTA1U (state->m_vdp2_regs[0x0dc/2])
+
+	#define STV_VDP2_W1LWE  ((STV_VDP2_LWTA0U & 0x8000) >> 15)
+
 
 /* 1800de - Line Window Table Address (W1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1682,6 +1737,12 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_LWTA1L (state->m_vdp2_regs[0x0de/2])
+
+	/* bit 19 isn't used when VRAM = 4 Mbit */
+	#define STV_VDP2_W1LWTA	(((STV_VDP2_LWTA1U & 0x0007) << 16) | (STV_VDP2_LWTA1L & 0xfffe))
+
+
 /* 1800e0 - Sprite Control
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    | SPCCCS1  | SPCCCS0  |    --    |  SPCCN2  |  SPCCN1  |  SPCCN0  |
@@ -1689,7 +1750,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |  SPCLMD  | SPWINEN  |  SPTYPE3 |  SPTYPE2 |  SPTYPE1 |  SPTYPE0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SPCTL		((state->m_vdp2_regs[0xe0/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_SPCTL	(state->m_vdp2_regs[0xe0/2])
 	#define STV_VDP2_SPCCCS		((STV_VDP2_SPCTL & 0x3000) >> 12)
 	#define STV_VDP2_SPCCN		((STV_VDP2_SPCTL & 0x700) >> 8)
 	#define STV_VDP2_SPCLMD		((STV_VDP2_SPCTL & 0x20) >> 5)
@@ -1703,7 +1764,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_SDCTL		((state->m_vdp2_regs[0x0e0/4] >> 0) & 0x0000ffff)
+	#define STV_VDP2_SDCTL	(state->m_vdp2_regs[0x0e2/2])
 
 /* 1800e4 - CRAOFA - Colour Ram Address Offset (NBG0 - NBG3)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1712,7 +1773,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    | N1CAOS2  | N1CAOS1  | N1CAOS0  |    --    | N0CAOS2  | N0CAOS1  | N0CAOS0  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CRAOFA ((state->m_vdp2_regs[0x0e4/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CRAOFA (state->m_vdp2_regs[0x0e4/2])
 
 	/* NxCAOS =  */
 	#define STV_VDP2_N0CAOS ((STV_VDP2_CRAOFA & 0x0007) >> 0)
@@ -1727,7 +1788,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_CRAOFB ((state->m_vdp2_regs[0x0e4/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CRAOFB (state->m_vdp2_regs[0x0e6/2])
 	#define STV_VDP2_R0CAOS ((STV_VDP2_CRAOFB & 0x0007) >> 0)
 	#define STV_VDP2_SPCAOS ((STV_VDP2_CRAOFB & 0x0070) >> 4)
 
@@ -1738,7 +1799,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |  SPLCEN  |  R0LCEN  |  N3LCEN  |  N2LCEN  |  N1LCEN  | N0LCEN   |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_LNCLEN	((state->m_vdp2_regs[0x0e8/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_LNCLEN	(state->m_vdp2_regs[0x0e8/2])
 	#define STV_VDP2_SPLCEN	((STV_VDP2_LNCLEN & 0x0020) >> 5)
 	#define STV_VDP2_R0LCEN	((STV_VDP2_LNCLEN & 0x0010) >> 4)
 	#define STV_VDP2_N3LCEN	((STV_VDP2_LNCLEN & 0x0008) >> 3)
@@ -1753,6 +1814,9 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_SFPRMD	(state->m_vdp2_regs[0x0ea/2])
+
+
 /* 1800ec - Colour Calculation Control
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |  BOKEN   |  BOKN2   |  BOKN1   |   BOKN0  |    --    |  EXCCEN  |  CCRTMD  |  CCMD    |
@@ -1760,7 +1824,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |  SPCCEN  |  LCCCEN  |  R0CCEN  |  N3CCEN  |  N2CCEN  |  N1CCEN  |  N0CCEN  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCCR		((state->m_vdp2_regs[0xec/4]>>16)&0x0000ffff)
+	#define STV_VDP2_CCCR		(state->m_vdp2_regs[0x0ec/2])
 	#define STV_VDP2_CCMD		((STV_VDP2_CCCR & 0x100) >> 8)
 	#define STV_VDP2_SPCCEN		((STV_VDP2_CCCR & 0x40) >> 6)
 	#define STV_VDP2_LCCCEN		((STV_VDP2_CCCR & 0x20) >> 5)
@@ -1778,6 +1842,8 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
+	#define STV_VDP2_SFCCMD     (state->m_vdp2_regs[0x0ee/2])
+
 /* 1800f0 - Priority Number (Sprite 0,1)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |  S1PRIN2 |  S1PRIN1 |  S1PRIN0 |
@@ -1785,7 +1851,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |  S0PRIN2 |  S0PRIN1 |  S0PRIN0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PRISA		((state->m_vdp2_regs[0xf0/4] >> 16) & 0x0000ffff)
+	#define STV_VDP2_PRISA		(state->m_vdp2_regs[0x0f0/2])
 	#define STV_VDP2_S1PRIN		((STV_VDP2_PRISA & 0x0700) >> 8)
 	#define STV_VDP2_S0PRIN		((STV_VDP2_PRISA & 0x0007) >> 0)
 
@@ -1796,7 +1862,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |  S2PRIN2 |  S2PRIN1 |  S2PRIN0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PRISB		((state->m_vdp2_regs[0xf0/4] >> 0) & 0x0000ffff)
+	#define STV_VDP2_PRISB		(state->m_vdp2_regs[0x0f2/2])
 	#define STV_VDP2_S3PRIN		((STV_VDP2_PRISB & 0x0700) >> 8)
 	#define STV_VDP2_S2PRIN		((STV_VDP2_PRISB & 0x0007) >> 0)
 
@@ -1807,7 +1873,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |  S4PRIN2 |  S4PRIN1 |  S4PRIN0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PRISC		((state->m_vdp2_regs[0xf4/4] >> 16) & 0x0000ffff)
+	#define STV_VDP2_PRISC		(state->m_vdp2_regs[0x0f4/2])
 	#define STV_VDP2_S5PRIN		((STV_VDP2_PRISC & 0x0700) >> 8)
 	#define STV_VDP2_S4PRIN		((STV_VDP2_PRISC & 0x0007) >> 0)
 
@@ -1818,7 +1884,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |  S6PRIN2 |  S6PRIN1 |  S6PRIN0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PRISD		((state->m_vdp2_regs[0xf4/4] >> 0) & 0x0000ffff)
+	#define STV_VDP2_PRISD		(state->m_vdp2_regs[0x0f6/2])
 	#define STV_VDP2_S7PRIN		((STV_VDP2_PRISD & 0x0700) >> 8)
 	#define STV_VDP2_S6PRIN		((STV_VDP2_PRISD & 0x0007) >> 0)
 
@@ -1830,7 +1896,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PRINA ((state->m_vdp2_regs[0x0f8/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_PRINA (state->m_vdp2_regs[0x0f8/2])
 
 	#define STV_VDP2_N1PRIN ((STV_VDP2_PRINA & 0x0700) >> 8)
 	#define STV_VDP2_N0PRIN ((STV_VDP2_PRINA & 0x0007) >> 0)
@@ -1842,7 +1908,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_PRINB ((state->m_vdp2_regs[0x0f8/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_PRINB (state->m_vdp2_regs[0x0fa/2])
 
 	#define STV_VDP2_N3PRIN ((STV_VDP2_PRINB & 0x0700) >> 8)
 	#define STV_VDP2_N2PRIN ((STV_VDP2_PRINB & 0x0007) >> 0)
@@ -1853,7 +1919,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_PRIR ((state->m_vdp2_regs[0x0fc/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_PRIR (state->m_vdp2_regs[0x0fc/2])
 
 	#define STV_VDP2_R0PRIN ((STV_VDP2_PRIR & 0x0007) >> 0)
 
@@ -1871,7 +1937,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |  S0CCRT4 |  S0CCRT3 |  S0CCRT2 |  S0CCRT1 |  S0CCRT0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRSA		((state->m_vdp2_regs[0x100/4] >> 16) & 0x0000ffff)
+	#define STV_VDP2_CCRSA		(state->m_vdp2_regs[0x100/2])
 	#define STV_VDP2_S1CCRT		((STV_VDP2_CCRSA & 0x1f00) >> 8)
 	#define STV_VDP2_S0CCRT		((STV_VDP2_CCRSA & 0x001f) >> 0)
 
@@ -1882,7 +1948,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |  S2CCRT4 |  S2CCRT3 |  S2CCRT2 |  S2CCRT1 |  S2CCRT0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRSB		((state->m_vdp2_regs[0x100/4] >> 0) & 0x0000ffff)
+	#define STV_VDP2_CCRSB		(state->m_vdp2_regs[0x102/2])
 	#define STV_VDP2_S3CCRT		((STV_VDP2_CCRSB & 0x1f00) >> 8)
 	#define STV_VDP2_S2CCRT		((STV_VDP2_CCRSB & 0x001f) >> 0)
 
@@ -1893,7 +1959,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |  S4CCRT4 |  S4CCRT3 |  S4CCRT2 |  S4CCRT1 |  S4CCRT0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRSC		((state->m_vdp2_regs[0x104/4 ]>> 16) & 0x0000ffff)
+	#define STV_VDP2_CCRSC		(state->m_vdp2_regs[0x104/2])
 	#define STV_VDP2_S5CCRT		((STV_VDP2_CCRSC & 0x1f00) >> 8)
 	#define STV_VDP2_S4CCRT		((STV_VDP2_CCRSC & 0x001f) >> 0)
 
@@ -1904,7 +1970,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |  S6CCRT4 |  S6CCRT3 |  S6CCRT2 |  S6CCRT1 |  S6CCRT0 |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRSD		((state->m_vdp2_regs[0x104/4 ]>> 0) & 0x0000ffff)
+	#define STV_VDP2_CCRSD		(state->m_vdp2_regs[0x106/2])
 	#define STV_VDP2_S7CCRT		((STV_VDP2_CCRSD & 0x1f00) >> 8)
 	#define STV_VDP2_S6CCRT		((STV_VDP2_CCRSD & 0x001f) >> 0)
 
@@ -1915,7 +1981,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    | N0CCRT4  | N0CCRT3  | N0CCRT2  | N0CCRT1  | N0CCRT0  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRNA	((state->m_vdp2_regs[0x108/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CCRNA	(state->m_vdp2_regs[0x108/2])
 	#define STV_VDP2_N1CCRT	((STV_VDP2_CCRNA & 0x1f00) >> 8)
 	#define STV_VDP2_N0CCRT (STV_VDP2_CCRNA & 0x1f)
 
@@ -1926,7 +1992,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    | N2CCRT4  | N2CCRT3  | N2CCRT2  | N2CCRT1  | N2CCRT0  |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRNB	((state->m_vdp2_regs[0x108/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CCRNB	(state->m_vdp2_regs[0x10a/2])
 	#define STV_VDP2_N3CCRT	((STV_VDP2_CCRNB & 0x1f00) >> 8)
 	#define STV_VDP2_N2CCRT (STV_VDP2_CCRNB & 0x1f)
 
@@ -1937,7 +2003,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CCRR	((state->m_vdp2_regs[0x10c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CCRR	(state->m_vdp2_regs[0x10c/2])
 	#define STV_VDP2_R0CCRT (STV_VDP2_CCRR & 0x1f)
 
 /* 18010e - Colour Calculation Ratio (Line Colour Screen, Back Colour Screen)
@@ -1954,7 +2020,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CLOFEN ((state->m_vdp2_regs[0x110/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_CLOFEN (state->m_vdp2_regs[0x110/2])
 	#define STV_VDP2_N0COEN ((STV_VDP2_CLOFEN & 0x01) >> 0)
 	#define STV_VDP2_N1COEN ((STV_VDP2_CLOFEN & 0x02) >> 1)
 	#define STV_VDP2_N2COEN ((STV_VDP2_CLOFEN & 0x04) >> 2)
@@ -1970,7 +2036,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_CLOFSL ((state->m_vdp2_regs[0x110/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_CLOFSL (state->m_vdp2_regs[0x112/2])
 	#define STV_VDP2_N0COSL ((STV_VDP2_CLOFSL & 0x01) >> 0)
 	#define STV_VDP2_N1COSL ((STV_VDP2_CLOFSL & 0x02) >> 1)
 	#define STV_VDP2_N2COSL ((STV_VDP2_CLOFSL & 0x04) >> 2)
@@ -1986,7 +2052,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_COAR ((state->m_vdp2_regs[0x114/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_COAR (state->m_vdp2_regs[0x114/2])
 
 /* 180116 - Colour Offset A (Green)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -1994,7 +2060,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_COAG ((state->m_vdp2_regs[0x114/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_COAG (state->m_vdp2_regs[0x116/2])
 
 /* 180118 - Colour Offset A (Blue)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -2003,7 +2069,7 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
 
-	#define STV_VDP2_COAB ((state->m_vdp2_regs[0x118/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_COAB (state->m_vdp2_regs[0x118/2])
 
 /* 18011a - Colour Offset B (Red)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
@@ -2011,23 +2077,27 @@ bit->  /----15----|----14----|----13----|----12----|----11----|----10----|----09
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_COBR ((state->m_vdp2_regs[0x118/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_COBR (state->m_vdp2_regs[0x11a/2])
 
-/* 18011b - Colour Offset B (Green)
+/* 18011c - Colour Offset B (Green)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_COBG ((state->m_vdp2_regs[0x11c/4] >> 16)&0x0000ffff)
+	#define STV_VDP2_COBG (state->m_vdp2_regs[0x11c/2])
 
-/* 18011c - Colour Offset B (Blue)
+/* 18011e - Colour Offset B (Blue)
  bit-> /----15----|----14----|----13----|----12----|----11----|----10----|----09----|----08----\
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        |----07----|----06----|----05----|----04----|----03----|----02----|----01----|----00----|
        |    --    |    --    |    --    |    --    |    --    |    --    |    --    |    --    |
        \----------|----------|----------|----------|----------|----------|----------|---------*/
-	#define STV_VDP2_COBB ((state->m_vdp2_regs[0x11c/4] >> 0)&0x0000ffff)
+	#define STV_VDP2_COBB (state->m_vdp2_regs[0x11e/2])
+
+#if NEW_VIDEO_CODE
+static void saturn_vdp2_assign_variables(running_machine &machine,UINT32 offset,UINT16 data);
+#endif
 
 /*For Debug purposes only*/
 static struct stv_vdp2_debugging
@@ -2037,16 +2107,6 @@ static struct stv_vdp2_debugging
 	UINT32 error; /*bits for VDP2 error logging*/
 	UINT8 roz;   /*Debug roz on screen*/
 } debug;
-
-/*
-Errors are currently mapped as follows:
-x--- ---- ---- ---- ---- ---- ---- ---- VRAM Size = 8 Mbit
--x-- ---- ---- ---- ---- ---- ---- ---- CRKTE used
----- ---- ---- ---- ---- ---- ---- --x- Mosaic Control
----- ---- ---- ---- ---- ---- ---- ---x Window on tilemap
-*/
-#define VDP2_ERR(_bit_) (debug.error & _bit_)
-#define VDP2_CHK(_bit_) (debug.error^=_bit_)
 
 /* Not sure if to use this for the rotating tilemaps as well or just use different draw functions, might add too much bloat */
 static struct stv_vdp2_tilemap_capabilities
@@ -2085,6 +2145,9 @@ static struct stv_vdp2_tilemap_capabilities
 	UINT8  colour_ram_address_offset;
 	UINT8  fade_control;
 	UINT8  window_control;
+
+	UINT8  line_screen_enabled;
+	UINT8  mosaic_screen_enabled;
 
 //  UINT8  real_map_offset[16];
 
@@ -2372,16 +2435,15 @@ static UINT8 stv_vdp2_check_vram_cycle_pattern_registers(
 
 INLINE UINT16 stv_add_blend(UINT16 a, UINT16 b)
 {
-	UINT16 _r = (a & 0x7c00) + (b & 0x7c00);
-	UINT16 _g = (a & 0x03e0) + (b & 0x03e0);
-	UINT16 _b = (a & 0x001f) + (b & 0x001f);
+	UINT16 _r = ((a & 0x7c00) >> 10) + ((b & 0x7c00) >> 10);
+	UINT16 _g = ((a & 0x03e0) >>  5) + ((b & 0x03e0) >>  5);
+	UINT16 _b = ((a & 0x001f) >>  0) + ((b & 0x001f) >>  0);
 
-	if ( _r > 0x7c00 ) _r = 0x7c00;
-	if ( _g > 0x03e0 ) _g = 0x03e0;
-	if ( _b > 0x001f ) _b = 0x001f;
+	if ( _r > 0x1f ) _r = 0x1f;
+	if ( _g > 0x1f ) _g = 0x1f;
+	if ( _b > 0x1f ) _b = 0x1f;
 
-	return _r | _g | _b;
-
+	return (_r<<10) | (_g<<5) | (_b<<0);
 }
 
 static void stv_vdp2_drawgfxzoom(
@@ -2839,6 +2901,139 @@ static void stv_vdp2_drawgfx_rgb555( bitmap_t *dest_bmp, const rectangle *clip, 
 
 }
 
+
+static void stv_vdp2_drawgfx_rgb888( bitmap_t *dest_bmp, const rectangle *clip, running_machine &machine, UINT32 code, int flipx, int flipy,
+									 int sx, int sy, int transparency, int alpha)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	rectangle myclip;
+	UINT8* gfxdata;
+	int t_pen;
+	int sprite_screen_width, sprite_screen_height;
+
+	gfxdata = state->m_vdp2.gfx_decode + code * 0x20;
+	sprite_screen_width = sprite_screen_height = 8;
+
+	/* KW 991012 -- Added code to force clip to bitmap boundary */
+	if(clip)
+	{
+		myclip.min_x = clip->min_x;
+		myclip.max_x = clip->max_x;
+		myclip.min_y = clip->min_y;
+		myclip.max_y = clip->max_y;
+
+		if (myclip.min_x < 0) myclip.min_x = 0;
+		if (myclip.max_x >= dest_bmp->width) myclip.max_x = dest_bmp->width-1;
+		if (myclip.min_y < 0) myclip.min_y = 0;
+		if (myclip.max_y >= dest_bmp->height) myclip.max_y = dest_bmp->height-1;
+
+		clip=&myclip;
+	}
+	{
+		int dx = stv2_current_tilemap.incx;
+		int dy = stv2_current_tilemap.incy;
+
+		int ex = sx+sprite_screen_width;
+		int ey = sy+sprite_screen_height;
+
+		int x_index_base;
+		int y_index;
+
+		if( flipx )
+		{
+			x_index_base = (sprite_screen_width-1)*dx;
+			dx = -dx;
+		}
+		else
+		{
+			x_index_base = 0;
+		}
+
+		if( flipy )
+		{
+			y_index = (sprite_screen_height-1)*dy;
+			dy = -dy;
+		}
+		else
+		{
+			y_index = 0;
+		}
+
+		if( clip )
+		{
+			if( sx < clip->min_x)
+			{ /* clip left */
+				int pixels = clip->min_x-sx;
+				sx += pixels;
+				x_index_base += pixels*dx;
+			}
+			if( sy < clip->min_y )
+			{ /* clip top */
+				int pixels = clip->min_y-sy;
+				sy += pixels;
+				y_index += pixels*dy;
+			}
+			/* NS 980211 - fixed incorrect clipping */
+			if( ex > clip->max_x+1 )
+			{ /* clip right */
+				int pixels = ex-clip->max_x-1;
+				ex -= pixels;
+			}
+			if( ey > clip->max_y+1 )
+			{ /* clip bottom */
+				int pixels = ey-clip->max_y-1;
+				ey -= pixels;
+			}
+		}
+
+		if( ex>sx )
+		{ /* skip if inner loop doesn't draw anything */
+			int y;
+
+			for( y=sy; y<ey; y++ )
+			{
+				const UINT8 *source = gfxdata + (y_index>>16)*32;
+				UINT16 *dest = BITMAP_ADDR16(dest_bmp, y, 0);
+				UINT32 data;
+
+				int x, x_index = x_index_base;
+
+				for( x=sx; x<ex; x++ )
+				{
+					int r,g,b;
+
+					data = (source[(x_index>>16)*4+0] << 24) | (source[(x_index>>16)*4+1] << 16) | (source[(x_index>>16)*4+2] << 8) | (source[(x_index>>16)*4+3] << 0);
+					t_pen = (data & 0x80000000) || ( transparency == STV_TRANSPARENCY_NONE );
+					if (t_pen)
+					{
+						b = (data & 0xff0000) >> 16;
+						g = (data & 0x00ff00) >> 8;
+						r = (data & 0x0000ff);
+						/* HACK: downscale because we don't yet do true color */
+						b >>= 3;
+						g >>= 3;
+						r >>= 3;
+
+						if(stv2_current_tilemap.fade_control & 1)
+							stv_vdp2_compute_color_offset_RGB555(machine,&r,&g,&b,stv2_current_tilemap.fade_control & 2);
+
+						if ( transparency == STV_TRANSPARENCY_ALPHA )
+							dest[x] = alpha_blend_r16( dest[x], b | g << 5 | r << 10, alpha );
+						else
+							dest[x] = b | g << 5 | r << 10;
+					}
+					x_index += dx;
+				}
+
+				y_index += dy;
+			}
+
+		}
+
+	}
+
+}
+
 static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
 {
 	saturn_state *state = machine.driver_data<saturn_state>();
@@ -2892,7 +3087,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 	gfxdatalow = gfxdata + stv2_current_tilemap.bitmap_map * 0x20000;
 	gfxdata+=(
 	(stv2_current_tilemap.scrollx & (xlinesize-1)) +
-	((stv2_current_tilemap.scrolly & (ysize-1)) * (xlinesize)) +
+	((stv2_current_tilemap.scrolly & (ysize-1)) * (xlinesize)) + /* TODO: mask ysize, check me! */
 	(stv2_current_tilemap.bitmap_map * 0x20000)
 	);
 	gfxdatahigh = gfxdatalow + xlinesize*ysize;
@@ -2927,7 +3122,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 						if(stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE) t_pen = 1;
 						if(t_pen)
 						{
-							if (((xcnt + 1) < screen_x) && (ycnt < screen_y))
+							if (((xcnt + 1) <= screen_x) && (ycnt <= screen_y))
 							{
 							if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
 								*BITMAP_ADDR16(bitmap, ycnt, xcnt+1) = machine.pens[((gfxdata[0] & 0x0f) >> 0) | (stv2_current_tilemap.bitmap_palette_number * 0x100) | pal_color_offset];
@@ -2943,7 +3138,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 						if(stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE) t_pen = 1;
 						if(t_pen)
 						{
-							if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
+							if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
 							{
 							if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
 								*BITMAP_ADDR16(bitmap, ycnt, xcnt) = machine.pens[((gfxdata[0] & 0xf0) >> 4) | (stv2_current_tilemap.bitmap_palette_number * 0x100) | pal_color_offset];
@@ -2978,7 +3173,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 							if(stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE) t_pen = 1;
 							if(t_pen)
 							{
-								if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
+								if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
 								{
 								if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
 									*BITMAP_ADDR16(bitmap, ycnt, xcnt) = machine.pens[(gfxdata[xs] & 0xff) | (stv2_current_tilemap.bitmap_palette_number * 0x100) | pal_color_offset];
@@ -3024,7 +3219,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 							if(stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE) t_pen = 1;
 							if(t_pen)
 							{
-								if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
+								if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
 								{
 								if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
 									*BITMAP_ADDR16(bitmap, ycnt, xcnt) = machine.pens[(gfxdata[xs] & 0xff) | (stv2_current_tilemap.bitmap_palette_number * 0x100) | pal_color_offset];
@@ -3052,7 +3247,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 						if(stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE) t_pen = 1;
 						if(t_pen)
 						{
-							if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
+							if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
 							{
 							if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
 								*BITMAP_ADDR16(bitmap, ycnt, xcnt) = machine.pens[((gfxdata[0] & 0x07) * 0x100) | (gfxdata[1] & 0xff) | pal_color_offset];
@@ -3090,21 +3285,24 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 						int xs = xcnt & xsizemask;
 
 						t_pen = ((gfxdata[2*xs] & 0x80) >> 7) || (stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE);
-						if (!t_pen) continue;
-						b = ((gfxdata[2*xs] & 0x7c) >> 2);
-						g = ((gfxdata[2*xs] & 0x03) << 3) | ((gfxdata[2*xs+1] & 0xe0) >> 5);
-						r = ((gfxdata[2*xs+1] & 0x1f));
-						if(stv2_current_tilemap.fade_control & 1)
-							stv_vdp2_compute_color_offset_RGB555(machine,&r,&g,&b,stv2_current_tilemap.fade_control & 2);
-						tw = stv_vdp2_window_process(machine,xcnt,ycnt);
-						if(tw == 0)
+
+						if(t_pen)
 						{
-							if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
+							b = ((gfxdata[2*xs] & 0x7c) >> 2);
+							g = ((gfxdata[2*xs] & 0x03) << 3) | ((gfxdata[2*xs+1] & 0xe0) >> 5);
+							r = ((gfxdata[2*xs+1] & 0x1f));
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555(machine,&r,&g,&b,stv2_current_tilemap.fade_control & 2);
+							tw = stv_vdp2_window_process(machine,xcnt,ycnt);
+							if(tw == 0)
 							{
-							if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
-								destline[xcnt] = b | g << 5 | r << 10;
-							else
-								destline[xcnt] = alpha_blend_r16( destline[xcnt], b | g << 5 | r << 10, stv2_current_tilemap.alpha );
+								if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
+								{
+								if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
+									destline[xcnt] = b | g << 5 | r << 10;
+								else
+									destline[xcnt] = alpha_blend_r16( destline[xcnt], b | g << 5 | r << 10, stv2_current_tilemap.alpha );
+								}
 							}
 						}
 
@@ -3144,7 +3342,7 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
 						{
 							if(t_pen)
 							{
-								if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
+								if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
 								{
 								if ( stv2_current_tilemap.colour_calculation_enabled == 1 )
 									destline[xcnt] = alpha_blend_r16( destline[xcnt], b | g << 5 | r << 10, stv2_current_tilemap.alpha );
@@ -3169,36 +3367,56 @@ static void stv_vdp2_draw_basic_bitmap(running_machine &machine, bitmap_t *bitma
         B                              B
         --------BBBBBBBBGGGGGGGGRRRRRRRR
         */
-		case 4:
-			//popmessage("BITMAP type 4 enabled");
-			for (ycnt = 0; ycnt <ysize;ycnt++)
+        case 4:
+			/* adjust for cliprect */
+			gfxdata += xlinesize*(cliprect->min_y);
+
+			for (ycnt = cliprect->min_y; ycnt <= cliprect->max_y; ycnt++)
 			{
 				destline = BITMAP_ADDR16(bitmap, ycnt, 0);
 
-				for (xcnt = 0; xcnt <xsize;xcnt++)
+				for (xcnt = cliprect->min_x; xcnt <= cliprect->max_x; xcnt++)
 				{
 					int r,g,b;
+					int xs = xcnt & xsizemask;
+					UINT32 dot_data;
 
-					t_pen = ((gfxdata[0] & 0x80) >> 7);
+					dot_data = (gfxdata[4*xs+0]<<24)|(gfxdata[4*xs+1]<<16)|(gfxdata[4*xs+2]<<8)|(gfxdata[4*xs+3]<<0);
+
+					t_pen = (dot_data & 0x80000000) >> 31;
 					if(stv2_current_tilemap.transparency == STV_TRANSPARENCY_NONE) t_pen = 1;
 
-					/*TODO: 8bpp*/
-					b = (gfxdata[1] & 0xf8) >> 3;
-					g = (gfxdata[2] & 0xf8) >> 3;
-					r = (gfxdata[3] & 0xf8) >> 3;
-
-					tw = stv_vdp2_window_process(machine,xcnt,ycnt);
-					if(tw == 0)
+					if(t_pen)
 					{
-						if(t_pen)
-							if (((xcnt + 0) < screen_x) && (ycnt < screen_y))
-								destline[xcnt] = b | g << 5 | r << 10;
+						b = ((dot_data & 0x00ff0000) >> 16);
+						g = ((dot_data & 0x0000ff00) >> 8);
+						r = ((dot_data & 0x000000ff) >> 0);
+						b >>= 3;
+						g >>= 3;
+						r >>= 3;
+
+						if(stv2_current_tilemap.fade_control & 1)
+							stv_vdp2_compute_color_offset_RGB555(machine,&r,&g,&b,stv2_current_tilemap.fade_control & 2);
+						tw = stv_vdp2_window_process(machine,xcnt,ycnt);
+						if(tw == 0)
+						{
+							if (((xcnt + 0) <= screen_x) && (ycnt <= screen_y))
+							{
+								if ( stv2_current_tilemap.colour_calculation_enabled == 0 )
+									destline[xcnt] = b | g << 5 | r << 10;
+								else
+									destline[xcnt] = alpha_blend_r16( destline[xcnt], b | g << 5 | r << 10, stv2_current_tilemap.alpha );
+							}
+						}
 					}
-					gfxdata+=4;
-					/*This is not used for this type,see shanhigw Sunsoft logo*/
-					//if ( gfxdata >= gfxdatahigh ) gfxdata = gfxdatalow;
+
+					if ( (gfxdata + 4*xs) >= gfxdatahigh ) gfxdata = gfxdatalow;
 				}
+
+				gfxdata += xlinesize;
+				if ( gfxdata >= gfxdatahigh ) gfxdata = gfxdatalow + (gfxdata - gfxdatahigh);
 			}
+
 			break;
 	}
 }
@@ -3717,6 +3935,9 @@ static void stv_vdp2_draw_basic_tilemap(running_machine &machine, bitmap_t *bitm
 			}
 /* TILES ARE NOW DECODED */
 
+			if(!STV_VDP2_VRAMSZ)
+				tilecode &= 0x3fff;
+
 /* DRAW! */
 			if(stv2_current_tilemap.incx != 0x10000 ||
 			   stv2_current_tilemap.incy != 0x10000 ||
@@ -3747,7 +3968,16 @@ static void stv_vdp2_draw_basic_tilemap(running_machine &machine, bitmap_t *bitm
 				olddrawypos = drawypos; drawypos >>= 16;
 				if (stv2_current_tilemap.tile_size==1)
 				{
-					if ( stv2_current_tilemap.colour_depth == 3 )
+					if ( stv2_current_tilemap.colour_depth == 4 )
+					{
+						/* normal */
+						stv_vdp2_drawgfx_rgb888(bitmap,cliprect,machine,tilecode+(0+(flipyx&1)+(flipyx&2))*4,flipyx&1,flipyx&2,drawxpos, drawypos,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
+						stv_vdp2_drawgfx_rgb888(bitmap,cliprect,machine,tilecode+(1-(flipyx&1)+(flipyx&2))*4,flipyx&1,flipyx&2,drawxpos+8,drawypos,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
+						stv_vdp2_drawgfx_rgb888(bitmap,cliprect,machine,tilecode+(2+(flipyx&1)-(flipyx&2))*4,flipyx&1,flipyx&2,drawxpos,drawypos+8,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
+						stv_vdp2_drawgfx_rgb888(bitmap,cliprect,machine,tilecode+(3-(flipyx&1)-(flipyx&2))*4,flipyx&1,flipyx&2,drawxpos+8,drawypos+8,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
+
+					}
+					else if ( stv2_current_tilemap.colour_depth == 3 )
 					{
 						/* normal */
 						stv_vdp2_drawgfx_rgb555(bitmap,cliprect,machine,tilecode+(0+(flipyx&1)+(flipyx&2))*4,flipyx&1,flipyx&2,drawxpos, drawypos,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
@@ -3777,7 +4007,11 @@ static void stv_vdp2_draw_basic_tilemap(running_machine &machine, bitmap_t *bitm
 				}
 				else
 				{
-					if ( stv2_current_tilemap.colour_depth == 3 )
+					if ( stv2_current_tilemap.colour_depth == 4)
+					{
+						stv_vdp2_drawgfx_rgb888(bitmap,cliprect,machine,tilecode,flipyx&1,flipyx&2,drawxpos,drawypos,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
+					}
+					else if ( stv2_current_tilemap.colour_depth == 3)
 					{
 						stv_vdp2_drawgfx_rgb555(bitmap,cliprect,machine,tilecode,flipyx&1,flipyx&2,drawxpos,drawypos,stv2_current_tilemap.transparency,stv2_current_tilemap.alpha);
 					}
@@ -3979,13 +4213,79 @@ static void stv_vdp2_check_tilemap_with_linescroll(running_machine &machine, bit
 	}
 }
 
+static void stv_vdp2_draw_line(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	int x,y;
+	UINT8* gfxdata = state->m_vdp2.gfx_decode;
+	UINT32 base_offs,base_mask;
+	UINT16 pix;
+	UINT8 interlace;
+
+	interlace = (STV_VDP2_LSMD == 3)+1;
+
+	{
+		base_mask = STV_VDP2_VRAMSZ ? 0x7ffff : 0x3ffff;
+
+		for(y=cliprect->min_y;y<=cliprect->max_y;y++)
+		{
+			base_offs = (STV_VDP2_LCTA & base_mask) << 1;
+
+			if(STV_VDP2_LCCLMD)
+				base_offs += (y / interlace) << 1;
+
+			for(x=cliprect->min_x;x<=cliprect->max_x;x++)
+			{
+				UINT16 pen;
+
+				pen = (gfxdata[base_offs+0]<<8)|gfxdata[base_offs+1];
+				pix = *BITMAP_ADDR16(bitmap, y,x);
+
+				*BITMAP_ADDR16(bitmap, y, x) = stv_add_blend(machine.pens[pen & 0x7ff],pix);
+			}
+		}
+	}
+}
+
+static void stv_vdp2_draw_mosaic(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, UINT8 is_roz)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	int x,y,xi,yi;
+	UINT8 h_size,v_size;
+	UINT16 pix;
+
+	h_size = STV_VDP2_MZSZH+1;
+	v_size = STV_VDP2_MZSZV+1;
+
+	if(is_roz)
+		v_size = 1;
+
+	if(h_size == 1 && v_size == 1)
+		return; // don't bother
+
+	if(STV_VDP2_LSMD == 3)
+		v_size <<= 1;
+
+	for(y=cliprect->min_y;y<=cliprect->max_y;y+=v_size)
+	{
+		for(x=cliprect->min_x;x<=cliprect->max_x;x+=h_size)
+		{
+			pix = *BITMAP_ADDR16(bitmap, y,x);
+
+			for(yi=0;yi<v_size;yi++)
+				for(xi=0;xi<h_size;xi++)
+					*BITMAP_ADDR16(bitmap, y+yi, x+xi) = pix;
+		}
+	}
+}
+
 static void stv_vdp2_check_tilemap(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
 {
 	/* the idea is here we check the tilemap capabilities / whats enabled and call an appropriate tilemap drawing routine, or
       at the very list throw up a few errors if the tilemaps want to do something we don't support yet */
 	saturn_state *state = machine.driver_data<saturn_state>();
 
-	int window_applied = 0;
+//  int window_applied = 0;
 	rectangle mycliprect;
 	mycliprect.min_x = cliprect->min_x;
 	mycliprect.max_x = cliprect->max_x;
@@ -4000,33 +4300,101 @@ static void stv_vdp2_check_tilemap(running_machine &machine, bitmap_t *bitmap, c
 		return;
 	}
 
-	window_applied = stv_vdp2_apply_window_on_layer(machine,&mycliprect);
+//  window_applied =
+	stv_vdp2_apply_window_on_layer(machine,&mycliprect);
 
 	if (stv2_current_tilemap.bitmap_enable) // this layer is a bitmap
 	{
 		/*elandore doesn't like current cliprect code,will be worked on...*/
-		if ( window_applied && stv2_current_tilemap.colour_depth != 0)
-			stv2_current_tilemap.window_control = 0;
+		//if ( window_applied && stv2_current_tilemap.colour_depth != 4)
+		//  stv2_current_tilemap.window_control = 0;
 
 		stv_vdp2_draw_basic_bitmap(machine, bitmap, &mycliprect);
 	}
 	else
 	{
 		stv_vdp2_draw_basic_tilemap(machine, bitmap, &mycliprect);
-
-		if((stv2_current_tilemap.window_control & 6) != 0 && VDP2_ERR(1))
-		{
-			VDP2_CHK(1);
-			mame_printf_debug("Window control enabled on a tilemap plane = %02x\n",stv2_current_tilemap.window_control);
-		}
 	}
 
-	if((STV_VDP2_MZCTL & 0x1f) != 0 && VDP2_ERR(2))
+	/* post-processing functions (TODO: needs layer bitmaps to be individual planes to work correctly) */
+	if(stv2_current_tilemap.line_screen_enabled && TEST_FUNCTIONS)
+		stv_vdp2_draw_line(machine,bitmap,cliprect);
+
+	if(stv2_current_tilemap.mosaic_screen_enabled && TEST_FUNCTIONS)
+		stv_vdp2_draw_mosaic(machine,bitmap,cliprect,stv2_current_tilemap.layer_name & 0x80);
+
+
 	{
-		VDP2_CHK(2);
-		mame_printf_debug("Mosaic control enabled = %04x\n",STV_VDP2_MZCTL);
+		if(stv2_current_tilemap.colour_depth == 2 && !stv2_current_tilemap.bitmap_enable)
+			popmessage("2048 color mode used on a non-bitmap plane");
+
+		/* Pukunpa */
+		//if(STV_VDP2_SPWINEN)
+		//  popmessage("Sprite Window enabled");
+
+		/* Capcom Collection Dai 2 - Choh Makaimura (Duh!) */
+		if(STV_VDP2_MZCTL & 0x1f && 0)
+			popmessage("Mosaic control enabled = %04x\n",STV_VDP2_MZCTL);
+
+		/* Bio Hazard bit 1 */
+		/* Airs Adventure 0x3e */
+		/* Bakuretsu Hunter */
+		if(STV_VDP2_LNCLEN & ~2 && 0)
+			popmessage("Line Colour screen enabled %04x %08x, contact MAMEdev",STV_VDP2_LNCLEN,STV_VDP2_LCTAU<<16|STV_VDP2_LCTAL);
+
+		/* Bio Hazard 0x400 = extended color calculation enabled */
+		/* Advanced World War 0x200 = color calculation ratio mode */
+		//if(STV_VDP2_CCCR & 0xf600)
+		if(STV_VDP2_CCCR & 0xf000)
+			popmessage("Gradation enabled %04x, contact MAMEdev",STV_VDP2_CCCR);
+
+		/* Advanced VG, Shining Force III */
+		if(STV_VDP2_SFCCMD && 0)
+			popmessage("Special Color Calculation enable %04x, contact MAMEdev",STV_VDP2_SFCCMD);
+
+		/* Cleopatra Fortune Transparent Shadow */
+		/* Pretty Fighter X Back & Transparent Shadow*/
+		//if(STV_VDP2_SDCTL & 0x0120)
+		//  popmessage("%s shadow select bit enabled, contact MAMEdev",STV_VDP2_SDCTL & 0x100 ? "Transparent" : "Back");
+
+		/* Langrisser III bit 3 normal, bit 1 during battle field */
+		/* Metal Slug bit 0 during gameplay */
+		if(STV_VDP2_SFSEL & ~0xb)
+			popmessage("Special Function Code Select enable %04x %04x, contact MAMEdev",STV_VDP2_SFSEL,STV_VDP2_SFCODE);
+
+		/* Albert Odyssey Gaiden 0x0001 */
+		/* Asuka 120% (doesn't make sense?) 0x0101 */
+		if(STV_VDP2_ZMCTL & 0x0202)
+			popmessage("Reduction enable %04x, contact MAMEdev",STV_VDP2_ZMCTL);
+
+		/* Burning Rangers and friends FMV, J.League Pro Soccer Club Wo Tsukurou!! backgrounds */
+		if(STV_VDP2_SCRCTL & 0x0101 && 0)
+			popmessage("Vertical cell scroll enable %04x, contact MAMEdev",STV_VDP2_SCRCTL);
+
+		/* Magical Drop III 0x200 -> color calculation window */
+		/* Ide Yousuke Meijin No Shin Jissen Mahjong 0x0303 */
+		/* Decathlete 0x088 */
+		if(STV_VDP2_WCTLD & 0x2000)
+			popmessage("Special window enabled %04x, contact MAMEdev",STV_VDP2_WCTLD);
+
+		/* Shining Force III, After Burner 2 (doesn't make a proper use tho?) */
+		/* Layer Section */
+		//if(STV_VDP2_W0LWE || STV_VDP2_W1LWE)
+		//  popmessage("Line Window %s %08x enabled, contact MAMEdev",STV_VDP2_W0LWE ? "0" : "1",STV_VDP2_W0LWTA);
+
+		/* Akumajou Dracula, bits 2-4 */
+		/* Arcana Strikes bit 5 */
+		/* Choh Makai Mura 0x0055 */
+		/* Sega Rally 0x0155 */
+		/* Find Love  0x4400 */
+		/* Dragon Ball Z 0x3800 - 0x2c00 */
+		if(STV_VDP2_SFPRMD & ~0x7d55)
+			popmessage("Special Priority Mode enabled %04x, contact MAMEdev",STV_VDP2_SFPRMD);
 	}
 }
+
+static void stv_vdp2_draw_rotation_screen(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int iRP);
+
 
 static void stv_vdp2_copy_roz_bitmap(bitmap_t *bitmap,
 									 running_machine &machine,
@@ -4264,21 +4632,40 @@ static void stv_vdp2_copy_roz_bitmap(bitmap_t *bitmap,
 
 				if ( x & clipxmask || y & clipymask ) continue;
 				pix = *BITMAP_ADDR16(roz_bitmap, y & planerenderedsizey, x & planerenderedsizex);
-				if(stv2_current_tilemap.fade_control & 1)
-					stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
 				switch( stv2_current_tilemap.transparency )
 				{
 					case STV_TRANSPARENCY_PEN:
-						if ( pix != 0x0000 ) line[hcnt] = pix;
+						if ( pix != 0x0000 )
+						{
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
+							line[hcnt] = pix;
+						}
 						break;
 					case STV_TRANSPARENCY_NONE:
+						if(stv2_current_tilemap.fade_control & 1)
+							stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
 						line[hcnt] = pix;
 						break;
 					case STV_TRANSPARENCY_ALPHA:
-						if ( pix != 0x000 ) line[hcnt] = alpha_blend_r16( line[hcnt], pix, stv2_current_tilemap.alpha );
+						if ( pix != 0x000 )
+						{
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
+							line[hcnt] = alpha_blend_r16( line[hcnt], pix, stv2_current_tilemap.alpha );
+						}
 						break;
 					case STV_TRANSPARENCY_ADD_BLEND:
-						if ( pix != 0x0000 ) line[hcnt] = stv_add_blend( line[hcnt], pix );
+						if ( pix != 0x0000 )
+						{
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
+							line[hcnt] = stv_add_blend( line[hcnt], pix );
+						}
 						break;
 				}
 
@@ -4356,21 +4743,40 @@ static void stv_vdp2_copy_roz_bitmap(bitmap_t *bitmap,
 				if ( x & clipxmask || y & clipymask ) continue;
 
 				pix = *BITMAP_ADDR16(roz_bitmap, y & planerenderedsizey, x & planerenderedsizex);
-				if(stv2_current_tilemap.fade_control & 1)
-					stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
 				switch( stv2_current_tilemap.transparency )
 				{
 					case STV_TRANSPARENCY_PEN:
-						if ( pix != 0x0000 ) line[hcnt] = pix;
+						if ( pix != 0x0000 )
+						{
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
+							line[hcnt] = pix;
+						}
 						break;
 					case STV_TRANSPARENCY_NONE:
+						if(stv2_current_tilemap.fade_control & 1)
+							stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
 						line[hcnt] = pix;
 						break;
 					case STV_TRANSPARENCY_ALPHA:
-						if ( pix != 0x000 ) line[hcnt] = alpha_blend_r16( line[hcnt], pix, stv2_current_tilemap.alpha );
+						if ( pix != 0x000 )
+						{
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
+							line[hcnt] = alpha_blend_r16( line[hcnt], pix, stv2_current_tilemap.alpha );
+						}
 						break;
 					case STV_TRANSPARENCY_ADD_BLEND:
-						if ( pix != 0x0000 ) line[hcnt] = stv_add_blend( line[hcnt], pix );
+						if ( pix != 0x0000 )
+						{
+							if(stv2_current_tilemap.fade_control & 1)
+								stv_vdp2_compute_color_offset_RGB555_UINT16(machine,&pix,stv2_current_tilemap.fade_control & 2);
+
+							line[hcnt] = stv_add_blend( line[hcnt], pix );
+						}
 						break;
 				}
 			}
@@ -4381,6 +4787,9 @@ static void stv_vdp2_copy_roz_bitmap(bitmap_t *bitmap,
 static void stv_vdp2_draw_NBG0(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
 {
 	saturn_state *state = machine.driver_data<saturn_state>();
+	UINT32 base_mask;
+
+	base_mask = STV_VDP2_VRAMSZ ? 0x7ffff : 0x3ffff;
 
 	/*
        Colours           : 16, 256, 2048, 32768, 16770000
@@ -4396,7 +4805,8 @@ static void stv_vdp2_draw_NBG0(running_machine &machine, bitmap_t *bitmap, const
        Column Scroll     : Yes
        Mosaic            : Yes
     */
-	stv2_current_tilemap.enabled = STV_VDP2_N0ON;
+
+	stv2_current_tilemap.enabled = STV_VDP2_N0ON | STV_VDP2_R1ON;
 
 //  if (!stv2_current_tilemap.enabled) return; // stop right now if its disabled ...
 
@@ -4444,11 +4854,11 @@ static void stv_vdp2_draw_NBG0(running_machine &machine, bitmap_t *bitmap, const
 
 	stv2_current_tilemap.linescroll_enable = STV_VDP2_N0LSCX;
 	stv2_current_tilemap.linescroll_interval = (((STV_VDP2_LSMD & 3) == 2) ? (2) : (1)) << (STV_VDP2_N0LSS);
-	stv2_current_tilemap.linescroll_table_address = ((STV_VDP2_LSTA0U << 16) | STV_VDP2_LSTA0L) * 2;
+	stv2_current_tilemap.linescroll_table_address = (((STV_VDP2_LSTA0U << 16) | STV_VDP2_LSTA0L) & base_mask) * 2;
 	stv2_current_tilemap.vertical_linescroll_enable = STV_VDP2_N0LSCY;
 	stv2_current_tilemap.linezoom_enable = STV_VDP2_N0LZMX;
 
-	stv2_current_tilemap.plane_size = STV_VDP2_N0PLSZ;
+	stv2_current_tilemap.plane_size = (STV_VDP2_R1ON) ? STV_VDP2_RBPLSZ : STV_VDP2_N0PLSZ;
 	stv2_current_tilemap.colour_ram_address_offset = STV_VDP2_N0CAOS;
 	stv2_current_tilemap.fade_control = (STV_VDP2_N0COEN * 1) | (STV_VDP2_N0COSL * 2);
 	stv_vdp2_check_fade_control_for_layer(machine);
@@ -4460,19 +4870,28 @@ static void stv_vdp2_draw_NBG0(running_machine &machine, bitmap_t *bitmap, const
 										  (STV_VDP2_N0W1A << 5) |
 										  (STV_VDP2_N0SWA << 6);
 
-	stv2_current_tilemap.layer_name=0;
+	stv2_current_tilemap.line_screen_enabled = STV_VDP2_N0LCEN;
+	stv2_current_tilemap.mosaic_screen_enabled = STV_VDP2_N0MZE;
 
-	if ( stv2_current_tilemap.enabled )
+	stv2_current_tilemap.layer_name=(STV_VDP2_R1ON) ? 0x81 : 0;
+
+	if ( stv2_current_tilemap.enabled && (!(STV_VDP2_R1ON))) /* TODO: check cycle pattern for RBG1 */
 	{
 		stv2_current_tilemap.enabled = stv_vdp2_check_vram_cycle_pattern_registers( machine, STV_VDP2_CP_NBG0_PNMDR, STV_VDP2_CP_NBG0_CPDR, stv2_current_tilemap.bitmap_enable );
 	}
 
-	stv_vdp2_check_tilemap(machine, bitmap, cliprect);
+	if(STV_VDP2_R1ON)
+		stv_vdp2_draw_rotation_screen(machine, bitmap, cliprect, 2 );
+	else
+		stv_vdp2_check_tilemap(machine, bitmap, cliprect);
 }
 
 static void stv_vdp2_draw_NBG1(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
 {
 	saturn_state *state = machine.driver_data<saturn_state>();
+	UINT32 base_mask;
+
+	base_mask = STV_VDP2_VRAMSZ ? 0x7ffff : 0x3ffff;
 
 	/*
        Colours           : 16, 256, 2048, 32768
@@ -4536,7 +4955,7 @@ static void stv_vdp2_draw_NBG1(running_machine &machine, bitmap_t *bitmap, const
 
 	stv2_current_tilemap.linescroll_enable = STV_VDP2_N1LSCX;
 	stv2_current_tilemap.linescroll_interval = (((STV_VDP2_LSMD & 3) == 2) ? (2) : (1)) << (STV_VDP2_N1LSS);
-	stv2_current_tilemap.linescroll_table_address = ((STV_VDP2_LSTA1U << 16) | STV_VDP2_LSTA1L) * 2;
+	stv2_current_tilemap.linescroll_table_address = (((STV_VDP2_LSTA1U << 16) | STV_VDP2_LSTA1L) & base_mask) * 2;
 	stv2_current_tilemap.vertical_linescroll_enable = STV_VDP2_N1LSCY;
 	stv2_current_tilemap.linezoom_enable = STV_VDP2_N1LZMX;
 
@@ -4551,6 +4970,9 @@ static void stv_vdp2_draw_NBG1(running_machine &machine, bitmap_t *bitmap, const
 										  (STV_VDP2_N1W0A << 4) |
 										  (STV_VDP2_N1W1A << 5) |
 										  (STV_VDP2_N1SWA << 6);
+
+	stv2_current_tilemap.line_screen_enabled = STV_VDP2_N1LCEN;
+	stv2_current_tilemap.mosaic_screen_enabled = STV_VDP2_N1MZE;
 
 	stv2_current_tilemap.layer_name=1;
 
@@ -4652,6 +5074,9 @@ static void stv_vdp2_draw_NBG2(running_machine &machine, bitmap_t *bitmap, const
 										  (STV_VDP2_N2W1A << 5) |
 										  (STV_VDP2_N2SWA << 6);
 
+	stv2_current_tilemap.line_screen_enabled = STV_VDP2_N2LCEN;
+	stv2_current_tilemap.mosaic_screen_enabled = STV_VDP2_N2MZE;
+
 	stv2_current_tilemap.layer_name=2;
 
 	stv2_current_tilemap.plane_size = STV_VDP2_N2PLSZ;
@@ -4752,6 +5177,9 @@ static void stv_vdp2_draw_NBG3(running_machine &machine, bitmap_t *bitmap, const
 										  (STV_VDP2_N3W0A << 4) |
 										  (STV_VDP2_N3W1A << 5) |
 										  (STV_VDP2_N3SWA << 6);
+
+	stv2_current_tilemap.line_screen_enabled = STV_VDP2_N3LCEN;
+	stv2_current_tilemap.mosaic_screen_enabled = STV_VDP2_N3MZE;
 
 	stv2_current_tilemap.layer_name=3;
 
@@ -4860,7 +5288,6 @@ static void stv_vdp2_draw_rotation_screen(running_machine &machine, bitmap_t *bi
 			break;
 		}
 	}
-
 
 	if ( stv_vdp2_is_rotation_applied() == 0 )
 	{
@@ -5026,6 +5453,9 @@ static void stv_vdp2_draw_RBG0(running_machine &machine, bitmap_t *bitmap, const
 	stv2_current_tilemap.vertical_linescroll_enable = 0;
 	stv2_current_tilemap.linezoom_enable = 0;
 
+	stv2_current_tilemap.line_screen_enabled = STV_VDP2_R0LCEN;
+	stv2_current_tilemap.mosaic_screen_enabled = STV_VDP2_R0MZE;
+
 	/*Use 0x80 as a normal/rotate switch*/
 	stv2_current_tilemap.layer_name=0x80;
 
@@ -5054,41 +5484,41 @@ static void stv_vdp2_draw_RBG0(running_machine &machine, bitmap_t *bitmap, const
 static void stv_vdp2_draw_back(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
 {
 	saturn_state *state = machine.driver_data<saturn_state>();
-	int xcnt,ycnt;
+	int x,y;
 	UINT8* gfxdata = state->m_vdp2.gfx_decode;
-	static UINT16 *destline;
-	int r,b,g;
-	UINT16 data;
+	UINT32 base_offs,base_mask;
+	UINT8 interlace;
 
-	if(!(STV_VDP2_BDCLMD & 1))
+	interlace = (STV_VDP2_LSMD == 3)+1;
+
+//  popmessage("Back screen %08x %08x %08x",STV_VDP2_BDCLMD,STV_VDP2_BKCLMD,STV_VDP2_BKTA);
+
+	/* draw black if BDCLMD and DISP are cleared */
+	if(!(STV_VDP2_BDCLMD) && !(STV_VDP2_DISP))
 		bitmap_fill(bitmap, cliprect, get_black_pen(machine));
 	else
 	{
-		#if DEBUG_MODE
-		//popmessage("Back screen enabled %08x",STV_VDP2_BKTA);
-		#endif
-		gfxdata+=((STV_VDP2_BKTA)<<1);
+		base_mask = STV_VDP2_VRAMSZ ? 0x7ffff : 0x3ffff;
 
-		b = ((gfxdata[0] & 0x7c) >> 2);
-		g = ((gfxdata[0] & 0x03) << 3) | ((gfxdata[1] & 0xe0) >> 5);
-		r = ((gfxdata[1] & 0x1f));
-		data = b | g << 5 | r << 10;
-
-		for (ycnt = cliprect->min_y; ycnt <= cliprect->max_y;ycnt++)
+		for(y=cliprect->min_y;y<=cliprect->max_y;y++)
 		{
-			destline = BITMAP_ADDR16(bitmap, ycnt, 0);
-
-			for (xcnt = cliprect->min_x; xcnt <=cliprect->max_x;xcnt++)
-			{
-				destline[xcnt] = data;
-			}
+			base_offs = ((STV_VDP2_BKTA ) & base_mask) << 1;
 			if(STV_VDP2_BKCLMD)
+				base_offs += ((y / interlace) << 1);
+
+			for(x=cliprect->min_x;x<=cliprect->max_x;x++)
 			{
-				gfxdata+=2;
-				b = ((gfxdata[0] & 0x7c) >> 2);
-				g = ((gfxdata[0] & 0x03) << 3) | ((gfxdata[1] & 0xe0) >> 5);
-				r = ((gfxdata[1] & 0x1f));
-				data = b | g << 5 | r << 10;
+				int r,g,b;
+				UINT16 dot;
+
+				dot = (gfxdata[base_offs+0]<<8)|gfxdata[base_offs+1];
+				b = (dot & 0x7c00) >> 10;
+				g = (dot & 0x03e0) >> 5;
+				r = (dot & 0x001f) >> 0;
+				if(STV_VDP2_BKCOEN)
+					stv_vdp2_compute_color_offset_RGB555( machine, &r, &g, &b, STV_VDP2_BKCOSL );
+
+				*BITMAP_ADDR16(bitmap, y,x) = b | g << 5 | r << 10;
 			}
 		}
 	}
@@ -5152,38 +5582,90 @@ WRITE32_HANDLER ( saturn_vdp2_vram_w )
 
 }
 
-READ32_HANDLER ( saturn_vdp2_regs_r )
+READ16_HANDLER ( saturn_vdp2_regs_r )
 {
 	saturn_state *state = space->machine().driver_data<saturn_state>();
-//  if (offset!=1) if(LOG_VDP2) logerror ("VDP2: Read from Registers, Offset %04x\n",offset);
 
 	switch(offset)
 	{
-		case 0x4/4:
+		case 0x002/2:
+		{
+			/* latch h/v signals through HV latch*/
+			if(!STV_VDP2_EXLTEN)
+			{
+				/* TODO: handle various h/v settings. */
+				if(!space->debugger_access())
+				{
+					state->m_vdp2.h_count = space->machine().primary_screen->hpos() & 0x3ff;
+					state->m_vdp2.v_count = space->machine().primary_screen->vpos() & (STV_VDP2_LSMD == 3 ? 0x7ff : 0x3ff);
+					/* latch flag */
+					state->m_vdp2.exltfg |= 1;
+				}
+			}
+
+			break;
+		}
+		case 0x004/2:
 		{
 			/*Screen Status Register*/
 								       /*VBLANK              HBLANK            ODD               PAL    */
-			state->m_vdp2_regs[offset] = (get_vblank(space->machine())<<19) | (get_hblank(space->machine())<<18) | (get_odd_bit(space->machine()) << 17) | (state->m_vdp2.pal << 16);
+			state->m_vdp2_regs[offset] = (state->m_vdp2.exltfg<<9) |
+										 (state->m_vdp2.exsyfg<<8) |
+										 (get_vblank(space->machine()) << 3) |
+										 (get_hblank(space->machine()) << 2) |
+										 (get_odd_bit(space->machine()) << 1) |
+										 (state->m_vdp2.pal << 0);
+
+			/* vblank bit is always 1 if DISP bit is disabled */
+			if(!STV_VDP2_DISP)
+				state->m_vdp2_regs[offset] |= 1 << 3;
+
+			/* HV latches clears if this register is read */
+			if(!space->debugger_access())
+			{
+				state->m_vdp2.exltfg &= ~1;
+				state->m_vdp2.exsyfg &= ~1;
+			}
 			break;
 		}
-		case 0x8/4:
-		/*H/V Counter Register*/
+		case 0x006/2:
 		{
-			static UINT16 h_count,v_count;
-			/* TODO: handle various h/v settings. */
-			h_count = space->machine().primary_screen->hpos() & 0x3ff;
-			v_count = space->machine().primary_screen->vpos() & (STV_VDP2_LSMD == 3 ? 0x7ff : 0x3ff);
-			state->m_vdp2_regs[offset] = (h_count<<16)|(v_count);
-			if(LOG_VDP2) logerror("CPU %s PC(%08x) = VDP2: H/V counter read : %08x\n", space->device().tag(), cpu_get_pc(&space->device()),state->m_vdp2_regs[offset]);
+			state->m_vdp2_regs[offset] = (STV_VDP2_VRAMSZ << 15) |
+										 ((0 << 0) & 0xf); // VDP2 version
+
+			if(!space->debugger_access())
+				printf("Warning: VDP2 version read\n");
 			break;
 		}
+
+		/* HCNT */
+		case 0x008/2:
+		{
+			state->m_vdp2_regs[offset] = (state->m_vdp2.h_count);
+			break;
+		}
+
+		/* VCNT */
+		case 0x00a/2:
+		{
+			state->m_vdp2_regs[offset] = (state->m_vdp2.v_count);
+			break;
+		}
+
+		default:
+			//if(!space->debugger_access())
+			//  printf("VDP2: read from register %08x %08x\n",offset*4,mem_mask);
+			break;
 	}
+
 	return state->m_vdp2_regs[offset];
 }
 
 READ32_HANDLER ( saturn_vdp2_cram_r )
 {
 	saturn_state *state = space->machine().driver_data<saturn_state>();
+
+	offset &= (0xfff) >> (2);
 
 	return state->m_vdp2_cram[offset];
 }
@@ -5200,9 +5682,12 @@ WRITE32_HANDLER ( saturn_vdp2_cram_w )
 {
 	saturn_state *state = space->machine().driver_data<saturn_state>();
 	int r,g,b;
-	COMBINE_DATA(&state->m_vdp2_cram[offset]);
+	UINT8 cmode0;
 
-//  popmessage("%01x\n",STV_VDP2_CRMD);
+	cmode0 = (STV_VDP2_CRMD & 3) == 0;
+
+	offset &= (0xfff) >> (2);
+	COMBINE_DATA(&state->m_vdp2_cram[offset]);
 
 	switch( STV_VDP2_CRMD )
 	{
@@ -5210,26 +5695,33 @@ WRITE32_HANDLER ( saturn_vdp2_cram_w )
 		case 2:
 		case 3:
 		{
+			//offset &= (0xfff) >> 2;
+
 			b = ((state->m_vdp2_cram[offset] & 0x00ff0000) >> 16);
 			g = ((state->m_vdp2_cram[offset] & 0x0000ff00) >> 8);
 			r = ((state->m_vdp2_cram[offset] & 0x000000ff) >> 0);
 			palette_set_color(space->machine(),offset,MAKE_RGB(r,g,b));
+			palette_set_color(space->machine(),offset^0x400,MAKE_RGB(r,g,b));
 		}
 		break;
 		/*Mode 0*/
 		case 0:
 		case 1:
 		{
-			offset &= (0x3ff | ((offset & 1) << 10));
+			offset &= (0xfff) >> (cmode0+2);
 
 			b = ((state->m_vdp2_cram[offset] & 0x00007c00) >> 10);
 			g = ((state->m_vdp2_cram[offset] & 0x000003e0) >> 5);
 			r = ((state->m_vdp2_cram[offset] & 0x0000001f) >> 0);
 			palette_set_color_rgb(space->machine(),(offset*2)+1,pal5bit(r),pal5bit(g),pal5bit(b));
+			if(cmode0)
+				palette_set_color_rgb(space->machine(),((offset*2)+1)^0x400,pal5bit(r),pal5bit(g),pal5bit(b));
 			b = ((state->m_vdp2_cram[offset] & 0x7c000000) >> 26);
 			g = ((state->m_vdp2_cram[offset] & 0x03e00000) >> 21);
 			r = ((state->m_vdp2_cram[offset] & 0x001f0000) >> 16);
 			palette_set_color_rgb(space->machine(),offset*2,pal5bit(r),pal5bit(g),pal5bit(b));
+			if(cmode0)
+				palette_set_color_rgb(space->machine(),(offset*2)^0x400,pal5bit(r),pal5bit(g),pal5bit(b));
 		}
 		break;
 	}
@@ -5240,27 +5732,46 @@ static void refresh_palette_data(running_machine &machine)
 	saturn_state *state = machine.driver_data<saturn_state>();
 	int r,g,b;
 	int c_i;
+	UINT8 bank;
 
-	for(c_i=0;c_i<0x800;c_i++)
+	switch( STV_VDP2_CRMD )
 	{
-		switch( STV_VDP2_CRMD )
+		case 2:
+		case 3:
 		{
-			/*Mode 2/3*/
-			case 2:
-			case 3:
+			for(c_i=0;c_i<0x400;c_i++)
 			{
 				b = ((state->m_vdp2_cram[c_i] & 0x00ff0000) >> 16);
 				g = ((state->m_vdp2_cram[c_i] & 0x0000ff00) >> 8);
 				r = ((state->m_vdp2_cram[c_i] & 0x000000ff) >> 0);
 				palette_set_color(machine,c_i,MAKE_RGB(r,g,b));
+				palette_set_color(machine,c_i+0x400,MAKE_RGB(r,g,b));
 			}
-			break;
-			/*Mode 0*/
-			case 0:
-			case 1:
-			{
-				//c_i &= 0x3ff;
+		}
+		break;
+		case 0:
+		{
 
+			for(bank=0;bank<2;bank++)
+			{
+				for(c_i=0;c_i<0x400;c_i++)
+				{
+					b = ((state->m_vdp2_cram[c_i] & 0x00007c00) >> 10);
+					g = ((state->m_vdp2_cram[c_i] & 0x000003e0) >> 5);
+					r = ((state->m_vdp2_cram[c_i] & 0x0000001f) >> 0);
+					palette_set_color_rgb(machine,(c_i*2)+1+bank*0x400,pal5bit(r),pal5bit(g),pal5bit(b));
+					b = ((state->m_vdp2_cram[c_i] & 0x7c000000) >> 26);
+					g = ((state->m_vdp2_cram[c_i] & 0x03e00000) >> 21);
+					r = ((state->m_vdp2_cram[c_i] & 0x001f0000) >> 16);
+					palette_set_color_rgb(machine,c_i*2+bank*0x400,pal5bit(r),pal5bit(g),pal5bit(b));
+				}
+			}
+		}
+		break;
+		case 1:
+		{
+			for(c_i=0;c_i<0x800;c_i++)
+			{
 				b = ((state->m_vdp2_cram[c_i] & 0x00007c00) >> 10);
 				g = ((state->m_vdp2_cram[c_i] & 0x000003e0) >> 5);
 				r = ((state->m_vdp2_cram[c_i] & 0x0000001f) >> 0);
@@ -5270,28 +5781,33 @@ static void refresh_palette_data(running_machine &machine)
 				r = ((state->m_vdp2_cram[c_i] & 0x001f0000) >> 16);
 				palette_set_color_rgb(machine,c_i*2,pal5bit(r),pal5bit(g),pal5bit(b));
 			}
-			break;
 		}
+		break;
 	}
 }
 
-WRITE32_HANDLER ( saturn_vdp2_regs_w )
+WRITE16_HANDLER ( saturn_vdp2_regs_w )
 {
 	saturn_state *state = space->machine().driver_data<saturn_state>();
-	static UINT8 old_crmd;
-	static UINT16 old_tvmd;
 	COMBINE_DATA(&state->m_vdp2_regs[offset]);
 
-	if(old_crmd != STV_VDP2_CRMD)
+	if(state->m_vdp2.old_crmd != STV_VDP2_CRMD)
 	{
-		old_crmd = STV_VDP2_CRMD;
+		state->m_vdp2.old_crmd = STV_VDP2_CRMD;
 		refresh_palette_data(space->machine());
 	}
-	if(old_tvmd != STV_VDP2_TVMD)
+	if(state->m_vdp2.old_tvmd != STV_VDP2_TVMD)
 	{
-		old_tvmd = STV_VDP2_TVMD;
+		state->m_vdp2.old_tvmd = STV_VDP2_TVMD;
 		stv_vdp2_dynamic_res_change(space->machine());
 	}
+
+	if(STV_VDP2_VRAMSZ)
+		printf("VDP2 sets up 8 Mbit VRAM!\n");
+
+	#if NEW_VIDEO_CODE
+	saturn_vdp2_assign_variables(space->machine(),offset,state->m_vdp2_regs[offset]);
+	#endif
 }
 
 static int get_hblank_duration(running_machine &machine)
@@ -5366,9 +5882,6 @@ UINT8 get_vblank(running_machine &machine)
 	int cur_v,vblank;
 	cur_v = machine.primary_screen->vpos();
 
-	if(!STV_VDP2_DISP)
-		return 1;
-
 	vblank = (state->m_vdp2.pal) ? 288 : 240;
 
 	if((STV_VDP2_LSMD & 3) == 3)
@@ -5387,6 +5900,9 @@ static UINT8 get_odd_bit(running_machine &machine)
 	cur_v = machine.primary_screen->vpos();
 
 	if(STV_VDP2_HRES & 4) //exclusive monitor mode makes this bit to be always 1
+		return 1;
+
+	if(STV_VDP2_LSMD == 0) // same for non-interlace mode
 		return 1;
 
 	if(cur_v % 2)
@@ -5443,8 +5959,8 @@ static int stv_vdp2_start (running_machine &machine)
 	saturn_state *state = machine.driver_data<saturn_state>();
 	machine.add_notifier(MACHINE_NOTIFY_EXIT, machine_notify_delegate(FUNC(stv_vdp2_exit), &machine));
 
-	state->m_vdp2_regs = auto_alloc_array_clear(machine, UINT32, 0x040000/4 );
-	state->m_vdp2_vram = auto_alloc_array_clear(machine, UINT32, 0x100000/4 ); // actually we only need half of it since we don't emulate extra 4mbit ram cart.
+	state->m_vdp2_regs = auto_alloc_array_clear(machine, UINT16, 0x040000/2 );
+	state->m_vdp2_vram = auto_alloc_array_clear(machine, UINT32, 0x100000/4 );
 	state->m_vdp2_cram = auto_alloc_array_clear(machine, UINT32, 0x080000/4 );
 	state->m_vdp2.gfx_decode = auto_alloc_array(machine, UINT8, 0x100000 );
 
@@ -5455,7 +5971,7 @@ static int stv_vdp2_start (running_machine &machine)
 	stv_rbg_cache_data.is_cache_dirty = 3;
 	memset( &stv_vdp2_layer_data_placement, 0, sizeof(stv_vdp2_layer_data_placement));
 
-	state_save_register_global_pointer(machine, state->m_vdp2_regs, 0x040000/4);
+	state_save_register_global_pointer(machine, state->m_vdp2_regs, 0x040000/2);
 	state_save_register_global_pointer(machine, state->m_vdp2_vram, 0x100000/4);
 	state_save_register_global_pointer(machine, state->m_vdp2_cram, 0x080000/4);
 	machine.save().register_postload(save_prepost_delegate(FUNC(stv_vdp2_state_save_postload), &machine));
@@ -5587,11 +6103,11 @@ For tilemap and sprite layer, clipping rectangle is changed.
 Done:
 -Basic support(w0 or w1),bitmaps only.
 -W0 (outside) for tilemaps and sprite layer.
+-Window logic.
 
 Not Done:
 -Complete Windows on cells.A split between cells and bitmaps is in progress...
 -w0 & w1 at the same time.
--Window logic.
 -Line window.
 -Color Calculation.
 -Rotation parameter Window (already done?).
@@ -5705,74 +6221,54 @@ static void stv_vdp2_get_window1_coordinates(running_machine &machine,UINT16 *s_
 
 }
 
+static int get_window_pixel(UINT16 s_x,UINT16 e_x,UINT16 s_y,UINT16 e_y,int x, int y,UINT8 win_num)
+{
+	if(stv2_current_tilemap.window_control & (2 << win_num))
+	{
+		/*Outside Area*/
+		if(stv2_current_tilemap.window_control & (0x10 << win_num))
+		{
+			if(y < s_y || y > e_y)
+				return 1;
+			else
+			{
+				if(x < s_x || x > e_x)
+					return 1;
+				//else
+				//  return 0;
+			}
+		}
+		/*Inside Area*/
+		else
+		{
+			if(y > s_y && y < e_y)
+			{
+				if(x > s_x && x < e_x)
+					return 1;
+			}
+			//else
+			//  return 0;
+		}
+	}
+
+	return 0;
+}
+
 static int stv_vdp2_window_process(running_machine &machine,int x,int y)
 {
 	UINT16 s_x=0,e_x=0,s_y=0,e_y=0;
+	UINT8 w0_pix, w1_pix;
 
 	if ((stv2_current_tilemap.window_control & 6) == 0)
 		return 0;
 
 	stv_vdp2_get_window0_coordinates(machine,&s_x, &e_x, &s_y, &e_y);
-
-	if(stv2_current_tilemap.window_control & 2)
-	{
-		/*Outside Area*/
-		if(stv2_current_tilemap.window_control & 0x10)
-		{
-			if(y < s_y || y > e_y)
-				return 1;
-			else
-			{
-				if(x < s_x || x > e_x)
-					return 1;
-				//else
-				//  return 0;
-			}
-		}
-		/*Inside Area*/
-		else
-		{
-			if(y > s_y && y < e_y)
-			{
-				if(x > s_x && x < e_x)
-					return 1;
-			}
-			//else
-			//  return 0;
-		}
-	}
+	w0_pix = get_window_pixel(s_x,e_x,s_y,e_y,x,y,0);
 
 	stv_vdp2_get_window1_coordinates(machine,&s_x, &e_x, &s_y, &e_y);
+	w1_pix = get_window_pixel(s_x,e_x,s_y,e_y,x,y,1);
 
-	if(stv2_current_tilemap.window_control & 4)
-	{
-		/*Outside Area*/
-		if(stv2_current_tilemap.window_control & 0x20)
-		{
-			if(y < s_y || y > e_y)
-				return 1;
-			else
-			{
-				if(x < s_x || x > e_x)
-					return 1;
-				//else
-				//  return 0;
-			}
-		}
-		/*Inside Area*/
-		else
-		{
-			if(y > s_y && y < e_y)
-			{
-				if(x > s_x && x < e_x)
-					return 1;
-			}
-			//else
-			//  return 0;
-		}
-	}
-	return 0;
-//  return 1;
+	return stv2_current_tilemap.window_control & 1 ? (w0_pix & w1_pix) : (w0_pix | w1_pix);
 }
 
 static int stv_vdp2_apply_window_on_layer(running_machine &machine,rectangle *cliprect)
@@ -5908,7 +6404,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 
 	/* framebuffer interlace */
-	if ( (STV_VDP2_LSMD == 2 || STV_VDP2_LSMD == 3) && state->m_vdp1.framebuffer_double_interlace == 0 )
+	if ( (STV_VDP2_LSMD == 3) && state->m_vdp1.framebuffer_double_interlace == 0 )
 		interlace_framebuffer = 1;
 	else
 		interlace_framebuffer = 0;
@@ -5959,13 +6455,19 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 							stv_sprite_priorities_in_fb_line[y][sprite_priorities[0]] = 1;
 							continue;
 						};
+
+						if(STV_VDP2_SPWINEN && pix == 0x8000) /* Pukunpa */
+							continue;
+
 						b = (pix & 0x7c00) >> 10;
 						g = (pix & 0x03e0) >> 5;
 						r = (pix & 0x1f);
+
 						if ( color_offset_pal )
 						{
 							stv_vdp2_compute_color_offset_RGB555( machine, &r, &g, &b, STV_VDP2_SPCOSL );
 						}
+
 						bitmap_line[x] = b | g << 5 | r << 10;
 					}
 					else
@@ -6362,17 +6864,6 @@ SCREEN_UPDATE( stv_vdp2 )
 	}
 
 #if DEBUG_MODE
-	if(STV_VDP2_VRAMSZ && VDP2_ERR(0x80000000))
-	{
-		VDP2_CHK(0x80000000);
-		mame_printf_debug("Warning: VRAM Size = 8 MBit!\n");
-	}
-	if(STV_VDP2_CRKTE && VDP2_ERR(0x40000000))
-	{
-		VDP2_CHK(0x40000000);
-		mame_printf_debug("Warning: Color RAM Coefficient Table Ctrl used\n");
-	}
-
 	/*popmessage("N0 %02x %04x %02x %04x N1 %02x %04x %02x %04x"
     ,STV_VDP2_N0ZMXI,STV_VDP2_N0ZMXD
     ,STV_VDP2_N0ZMYI,STV_VDP2_N0ZMYD
@@ -6518,5 +7009,373 @@ static void stv_dump_ram()
 	}
 }
 
+
+#endif
+
+#if NEW_VIDEO_CODE
+
+/*
+    Rewrite of VDP2 video code (VDP1 will follow up after this).
+
+    Keyword there is use CUSTOM CODE for everything!
+
+    we do a two-pass buffer copy so we can safely do post-processing stuff at some point.
+*/
+
+/*
+    [0] NBG0
+    [1] NBG1
+    [2] NBG2
+    [3] NBG3
+    [4] RBG0
+    [5] BACK
+*/
+
+#define XB_SIZE 1024
+#define YB_SIZE 1024
+
+static UINT32 layer_buffer[6][XB_SIZE*YB_SIZE];
+static UINT8  layer_tpen[6][XB_SIZE*YB_SIZE];
+
+/* TODO: move in state machine */
+static struct{
+	UINT8 bitmap_en;
+	UINT8 bpp;
+	UINT8 color_offset_en;
+	UINT8 color_offset_sel;
+}m_vdp2_state[6];
+
+static void saturn_vdp2_assign_variables(running_machine &machine,UINT32 offset,UINT16 data)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+
+	switch(offset)
+	{
+		case 0x028/2:
+			m_vdp2_state[0].bpp = STV_VDP2_N0CHCN;
+			m_vdp2_state[1].bpp = STV_VDP2_N1CHCN;
+			break;
+		case 0x02a/2:
+			m_vdp2_state[2].bpp = STV_VDP2_N2CHCN;
+			m_vdp2_state[3].bpp = STV_VDP2_N3CHCN;
+			break;
+		case 0x02c/2:
+			m_vdp2_state[0].bitmap_en = STV_VDP2_N0BMP;
+			m_vdp2_state[1].bitmap_en = STV_VDP2_N1BMP;
+			break;
+		case 0x110/2:
+			m_vdp2_state[0].color_offset_en = STV_VDP2_N0COEN;
+			m_vdp2_state[1].color_offset_en = STV_VDP2_N1COEN;
+			m_vdp2_state[2].color_offset_en = STV_VDP2_N2COEN;
+			m_vdp2_state[3].color_offset_en = STV_VDP2_N3COEN;
+			m_vdp2_state[4].color_offset_en = STV_VDP2_R0COEN;
+			m_vdp2_state[5].color_offset_en = STV_VDP2_BKCOEN;
+//          STV_VDP2_SPCOEN
+			break;
+		case 0x112/2:
+			m_vdp2_state[0].color_offset_sel = STV_VDP2_N0COSL;
+			m_vdp2_state[1].color_offset_sel = STV_VDP2_N1COSL;
+			m_vdp2_state[2].color_offset_sel = STV_VDP2_N2COSL;
+			m_vdp2_state[3].color_offset_sel = STV_VDP2_N3COSL;
+			m_vdp2_state[4].color_offset_sel = STV_VDP2_R0COSL;
+			m_vdp2_state[5].color_offset_sel = STV_VDP2_BKCOSL;
+//          STV_VDP2_SPCOEN
+			break;
+	}
+}
+
+static void vdp2_draw_back(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	int x,y;
+	UINT8* gfxdata = state->m_vdp2.gfx_decode;
+	UINT32 base_offs,base_mask;
+	UINT8 interlace;
+
+	interlace = (STV_VDP2_LSMD == 3)+1;
+
+	/* draw black if BDCLMD and DISP are cleared */
+	if(!(STV_VDP2_BDCLMD) && !(STV_VDP2_DISP))
+		bitmap_fill(bitmap, cliprect, get_black_pen(machine));
+	else
+	{
+		base_mask = STV_VDP2_VRAMSZ ? 0x7ffff : 0x3ffff;
+
+		for(y=cliprect->min_y;y<=cliprect->max_y;y++)
+		{
+			base_offs = ((STV_VDP2_BKTA ) & base_mask) << 1;
+			if(STV_VDP2_BKCLMD)
+				base_offs += ((y / interlace) << 1);
+
+			for(x=cliprect->min_x;x<=cliprect->max_x;x++)
+			{
+				int r,g,b;
+				UINT16 dot;
+
+				dot = (gfxdata[base_offs+0]<<8)|gfxdata[base_offs+1];
+				b = (dot & 0x7c00) >> 10;
+				g = (dot & 0x03e0) >> 5;
+				r = (dot & 0x001f) >> 0;
+				b <<= 3;
+				g <<= 3;
+				r <<= 3;
+
+				//if(STV_VDP2_BKCOEN)
+				//  stv_vdp2_compute_color_offset_RGB555( machine, &r, &g, &b, STV_VDP2_BKCOSL );
+
+				/* TODO: this needs post-processing too! */
+				*BITMAP_ADDR32(bitmap, y,x) = b | g << 8 | r << 16;
+			}
+		}
+	}
+}
+
+static void vdp2_palette_entry(running_machine &machine, int *r, int *g, int *b, UINT16 offset);
+
+static void get_vdp2_pixel(running_machine &machine, UINT8 layer_name, UINT16 tile,UINT8 color, int xi, int yi, int *r, int *g, int *b, int *tp)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	UINT8 *vram = state->m_vdp2.gfx_decode;
+	UINT32 vram_offset;
+	UINT32 vram_mask;
+	int pix;
+
+	vram_mask = 0x7ffff;
+
+	switch(m_vdp2_state[layer_name].bpp)
+	{
+		case 0:  //2 bpp
+			if(m_vdp2_state[layer_name].bitmap_en)
+				vram_offset = tile;
+			else
+				vram_offset = tile*0x20+(yi*4)+(xi >> 1);
+
+			pix = (vram[vram_offset & vram_mask] >> ((xi & 1) ^ 1)*4) & 0xf;
+
+			vdp2_palette_entry(machine,&*r,&*g,&*b,(color<<4|pix) & 0x7ff);
+
+			*tp = (pix != 0);
+			break;
+		case 1:  //4 bpp
+			if(m_vdp2_state[layer_name].bitmap_en)
+				vram_offset = tile;
+			else
+				vram_offset = tile*0x40+(yi*8)+(xi);
+
+			pix = (vram[vram_offset & vram_mask]) & 0xff;
+
+			vdp2_palette_entry(machine,&*r,&*g,&*b,(color<<8|pix) & 0x7ff);
+
+			*tp = (pix != 0);
+			break;
+		case 2:  //11 bpp
+			popmessage("bpp == 2 in tilemap");
+
+			if(m_vdp2_state[layer_name].bitmap_en)
+				vram_offset = tile;
+			else
+				vram_offset = tile*0x40+(yi*8)+(xi);
+
+			/* confused over this, but I should have done correctly: */
+			pix = (vram[((vram_offset)*2+0) & vram_mask]<<8)|
+				  (vram[((vram_offset)*2+1) & vram_mask]);
+
+			vdp2_palette_entry(machine,&*r,&*g,&*b,(pix) & 0x7ff);
+
+			*tp = (pix != 0);
+			break;
+		case 3:  //RGB5
+			if(m_vdp2_state[layer_name].bitmap_en)
+				vram_offset = tile;
+			else
+				vram_offset = tile*0x40+(yi*8)+(xi);
+
+			pix = (vram[((vram_offset)*2+0) & vram_mask]<<8)|
+				  (vram[((vram_offset)*2+1) & vram_mask]);
+
+			*tp= ((pix & 0x8000) >> 15);
+//          *cc= *tp;
+			*b = ((pix & 0x7c00) >> 10);
+			*g = ((pix & 0x03e0) >> 5);
+			*r = ((pix & 0x001f) >> 0);
+			*b <<= 3;
+			*g <<= 3;
+			*r <<= 3;
+			break;
+		case 4:  //RGB8
+			if(m_vdp2_state[layer_name].bitmap_en)
+				vram_offset = tile;
+			else
+				vram_offset = tile*0x80+(yi*8)+(xi);
+
+			pix = (vram[((vram_offset)*4+0) & vram_mask]<<24)|
+				  (vram[((vram_offset)*4+1) & vram_mask]<<16) |
+				  (vram[((vram_offset)*4+2) & vram_mask]<<8)|
+				  (vram[((vram_offset)*4+3) & vram_mask]);
+
+			*tp= ((pix & 0x80000000) >> 31);
+//          *cc= *tp;
+			*b = ((pix & 0x00ff0000) >> 16);
+			*g = ((pix & 0x0000ff00) >> 8);
+			*r = ((pix & 0x000000ff) >> 0);
+			break;
+		default:
+			popmessage("Setting invalid for NBG%d!",layer_name);
+			*tp = *b = *g = *r = 0;
+			break;
+	}
+}
+
+/* copy the vram data into the vram buffer */
+static void vdp2_tile_draw(running_machine &machine, UINT8 layer_name, UINT16 tile, UINT8 color, int x, int y)
+{
+	//saturn_state *state = machine.driver_data<saturn_state>();
+	int xi,yi;
+	int r,g,b,tp;
+
+	for(yi=0;yi<8;yi++)
+	{
+		for(xi=0;xi<8;xi++)
+		{
+			get_vdp2_pixel(machine,layer_name,tile,color,xi,yi, &r, &g, &b, &tp);
+
+			layer_buffer[layer_name][(x*8+xi)+((y*8+yi)*XB_SIZE)] = (r << 16) | (g << 8) | (b);
+			layer_tpen[layer_name][(x*8+xi)+((y*8+yi)*XB_SIZE)] = tp;
+		}
+	}
+}
+
+/* tile grid of NxN is copied there */
+static void copy_plane(running_machine &machine, UINT8 layer_name)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	UINT8 *vram = state->m_vdp2.gfx_decode;
+	int x,y;
+	UINT16 datax;
+
+	for(y=0;y<64;y++)
+	{
+		for(x=0;x<64;x++)
+		{
+			UINT16 tile;
+			UINT8 color;
+
+			datax = (vram[(x+y*64+0x31000)*2+0]<<8)|(vram[(x+y*64+0x31000)*2+1]&0xff);
+			tile = (datax & 0xff) | 0x3000;
+			color = ((datax & 0xf000) >> 12) | 0x40;
+
+			vdp2_tile_draw(machine,layer_name,tile,color,x,y);
+		}
+	}
+}
+
+static void vdp2_calc_color_offset(running_machine &machine, UINT8 layer_name, int *r, int *g, int *b)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+	int base_offs;
+	int cor,cog,cob;
+
+	base_offs = (0x114 + m_vdp2_state[layer_name].color_offset_sel*6);
+
+	cor = (state->m_vdp2_regs[(base_offs+0)/2]) & 0x1ff;
+	cog = (state->m_vdp2_regs[(base_offs+2)/2]) & 0x1ff;
+	cob = (state->m_vdp2_regs[(base_offs+4)/2]) & 0x1ff;
+
+	*r = (cor & 0x100) ? *r - (0x100 - (cor & 0xff)) : (*r + (cor & 0xff));
+	*g = (cog & 0x100) ? *g - (0x100 - (cog & 0xff)) : (*g + (cog & 0xff));
+	*b = (cob & 0x100) ? *b - (0x100 - (cob & 0xff)) : (*b + (cob & 0xff));
+
+	if(*r > 0xff) { *r = 0xff; }
+	if(*g > 0xff) { *g = 0xff; }
+	if(*b > 0xff) { *b = 0xff; }
+	if(*r < 0) { *r = 0; }
+	if(*g < 0) { *g = 0; }
+	if(*b < 0) { *b = 0; }
+}
+
+/* now copy the vram buffer to the screen buffer, apply post-processing at this stage */
+static void draw_normal_screen(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect, UINT8 layer_name)
+{
+	int x,y;
+	int r,g,b;
+
+
+	for(y=0;y<=cliprect->max_y;y++)
+	{
+		for(x=0;x<=cliprect->max_x;x++)
+		{
+			if(layer_tpen[layer_name][(x)+(y)*XB_SIZE])
+			{
+				b = (layer_buffer[layer_name][(x)+(y)*XB_SIZE] & 0x0000ff);
+				g = (layer_buffer[layer_name][(x)+(y)*XB_SIZE] & 0x00ff00) >> 8;
+				r = (layer_buffer[layer_name][(x)+(y)*XB_SIZE] & 0xff0000) >> 16;
+
+				/* apply color offset*/
+				if(m_vdp2_state[layer_name].color_offset_en)
+					vdp2_calc_color_offset(machine,layer_name,&r,&g,&b);
+
+				*BITMAP_ADDR32(bitmap, y, x) = b | g << 8 | r << 16;
+			}
+		}
+	}
+}
+
+/* translated cram into RGB32 format color pen */
+static void vdp2_palette_entry(running_machine &machine, int *r, int *g, int *b, UINT16 offset)
+{
+	saturn_state *state = machine.driver_data<saturn_state>();
+
+	switch( STV_VDP2_CRMD )
+	{
+		case 0: // RGB5, 1024 color pens
+			offset &= 0x7ff;
+		case 1: // RGB5: 2048 color pens
+		{
+			UINT16 datax = (state->m_vdp2_cram[offset/2] >> (((offset & 1) ^ 1)*16)) & 0xffff;
+
+//          *cc= ((datax & 0x8000) >> 15);
+			*b = ((datax & 0x7c00) >> 10);
+			*g = ((datax & 0x03e0) >> 5);
+			*r = ((datax & 0x001f) >> 0);
+			*b <<= 3;
+			*g <<= 3;
+			*r <<= 3;
+			break;
+		}
+		case 2: // RGB8: 1024 color pens
+		case 3: // (mode 3 is reserved but seems to be identical to above)
+		{
+//          *cc= ((state->m_vdp2_cram[offset] & 0x80000000) >> 31);
+			*b = ((state->m_vdp2_cram[offset] & 0x00ff0000) >> 16);
+			*g = ((state->m_vdp2_cram[offset] & 0x0000ff00) >> 8);
+			*r = ((state->m_vdp2_cram[offset] & 0x000000ff) >> 0);
+		}
+		break;
+	}
+}
+
+SCREEN_UPDATE( saturn )
+{
+	saturn_state *state = screen->machine().driver_data<saturn_state>();
+	static UINT8 disclaimer;
+
+	vdp2_draw_back(screen->machine(),bitmap,cliprect);
+
+	if(STV_VDP2_DISP)
+	{
+		copy_plane(screen->machine(),3);
+
+		draw_normal_screen(screen->machine(),bitmap,cliprect,3);
+	}
+
+	if(disclaimer == 0)
+	{
+		disclaimer++;
+		popmessage("NEW Video code, rm me");
+	}
+
+
+	return 0;
+}
 
 #endif

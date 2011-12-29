@@ -28,6 +28,7 @@
 #include "includes/amiga.h"
 #include "machine/6526cia.h"
 #include "machine/nvram.h"
+#include "machine/amigafdc.h"
 
 
 class upscope_state : public amiga_state
@@ -138,9 +139,9 @@ static READ8_DEVICE_HANDLER( upscope_cia_0_portb_r )
  *  PA5 = com line /carrier detect
  *  PA4 = com line /CTS
  *  PA3 = com line /DSR
- *  PA2 = SEL (Centronics parellel control)
- *  PA1 = POUT (Centronics parellel control)
- *  PA0 = BUSY (Centronics parellel control)
+ *  PA2 = SEL (Centronics parallel control)
+ *  PA1 = POUT (Centronics parallel control)
+ *  PA0 = BUSY (Centronics parallel control)
  *
  *************************************/
 
@@ -343,6 +344,9 @@ static MACHINE_CONFIG_START( upscope, upscope_state )
 	/* cia */
 	MCFG_MOS8520_ADD("cia_0", AMIGA_68000_NTSC_CLOCK / 10, cia_0_intf)
 	MCFG_MOS8520_ADD("cia_1", AMIGA_68000_NTSC_CLOCK / 10, cia_1_intf)
+
+	/* fdc */
+	MCFG_AMIGA_FDC_ADD("fdc", AMIGA_68000_NTSC_CLOCK)
 MACHINE_CONFIG_END
 
 
@@ -390,7 +394,7 @@ static DRIVER_INIT( upscope )
 	{
 		ANGUS_CHIP_RAM_MASK,
 		NULL, NULL, NULL,
-		NULL, NULL, NULL,
+		NULL,
 		NULL, upscope_reset,
 		NULL,
 		0

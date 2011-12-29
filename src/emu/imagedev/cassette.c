@@ -242,6 +242,11 @@ void cassette_image_device::device_start()
 	m_state = m_default_state;
 }
 
+bool cassette_image_device::call_create(int format_type, option_resolution *format_options)
+{
+	return call_load();
+}
+
 bool cassette_image_device::call_load()
 {
 	casserr_t err;
@@ -249,7 +254,7 @@ bool cassette_image_device::call_load()
 	const char *extension;
 	int is_writable;
 	device_image_interface *image = NULL;
-	get_interface(image);
+	interface(image);
 
 	if (has_been_created())
 	{

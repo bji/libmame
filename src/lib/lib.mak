@@ -34,6 +34,7 @@ UTILOBJS = \
 	$(LIBOBJ)/util/bitmap.o \
 	$(LIBOBJ)/util/cdrom.o \
 	$(LIBOBJ)/util/chd.o \
+	$(LIBOBJ)/util/chdcd.o \
 	$(LIBOBJ)/util/corefile.o \
 	$(LIBOBJ)/util/corestr.o \
 	$(LIBOBJ)/util/coreutil.o \
@@ -117,9 +118,11 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/hect_dsk.o	\
 	$(LIBOBJ)/formats/hect_tap.o	\
 	$(LIBOBJ)/formats/imd_dsk.o		\
+	$(LIBOBJ)/formats/ipf_dsk.o		\
 	$(LIBOBJ)/formats/kim1_cas.o	\
 	$(LIBOBJ)/formats/lviv_lvt.o	\
 	$(LIBOBJ)/formats/msx_dsk.o		\
+	$(LIBOBJ)/formats/mfi_dsk.o		\
 	$(LIBOBJ)/formats/mz_cas.o		\
 	$(LIBOBJ)/formats/nes_dsk.o		\
 	$(LIBOBJ)/formats/orao_cas.o	\
@@ -133,6 +136,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/smx_dsk.o		\
 	$(LIBOBJ)/formats/sorc_dsk.o	\
 	$(LIBOBJ)/formats/sord_cas.o	\
+	$(LIBOBJ)/formats/st_dsk.o		\
 	$(LIBOBJ)/formats/svi_cas.o		\
 	$(LIBOBJ)/formats/svi_dsk.o		\
 	$(LIBOBJ)/formats/td0_dsk.o		\
@@ -152,6 +156,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/x1_tap.o		\
 	$(LIBOBJ)/formats/z80ne_dsk.o	\
 	$(LIBOBJ)/formats/zx81_p.o		\
+	$(LIBOBJ)/formats/hxcmfm_dsk.o	\
 
 $(OBJ)/libformats.a: $(FORMATSOBJS)
 
@@ -191,11 +196,13 @@ PROCESSOR_H = $(LIBSRC)/softfloat/processors/mamesf.h
 SOFTFLOAT_MACROS = $(LIBSRC)/softfloat/softfloat/bits64/softfloat-macros
 
 SOFTFLOATOBJS = \
-	$(LIBOBJ)/softfloat/softfloat.o
+	$(LIBOBJ)/softfloat/softfloat.o \
+    $(LIBOBJ)/softfloat/fsincos.o
 
 $(OBJ)/libsoftfloat.a: $(SOFTFLOATOBJS)
 
 $(LIBOBJ)/softfloat/softfloat.o: $(LIBSRC)/softfloat/softfloat.c $(LIBSRC)/softfloat/softfloat.h $(LIBSRC)/softfloat/softfloat-macros $(LIBSRC)/softfloat/softfloat-specialize
+$(LIBOBJ)/softfloat/fsincos.o: $(LIBSRC)/softfloat/fsincos.c $(LIBSRC)/softfloat/fpu_constant.h $(LIBSRC)/softfloat/softfloat.h $(LIBSRC)/softfloat/softfloat-macros $(LIBSRC)/softfloat/softfloat-specialize
 
 
 

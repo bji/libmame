@@ -85,6 +85,7 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 
 	for (offs = 0x03f8 / 2; offs >= 0; offs -= 0x008 / 2)
 	{
+		/* TODO: remove this aberration of nature */
 		if (offs <  0x01b0 && priority == 0)	continue;
 		if (offs >= 0x01b0 && priority == 1)	continue;
 
@@ -228,6 +229,8 @@ static void fill_slope( bitmap_t *bitmap, const rectangle *cliprect, int color, 
 		{
 			int xx1 = x1 >> TAITOAIR_FRAC_SHIFT;
 			int xx2 = x2 >> TAITOAIR_FRAC_SHIFT;
+			int grad_col;
+
 			if (xx1 <= cliprect->max_x || xx2 >= cliprect->min_x)
 			{
 				if (xx1 < cliprect->min_x)
@@ -235,9 +238,12 @@ static void fill_slope( bitmap_t *bitmap, const rectangle *cliprect, int color, 
 				if (xx2 > cliprect->max_x)
 					xx2 = cliprect->max_x;
 
+				/* TODO: it's unknown if gradient color applies by global screen Y coordinate or there's a calculation to somewhere ... */
+				grad_col = (y1 >> 3) & 0x3f;
+
 				while (xx1 <= xx2)
 				{
-					*BITMAP_ADDR16(bitmap, y1, xx1) = color;
+					*BITMAP_ADDR16(bitmap, y1, xx1) = color + grad_col;
 					xx1++;
 				}
 			}
@@ -341,59 +347,282 @@ static void fill_poly( bitmap_t *bitmap, const rectangle *cliprect, const struct
 	}
 }
 
+/***************************************************************************
+  dsp handlers
+***************************************************************************/
+
+/*
+    TODO: still don't know how this works. It calls three values (0x1fff-0x5fff-0xdfff), for two or three offsets.
+    In theory this should fit into framebuffer draw, display, clear and swap in some way.
+*/
+WRITE16_HANDLER( dsp_flags_w )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+	rectangle cliprect;
+
+	/* printf("%04x -> %d\n",data,offset); */
+
+	cliprect.min_x = 0;
+	cliprect.min_y = 3*16;
+	cliprect.max_x = space->machine().primary_screen->width() - 1;
+	cliprect.max_y = space->machine().primary_screen->height() - 1;
+
+	{
+		/* clear and copy operation if offset is 0x3001 */
+		if(offset == 1)
+		{
+			/* clear screen fb */
+			bitmap_fill(state->m_framebuffer[1], &cliprect, 0);
+			/* copy buffer fb into screen fb (at this stage we are ready to draw) */
+			copybitmap_trans(state->m_framebuffer[1], state->m_framebuffer[0], 0, 0, 0, 0, &cliprect, 0);
+			/* now clear buffer fb */
+			bitmap_fill(state->m_framebuffer[0], &cliprect, 0);
+		}
+
+		/* if offset 0x3001 OR 0x3002 we put data in the buffer fb */
+		if(offset)
+		{
+			if (state->m_line_ram[0x3fff])
+			{
+				int adr = 0x3fff;
+//              struct taitoair_poly q;
+
+				while (adr >= 0 && state->m_line_ram[adr] && state->m_line_ram[adr] != 0x4000)
+				{
+					int pcount;
+					if (!(state->m_line_ram[adr] & 0x8000) || adr < 10)
+					{
+						logerror("quad: unknown value %04x at %04x\n", state->m_line_ram[adr], adr);
+						break;
+					}
+					state->m_q.col = ((state->m_line_ram[adr] & 0x007f) * 0x80) + 0x2040;
+					adr--;
+					pcount = 0;
+					while (pcount < TAITOAIR_POLY_MAX_PT && adr >= 1 && !(state->m_line_ram[adr] & 0xc000))
+					{
+						state->m_q.p[pcount].y = state->m_line_ram[adr] + 3 * 16;
+						state->m_q.p[pcount].x = state->m_line_ram[adr - 1];
+						pcount++;
+						adr -= 2;
+					}
+					adr--;
+					state->m_q.pcount = pcount;
+					fill_poly(state->m_framebuffer[0], &cliprect, &state->m_q);
+				}
+			}
+		}
+	}
+}
+
+WRITE16_HANDLER( dsp_x_eyecoord_w )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+	state->m_eyecoordBuffer[0] = data;
+}
+
+WRITE16_HANDLER( dsp_y_eyecoord_w )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+	state->m_eyecoordBuffer[1] = data;
+}
+
+WRITE16_HANDLER( dsp_z_eyecoord_w )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+	state->m_eyecoordBuffer[2] = data;
+}
+
+WRITE16_HANDLER( dsp_frustum_left_w )
+{
+	/* Strange.  It comes in as it it were the right side of the screen */
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+	state->m_frustumLeft = -data;
+}
+
+WRITE16_HANDLER( dsp_frustum_bottom_w )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+	state->m_frustumBottom = data;
+}
+
+
+void multVecMtx(const INT16* vec4, const float* m, float* result)
+{
+#define M(row,col)  m[col*4+row]
+	result[0] = vec4[0]*M(0,0) + vec4[1]*M(1,0) + vec4[2]*M(2,0) + vec4[3]*M(3,0);
+	result[1] = vec4[0]*M(0,1) + vec4[1]*M(1,1) + vec4[2]*M(2,1) + vec4[3]*M(3,1);
+	result[2] = vec4[0]*M(0,2) + vec4[1]*M(1,2) + vec4[2]*M(2,2) + vec4[3]*M(3,2);
+
+	float w = vec4[0]*M(0,3) + vec4[1]*M(1,3) + vec4[2]*M(2,3) + vec4[3]*M(3,3);
+	result[0] /= w;
+	result[1] /= w;
+	result[2] /= w;
+#undef M
+}
+
+int projectEyeCoordToScreen(float* projectionMatrix,
+							 const int Res,
+							 INT16* eyePoint3d,
+							 int type)
+{
+	/* Return (-1, -1) if the eye point is behind camera */
+	int res = -10000;
+	if (eyePoint3d[2] <= 0.0 && eyePoint3d[0] <= 0.0)
+		return -10000;
+	if (eyePoint3d[2] <= 0.0 && eyePoint3d[0] >= 0.0)
+		return 10000;
+
+	/* Coordinate system flip */
+	eyePoint3d[0] *= -1;
+
+	/* Nothing fancy about this homogeneous worldspace coordinate */
+	eyePoint3d[3] = 1;
+
+	float deviceCoordinates[3];
+	multVecMtx(eyePoint3d, projectionMatrix, deviceCoordinates);
+
+	/* We're only interested if it projects within the device */
+	// if ( ( deviceCoordinates[type] >= -1.0) && ( deviceCoordinates[type] <= 1.0))
+	res = (int)( deviceCoordinates[type] * (Res-1) );
+
+	return res;
+}
+
+void airInfernoFrustum(const INT16 leftExtent, const INT16 bottomExtent, float* m)
+{
+	/* Hard-coded near and far clipping planes :( */
+	float nearZ = 1.0f;
+	float farZ = 10000.0f;
+	float left = 1.0f;
+	float right = -1.0f;
+	float bottom = (float)(-bottomExtent) / leftExtent;
+	float top = (float)(bottomExtent) / leftExtent;
+
+	float x = (2.0f*nearZ) / (right-left);
+	float y = (2.0f*nearZ) / (top-bottom);
+	float a = (right+left) / (right-left);
+	float b = (top+bottom) / (top-bottom);
+	float c = -(farZ+nearZ) / ( farZ-nearZ);
+	float d = -(2.0f*farZ*nearZ) / (farZ-nearZ);
+
+#define M(row,col)  m[col*4+row]
+	M(0,0) = x;     M(0,1) = 0.0F;  M(0,2) = a;      M(0,3) = 0.0F;
+	M(1,0) = 0.0F;  M(1,1) = y;     M(1,2) = b;      M(1,3) = 0.0F;
+	M(2,0) = 0.0F;  M(2,1) = 0.0F;  M(2,2) = c;      M(2,3) = d;
+	M(3,0) = 0.0F;  M(3,1) = 0.0F;  M(3,2) = -1.0F;  M(3,3) = 0.0F;
+#undef M
+}
+
+WRITE16_HANDLER( dsp_rasterize_w )
+{
+}
+
+READ16_HANDLER( dsp_x_return_r )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+
+	/* Construct a frustum from the system's most recently set left and bottom extents */
+	float m[16];
+	airInfernoFrustum(state->m_frustumLeft, state->m_frustumBottom, m);
+	int res;
+
+	res = projectEyeCoordToScreen(m,
+								  32*16, /* x max screen size */
+								  state->m_eyecoordBuffer,0);
+
+    // Extremely poor man's clipping :-P
+    if (res == -10000) return -32*8;
+    if (res ==  10000) return 32*8-1;
+    if (res > 32*8-1) res = 32*8-1;
+    if (res < -32*8) res = -32*8;
+	return res;
+}
+
+READ16_HANDLER( dsp_y_return_r )
+{
+	taitoair_state *state = space->machine().driver_data<taitoair_state>();
+
+	/* Construct a frustum from the system's most recently set left and bottom extents */
+	float m[16];
+	airInfernoFrustum(state->m_frustumLeft, state->m_frustumBottom, m);
+
+	int res;
+	res = projectEyeCoordToScreen(m,
+								  28*16, /* y max screen size */
+								  state->m_eyecoordBuffer, 1);
+
+    // Extremely poor man's clipping :-P
+    if (res == -10000) return 28*7;
+    if (res == 10000) return 28*7;
+    if (res > 28*7) res = 28*7;
+    if (res < -28*7) res = -28*7;
+	return res;
+}
+
+VIDEO_START( taitoair )
+{
+	taitoair_state *state = machine.driver_data<taitoair_state>();
+	int width, height;
+
+	width = machine.primary_screen->width();
+	height = machine.primary_screen->height();
+	state->m_framebuffer[0] = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED16);
+	state->m_framebuffer[1] = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED16);
+	//state->m_buffer3d = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED16);
+}
+
 SCREEN_UPDATE( taitoair )
 {
 	taitoair_state *state = screen->machine().driver_data<taitoair_state>();
 
 	tc0080vco_tilemap_update(state->m_tc0080vco);
 
-	bitmap_fill(bitmap, cliprect, 0x41);
+	bitmap_fill(bitmap, cliprect, 0);
 
-#ifdef MAME_DEBUG
-	if (!screen->machine().input().code_pressed(KEYCODE_A))
-		tc0080vco_tilemap_draw(state->m_tc0080vco, bitmap, cliprect, 0, 0, 0);
-	if (!screen->machine().input().code_pressed(KEYCODE_S))
-		draw_sprites(screen->machine(), bitmap, cliprect, 0);
-	if (!screen->machine().input().code_pressed(KEYCODE_D))
-		tc0080vco_tilemap_draw(state->m_tc0080vco, bitmap, cliprect, 1, 0, 0);
-	if (!screen->machine().input().code_pressed(KEYCODE_F))
-		draw_sprites(screen->machine(), bitmap, cliprect, 1);
-#else
+	{
+		int x,y;
+
+		/*
+        [0x980000-3] dword for Y 0
+        [0x980004-7] dword for rotation param 0
+        [0x980008-b] dword for Y 1
+        [0x98000c-f] dword for rotation param 1
+        */
+
+		for(y=cliprect->min_y;y<cliprect->max_y/2;y++)
+		{
+			for(x=cliprect->min_x;x<cliprect->max_x;x++)
+			{
+				*BITMAP_ADDR16(bitmap,y,x) = 0x2000 + (0x3f - ((y >> 2) & 0x3f));
+			}
+		}
+
+		#if 0
+		for(y=cliprect->max_y/2;y<cliprect->max_y;y++)
+		{
+			for(x=cliprect->min_x;x<cliprect->max_x;x++)
+			{
+				*BITMAP_ADDR16(bitmap,y,x) = 0x2040 + (0x3f - ((y >> 2) & 0x3f));
+			}
+		}
+		#endif
+	}
+
 	tc0080vco_tilemap_draw(state->m_tc0080vco, bitmap, cliprect, 0, 0, 0);
+
 	draw_sprites(screen->machine(), bitmap, cliprect, 0);
+
+	copybitmap_trans(bitmap, state->m_framebuffer[1], 0, 0, 0, 0, cliprect, 0);
+
 	tc0080vco_tilemap_draw(state->m_tc0080vco, bitmap, cliprect, 1, 0, 0);
+
 	draw_sprites(screen->machine(), bitmap, cliprect, 1);
-#endif
 
 	tc0080vco_tilemap_draw(state->m_tc0080vco, bitmap, cliprect, 2, 0, 0);
 
-	if (state->m_line_ram[0x3fff])
-	{
-		int adr = 0x3fff;
-//      struct taitoair_poly q;
+	/* Hacky 3d bitmap */
+	//copybitmap_trans(bitmap, state->m_buffer3d, 0, 0, 0, 0, cliprect, 0);
+	//bitmap_fill(state->m_buffer3d, cliprect, 0);
 
-		while (adr >= 0 && state->m_line_ram[adr] && state->m_line_ram[adr] != 0x4000)
-		{
-			int pcount;
-			if (!(state->m_line_ram[adr] & 0x8000) || adr < 10)
-			{
-				logerror("quad: unknown value %04x at %04x\n", state->m_line_ram[adr], adr);
-				break;
-			}
-			state->m_q.col = (state->m_line_ram[adr] & 0x7fff) + 0x300;
-			adr--;
-			pcount = 0;
-			while (pcount < TAITOAIR_POLY_MAX_PT && adr >= 1 && !(state->m_line_ram[adr] & 0xc000))
-			{
-				state->m_q.p[pcount].y = state->m_line_ram[adr] + 3 * 16;
-				state->m_q.p[pcount].x = state->m_line_ram[adr - 1];
-				pcount++;
-				adr -= 2;
-			}
-			adr--;
-			state->m_q.pcount = pcount;
-			fill_poly(bitmap, cliprect, &state->m_q);
-		}
-	}
 	return 0;
 }

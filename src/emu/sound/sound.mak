@@ -80,6 +80,9 @@ ifneq ($(filter ASC,$(SOUNDS)),)
 SOUNDOBJS += $(SOUNDOBJ)/asc.o
 endif
 
+ifneq ($(filter AWACS,$(SOUNDS)),)
+SOUNDOBJS += $(SOUNDOBJ)/awacs.o
+endif
 
 
 #-------------------------------------------------
@@ -705,6 +708,14 @@ endif
 
 ifneq ($(filter YMZ280B,$(SOUNDS)),)
 SOUNDOBJS += $(SOUNDOBJ)/ymz280b.o
+endif
+
+#-------------------------------------------------
+# Yamaha YMZ770 AMM
+#-------------------------------------------------
+
+ifneq ($(filter YMZ770,$(SOUNDS)),)
+SOUNDOBJS += $(SOUNDOBJ)/ymz770.o
 endif
 
 #-------------------------------------------------

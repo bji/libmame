@@ -70,6 +70,10 @@
 #include "winutf8.h"
 #include "winutil.h"
 #include "debugger.h"
+#include "winfile.h"
+#ifdef USE_NETWORK
+#include "netdev.h"
+#endif
 
 #define DEBUG_SLOW_LOCKS	0
 
@@ -329,8 +333,10 @@ const options_entry windows_options::s_option_entries[] =
 	// post-processing options
 	{ NULL,                                             		NULL,        OPTION_HEADER,     "DIRECT3D POST-PROCESSING OPTIONS" },
 	{ WINOPTION_HLSL_ENABLE";hlsl",         					"0",         OPTION_BOOLEAN,    "enable HLSL post-processing (PS3.0 required)" },
-	{ WINOPTION_HLSL_INI_NAME,      							"%g",        OPTION_STRING,     "HLSL INI file path" },
 	{ WINOPTION_HLSLPATH,                                   	"hlsl",      OPTION_STRING,     "path to hlsl files" },
+	{ WINOPTION_HLSL_INI_READ,									"0",		 OPTION_BOOLEAN,	"enable HLSL INI reading" },
+	{ WINOPTION_HLSL_INI_WRITE,									"0",		 OPTION_BOOLEAN,	"enable HLSL INI writing" },
+	{ WINOPTION_HLSL_INI_NAME,      							"%g",        OPTION_STRING,     "HLSL INI file name for this game" },
 	{ WINOPTION_HLSL_PRESCALE_X,        						"0",         OPTION_INTEGER,    "HLSL pre-scale override factor for X (0 for auto)" },
 	{ WINOPTION_HLSL_PRESCALE_Y,        						"0",         OPTION_INTEGER,    "HLSL pre-scale override factor for Y (0 for auto)" },
 	{ WINOPTION_HLSL_PRESET";(-1-3)",                           "-1",        OPTION_INTEGER,    "HLSL preset to use (0-3)" },
@@ -422,6 +428,7 @@ const options_entry windows_options::s_option_entries[] =
 
 	// input options
 	{ NULL,                                           NULL,       OPTION_HEADER,     "INPUT DEVICE OPTIONS" },
+	{ WINOPTION_HIDE_CURSOR ";hc",                    "1",        OPTION_BOOLEAN,    "hide cursor in full screen or if mouse is enabled" },
 	{ WINOPTION_DUAL_LIGHTGUN ";dual",                "0",        OPTION_BOOLEAN,    "enable dual lightgun input" },
 
 	{ NULL }
@@ -552,7 +559,8 @@ static void winui_output_error(void *param, const char *format, va_list argptr)
 
 static void output_oslog(running_machine &machine, const char *buffer)
 {
-	win_output_debug_string_utf8(buffer);
+	if (IsDebuggerPresent())
+		win_output_debug_string_utf8(buffer);
 }
 
 
@@ -635,13 +643,17 @@ void windows_osd_interface::init(running_machine &machine)
 	winsound_init(machine);
 	wininput_init(machine);
 	winoutput_init(machine);
-
+#ifdef USE_NETWORK
+	winnetdev_init(machine);
+#endif
 	// notify listeners of screen configuration
 	astring tempstring;
 	for (win_window_info *info = win_window_list; info != NULL; info = info->next)
 	{
-		tempstring.printf("Orientation(%s)", utf8_from_tstring(info->monitor->info.szDevice));
+		char *tmp = utf8_from_tstring(info->monitor->info.szDevice);
+		tempstring.printf("Orientation(%s)", tmp);
 		output_set_value(tempstring, info->targetorient);
+		osd_free(tmp);
 	}
 
 	// hook up the debugger log
@@ -677,6 +689,9 @@ void windows_osd_interface::init(running_machine &machine)
 		profiler->start();
 	}
 
+	// initialize sockets
+	win_init_sockets();
+
 	// note the existence of a machine
 	g_current_machine = &machine;
 }
@@ -690,6 +705,9 @@ void windows_osd_interface::osd_exit(running_machine &machine)
 {
 	// no longer have a machine
 	g_current_machine = NULL;
+
+	// cleanup sockets
+	win_cleanup_sockets();
 
 	// take down the watchdog thread if it exists
 	if (watchdog_thread != NULL)
@@ -848,8 +866,10 @@ bitmap_t *windows_osd_interface::font_get_bitmap(osd_font font, unicode_char chn
 	info.bmiHeader.biYPelsPerMeter = GetDeviceCaps(dummyDC, VERTRES) / GetDeviceCaps(dummyDC, VERTSIZE);
 	info.bmiHeader.biClrUsed = 0;
 	info.bmiHeader.biClrImportant = 0;
-	info.bmiColors[0].rgbBlue = info.bmiColors[0].rgbGreen = info.bmiColors[0].rgbRed = 0x00;
-	info.bmiColors[1].rgbBlue = info.bmiColors[1].rgbGreen = info.bmiColors[1].rgbRed = 0xff;
+	RGBQUAD col1 = info.bmiColors[0];
+	RGBQUAD col2 = info.bmiColors[1];
+	col1.rgbBlue = col1.rgbGreen = col1.rgbRed = 0x00;
+	col2.rgbBlue = col2.rgbGreen = col2.rgbRed = 0xff;
 
 	// create a DIB to render to
 	BYTE *bits;
@@ -1347,7 +1367,7 @@ const char *symbol_manager::symbol_for_address(FPTR address)
 bool symbol_manager::query_system_for_address(FPTR address)
 {
 	// need at least the sym_from_addr API
-	if (m_sym_from_addr == NULL)
+	if (!m_sym_from_addr)
 		return false;
 
 	BYTE info_buffer[sizeof(SYMBOL_INFO) + 256] = { 0 };
@@ -1362,7 +1382,7 @@ bool symbol_manager::query_system_for_address(FPTR address)
 		// try to get source info as well; again we are returned an ANSI string
 		IMAGEHLP_LINE64 lineinfo = { sizeof(lineinfo) };
 		DWORD linedisp;
-		if (m_sym_get_line_from_addr_64 != NULL && (*m_sym_get_line_from_addr_64)(m_process, address, &linedisp, &lineinfo))
+		if (m_sym_get_line_from_addr_64 && (*m_sym_get_line_from_addr_64)(m_process, address, &linedisp, &lineinfo))
 			format_symbol(info.Name, displacement, lineinfo.FileName, lineinfo.LineNumber);
 		else
 			format_symbol(info.Name, displacement);
@@ -1411,7 +1431,7 @@ void symbol_manager::scan_file_for_address(FPTR address, bool create_cache)
 	while (fgets(line, sizeof(line) - 1, srcfile))
 	{
 		// parse the line looking for an interesting symbol
-		FPTR addr;
+		FPTR addr = 0;
 		bool valid = is_symfile ? parse_sym_line(line, addr, symbol) : parse_map_line(line, addr, symbol);
 
 		// if we got one, see if this is the best
@@ -1594,7 +1614,7 @@ FPTR symbol_manager::get_text_section_base()
 	assert(base != NULL);
 
 	// make sure we have the functions we need
-	if (image_nt_header != NULL && image_rva_to_section != NULL)
+	if (image_nt_header && image_rva_to_section)
 	{
 		// get the NT header
 		PIMAGE_NT_HEADERS headers = (*image_nt_header)(base);

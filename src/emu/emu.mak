@@ -57,15 +57,17 @@ EMUOBJS = \
 	$(EMUOBJ)/delegate.o \
 	$(EMUOBJ)/devcb.o \
 	$(EMUOBJ)/devcpu.o \
+	$(EMUOBJ)/device.o \
 	$(EMUOBJ)/devimage.o \
 	$(EMUOBJ)/devlegcy.o \
-	$(EMUOBJ)/devintrf.o \
 	$(EMUOBJ)/didisasm.o \
 	$(EMUOBJ)/diexec.o \
 	$(EMUOBJ)/diimage.o \
 	$(EMUOBJ)/dimemory.o \
+	$(EMUOBJ)/dinetwork.o \
 	$(EMUOBJ)/dinvram.o \
 	$(EMUOBJ)/dirtc.o \
+	$(EMUOBJ)/diserial.o \
 	$(EMUOBJ)/dislot.o \
 	$(EMUOBJ)/disound.o \
 	$(EMUOBJ)/distate.o \
@@ -80,7 +82,7 @@ EMUOBJS = \
 	$(EMUOBJ)/image.o \
 	$(EMUOBJ)/info.o \
 	$(EMUOBJ)/input.o \
-	$(EMUOBJ)/inptport.o \
+	$(EMUOBJ)/ioport.o \
 	$(EMUOBJ)/mame.o \
 	$(EMUOBJ)/machine.o \
 	$(EMUOBJ)/mconfig.o \
@@ -121,7 +123,8 @@ EMUOBJS = \
 	$(EMUOBJ)/debug/textbuf.o \
 	$(EMUOBJ)/debugint/debugint.o \
 	$(EMUOBJ)/profiler.o \
-	$(OSDOBJ)/osdepend.o
+	$(OSDOBJ)/osdepend.o \
+	$(OSDOBJ)/osdnet.o
 
 EMUSOUNDOBJS = \
 	$(EMUOBJ)/sound/filter.o \
@@ -141,6 +144,7 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/6525tpi.o		\
 	$(EMUMACHINE)/6526cia.o		\
 	$(EMUMACHINE)/6532riot.o	\
+	$(EMUMACHINE)/6551acia.o	\
 	$(EMUMACHINE)/6821pia.o		\
 	$(EMUMACHINE)/6840ptm.o		\
 	$(EMUMACHINE)/6850acia.o	\
@@ -159,6 +163,8 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/adc1038.o		\
 	$(EMUMACHINE)/adc1213x.o	\
 	$(EMUMACHINE)/am53cf96.o	\
+	$(EMUMACHINE)/am8530h.o		\
+	$(EMUMACHINE)/amigafdc.o	\
 	$(EMUMACHINE)/at28c16.o		\
 	$(EMUMACHINE)/cdp1852.o		\
 	$(EMUMACHINE)/cdp1871.o		\
@@ -178,6 +184,7 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/i8212.o		\
 	$(EMUMACHINE)/i8214.o		\
 	$(EMUMACHINE)/i8243.o		\
+	$(EMUMACHINE)/i8251.o		\
 	$(EMUMACHINE)/i8255.o		\
 	$(EMUMACHINE)/i8355.o		\
 	$(EMUMACHINE)/idectrl.o		\
@@ -208,6 +215,7 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/msm5832.o	\
 	$(EMUMACHINE)/msm58321.o	\
 	$(EMUMACHINE)/msm6242.o		\
+    $(EMUMACHINE)/ncr539x.o     \
 	$(EMUMACHINE)/nmc9306.o		\
 	$(EMUMACHINE)/nvram.o		\
 	$(EMUMACHINE)/pc16552d.o	\
@@ -221,6 +229,7 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/rp5c15.o		\
 	$(EMUMACHINE)/rp5h01.o		\
 	$(EMUMACHINE)/rtc65271.o	\
+	$(EMUMACHINE)/rtc9701.o		\
 	$(EMUMACHINE)/s3c2400.o		\
 	$(EMUMACHINE)/s3c2410.o		\
 	$(EMUMACHINE)/s3c2440.o		\
@@ -257,19 +266,20 @@ EMUVIDEOOBJS = \
 	$(EMUVIDEO)/crt9212.o		\
 	$(EMUVIDEO)/dm9368.o		\
 	$(EMUVIDEO)/generic.o		\
+	$(EMUVIDEO)/h63484.o		\
 	$(EMUVIDEO)/hd44102.o		\
 	$(EMUVIDEO)/hd61830.o		\
 	$(EMUVIDEO)/hd63484.o		\
-	$(EMUVIDEO)/i8275.o			\
+	$(EMUVIDEO)/i8275.o		\
 	$(EMUVIDEO)/k053250.o		\
 	$(EMUVIDEO)/mc6845.o		\
 	$(EMUVIDEO)/msm6255.o		\
 	$(EMUVIDEO)/pc_vga.o		\
-	$(EMUVIDEO)/poly.o			\
-	$(EMUVIDEO)/psx.o			\
+	$(EMUVIDEO)/poly.o		\
+	$(EMUVIDEO)/psx.o		\
 	$(EMUVIDEO)/resnet.o		\
 	$(EMUVIDEO)/rgbutil.o		\
-	$(EMUVIDEO)/s2636.o			\
+	$(EMUVIDEO)/s2636.o		\
 	$(EMUVIDEO)/saa5050.o		\
 	$(EMUVIDEO)/sed1330.o		\
 	$(EMUVIDEO)/tlc34076.o		\
@@ -277,7 +287,7 @@ EMUVIDEOOBJS = \
 	$(EMUVIDEO)/tms9927.o		\
 	$(EMUVIDEO)/tms9928a.o		\
 	$(EMUVIDEO)/upd3301.o		\
-	$(EMUVIDEO)/v9938.o			\
+	$(EMUVIDEO)/v9938.o		\
 	$(EMUVIDEO)/vector.o		\
 	$(EMUVIDEO)/voodoo.o		\
 
@@ -287,9 +297,11 @@ EMUIMAGEDEVOBJS = \
 	$(EMUIMAGEDEV)/cassette.o	\
 	$(EMUIMAGEDEV)/chd_cd.o		\
 	$(EMUIMAGEDEV)/flopdrv.o	\
+	$(EMUIMAGEDEV)/floppy.o		\
 	$(EMUIMAGEDEV)/harddriv.o	\
 	$(EMUIMAGEDEV)/multcart.o	\
 	$(EMUIMAGEDEV)/printer.o	\
+	$(EMUIMAGEDEV)/serial.o		\
 	$(EMUIMAGEDEV)/snapquik.o	\
 
 
@@ -344,6 +356,7 @@ $(EMUOBJ)/rendlay.o:	$(EMULAYOUT)/dualhovu.lh \
 						$(EMULAYOUT)/dualhuov.lh \
 						$(EMULAYOUT)/horizont.lh \
 						$(EMULAYOUT)/triphsxs.lh \
+						$(EMULAYOUT)/quadhsxs.lh \
 						$(EMULAYOUT)/vertical.lh \
 						$(EMULAYOUT)/ho20ffff.lh \
 						$(EMULAYOUT)/ho2eff2e.lh \
@@ -355,6 +368,6 @@ $(EMUOBJ)/rendlay.o:	$(EMULAYOUT)/dualhovu.lh \
 						$(EMULAYOUT)/voffff20.lh \
 						$(EMULAYOUT)/lcd.lh \
 						$(EMULAYOUT)/lcd_rot.lh \
-						$(EMULAYOUT)/pinball.lh \
+						$(EMULAYOUT)/noscreens.lh \
 
 $(EMUOBJ)/video.o:		$(EMULAYOUT)/snap.lh

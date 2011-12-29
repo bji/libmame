@@ -1626,10 +1626,11 @@ void render_target::update_layer_config()
 
 void render_target::load_layout_files(const char *layoutfile, bool singlefile)
 {
+	bool have_default = false;
 	// if there's an explicit file, load that first
 	const char *basename = m_manager.machine().basename();
 	if (layoutfile != NULL)
-		load_layout_file(basename, layoutfile);
+		have_default |= load_layout_file(basename, layoutfile);
 
 	// if we're only loading this file, we know our final result
 	if (singlefile)
@@ -1638,28 +1639,59 @@ void render_target::load_layout_files(const char *layoutfile, bool singlefile)
 	// try to load a file based on the driver name
 	const game_driver &system = m_manager.machine().system();
 	if (!load_layout_file(basename, system.name))
-		load_layout_file(basename, "default");
+		have_default |= load_layout_file(basename, "default");
+	else
+		have_default |= true;
 
 	// if a default view has been specified, use that as a fallback
 	if (system.default_layout != NULL)
-		load_layout_file(NULL, system.default_layout);
+		have_default |= load_layout_file(NULL, system.default_layout);
 	if (m_manager.machine().config().m_default_layout != NULL)
-		load_layout_file(NULL, m_manager.machine().config().m_default_layout);
+		have_default |= load_layout_file(NULL, m_manager.machine().config().m_default_layout);
 
 	// try to load another file based on the parent driver name
 	int cloneof = driver_list::clone(system);
-	if (cloneof != -1)
+	if (cloneof != -1) {
 		if (!load_layout_file(driver_list::driver(cloneof).name, driver_list::driver(cloneof).name))
-			load_layout_file(driver_list::driver(cloneof).name, "default");
-
+			have_default |= load_layout_file(driver_list::driver(cloneof).name, "default");
+		else
+			have_default |= true;
+	}
+	int screens = m_manager.machine().devicelist().count(SCREEN);
 	// now do the built-in layouts for single-screen games
-	if (m_manager.machine().devicelist().count(SCREEN) == 1)
+	if (screens == 1)
 	{
 		if (system.flags & ORIENTATION_SWAP_XY)
 			load_layout_file(NULL, layout_vertical);
 		else
 			load_layout_file(NULL, layout_horizont);
 		assert_always(m_filelist.count() > 0, "Couldn't parse default layout??");
+	}
+	if (!have_default)
+	{
+		if (screens == 0)
+		{
+			load_layout_file(NULL, layout_noscreens);
+			assert_always(m_filelist.count() > 0, "Couldn't parse default layout??");
+		}
+		else
+		if (screens == 2)
+		{
+			load_layout_file(NULL, layout_dualhsxs);
+			assert_always(m_filelist.count() > 0, "Couldn't parse default layout??");
+		}
+		else
+		if (screens == 3)
+		{
+			load_layout_file(NULL, layout_triphsxs);
+			assert_always(m_filelist.count() > 0, "Couldn't parse default layout??");
+		}
+		else
+		if (screens == 4)
+		{
+			load_layout_file(NULL, layout_quadhsxs);
+			assert_always(m_filelist.count() > 0, "Couldn't parse default layout??");
+		}
 	}
 }
 
@@ -1698,9 +1730,9 @@ bool render_target::load_layout_file(const char *dirname, const char *filename)
 	if (rootnode == NULL)
 	{
 		if (filename[0] != '<')
-			mame_printf_warning("Improperly formatted XML file '%s', ignorning\n", filename);
+			mame_printf_warning("Improperly formatted XML file '%s', ignoring\n", filename);
 		else
-			mame_printf_warning("Improperly formatted XML string, ignorning");
+			mame_printf_warning("Improperly formatted XML string, ignoring\n");
 		return false;
 	}
 
@@ -2509,7 +2541,7 @@ bool render_manager::is_live(screen_device &screen) const
 {
 	// iterate over all live targets and or together their screen masks
 	for (render_target *target = m_targetlist.first(); target != NULL; target = target->next())
-		if (target->view_screens(target->view()).contains(screen))
+		if (!target->hidden() && target->view_screens(target->view()).contains(screen))
 			return true;
 	return false;
 }

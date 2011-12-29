@@ -64,6 +64,14 @@ uniform float TargetHeight;
 uniform float RawWidth;
 uniform float RawHeight;
 
+uniform float WidthRatio;
+uniform float HeightRatio;
+
+uniform float TextureWidth;
+uniform float TextureHeight;
+
+uniform float Passthrough;
+
 VS_OUTPUT vs_main(VS_INPUT Input)
 {
 	VS_OUTPUT Output = (VS_OUTPUT)0;
@@ -77,8 +85,8 @@ VS_OUTPUT vs_main(VS_INPUT Input)
 	Output.Position *= float4(2.0f, 2.0f, 1.0f, 1.0f);
 	Output.Color = Input.Color;
 	
-	float2 InvTexSize = float2(1.0f / TargetWidth, 1.0f / TargetHeight);
-	Output.TexCoord = Input.TexCoord + 0.5f * InvTexSize; 
+	float2 InvTexSize = float2(1.0f / TextureWidth, 1.0f / TextureHeight);
+	Output.TexCoord = Input.TexCoord + float2(0.5f, 0.5f) * InvTexSize;
 	Output.PrevCoord = Output.TexCoord;
 	
 	return Output;
@@ -88,20 +96,18 @@ VS_OUTPUT vs_main(VS_INPUT Input)
 // Simple Pixel Shader
 //-----------------------------------------------------------------------------
 
-uniform float RedPhosphor = 0.0f;
-uniform float GreenPhosphor = 0.0f;
-uniform float BluePhosphor = 0.0f;
+uniform float3 Phosphor = float3(0.0f, 0.0f, 0.0f);
 
 float4 ps_main(PS_INPUT Input) : COLOR
 {
 	float4 CurrPix = tex2D(DiffuseSampler, Input.TexCoord);
-	float3 PrevPix = tex2D(PreviousSampler, Input.PrevCoord).rgb * float3(RedPhosphor, GreenPhosphor, BluePhosphor);
+	float3 PrevPix = tex2D(PreviousSampler, Input.PrevCoord).rgb * float3(Phosphor.r, Phosphor.g, Phosphor.b);
 	
 	float RedMax = max(CurrPix.r, PrevPix.r);
 	float GreenMax = max(CurrPix.g, PrevPix.g);
 	float BlueMax = max(CurrPix.b, PrevPix.b);
 
-	return float4(RedMax, GreenMax, BlueMax, CurrPix.a);
+	return lerp(float4(RedMax, GreenMax, BlueMax, CurrPix.a), CurrPix, Passthrough);
 }
 
 //-----------------------------------------------------------------------------

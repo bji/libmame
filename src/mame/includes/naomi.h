@@ -22,6 +22,8 @@ extern void naomi_game_decrypt(running_machine& machine, UINT64 key, UINT8* regi
 extern DRIVER_INIT( naomi );
 extern DRIVER_INIT( naomi_mp );
 extern DRIVER_INIT( naomi2 );
+extern DRIVER_INIT( naomigd );
+extern DRIVER_INIT( naomigd_mp );
 
 extern DRIVER_INIT( sfz3ugd );
 extern DRIVER_INIT( ggxxsla );
@@ -36,7 +38,11 @@ extern DRIVER_INIT( vf4evoct );
 
 extern DRIVER_INIT( kick4csh );
 
+extern DRIVER_INIT( hotd2 );
+
 extern UINT64 *naomi_ram64;
 
 extern int jvsboard_type;
 extern UINT16 actel_id;
+
+void naomi_g1_irq(running_machine &machine);

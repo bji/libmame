@@ -50,7 +50,7 @@ Notes:
 
 ***************************************************************************/
 
-static WRITE16_HANDLER( tetrisp2_systemregs_w )
+WRITE16_HANDLER( tetrisp2_systemregs_w )
 {
 	tetrisp2_state *state = space->machine().driver_data<tetrisp2_state>();
 	if (ACCESSING_BITS_0_7)
@@ -223,14 +223,14 @@ static READ16_HANDLER( tetrisp2_ip_1_word_r )
 
 
 /* The game only ever writes even bytes and reads odd bytes */
-static READ16_HANDLER( tetrisp2_nvram_r )
+READ16_HANDLER( tetrisp2_nvram_r )
 {
 	tetrisp2_state *state = space->machine().driver_data<tetrisp2_state>();
 	return	( (state->m_nvram[offset] >> 8) & 0x00ff ) |
 			( (state->m_nvram[offset] << 8) & 0xff00 ) ;
 }
 
-static WRITE16_HANDLER( tetrisp2_nvram_w )
+WRITE16_HANDLER( tetrisp2_nvram_w )
 {
 	tetrisp2_state *state = space->machine().driver_data<tetrisp2_state>();
 	COMBINE_DATA(&state->m_nvram[offset]);
@@ -1342,7 +1342,8 @@ ROM_START( tetrisp2 ) /* Version 2.8 */
 	ROM_LOAD( "96019-04.6",  0x400000, 0x100000, CRC(b849dec9) SHA1(fa7ac00fbe587a74c3fb8c74a0f91f7afeb8682f) )
 
 	ROM_REGION( 0x100000, "gfx3", 0 )	/* 16x16x8 (Rotation) */
-	ROM_LOAD( "96019-04.6",  0x000000, 0x100000, CRC(b849dec9) SHA1(fa7ac00fbe587a74c3fb8c74a0f91f7afeb8682f) )
+	ROM_COPY( "gfx2",        0x400000, 0x000000, 0x100000 )
+	//ROM_LOAD( "96019-04.6",  0x000000, 0x100000, CRC(b849dec9) SHA1(fa7ac00fbe587a74c3fb8c74a0f91f7afeb8682f) )
 
 	ROM_REGION( 0x080000, "gfx4", 0 )	/* 8x8x8 (Foreground) */
 	ROM_LOAD( "tetp2-10.ic27", 0x000000, 0x080000, CRC(34dd1bad) SHA1(9bdf1dde11f82839676400de5dd7acb06ea8cdb2) )	// 11111xxxxxxxxxxxxxx = 0xFF
@@ -1717,7 +1718,7 @@ ROM_START( rockn3 )
 	ROM_REGION( 0x080000, "gfx4", 0 )	/* 8x8x8 (Foreground) */
 	ROM_LOAD( "rock_n_3_vj-98344_10_v1.0", 0x000000, 0x080000, CRC(8100039e) SHA1(e07b1e2f3cbcb1c086edd628d20423ecd4f74860)  ) /* IC19 (alt PCB number 10) */
 
-	ROM_REGION( 0x7000000, "ymz", 0 )	/* Samples - On seperate ROM board with YMZ280B-F sound chip */
+	ROM_REGION( 0x7000000, "ymz", 0 )	/* Samples - On separate ROM board with YMZ280B-F sound chip */
 	ROM_LOAD( "mr99029-01.ic28", 0x0000000, 0x0400000, CRC(e2f69042) SHA1(deb361a53ed6a9033e21c2f805f327cc3e9b11c6)  ) // COMMON AREA  (alt PCB number 25)
 	ROM_FILL(                    0x0400000, 0x0c00000, 0xff )		// BANK AREA (unpopulated IC29, IC36 & IC37 (alt PCB numbers 26, 27 & 28 repectively)
 	ROM_LOAD( "mr99029-02.ic1",  0x1000000, 0x0400000, CRC(b328b18f) SHA1(22edebcabd6c8ed65d8c9e501621991d404c430d)  ) // bank 0 (alt PCB number 1)

@@ -488,21 +488,9 @@ static MACHINE_CONFIG_START( zn1_1mb_vram, zn_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD( "maincpu", CXD8530CQ, XTAL_67_7376MHz )
 	MCFG_CPU_PROGRAM_MAP( zn_map)
-	MCFG_CPU_VBLANK_INT("screen", psx_vblank)
 
 	/* video hardware */
-	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_REFRESH_RATE( 60 )
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE( 1024, 512 )
-	MCFG_SCREEN_VISIBLE_AREA( 0, 639, 0, 479 )
-	MCFG_SCREEN_UPDATE( psx )
-
-	MCFG_PALETTE_LENGTH( 65536 )
-
-	MCFG_PALETTE_INIT( psx )
-	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8561Q, 0 )
+	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8561Q, 0x100000, XTAL_53_693175MHz )
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
@@ -515,30 +503,16 @@ static MACHINE_CONFIG_START( zn1_1mb_vram, zn_state )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( zn1_2mb_vram, zn1_1mb_vram )
-
-	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_SIZE( 1024, 1024 )
+	MCFG_PSXGPU_REPLACE( "maincpu", "gpu", CXD8561Q, 0x200000, XTAL_53_693175MHz )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_START( zn2, zn_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD( "maincpu", CXD8661R, XTAL_100MHz )
 	MCFG_CPU_PROGRAM_MAP( zn_map)
-	MCFG_CPU_VBLANK_INT("screen", psx_vblank)
 
 	/* video hardware */
-	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_REFRESH_RATE( 60 )
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE( 1024, 1024 )
-	MCFG_SCREEN_VISIBLE_AREA( 0, 639, 0, 479 )
-	MCFG_SCREEN_UPDATE( psx )
-
-	MCFG_PALETTE_LENGTH( 65536 )
-
-	MCFG_PALETTE_INIT( psx )
-	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8654Q, 0 )
+	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8654Q, 0x200000, XTAL_53_693175MHz )
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
@@ -1426,7 +1400,7 @@ Also printed on the board near the ROMs is....
 Notes:
       CAT702              - protection chip labelled 'TW02' (DIP20)
       JGUN1, JGUN2        - Connector for optional gun controllers
-      ROMs U14 thru U17   - 27C040 EPROM
+      ROMs U14 to U17     - 27C040 EPROM
       DS1232S             - Dallas DS1232 (reset IC, SOIC16)
       VT83C461            - VIA VT83C461 (IDE Hard Drive controller, QFP100)
       EPM7160ELC84        - Altera MAX EPM7160ELC84-10 (PLCC84 CPLD, labelled 'PSX PiD 9-19-96 2FDA')
@@ -1597,7 +1571,7 @@ Notes:
       CAT702              - protection chip labelled 'ET02' (DIP20)
       ROMs 217, 216 & 326 - surface mounted 32MBit MASK ROM (SOP44)
       ROMs 042 & 046      - 27C2001 EPROM
-      ROMs 212 thru 215   - 27C4001 EPROM
+      ROMs 212 to 215     - 27C4001 EPROM
       MAIN_IF2 & SUB_IF2  - AMD Mach211 CPLD (PLCC44)
       M628032             - 32K x8 SRAM, equivalent to 62256 SRAM (SOJ28)
       68000 clock         - 12MHz
@@ -1851,7 +1825,7 @@ data.
 Disk Drive is a Quantum ????2.1 GB??
 
 connectors CN506 and CN505 are the gun inputs pins 13, 14, 15
-white/blue/ black respectively.   The + 5 (red) is seperate source (not
+white/blue/ black respectively.   The + 5 (red) is separate source (not
 from the CN506 or Cn505).
 
 You'll have to get the +5 for the guns from the jamma harness.
@@ -1956,10 +1930,10 @@ Notes:
       U35, U36 - 27C080 DIP32 EPROM
       U21, U22 - Unpopulated positions for DIP32 EPROM
       U6, U20  - Unpopulated position for SOP44 MaskROM
-      U3 thru U6    \
-      U17 thru U19  |  surface mounted 32MBit SOP44 MaskROM
-      U28 thru U31  |
-      U41 thru U44  /
+      U3  to  U6  \
+      U17 to U19  |  surface mounted 32MBit SOP44 MaskROM
+      U28 to U31  |
+      U41 to U44  /
 
 
 Sound Board
@@ -2070,32 +2044,32 @@ static CUSTOM_INPUT( jdredd_gun_mux_read )
 	return state->m_jdredd_gun_mux;
 }
 
-static INTERRUPT_GEN( jdredd_vblank )
+void jdredd_vblank(zn_state *state, screen_device &screen, bool vblank_state)
 {
-	zn_state *state = device->machine().driver_data<zn_state>();
 	int x;
 	int y;
 
-	state->m_jdredd_gun_mux = !state->m_jdredd_gun_mux;
-
-	if( state->m_jdredd_gun_mux == 0 )
+	if( vblank_state )
 	{
-		x = input_port_read(device->machine(), "GUN1X");
-		y = input_port_read(device->machine(), "GUN1Y");
-	}
-	else
-	{
-		x = input_port_read(device->machine(), "GUN2X");
-		y = input_port_read(device->machine(), "GUN2Y");
-	}
+		state->m_jdredd_gun_mux = !state->m_jdredd_gun_mux;
 
-	if( x > 0x393 && x < 0xcb2 &&
-		y > 0x02d && y < 0x217 )
-	{
-		psx_lightgun_set( device->machine(), x, y );
-	}
+		if( state->m_jdredd_gun_mux == 0 )
+		{
+			x = input_port_read(state->machine(), "GUN1X");
+			y = input_port_read(state->machine(), "GUN1Y");
+		}
+		else
+		{
+			x = input_port_read(state->machine(), "GUN2X");
+			y = input_port_read(state->machine(), "GUN2Y");
+		}
 
-	psx_vblank( device );
+		if( x > 0x393 && x < 0xcb2 &&
+			y > 0x02d && y < 0x217 )
+		{
+			psx_lightgun_set( state->machine(), x, y );
+		}
+	}
 }
 
 static WRITE32_HANDLER( acpsx_00_w )
@@ -2179,8 +2153,8 @@ MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( coh1000a_ide, zn1_2mb_vram )
 
-	MCFG_CPU_MODIFY( "maincpu" )
-	MCFG_CPU_VBLANK_INT("screen", jdredd_vblank)
+	MCFG_DEVICE_MODIFY( "gpu" )
+	MCFG_PSXGPU_VBLANK_CALLBACK( vblank_state_delegate( FUNC( jdredd_vblank ), (zn_state *) owner ) )
 
 	MCFG_MACHINE_RESET( coh1000a )
 
@@ -2477,7 +2451,7 @@ Notes:
       3 logic chips near main program ROMs.
       2x 4MBit EPROMs labelled 'CBAJ1' and 'CBAJ2'
       1x 2MBit EPROM labelled 'CBAJZ80'
-      9x 32MBit smt SOP44 MASKROMs labelled 'CB-00' thru 'CB-08' (Graphics)
+      9x 32MBit smt SOP44 MASKROMs labelled 'CB-00' through 'CB-08' (Graphics)
       2x 32MBit smt SOP44 MASKROMs labelled 'CB-SE' and 'CB-V0' (connected to the YMZ280B)
       LH540202 - CMOS 1024 x 9 Asyncronous FIFO (PLCC32)
       D43001   - 32K x8 SRAM, equivalent to 62256 SRAM
@@ -2537,16 +2511,19 @@ static WRITE32_HANDLER( coh1002m_bank_w )
 static READ32_HANDLER( cbaj_z80_r )
 {
 	zn_state *state = space->machine().driver_data<zn_state>();
-	int ready = state->m_cbaj_to_r3k;
+	int ready;
 
+	space->machine().scheduler().synchronize();
+
+	ready = state->m_cbaj_to_r3k;
 	state->m_cbaj_to_r3k &= ~2;
-
 	return soundlatch2_r(space,0) | ready<<24;
 }
 
 static WRITE32_HANDLER( cbaj_z80_w )
 {
 	zn_state *state = space->machine().driver_data<zn_state>();
+	space->machine().scheduler().synchronize();
 
 	state->m_cbaj_to_z80 |= 2;
 	state->m_latch_to_z80 = data;
@@ -2554,7 +2531,7 @@ static WRITE32_HANDLER( cbaj_z80_w )
 
 static DRIVER_INIT( coh1002m )
 {
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_bank     ( 0x1f000000, 0x1f7fffff, "bank1" );
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_bank               ( 0x1f000000, 0x1f7fffff, "bank1" );
 	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler( 0x1fb00000, 0x1fb00003, FUNC(cbaj_z80_r), FUNC(cbaj_z80_w) );
 	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_write_handler    ( 0x1fb00004, 0x1fb00007, FUNC(coh1002m_bank_w) );
 
@@ -2703,6 +2680,34 @@ static INPUT_PORTS_START( zn )
 	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unknown ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+INPUT_PORTS_END
+
+static INPUT_PORTS_START( zn4w )
+	PORT_INCLUDE( zn )
+
+	PORT_MODIFY("P1")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY PORT_PLAYER(1)
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY PORT_PLAYER(1)
+
+	PORT_MODIFY("P2")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_4WAY PORT_PLAYER(2)
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY PORT_PLAYER(2)
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY PORT_PLAYER(2)
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY PORT_PLAYER(2)
+
+	PORT_MODIFY("P3")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_4WAY PORT_PLAYER(3)
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY PORT_PLAYER(3)
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY PORT_PLAYER(3)
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY PORT_PLAYER(3)
+
+	PORT_MODIFY("P4")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_4WAY PORT_PLAYER(4)
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY PORT_PLAYER(4)
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY PORT_PLAYER(4)
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY PORT_PLAYER(4)
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( zn6b )
@@ -3621,8 +3626,8 @@ ROM_START( cbaj )
 	ROM_LOAD( "cbaj_z80.3118",       0x0000000, 0x040000, CRC(92b02ad2) SHA1(f72317679ecbd8a0c3b081baaf9ff20a8c9ec00f) )
 
 	ROM_REGION( 0x800000, "ymz", 0 ) /* YMZ280B Sound Samples */
-	ROM_LOAD( "cb-se.5121",   0x000000, 0x400000, CRC(f12b3db9) SHA1(d5231ad664603050bdca2081b114b07fc905ddc2) )
-	ROM_LOAD( "cb-vo.5120",   0x400000, 0x400000, CRC(afb05d6d) SHA1(0c08010579813814fbf8a978cf4376bab18697a4) )
+	ROM_LOAD( "cb-vo.5120",   0x000000, 0x400000, CRC(afb05d6d) SHA1(0c08010579813814fbf8a978cf4376bab18697a4) )
+	ROM_LOAD( "cb-se.5121",   0x400000, 0x400000, CRC(f12b3db9) SHA1(d5231ad664603050bdca2081b114b07fc905ddc2) )
 ROM_END
 
 ROM_START( shngmtkb )
@@ -4552,7 +4557,7 @@ GAME( 1998, sfex2h,    sfex2,    coh3002c, zn6b, coh3002c, ROT0, "Capcom / Arika
 GAME( 1998, plsmaswd,  cpzn2,    coh3002c, zn6b, coh3002c, ROT0, "Capcom", "Plasma Sword (USA 980316)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
 GAME( 1998, stargld2,  plsmaswd, coh3002c, zn6b, coh3002c, ROT0, "Capcom", "Star Gladiator 2 (Japan 980316)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
 GAME( 1998, plsmaswda, plsmaswd, coh3002c, zn6b, coh3002c, ROT0, "Capcom", "Plasma Sword (Asia 980316)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
-GAME( 1998, tgmj,      cpzn2,    coh3002c, zn,   coh3002c, ROT0, "Arika / Capcom", "Tetris The Grand Master (Japan 980710)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
+GAME( 1998, tgmj,      cpzn2,    coh3002c, zn4w, coh3002c, ROT0, "Arika / Capcom", "Tetris The Grand Master (Japan 980710)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
 GAME( 1998, techromn,  cpzn2,    coh3002c, zn6b, coh3002c, ROT0, "Capcom", "Tech Romancer (Euro 980914)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
 GAME( 1998, techromnu, techromn, coh3002c, zn6b, coh3002c, ROT0, "Capcom", "Tech Romancer (USA 980914)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )
 GAME( 1998, kikaioh,   techromn, coh3002c, zn6b, coh3002c, ROT0, "Capcom", "Kikaioh (Japan 980914)", GAME_IMPERFECT_GRAPHICS | GAME_IMPERFECT_SOUND )

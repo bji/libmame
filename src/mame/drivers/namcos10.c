@@ -52,8 +52,8 @@ MAIN PCB - This is the mother board PCB. It holds the main CPU/GPU & SPU and all
            controller/input logic and video output circuitry. Basically everything except the ROMs.
            There are three known revisions of this PCB so far. The differences seem very minor. The 2nd and 3rd revision
            have an updated CPLD revision.
-           The 3rd revision has an updated model Sony chip. The only other _noticable_ difference is some component
-           shuffling in the sound amplification section to accomodate two extra 1000uF capacitors and one 470uF capacitor
+           The 3rd revision has an updated model Sony chip. The only other _noticeable_ difference is some component
+           shuffling in the sound amplification section to accommodate two extra 1000uF capacitors and one 470uF capacitor
            has been replaced by a 1000uF capacitor. Everything else, including all the PLDs appears to be identical.
            Note there are no ROMs on the Main PCB and also no custom Namco chips on System10, which seem to have been
            phased out. Instead, they have been replaced by (custom programmed) CPLDs, probably due to cost-cutting
@@ -456,14 +456,16 @@ static DRIVER_INIT( gunbalna )
 static DRIVER_INIT( chocovdr )
 {
 	memn_driver_init(machine);
-	decrypt_bios( machine, 0x5, 0x4, 0x7, 0x6, 0x0, 0x1, 0x3, 0x2, 0xd, 0xf, 0xc, 0xe, 0x8, 0x9, 0xa, 0xb );
+//  NOTE: none of the possible permutations show the Sony Computer Entertainment string at BIOS[0x84], very likely a bad dump
+//                                             BAD? 0 or 9                             1 or 8         0 or 9
+//                         ok!  ok!  ok!  ok!            ok!  ok!  ok!  ok!  ok!  ok!       ok!  ok!
+	decrypt_bios( machine, 0x5, 0x4, 0x6, 0x7, 0x1, 0x0, 0x2, 0x3, 0xc, 0xf, 0xe, 0xd, 0x8, 0xb, 0xa, 0x9 );
 }
 
 static DRIVER_INIT( panikuru )
 {
 	memn_driver_init(machine);
-	/* TODO */
-	//decrypt_bios( machine, 0x5, 0x4, 0x7, 0x6, 0x0, 0x1, 0x3, 0x2, 0xd, 0xf, 0xc, 0xe, 0x8, 0x9, 0xa, 0xb );
+	decrypt_bios( machine, 0x6, 0x4, 0x7, 0x5, 0x0, 0x1, 0x2, 0x3, 0xc, 0xf, 0xe, 0xd, 0x9, 0x8, 0xb, 0xa );
 }
 
 
@@ -474,24 +476,12 @@ static MACHINE_RESET( namcos10 )
 static MACHINE_CONFIG_START( namcos10, namcos10_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD( "maincpu", CXD8606BQ, XTAL_101_4912MHz )
-	MCFG_CPU_PROGRAM_MAP( namcos10_map)
-	MCFG_CPU_VBLANK_INT("screen", psx_vblank)
+	MCFG_CPU_PROGRAM_MAP( namcos10_map )
 
 	MCFG_MACHINE_RESET( namcos10 )
 
 	/* video hardware */
-	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_REFRESH_RATE( 60 )
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE( 1024, 1024 )
-	MCFG_SCREEN_VISIBLE_AREA( 0, 639, 0, 479 )
-	MCFG_SCREEN_UPDATE( psx )
-
-	MCFG_PALETTE_LENGTH( 65536 )
-
-	MCFG_PALETTE_INIT( psx )
-	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8561CQ, 0 )
+	MCFG_PSXGPU_ADD( "maincpu", "gpu", CXD8561CQ, 0x200000, XTAL_53_693175MHz )
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
@@ -548,6 +538,7 @@ static INPUT_PORTS_START( namcos10 )
 	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_COIN1 )
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_COIN2 )
 INPUT_PORTS_END
+
 
 ROM_START( mrdrilr2 )
 	ROM_REGION32_LE( 0x800000, "user1", 0 ) /* main prg */
@@ -625,12 +616,21 @@ ROM_START( ptblank3 )
 	ROM_LOAD( "1.8d",         0x1080000, 0x1080000, CRC(82d2cfb5) SHA1(4b5e713a55e74a7b32b1b9b5811892df2df86256) )
 ROM_END
 
+ROM_START( gunbalina )
+	ROM_REGION32_LE( 0x400000, "user1", 0 ) /* bios */
+	ROM_FILL( 0x0000000, 0x400000, 0x55 )
+
+	ROM_REGION( 0x2100000, "user2", 0 ) /* main prg */
+	ROM_LOAD( "0.8e",         0x0000000, 0x1080000, CRC(981b03d4) SHA1(1c55458f1b2964afe2cf4e9d84548c0699808e9f) )
+	ROM_LOAD( "1.8d",         0x1080000, 0x1080000, CRC(6cd343e0) SHA1(dcec44abae1504025895f42fe574549e5010f7d5) )
+ROM_END
+
 ROM_START( chocovdr )
 	ROM_REGION32_LE( 0x400000, "user1", 0 ) /* bios */
 	ROM_FILL( 0x0000000, 0x400000, 0x55 )
 
 	ROM_REGION( 0x5280000, "user2", 0 ) /* main prg */
-	ROM_LOAD( "0.8e",         0x0000000, 0x1080000, CRC(f265b1b6) SHA1(f327e7bac0bc1bd31aa3362e36233130a6b240ea) )
+	ROM_LOAD( "0.8e",         0x0000000, 0x1080000, BAD_DUMP CRC(f265b1b6) SHA1(f327e7bac0bc1bd31aa3362e36233130a6b240ea) )
 	ROM_LOAD( "1.8d",         0x1080000, 0x1080000, CRC(05d01cd2) SHA1(e9947ebea24d618e8b9a69f582ef0b9d97bb4cad) )
 	ROM_LOAD( "2.7e",         0x2100000, 0x1080000, CRC(2e308d20) SHA1(4ff072f0d488b12f77ef7d119822f89b5b5a6712) )
 	ROM_LOAD( "3.7d",         0x3180000, 0x1080000, CRC(126c9e6f) SHA1(32de87f01fd1c8c26a68bf42a062f5f44bcc5a3b) )
@@ -648,11 +648,12 @@ ROM_START( panikuru )
 ROM_END
 
 
-GAME( 2000, mrdrilr2,  0,        namcos10, namcos10, mrdrilr2, ROT0, "Namco", "Mr. Driller 2 (Japan, DR21 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
-GAME( 2000, mrdrlr2a,  mrdrilr2, namcos10, namcos10, mrdrilr2, ROT0, "Namco", "Mr. Driller 2 (Japan, DR22 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
+GAME( 2000, mrdrilr2,  0,        namcos10, namcos10, mrdrilr2, ROT0, "Namco", "Mr. Driller 2 (Japan, DR21 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND ) // PORT_4WAY joysticks
+GAME( 2000, mrdrlr2a,  mrdrilr2, namcos10, namcos10, mrdrilr2, ROT0, "Namco", "Mr. Driller 2 (Japan, DR22 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND ) // PORT_4WAY joysticks
 GAME( 2000, ptblank3,  0,        namcos10, namcos10, gunbalna, ROT0, "Namco", "Point Blank 3 (GNN2 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
+GAME( 2000, gunbalina, ptblank3, namcos10, namcos10, gunbalna, ROT0, "Namco", "Gunbalina (GNN1 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
 GAME( 2001, gjspace,   0,        namcos10, namcos10, gjspace,  ROT0, "Namco / Metro", "Gekitoride-Jong Space (10011 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
-GAME( 2001, mrdrilrg,  0,        namcos10, namcos10, mrdrilrg, ROT0, "Namco", "Mr. Driller G (Japan, DRG1 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
+GAME( 2001, mrdrilrg,  0,        namcos10, namcos10, mrdrilrg, ROT0, "Namco", "Mr. Driller G (Japan, DRG1 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND ) // PORT_4WAY joysticks
 GAME( 2001, knpuzzle,  0,        namcos10, namcos10, knpuzzle, ROT0, "Namco", "Kotoba no Puzzle Mojipittan (Japan, KPM1 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
 GAME( 2002, chocovdr,  0,        namcos10, namcos10, chocovdr, ROT0, "Namco", "Uchuu Daisakusen: Chocovader Contactee (Japan, CVC1 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )
 GAME( 2002, startrgn,  0,        namcos10, namcos10, startrgn, ROT0, "Namco", "Star Trigon (Japan, STT1 Ver.A)", GAME_NOT_WORKING | GAME_NO_SOUND )

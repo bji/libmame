@@ -41,7 +41,7 @@
   taken here is to assume the 2V DC offset for all outputs for the YM2149.
   For the AY-3-8910, an offset is used if envelope is active for a channel.
   This is backed by oscilloscope pictures from the datasheet. If a fixed volume
-  is set, i.e. enveloppe is disabled, the output voltage is set to 0V. Recordings
+  is set, i.e. envelope is disabled, the output voltage is set to 0V. Recordings
   I found on the web for gyruss indicate, that the AY-3-8910 offset should
   be around 0.2V. This will also make sound levels more compatible with
   user observations for scramble.
@@ -142,7 +142,7 @@ has twice the steps, happening twice as fast.
 #define TONE_PERIOD(_psg, _chan)	( (_psg)->regs[(_chan) << 1] | (((_psg)->regs[((_chan) << 1) | 1] & 0x0f) << 8) )
 #define NOISE_PERIOD(_psg)			( (_psg)->regs[AY_NOISEPER] & 0x1f)
 #define TONE_VOLUME(_psg, _chan)	( (_psg)->regs[AY_AVOL + (_chan)] & 0x0f)
-#define TONE_ENVELOPE(_psg, _chan)	(((_psg)->regs[AY_AVOL + (_chan)] >> 4) & 1)
+#define TONE_ENVELOPE(_psg, _chan)	(((_psg)->regs[AY_AVOL + (_chan)] >> 4) & (((_psg)->device->type() == AY8914) ? 3 : 1))
 #define ENVELOPE_PERIOD(_psg)		(((_psg)->regs[AY_EFINE] | ((_psg)->regs[AY_ECOARSE]<<8)))
 
 /*************************************
@@ -202,6 +202,7 @@ INLINE ay8910_context *get_safe_token(device_t *device)
 	assert(device->type() == AY8910 ||
 		   device->type() == AY8912 ||
 		   device->type() == AY8913 ||
+		   device->type() == AY8914 ||
 		   device->type() == AY8930 ||
 		   device->type() == YM2149 ||
 		   device->type() == YM3439 ||
@@ -436,9 +437,16 @@ INLINE UINT16 mix_3D(ay8910_context *psg)
 	int indx = 0, chan;
 
 	for (chan = 0; chan < NUM_CHANNELS; chan++)
-		if (TONE_ENVELOPE(psg, chan))
+		if (TONE_ENVELOPE(psg, chan) != 0)
 		{
-			indx |= (1 << (chan+15)) | ( psg->vol_enabled[chan] ? psg->env_volume << (chan*5) : 0);
+			if (psg->device->type() == AY8914) // AY8914 Has a two bit tone_envelope field
+			{
+				indx |= (1 << (chan+15)) | ( psg->vol_enabled[chan] ? ((psg->env_volume >> (3-TONE_ENVELOPE(psg, chan))) << (chan*5)) : 0);
+			}
+			else
+			{
+				indx |= (1 << (chan+15)) | ( psg->vol_enabled[chan] ? psg->env_volume << (chan*5) : 0);
+			}
 		}
 		else
 		{
@@ -656,10 +664,16 @@ static STREAM_UPDATE( ay8910_update )
 		if (psg->streams == 3)
 		{
 			for (chan = 0; chan < NUM_CHANNELS; chan++)
-				if (TONE_ENVELOPE(psg,chan))
+				if (TONE_ENVELOPE(psg,chan) != 0)
 				{
-					/* Envolope has no "off" state */
-					*(buf[chan]++) = psg->env_table[chan][psg->vol_enabled[chan] ? psg->env_volume : 0];
+					if (psg->device->type() == AY8914) // AY8914 Has a two bit tone_envelope field
+					{
+						*(buf[chan]++) = psg->env_table[chan][psg->vol_enabled[chan] ? psg->env_volume >> (3-TONE_ENVELOPE(psg,chan)) : 0];
+					}
+					else
+					{
+						*(buf[chan]++) = psg->env_table[chan][psg->vol_enabled[chan] ? psg->env_volume : 0];
+					}
 				}
 				else
 				{
@@ -736,6 +750,7 @@ static void ay8910_statesave(ay8910_context *psg, device_t *device)
 void *ay8910_start_ym(void *infoptr, device_type chip_type, device_t *device, int clock, const ay8910_interface *intf)
 {
 	ay8910_context *info = (ay8910_context *)infoptr;
+	int master_clock = clock;
 
 	if (info == NULL)
 		info = auto_alloc_clear(device->machine(), ay8910_context);
@@ -754,7 +769,8 @@ void *ay8910_start_ym(void *infoptr, device_type chip_type, device_t *device, in
 	else
 		info->streams = 3;
 
-	if (chip_type == AY8910 || chip_type == AY8930)
+
+	if (chip_type == AY8910 || chip_type == AY8914 || chip_type == AY8930)
 	{
 		info->step = 2;
 		info->par = &ay8910_param;
@@ -769,15 +785,19 @@ void *ay8910_start_ym(void *infoptr, device_type chip_type, device_t *device, in
 		info->par_env = &ym2149_param_env;
 		info->zero_is_off = 0;
 		info->env_step_mask = 0x1F;
+
+		/* YM2149 master clock divider? */
+		if (info->intf->flags & YM2149_PIN26_LOW)
+			master_clock /= 2;
 	}
 
 	build_mixer_table(info);
 
 	/* The envelope is pacing twice as fast for the YM2149 as for the AY-3-8910,    */
 	/* This handled by the step parameter. Consequently we use a divider of 8 here. */
-	info->channel = device->machine().sound().stream_alloc(*device, 0, info->streams, device->clock() / 8, info, ay8910_update);
+	info->channel = device->machine().sound().stream_alloc(*device, 0, info->streams, master_clock / 8, info, ay8910_update);
 
-	ay8910_set_clock_ym(info,device->clock());
+	ay8910_set_clock_ym(info, master_clock);
 	ay8910_statesave(info, device);
 
 	return info;
@@ -960,7 +980,7 @@ DEVICE_GET_INFO( ay8910 )
 	switch (state)
 	{
 		/* --- the following bits of info are returned as 64-bit signed integers --- */
-		case DEVINFO_INT_TOKEN_BYTES:					info->i = sizeof(ay8910_context);				break;
+		case DEVINFO_INT_TOKEN_BYTES:					info->i = sizeof(ay8910_context);					break;
 
 		/* --- the following bits of info are returned as pointers to data or functions --- */
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ay8910 );			break;
@@ -968,11 +988,11 @@ DEVICE_GET_INFO( ay8910 )
 		case DEVINFO_FCT_RESET:							info->reset = DEVICE_RESET_NAME( ay8910 );			break;
 
 		/* --- the following bits of info are returned as NULL-terminated strings --- */
-		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8910A");					break;
-		case DEVINFO_STR_FAMILY:					strcpy(info->s, "PSG");							break;
-		case DEVINFO_STR_VERSION:					strcpy(info->s, "1.0");							break;
-		case DEVINFO_STR_SOURCE_FILE:						strcpy(info->s, __FILE__);						break;
-		case DEVINFO_STR_CREDITS:					strcpy(info->s, "Copyright Nicola Salmoria and the MAME Team"); break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8910A");						break;
+		case DEVINFO_STR_FAMILY:						strcpy(info->s, "PSG");								break;
+		case DEVINFO_STR_VERSION:						strcpy(info->s, "1.0");								break;
+		case DEVINFO_STR_SOURCE_FILE:					strcpy(info->s, __FILE__);							break;
+		case DEVINFO_STR_CREDITS:						strcpy(info->s, "Copyright Nicola Salmoria and the MAME Team"); break;
 	}
 }
 
@@ -981,7 +1001,7 @@ DEVICE_GET_INFO( ay8912 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ay8910 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8912A");					break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8912A");						break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -991,7 +1011,17 @@ DEVICE_GET_INFO( ay8913 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ay8910 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8913A");					break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8913A");						break;
+		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
+	}
+}
+
+DEVICE_GET_INFO( ay8914 )
+{
+	switch (state)
+	{
+		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ay8910 );			break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "AY-3-8914");					break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -1001,7 +1031,7 @@ DEVICE_GET_INFO( ay8930 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ay8910 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "AY8930");						break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "AY8930");							break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -1011,7 +1041,7 @@ DEVICE_GET_INFO( ym2149 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ym2149 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "YM2149");						break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "YM2149");							break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -1021,7 +1051,7 @@ DEVICE_GET_INFO( ym3439 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ym2149 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "YM3439");						break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "YM3439");							break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -1031,7 +1061,7 @@ DEVICE_GET_INFO( ymz284 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ym2149 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "YMZ284");						break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "YMZ284");							break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -1041,7 +1071,7 @@ DEVICE_GET_INFO( ymz294 )
 	switch (state)
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ym2149 );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "YMZ294");						break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "YMZ294");							break;
 		default:										DEVICE_GET_INFO_CALL(ay8910);						break;
 	}
 }
@@ -1086,10 +1116,26 @@ WRITE8_DEVICE_HANDLER( ay8910_data_w )
 #endif
 }
 
+static const int mapping8914to8910[16] = { 0, 2, 4, 11, 1, 3, 5, 12, 7, 6, 13, 8, 9, 10, 14, 15 };
+
+READ8_DEVICE_HANDLER( ay8914_r )
+{
+	UINT16 rv;
+	ay8910_address_w(device, 0, mapping8914to8910[offset & 0xff]);
+	rv = (UINT16)ay8910_r(device, 0);
+	return rv;
+}
+
+WRITE8_DEVICE_HANDLER( ay8914_w )
+{
+	ay8910_address_w(device, 0, mapping8914to8910[offset & 0xff]);
+	ay8910_data_w(device, 0, data & 0xff);
+}
 
 DEFINE_LEGACY_SOUND_DEVICE(AY8910, ay8910);
 DEFINE_LEGACY_SOUND_DEVICE(AY8912, ay8912);
 DEFINE_LEGACY_SOUND_DEVICE(AY8913, ay8913);
+DEFINE_LEGACY_SOUND_DEVICE(AY8914, ay8914);
 DEFINE_LEGACY_SOUND_DEVICE(AY8930, ay8930);
 DEFINE_LEGACY_SOUND_DEVICE(YM2149, ym2149);
 DEFINE_LEGACY_SOUND_DEVICE(YM3439, ym3439);

@@ -36,10 +36,10 @@ ifdef STATIC
 # object files into another object file with all relocations done, and yet
 # leaving unresolved symbols unresolved; but it doesn't.
 LIBMAME = $(OBJ)/libmame.a
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) $(OSDCOREOBJS) \
-            $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) $(FORMATSOBJS) \
-            $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) $(ZLIBOBJS) \
-            $(SOFTFLOATOBJS) $(DRIVLISTOBJ)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) $(DEVLISTOBJ) \
+            $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) \
+            $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) \
+            $(ZLIBOBJS) $(SOFTFLOATOBJS) $(DRIVLISTOBJ)
 			$(ECHO) Archiving $@...
 			@echo "crs $@ $^" > $(OBJ)/libmame/arargs
 			$(AR) @$(OBJ)/libmame/arargs
@@ -51,18 +51,20 @@ VERSION_SCRIPT := $(SRC)/libmame/libmame.version
 ifdef SYMBOLS
 
 LIBMAME = $(OBJ)/libmame$(SHLIB)
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) \
-            $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) \
-            $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
+            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) \
+            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) \
+            $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -o $@ $^ -lpthread
 
 else
 
 LIBMAME = $(OBJ)/libmame$(SHLIB)
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) \
-            $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) \
-            $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
+            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) \
+            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) \
+            $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT) \
                 -o $@ $^ -lpthread

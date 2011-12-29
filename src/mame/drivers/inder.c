@@ -1,8 +1,6 @@
 #include "emu.h"
 #include "cpu/z80/z80.h"
 
-extern const char layout_pinball[];
-
 class inder_state : public driver_device
 {
 public:
@@ -32,9 +30,6 @@ static MACHINE_CONFIG_START( inder, inder_state )
 	MCFG_CPU_PROGRAM_MAP(inder_map)
 
 	MCFG_MACHINE_RESET( inder )
-
-	/* video hardware */
-	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
 /*-------------------------------------------------------------------
@@ -117,6 +112,21 @@ ROM_START(corsario)
 ROM_END
 
 /*-------------------------------------------------------------------
+/ Mundial 90 (1990)
+/-------------------------------------------------------------------*/
+ROM_START(mundial)
+	ROM_REGION(0x10000, "maincpu", 0)
+	ROM_LOAD("mundial.cpu", 0x0000, 0x2000, CRC(b615e69b) SHA1(d129eb6f2943af40ddffd0da1e7a711b58f65b3c))
+	ROM_REGION(0x10000, "soundcpu", 0)
+	ROM_LOAD("snd11.bin", 0x00000, 0x2000, CRC(2cebc1a5) SHA1(e0dae2b1ce31ff436b55ceb1ec71d39fc56694da))
+	ROM_REGION(0x40000, "user1", 0)
+	ROM_LOAD("snd24.bin", 0x00000, 0x10000, CRC(603bfc3c) SHA1(8badd9731243270ce5b8003373ed09ec7eac6ca6))
+	ROM_LOAD("snd23.bin", 0x10000, 0x10000, CRC(2868ce6f) SHA1(317457763f764be08cbe6a5dd4008ba2257c9d78))
+	ROM_LOAD("snd22.bin", 0x20000, 0x10000, CRC(2559f874) SHA1(cbf57f29e394d5dc320e7dcbd2625f6c96412a06))
+	ROM_LOAD("snd21.bin", 0x30000, 0x10000, CRC(7a8f7402) SHA1(39666ba2634fe9c720c2c9bcc9ccc73874ed85e7))
+ROM_END
+
+/*-------------------------------------------------------------------
 / Lap By Lap (1986)
 /-------------------------------------------------------------------*/
 ROM_START(lapbylap)
@@ -127,10 +137,30 @@ ROM_START(lapbylap)
 	ROM_LOAD("lblsr0.bin", 0x00000, 0x2000, CRC(cbaddf02) SHA1(8207eebc414d90328bfd521190d508b88bb870a2))
 ROM_END
 
+/*-------------------------------------------------------------------
+/ Metal Man (1992)
+/-------------------------------------------------------------------*/
+ROM_START(metalman)
+	ROM_REGION(0x10000, "maincpu", 0)
+	ROM_LOAD("cpu_0.bin", 0x00000, 0x02000, CRC(7fe4335b) SHA1(52ef2efa29337eebd8c2c9a8aec864356a6829b6))
+	ROM_LOAD("cpu_1.bin", 0x02000, 0x02000, CRC(2cca735e) SHA1(6a76017dfbcac0d57fcec8f07f92d5e04dd3e00b))
+	ROM_REGION(0x10000, "soundcpu", 0)
+	ROM_LOAD("sound_e1.bin", 0x00000, 0x02000, CRC(55e889e8) SHA1(0a240868c1b17762588c0ed9a14f568a6e50f409))
+	ROM_REGION(0x80000, "user1", 0)
+	ROM_LOAD("sound_e2.bin", 0x00000, 0x20000, CRC(5ac61535) SHA1(75b9a805f8639554251192e3777073c29952c78f))
+	ROM_REGION(0x10000, "soundcpu2", 0)
+	ROM_LOAD("sound_m1.bin", 0x00000, 0x02000, CRC(21a9ee1d) SHA1(d906ac7d6e741f05e81076a5be33fc763f0de9c1))
+	ROM_REGION(0x80000, "user2", 0)
+	ROM_LOAD("sound_m2.bin", 0x00000, 0x20000, CRC(349df1fe) SHA1(47e7ddbdc398396e40bb5340e5edcb8baf06c255))
+	ROM_LOAD("sound_m3.bin", 0x40000, 0x20000, CRC(4d9f5ed2) SHA1(bc6b7c70369c25eddddac5304497f30cee7675d4))
+ROM_END
+
 GAME(1992,	ind250cc,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"250 CC",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1991,	atleta,		0,		inder,	inder,	inder,	ROT0,	"Inder",		"Atleta",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1985,	brvteam,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Brave Team",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1986,	canasta,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Canasta '86'",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1988,	pinclown,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Clown (Inder)",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1989,	corsario,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Corsario",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1990,	mundial,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Mundial 90",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1992,	metalman,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Metal Man",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1986,	lapbylap,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Lap By Lap",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

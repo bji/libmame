@@ -162,6 +162,8 @@ const options_entry emu_options::s_option_entries[] =
 	{ OPTION_JOYSTICK_DEADZONE ";joy_deadzone;jdz",      "0.3",       OPTION_FLOAT,      "center deadzone range for joystick where change is ignored (0.0 center, 1.0 end)" },
 	{ OPTION_JOYSTICK_SATURATION ";joy_saturation;jsat", "0.85",      OPTION_FLOAT,      "end of axis saturation range for joystick where change is ignored (0.0 center, 1.0 end)" },
 	{ OPTION_NATURAL_KEYBOARD ";nat",                    "0",         OPTION_BOOLEAN,    "specifies whether to use a natural keyboard or not" },
+	{ OPTION_JOYSTICK_CONTRADICTORY,                     "0",         OPTION_BOOLEAN,    "enable contradictory direction digital joystick input at the same time" },
+	{ OPTION_COIN_IMPULSE,                               "0",         OPTION_INTEGER,    "set coin impulse time (n<0 disable impulse, n==0 obey driver, 0<n set time n)" },
 
 	// input autoenable options
 	{ NULL,                                              NULL,        OPTION_HEADER,     "CORE INPUT AUTOMATIC ENABLE OPTIONS" },
@@ -252,7 +254,7 @@ bool emu_options::add_slot_options(bool isfirst)
 			entry[0].name = slot->device().tag();
 			entry[0].description = NULL;
 			entry[0].flags = OPTION_STRING | OPTION_FLAG_DEVICE;
-			entry[0].defvalue = (slot->get_slot_interfaces() != NULL) ? slot->get_default_card() : NULL;
+			entry[0].defvalue = (slot->get_slot_interfaces() != NULL) ? slot->get_default_card(config.devicelist(),*this) : NULL;
 			add_entries(entry, true);
 
 			added = true;
@@ -297,11 +299,13 @@ void emu_options::add_device_options(bool isfirst)
 		option_name.printf("%s;%s", image->instance_name(), image->brief_instance_name());
 
 		// add the option
-		entry[0].name = option_name;
-		entry[0].description = NULL;
-		entry[0].flags = OPTION_STRING | OPTION_FLAG_DEVICE;
-		entry[0].defvalue = NULL;
-		add_entries(entry, true);
+		if (!exists(image->instance_name())) {
+			entry[0].name = option_name;
+			entry[0].description = NULL;
+			entry[0].flags = OPTION_STRING | OPTION_FLAG_DEVICE;
+			entry[0].defvalue = NULL;
+			add_entries(entry, true);
+		}
 	}
 }
 
@@ -327,6 +331,28 @@ void emu_options::remove_device_options()
 
 
 //-------------------------------------------------
+//  parse_slot_devices - parse the command line
+//  and update slot and image devices
+//-------------------------------------------------
+
+bool emu_options::parse_slot_devices(int argc, char *argv[], astring &error_string, const char *name, const char *value)
+{
+	remove_device_options();
+	bool isfirst = true;
+	bool result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
+	while (add_slot_options(isfirst)) {
+		result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
+		isfirst = false;
+	}
+	add_device_options(true);
+	if (name && exists(name)) {
+		set_value(name, value, OPTION_PRIORITY_CMDLINE, error_string);
+	}
+	result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
+	return result;
+}
+
+//-------------------------------------------------
 //  parse_command_line - parse the command line
 //  and update the devices
 //-------------------------------------------------
@@ -343,17 +369,7 @@ bool emu_options::parse_command_line(int argc, char *argv[], astring &error_stri
 	if (old_system_name != system_name())
 	{
 		// remove any existing device options
-		remove_device_options();
-		add_device_options(true);
-		bool isfirst = true;
-		while (add_slot_options(isfirst)) {
-			result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
-			add_device_options(false);
-			isfirst = false;
-		}
-		// if we failed the first time, try parsing again with the new options in place
-		if (!result)
-			result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
+		result = parse_slot_devices(argc, argv, error_string, NULL, NULL);
 	}
 	return result;
 }
@@ -451,6 +467,11 @@ void emu_options::set_system_name(const char *name)
 		assert(!error);
 		// remove any existing device options
 		remove_device_options();
+
+		bool isfirst = true;
+		while (add_slot_options(isfirst)) {
+			isfirst = false;
+		}
 		// then add the options
 		add_device_options(true);
 	}

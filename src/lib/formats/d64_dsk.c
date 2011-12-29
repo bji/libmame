@@ -10,7 +10,6 @@
 
     TODO:
 
-    - fix MAX_ERROR_SECTORS, it is too small for d80/d82
     - write to disk
     - disk errors 24, 25, 26, 28, 74
     - variable gaps
@@ -31,7 +30,7 @@
 
 #define MAX_HEADS			2
 #define MAX_TRACKS			84
-#define MAX_ERROR_SECTORS	802 // TODO this is too small for .d80 files
+#define MAX_ERROR_SECTORS	4166
 #define SECTOR_SIZE			256
 #define SECTOR_SIZE_GCR		368
 
@@ -47,7 +46,9 @@
 #define D71_SIZE_70_TRACKS				 349696
 #define D71_SIZE_70_TRACKS_WITH_ERRORS	 351062
 #define D80_SIZE_77_TRACKS				 533248
+#define D80_SIZE_77_TRACKS_WITH_ERRORS	 535331
 #define D82_SIZE_154_TRACKS				1066496
+#define D82_SIZE_154_TRACKS_WITH_ERRORS	1070662
 
 enum
 {
@@ -170,7 +171,7 @@ struct d64dsk_tag
     INLINE FUNCTIONS
 ***************************************************************************/
 
-INLINE struct d64dsk_tag *get_tag(floppy_image *floppy)
+INLINE struct d64dsk_tag *get_tag(floppy_image_legacy *floppy)
 {
 	return (d64dsk_tag *)floppy_tag(floppy);
 }
@@ -189,7 +190,7 @@ INLINE float get_dos_track(int track)
     of heads in the disk image
 -------------------------------------------------*/
 
-static int d64_get_heads_per_disk(floppy_image *floppy)
+static int d64_get_heads_per_disk(floppy_image_legacy *floppy)
 {
 	return get_tag(floppy)->heads;
 }
@@ -199,7 +200,7 @@ static int d64_get_heads_per_disk(floppy_image *floppy)
     of DOS tracks in the disk image
 -------------------------------------------------*/
 
-static int d64_get_tracks_per_disk(floppy_image *floppy)
+static int d64_get_tracks_per_disk(floppy_image_legacy *floppy)
 {
 	return get_tag(floppy)->tracks;
 }
@@ -209,7 +210,7 @@ static int d64_get_tracks_per_disk(floppy_image *floppy)
     of sectors per given track
 -------------------------------------------------*/
 
-static int d64_get_sectors_per_track(floppy_image *floppy, int head, int track)
+static int d64_get_sectors_per_track(floppy_image_legacy *floppy, int head, int track)
 {
 	int sectors_per_track = 0;
 
@@ -228,7 +229,7 @@ static int d64_get_sectors_per_track(floppy_image *floppy, int head, int track)
     the disk image for a given track
 -------------------------------------------------*/
 
-static floperr_t get_track_offset(floppy_image *floppy, int head, int track, UINT64 *offset)
+static floperr_t get_track_offset(floppy_image_legacy *floppy, int head, int track, UINT64 *offset)
 {
 	struct d64dsk_tag *tag = get_tag(floppy);
 	UINT64 offs = 0;
@@ -248,7 +249,7 @@ static floperr_t get_track_offset(floppy_image *floppy, int head, int track, UIN
     d64_get_track_size - returns the track size
 -------------------------------------------------*/
 
-static UINT32 d64_get_track_size(floppy_image *floppy, int head, int track)
+static UINT32 d64_get_track_size(floppy_image_legacy *floppy, int head, int track)
 {
 	struct d64dsk_tag *tag = get_tag(floppy);
 
@@ -269,7 +270,7 @@ static UINT32 d64_get_track_size(floppy_image *floppy, int head, int track)
     code for the given sector
 -------------------------------------------------*/
 
-static int get_sector_error_code(floppy_image *floppy, int head, int dos_track, int sector)
+static int get_sector_error_code(floppy_image_legacy *floppy, int head, int dos_track, int sector)
 {
 	struct d64dsk_tag *tag = get_tag(floppy);
 
@@ -375,7 +376,7 @@ static void gcr_double_2_gcr(UINT8 a, UINT8 b, UINT8 c, UINT8 d, UINT8 *dest)
 
 */
 
-static floperr_t d64_read_track(floppy_image *floppy, int head, int track, UINT64 offset, void *buffer, size_t buflen)
+static floperr_t d64_read_track(floppy_image_legacy *floppy, int head, int track, UINT64 offset, void *buffer, size_t buflen)
 {
 	struct d64dsk_tag *tag = get_tag(floppy);
 	floperr_t err;
@@ -543,7 +544,7 @@ static floperr_t d64_read_track(floppy_image *floppy, int head, int track, UINT6
     disk image
 -------------------------------------------------*/
 
-static floperr_t d64_write_track(floppy_image *floppy, int head, int track, UINT64 offset, const void *buffer, size_t buflen)
+static floperr_t d64_write_track(floppy_image_legacy *floppy, int head, int track, UINT64 offset, const void *buffer, size_t buflen)
 {
 	return FLOPPY_ERROR_UNSUPPORTED;
 }
@@ -552,7 +553,7 @@ static floperr_t d64_write_track(floppy_image *floppy, int head, int track, UINT
     d64_identify - identifies the disk image
 -------------------------------------------------*/
 
-static void d64_identify(floppy_image *floppy, int *dos, int *heads, int *tracks, bool *has_errors)
+static void d64_identify(floppy_image_legacy *floppy, int *dos, int *heads, int *tracks, bool *has_errors)
 {
 	switch (floppy_image_size(floppy))
 	{
@@ -573,9 +574,11 @@ static void d64_identify(floppy_image *floppy, int *dos, int *heads, int *tracks
 
 	/* 8050 */
 	case D80_SIZE_77_TRACKS:				*dos = DOS25; *heads = 1; *tracks = 77; *has_errors = false; break;
+	case D80_SIZE_77_TRACKS_WITH_ERRORS:	*dos = DOS25; *heads = 1; *tracks = 77; *has_errors = true;  break;
 
 	/* 8250/SFD1001 */
 	case D82_SIZE_154_TRACKS:				*dos = DOS25; *heads = 2; *tracks = 77; *has_errors = false; break;
+	case D82_SIZE_154_TRACKS_WITH_ERRORS:	*dos = DOS25; *heads = 2; *tracks = 77; *has_errors = true;  break;
 	}
 }
 
@@ -643,9 +646,13 @@ FLOPPY_IDENTIFY( d71_dsk_identify )
 
 FLOPPY_IDENTIFY( d80_dsk_identify )
 {
+	int heads = 0, tracks = 0, dos = -1;
+	bool has_errors = false;
 	*vote = 0;
 
-	if (floppy_image_size(floppy) == D80_SIZE_77_TRACKS)
+	d64_identify(floppy, &dos, &heads, &tracks, &has_errors);
+
+	if (dos == DOS25 && heads == 1)
 	{
 		*vote = 100;
 	}
@@ -659,9 +666,13 @@ FLOPPY_IDENTIFY( d80_dsk_identify )
 
 FLOPPY_IDENTIFY( d82_dsk_identify )
 {
+	int heads = 0, tracks = 0, dos = -1;
+	bool has_errors = false;
 	*vote = 0;
 
-	if (floppy_image_size(floppy) == D82_SIZE_154_TRACKS)
+	d64_identify(floppy, &dos, &heads, &tracks, &has_errors);
+
+	if (dos == DOS25 && heads == 2)
 	{
 		*vote = 100;
 	}

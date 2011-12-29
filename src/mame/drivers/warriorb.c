@@ -3,8 +3,8 @@
 Taito Dual Screen Games
 =======================
 
-Darius 2      (c) 1989 Taito
-Warrior Blade (c) 1991 Taito
+Sagaia / Darius 2 (c) 1989 Taito
+Warrior Blade     (c) 1991 Taito
 
 David Graves
 
@@ -286,9 +286,9 @@ ADDRESS_MAP_END
 static INPUT_PORTS_START( darius2d )
 	/* 0x800000 -> 0x109e16 ($1e16,A5) and 0x109e1a ($1e1a,A5) */
 	PORT_START("DSWA")
-	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Unknown ) ) PORT_DIPLOCATION("SW1:1")    /* code at 0x0170f2 ('darius2d') or 0x01705c ('drius2do') */
-	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x01, 0x01, "Difficulty Enhancement" ) PORT_DIPLOCATION("SW1:1")    /* code at 0x0170f2 ('darius2d') or 0x01705c ('drius2do') */
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) ) // Easy  Medium  Hard  Hardest  // Japan factory default = "Off"
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )  // Easy- Medium+ Hard+ Hardest+ // "Easy-" is easier than "Easy". "Medium+","Hard+" and "hardest+" are harder than "Medium","Hard" and "hardest".
 	PORT_DIPNAME( 0x02, 0x02, "Auto Fire" ) PORT_DIPLOCATION("SW1:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, "Fast" )
@@ -335,6 +335,18 @@ static INPUT_PORTS_START( darius2d )
 	PORT_BIT( 0x20, IP_ACTIVE_LOW,  IPT_BUTTON2 ) PORT_PLAYER(1)
 	PORT_BIT( 0x40, IP_ACTIVE_LOW,  IPT_BUTTON1 ) PORT_PLAYER(2)
 	PORT_BIT( 0x80, IP_ACTIVE_LOW,  IPT_BUTTON2 ) PORT_PLAYER(2)
+INPUT_PORTS_END
+
+static INPUT_PORTS_START( sagaia )
+	PORT_INCLUDE(darius2d)
+
+	PORT_MODIFY("DSWA")
+	PORT_DIPNAME( 0x01, 0x00, "Difficulty Enhancement" ) PORT_DIPLOCATION("SW1:1")    /* code at 0x0170f2 ('darius2d') or 0x01705c ('drius2do') */
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) ) // Easy  Medium  Hard  Hardest
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )  // Easy- Medium+ Hard+ Hardest+
+	// MAME 0.143u7 SW1:1="Unknown / Off / On" default="On"
+	// I don't have World manual. Is it written "Unused : Must be kept On" ?
+	TAITO_COINAGE_WORLD_LOC(SW1)
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( warriorb )
@@ -706,6 +718,52 @@ MACHINE_CONFIG_END
                                  DRIVERS
 ***************************************************************************/
 
+ROM_START( sagaia )
+	ROM_REGION( 0x100000, "maincpu", 0 )	/* 512K for 68000 code */
+	ROM_LOAD16_BYTE( "c07_44.74", 0x00000, 0x20000, CRC(d0ca72d8) SHA1(13b47a4fb976167141dd36968f9e8d932ba78dcb) )
+	ROM_LOAD16_BYTE( "c07_43.73", 0x00001, 0x20000, CRC(a34ea5ba) SHA1(300d168a8602b3c871fcd403fb72a8c8740eb013) )
+	ROM_LOAD16_BYTE( "c07_45.76", 0x40000, 0x20000, CRC(8a043c14) SHA1(018647f3d3f4850ed0319266258fb33223c8a9ea) )
+	ROM_LOAD16_BYTE( "c07_42.71", 0x40001, 0x20000, CRC(b6cb642f) SHA1(54f4848e0a411ac6e6cfc911800dfeba19c62936) )
+
+	ROM_LOAD16_WORD_SWAP( "c07-09.75",   0x80000, 0x80000, CRC(cc69c2ce) SHA1(47883b9e14d8b6dd74db221bff396477231938f2) )	/* data rom */
+
+	ROM_REGION( 0x2c000, "audiocpu", 0 )	/* sound cpu */
+	ROM_LOAD( "c07_41.69", 0x00000, 0x04000, CRC(b50256ea) SHA1(6ed271e4dafd1c759adaa55d5b2343d7374c721a) )
+	ROM_CONTINUE(          0x10000, 0x1c000 ) /* banked stuff */
+
+	ROM_REGION( 0x100000, "gfx1", 0 )
+	ROM_LOAD( "c07-03.12", 0x00000, 0x80000, CRC(189bafce) SHA1(d885e444523489fe24269b90dec58e0d92cfbd6e) )	/* SCr(screen 1) */
+	ROM_LOAD( "c07-04.11", 0x80000, 0x80000, CRC(50421e81) SHA1(27ac420602f1dac00dc32903543a518e6f47fb2f) )
+
+	ROM_REGION( 0x200000, "gfx2", 0 )
+	ROM_LOAD32_BYTE( "c07-06.27", 0x00000, 0x80000, CRC(5eebbcd6) SHA1(d4d860bf6b099956c45c7273ad77b1d35deba4c1) )	/* OBJ */
+	ROM_LOAD32_BYTE( "c07-05.24", 0x00001, 0x80000, CRC(fb6d0550) SHA1(2d570ff5ef262cb4cb52e8584a7f167263194d37) )
+	ROM_LOAD32_BYTE( "c07-08.25", 0x00002, 0x80000, CRC(a07dc846) SHA1(7199a604fcd693215ddb7670bfb2daf150145fd7) )
+	ROM_LOAD32_BYTE( "c07-07.26", 0x00003, 0x80000, CRC(fd9f9e74) SHA1(e89beb5cac844fe16662465b0c76337692591aae) )
+
+	ROM_REGION( 0x100000, "gfx3", 0 )
+	ROM_COPY( "gfx1", 0x000000, 0x000000, 0x100000 )	/* SCr(screen 2) */
+
+/* The actual board duplicates the SCR gfx roms for the 2nd TC0100SCN */
+//  ROM_LOAD( "c07-03.47", 0x00000, 0x80000, CRC(189bafce) SHA1(d885e444523489fe24269b90dec58e0d92cfbd6e) )
+//  ROM_LOAD( "c07-04.48", 0x80000, 0x80000, CRC(50421e81) SHA1(27ac420602f1dac00dc32903543a518e6f47fb2f) )
+
+	ROM_REGION( 0x100000, "ymsnd", 0 )	/* ADPCM samples */
+	ROM_LOAD( "c07-10.95", 0x00000, 0x80000, CRC(4bbe0ed9) SHA1(081b73c4e4d4fa548445e5548573099bcb1e9213) )
+	ROM_LOAD( "c07-11.96", 0x80000, 0x80000, CRC(3c815699) SHA1(0471ff5b0c0da905267f2cee52fd68c8661cccc9) )
+
+	ROM_REGION( 0x080000, "ymsnd.deltat", 0 )	/* Delta-T samples */
+	ROM_LOAD( "c07-12.107", 0x00000, 0x80000, CRC(e0b71258) SHA1(0258e308b643d723475824752ebffc4ea29d1ac4) )
+
+	ROM_REGION( 0x001000, "user1", 0 )	/* unknown roms */
+	ROM_LOAD( "c07-13.37", 0x00000, 0x00400, CRC(3ca18eb3) SHA1(54560f02c2be67993940831222130e90cd171991) )
+	ROM_LOAD( "c07-14.38", 0x00000, 0x00400, CRC(baf2a193) SHA1(b7f103b5f5aab0702dd21fd7e3a82261ae1760e9) )
+
+// Pals, not dumped
+//  ROM_LOAD( "C07-15.78", 0x00000, 0x00?00, NO_DUMP )
+//  ROM_LOAD( "C07-16.79", 0x00000, 0x00?00, NO_DUMP )
+ROM_END
+
 ROM_START( darius2d )
 	ROM_REGION( 0x100000, "maincpu", 0 )	/* 512K for 68000 code */
 	ROM_LOAD16_BYTE( "c07_20-2.74", 0x00000, 0x20000, CRC(a0f345b8) SHA1(1ce46e9707ec9ad51b26acf613eedc0536d227ae) )
@@ -716,7 +774,7 @@ ROM_START( darius2d )
 	ROM_LOAD16_WORD_SWAP( "c07-09.75",   0x80000, 0x80000, CRC(cc69c2ce) SHA1(47883b9e14d8b6dd74db221bff396477231938f2) )	/* data rom */
 
 	ROM_REGION( 0x2c000, "audiocpu", 0 )	/* sound cpu */
-	ROM_LOAD( "c07-17.69", 0x00000, 0x04000, CRC(ae16c905) SHA1(70ba5aacd8a8e00b94719e3955abad8827c67aa8) )
+	ROM_LOAD( "c07_17.69", 0x00000, 0x04000, CRC(ae16c905) SHA1(70ba5aacd8a8e00b94719e3955abad8827c67aa8) )
 	ROM_CONTINUE(          0x10000, 0x1c000 ) /* banked stuff */
 
 	ROM_REGION( 0x100000, "gfx1", 0 )
@@ -762,7 +820,7 @@ ROM_START( darius2do )
 	ROM_LOAD16_WORD_SWAP( "c07-09.75",   0x80000, 0x80000, CRC(cc69c2ce) SHA1(47883b9e14d8b6dd74db221bff396477231938f2) )	/* data rom */
 
 	ROM_REGION( 0x2c000, "audiocpu", 0 )	/* sound cpu */
-	ROM_LOAD( "c07-17.69", 0x00000, 0x04000, CRC(ae16c905) SHA1(70ba5aacd8a8e00b94719e3955abad8827c67aa8) )
+	ROM_LOAD( "c07_17.69", 0x00000, 0x04000, CRC(ae16c905) SHA1(70ba5aacd8a8e00b94719e3955abad8827c67aa8) )
 	ROM_CONTINUE(          0x10000, 0x1c000 ) /* banked stuff */
 
 	ROM_REGION( 0x100000, "gfx1", 0 )
@@ -830,15 +888,17 @@ ROM_START( warriorb )
 	/* No Delta-T samples */
 
 	ROM_REGION( 0x01000, "user1", 0 )	/* unknown roms */
-	ROM_LOAD( "d24-13.37", 0x00000, 0x400, CRC(3ca18eb3) SHA1(54560f02c2be67993940831222130e90cd171991) )
-	ROM_LOAD( "d24-14.38", 0x00000, 0x400, CRC(baf2a193) SHA1(b7f103b5f5aab0702dd21fd7e3a82261ae1760e9) )
-//  ROM_LOAD( "d24-15.78", 0x00000, 0xa??, NO_DUMP )    /* Pals */
-//  ROM_LOAD( "d24-16.79", 0x00000, 0xa??, NO_DUMP )
+	ROM_LOAD( "d24-13.37", 0x00000, 0x400, CRC(3ca18eb3) SHA1(54560f02c2be67993940831222130e90cd171991) ) /* AM27S33A or compatible like N82HS137A */
+	ROM_LOAD( "d24-14.38", 0x00000, 0x400, CRC(baf2a193) SHA1(b7f103b5f5aab0702dd21fd7e3a82261ae1760e9) ) /* AM27S33A or compatible like N82HS137A */
+//  ROM_LOAD( "d24-15.78", 0x00000, 0xa??, NO_DUMP )    /* 20L8B Pal */
+//  ROM_LOAD( "d24-16.79", 0x00000, 0xa??, NO_DUMP )    /* 20L8B Pal */
 ROM_END
 
 
 /* Working Games */
 
-GAME( 1989, darius2d, darius2,  darius2d, darius2d, 0, ROT0, "Taito Corporation", "Darius II (dual screen) (Japan)", 0 )
-GAME( 1989, darius2do,darius2,  darius2d, darius2d, 0, ROT0, "Taito Corporation", "Darius II (dual screen) (Japan old version)", 0 )
-GAME( 1991, warriorb, 0,        warriorb, warriorb, 0, ROT0, "Taito Corporation", "Warrior Blade - Rastan Saga Episode III (Japan)", 0 )
+//    YEAR, NAME,      PARENT,  MACHINE,  INPUT,    INIT,MONITOR,COMPANY,FULLNAME,FLAGS
+GAME( 1989, sagaia,    darius2, darius2d, sagaia,   0,   ROT0,   "Taito Corporation Japan", "Sagaia (dual screen) (World)", 0 )
+GAME( 1989, darius2d,  darius2, darius2d, darius2d, 0,   ROT0,   "Taito Corporation", "Darius II (dual screen) (Japan, Rev 2)", 0 )
+GAME( 1989, darius2do, darius2, darius2d, darius2d, 0,   ROT0,   "Taito Corporation", "Darius II (dual screen) (Japan, Rev 1)", 0 )
+GAME( 1991, warriorb,  0,       warriorb, warriorb, 0,   ROT0,   "Taito Corporation", "Warrior Blade - Rastan Saga Episode III (Japan)", 0 )

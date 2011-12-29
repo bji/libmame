@@ -4,8 +4,6 @@
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
-extern const char layout_pinball[];
-
 class williams_s11b_state : public driver_device
 {
 public:
@@ -35,9 +33,6 @@ static MACHINE_CONFIG_START( williams_s11b, williams_s11b_state )
 	MCFG_CPU_PROGRAM_MAP(williams_s11b_map)
 
 	MCFG_MACHINE_RESET( williams_s11b )
-
-	/* video hardware */
-	MCFG_DEFAULT_LAYOUT(layout_pinball)
 MACHINE_CONFIG_END
 
 /*-----------------------
@@ -581,7 +576,7 @@ ROM_START(jokrz_l3)
 ROM_END
 
 /*-----------------------
-/ Mousin' Around 12/89
+/ Mousin' Around! 12/89
 /-----------------------*/
 ROM_START(mousn_l4)
 	ROM_REGION(0x10000, "maincpu", 0)
@@ -901,10 +896,10 @@ GAME(1989,	eatpm_4u,		eatpm_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT
 GAME(1989,	eatpm_p7,		eatpm_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Elvira and the Party Monsters (PA-7)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1989,	jokrz_l6,		0,			williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Williams",				"Jokerz! (L-6)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1989,	jokrz_l3,		jokrz_l6,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Williams",				"Jokerz! (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1989,	mousn_l4,		0,			williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around (LA-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1989,	mousn_l1,		mousn_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around (LA-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1989,	mousn_lu,		mousn_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around (LU-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1989,	mousn_lx,		mousn_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around (LX-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1989,	mousn_l4,		0,			williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around! (LA-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1989,	mousn_l1,		mousn_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around! (LA-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1989,	mousn_lu,		mousn_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around! (LU-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1989,	mousn_lx,		mousn_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Bally",				"Mousin' Around! (LX-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1989,	polic_l4,		0,			williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Williams",				"Police Force (LA-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1989,	polic_l3,		polic_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Williams",				"Police Force (LA-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
 GAME(1989,	polic_l2,		polic_l4,	williams_s11b,	williams_s11b,	williams_s11b,	ROT0,	"Williams",				"Police Force (LA-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)

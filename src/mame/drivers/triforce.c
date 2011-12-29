@@ -18,9 +18,9 @@ use with Namco ROM carts.
 
 Games on this system include....
 
-Game                                                   Manufacturer              Media                Key Chip
+   Game                                                      Manufacturer              Media             Key Chip
 +-+---------------------------------------------------------+-------------------------+-----------------+--------------|
-| |Donkey Kong Jungle Fever                                 | Capcom / Nintendo, 2005 | ROM Cart        | ?            |
+| |Donkey Kong Jungle Fever                                 | Namco / Nintendo, 2005  | ROM Cart        | ?            |
 |*|Mario Kart Arcade GP                                     | Namco / Nintendo, 2005  | ROM Cart        | 317-5109-COM |
 | |Mario Kart Arcade GP 2                                   | Namco / Nintendo, 2007  | ROM Cart        | ?            |
 |*|Virtua Striker 2002 (Japan)                              | Sega, 2002              | GDROM GDT-0001  | 317-0337-JPN |
@@ -31,18 +31,19 @@ Game                                                   Manufacturer             
 |*|Gekitou Pro Yakyuu (Rev C)                               | Sega, 2003              | GDROM GDT-0008C | 317-0371-JPN |
 |*|The Key Of Avalon 1.30: Chaotic Sabbat (server) (Rev C)  | Sega, 2004              | GDROM GDT-0009C | ?            |
 |*|The Key Of Avalon 1.30: Chaotic Sabbat (client) (Rev C)  | Sega, 2004              | GDROM GDT-0010C | ?            |
-|*|Firmware Update                                          | Sega                    | GDROM GDT-0011  | ?            |
-|*|Virtua Striker 4 (Japan) (Rev E)                         | Sega, 2005              | GDROM GDT-0013E | 317-0391-JPN |
-|*|Virtua Striker 4 (Export)                                | Sega, 2005              | GDROM GDT-0015  | 317-0393-EXP |
-| |The Key Of Avalon 2: Eutaxy Commandment (server)         | Sega, 2005              | GDROM GDT-0016  | ?            |
-|*|The Key Of Avalon 2: Eutaxy Commandment (client) (Rev B) | Sega, 2005              | GDROM GDT-0017B | ?            |
+|*|Firmware Update                                          | Sega, 2004              | GDROM GDT-0011  | ?            |
+|*|Virtua Striker 4 (Japan) (Rev E)                         | Sega, 2004              | GDROM GDT-0013E | 317-0391-JPN |
+|*|Virtua Striker 4 (Export)                                | Sega, 2004              | GDROM GDT-0015  | 317-0393-EXP |
+| |The Key Of Avalon 2: Eutaxy Commandment (server)         | Sega, 2004              | GDROM GDT-0016  | ?            |
+|*|The Key Of Avalon 2: Eutaxy Commandment (client) (Rev B) | Sega, 2004              | GDROM GDT-0017B | ?            |
 |*|Virtua Striker 4 Ver.2006 (Japan) (Rev D)                | Sega, 2006              | GDROM GDT-0020D | ?            |
 | |Virtua Striker 4 Ver.2006 (Export)                       | Sega, 2006              | GDROM GDT-0021  | ?            |
-| |F-Zero AX - Monster Ride                                 | Sega / Nintendo, 2004   | GDROM ?         | ?            |
+| |F-Zero AX - Monster Ride Cycraft Edition                 | Sega / Nintendo, 2004   | GDROM ?         | ?            |
 | |The Key Of Avalon 1.10                                   | Sega, 2003              | GDROM ?         | ?            |
 | |The Key Of Avalon 1.20: Summon The New Monster           | Sega, 2003              | GDROM ?         | ?            |
-| |Donkey Kong:Banana Kingdom                               | Capcom / Nintendo, 2006 | ?               | ?            |
-| |Starfox Armada (planned, but not released)               | Namco / Nintendo, 200?  | ?               | ?            |
+| |The Key Of Avalon 2.5: War of the Key                    | Sega, 2005              | GDROM ?         | ?            |
+| |Donkey Kong:Banana Kingdom                               | Namco / Nintendo, 2006  | ROM Cart ?      | ?            |
+| |Starfox Armada (planned, but not released)               | Namco / Nintendo, 2002? | ?               | ?            |
 +-+---------------------------------------------------------+-------------------------+-----------------+--------------+
 * denotes these games are archived.
 If you can help with the undumped games or know of missing Triforce games, please contact...
@@ -396,15 +397,19 @@ Notes:
       J8 - 3-pin Fan Connector
       J9 - 4-pin Namco Audio Connector (unused)
 
+------------------------------------------------------------------------------------------------------------------
+
+ Note: "Type 3" Triforce uploads GD-ROM firmware to a MIPS processor which is DES encrypted (same as the GD images).
+ The key is 0x00 0x22 0x44 0x66 0x88 0xaa 0xcc 0xee (http://debugmo.de/2010/12/the-last-piece/).
 
 */
 
 #include "emu.h"
 #include "cpu/powerpc/ppc.h"
-#include "includes/naomibd.h"
+#include "machine/naomigd.h"
 
 static ADDRESS_MAP_START( gc_map, AS_PROGRAM, 32 )
-	AM_RANGE(0x7fe00000, 0x7fffffff) AM_ROM AM_REGION("maincpu", 0) AM_SHARE("share2")	/* Program ROM */
+	AM_RANGE(0xffe00000, 0xffffffff) AM_ROM AM_REGION("maincpu", 0) AM_SHARE("share2")	/* Program ROM */
 ADDRESS_MAP_END
 
 
@@ -424,7 +429,7 @@ INPUT_PORTS_END
 static MACHINE_CONFIG_START( triforce_base, driver_device )
 
 	/* basic machine hardware */
-	MCFG_CPU_ADD("maincpu", PPC403GA, 64000000) /* Wrong! */
+	MCFG_CPU_ADD("maincpu", PPC403GA, 64000000) /* Correct CPU is a PowerPC 750 (what Apple called "G3") with paired-single vector instructions added */
 	MCFG_CPU_PROGRAM_MAP(gc_map)
 
 	MCFG_QUANTUM_TIME(attotime::from_hz(6000))
@@ -443,7 +448,7 @@ static MACHINE_CONFIG_START( triforce_base, driver_device )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( triforcegd, triforce_base )
-	MCFG_NAOMI_DIMM_BOARD_ADD("rom_board", "gdrom", "user1", "picreturn")
+	MCFG_NAOMI_GDROM_BOARD_ADD("rom_board", "gdrom", "picreturn", NULL, "maincpu", NULL)
 MACHINE_CONFIG_END
 
 #define ROM_LOAD16_WORD_SWAP_BIOS(bios,name,offset,length,hash) \
@@ -672,8 +677,8 @@ GAME( 2002, vs2002ex, triforce, triforcegd,    triforce,    0, ROT0, "Sega",    
 GAME( 2003, avalons,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon - The Wizard Master - Server (GDT-0005C) (V4.001)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2003, gekpurya, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Gekitou Pro Yakyuu Mizushima Shinji All Stars vs. Pro Yakyuu (Rev C) (GDT-0008C)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2004, avalon13, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon 1.3 - Chaotic Sabbat - Client (GDT-0010C) (V4.000)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 200?, tfupdate, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Triforce DIMM Updater (GDT-0011)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2004, tfupdate, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Triforce DIMM Updater (GDT-0011)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2004, vs4j,     triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 (Japan) (GDT-0013E)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2004, vs4,      triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 (Export) (GDT-0015)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2004, avalon20, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon 2.0 - Eutaxy and Commandment - Client (GDT-0017B) (V3.001)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2006, vs42006,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 ver. 2006 (Rev D) (Japan) (GDT-0020D)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2006, vs42006,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 Ver.2006 (Japan) (Rev D) (GDT-0020D)", GAME_NO_SOUND|GAME_NOT_WORKING )

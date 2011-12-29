@@ -500,18 +500,12 @@ static void drawd3d_window_destroy(win_window_info *window)
 {
 	d3d_info *d3d = (d3d_info *)window->drawdata;
 
-	if (d3d->hlsl->recording())
-		d3d->hlsl->window_record();
-
 	// skip if nothing
 	if (d3d == NULL)
 		return;
 
-	// free our effects
-	d3d->hlsl->delete_resources();
-
-	// delete the HLSL interface
-	global_free(d3d->hlsl);
+	if (d3d->hlsl->recording())
+		d3d->hlsl->window_record();
 
 	// delete the device
 	device_delete(d3d);
@@ -898,6 +892,12 @@ static int device_create_resources(d3d_info *d3d)
 
 static void device_delete(d3d_info *d3d)
 {
+	// free our effects
+	d3d->hlsl->delete_resources();
+
+	// delete the HLSL interface
+	global_free(d3d->hlsl);
+
 	// free resources
 	device_delete_resources(d3d);
 
@@ -935,11 +935,6 @@ static void device_delete_resources(d3d_info *d3d)
 	d3d->vertexbuf = NULL;
 
 	global_free(d3d->default_texture);
-
-	// free our effects
-	d3d->hlsl->delete_resources();
-
-	global_free(d3d->hlsl);
 }
 
 

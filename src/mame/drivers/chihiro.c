@@ -4,65 +4,89 @@ Chihiro is an Xbox-based arcade system from SEGA.
 
 Games on this system include....
 
-   Game                                               Manufacturer            Media             Key Chip
-+-+--------------------------------------------------+-----------------------+-----------------+--------------|
-|*|The House of the Dead III                         | Sega, 2002            | GDROM GDX-0001  | 317-0348-COM |
-| |Crazy Taxi High Roller                            | Sega, 2003            | GDROM GDX-0002  | 317-0300-COM |
-| |Crazy Taxi High Roller (Rev A)                    | Sega, 2003            | GDROM GDX-0002A | 317-0300-COM |
-|*|Crazy Taxi High Roller (Rev B)                    | Sega, 2003            | GDROM GDX-0002B | 317-0300-COM |
-| |Virtua Cop 3                                      | Sega, 2003            | GDROM GDX-0003  | 317-0354-COM |
-|*|Virtua Cop 3 (Rev A)                              | Sega, 2003            | GDROM GDX-0003A | 317-0354-COM |
-| |Out Run 2                                         | Sega, 2003            | GDROM GDX-0004  | 317-0372-COM |
-|*|Out Run 2 (Rev A)                                 | Sega, 2003            | GDROM GDX-0004A | 317-0372-COM |
-| |Out Run 2 Beta (Rev P)                            | Sega, 2003            | GDROM GDX-0004P |              |
-| |Sega Golf Club Network Pro Tour                   | Sega, 2004            | GDROM GDX-0005  |              |
-| |Sega Network Taisen Mahjong MJ 2                  | Sega, 2005            | GDROM GDX-0006  |              |
-| |Sega Network Taisen Mahjong MJ 2 (Rev A)          | Sega, 2005            | GDROM GDX-0006A |              |
-| |Sega Network Taisen Mahjong MJ 2 (Rev B)          | Sega, 2005            | GDROM GDX-0006B |              |
-|*|Sega Network Taisen Mahjong MJ 2 (Rev C)          | Sega, 2005            | GDROM GDX-0006C |              |
-|*|Ollie King                                        | Sega, 2005            | GDROM GDX-0007  | 317-0377-COM |
-| |Wangan Midnight Maximum Tune (Japan)              | Sega, 2005            | GDROM GDX-0008  | 317-5101-JPN |
-| |Wangan Midnight Maximum Tune (Japan) (Rev A)      | Sega, 2005            | GDROM GDX-0008A | 317-5101-JPN |
-|*|Wangan Midnight Maximum Tune (Japan) (Rev B)      | Sega, 2005            | GDROM GDX-0008B | 317-5101-JPN |
-| |Wangan Midnight Maximum Tune (Export)             | Sega, 2005            | GDROM GDX-0009  | 317-5101-COM |
-| |Wangan Midnight Maximum Tune (Export) (Rev A)     | Sega, 2005            | GDROM GDX-0009A | 317-5101-COM |
-|*|Wangan Midnight Maximum Tune (Export) (Rev B)     | Sega, 2005            | GDROM GDX-0009B | 317-5101-COM |
-| |Outrun 2 SP (Japan)                               | Sega, 2004            | GDROM GDX-0011  |              |
-| |Ghost Squad                                       | Sega, 2004            | GDROM GDX-0012  | 317-0398-COM |
-|*|Ghost Squad (Rev A)                               | Sega, 2005            | GDROM GDX-0012A | 317-0398-COM |
-|*|Gundam Battle Operating Simulator                 | Banpresto, 2005       | GDROM GDX-0013  | 317-0400-JPN |
-| |Outrun 2 Special Tours                            | Sega, 2004            | GDROM GDX-0014  |              |
-|*|Outrun 2 Special Tours (Rev A)                    | Sega, 2004            | GDROM GDX-0014A |              |
-|*|Wangan Midnight Maximum Tune 2 (Export)           | Sega, 2005            | GDROM GDX-0015  | 317-5106-COM |
-| |Wangan Midnight Maximum Tune 2 (Japan)            | Sega, 2005            | GDROM GDX-0016  | 317-5106-JPN |
-|*|Wangan Midnight Maximum Tune 2 (Japan) (Rev A)    | Sega, 2005            | GDROM GDX-0016A | 317-5106-JPN |
-| |Sega Network Taisen Mahjong MJ 3                  | Sega, 2005            | GDROM GDX-0017  |              |
-| |Sega Network Taisen Mahjong MJ 3 (Rev A)          | Sega, 2005            | GDROM GDX-0017A |              |
-| |Sega Network Taisen Mahjong MJ 3 (Rev B)          | Sega, 2005            | GDROM GDX-0017B |              |
-| |Sega Network Taisen Mahjong MJ 3 (Rev C)          | Sega, 2005            | GDROM GDX-0017C |              |
-|*|Sega Network Taisen Mahjong MJ 3 (Rev D)          | Sega, 2005            | GDROM GDX-0017D |              |
-| |Sega Club Golf 2006: Next Tours                   | Sega, 2006            | GDROM GDX-0018  |              |
-|*|Sega Club Golf 2006: Next Tours (Rev A)           | Sega, 2006            | GDROM GDX-0018A |              |
-| |Sega Network Taisen Mahjong MJ 3 EVO              | Sega, 2007            | GDROM GDX-0021  |              |
-| |Firmware Update For Compact Flash Box             | Sega, 200x            | GDROM GDX-0024  |              |
-| |Firmware Update For Compact Flash Box (Rev A)     | Sega, 200x            | GDROM GDX-0024A |              |
-| |Manic Panic Ghosts                                | Sega, 2007            |                 |              |
-| |Mobile Suit Gundam 0079 - Card Builder            | Dimps/Banpresto, 2006 |                 |              |
-| |Mobile Suit Gundam 0079 - Card Builder (Ver 2.00) | Dimps/Banpresto, 2006 |                 |              |
-| |Mobile Suit Gundam 0079 - Card Builder (Ver 2.01) | Dimps/Banpresto, 2006 |                 |              |
-| |Mobile Suit Gundam 0079 - Card Builder (Ver 2.02) | Dimps/Banpresto, 2006 |                 |              |
-| |Quest Of D: The Battle Kingdom                    | Sega, 2007            |                 |              |
-| |Quest Of D                                        | Sega, 2004            |                 |              |
-| |Quest Of D (Ver 1.10)                             | Sega, 2004            |                 |              |
-| |Quest Of D (Ver 1.20)                             | Sega, 2004            |                 |              |
-| |Quest Of D (Ver 2.0)                              | Sega, 2005            |                 |              |
-| |Quest Of D (Ver 3.0)                              | Sega, 2006            |                 |              |
-| |Quest Of D (Ver 3.01)                             | Sega, 2006            |                 |              |
-| |Sangokushi Taisen                                 | Sega, 2005            |                 |              |
-| |Sangokushi Taisen 2                               | Sega, 2006            |                 |              |
-| |Sangokushi Taisen 3                               | Sega, 2008            |                 |              |
-+-+--------------------------------------------------+-----------------------+-----------------+--------------+
+   Game (Known media)                                  Manufacturer            Media             Key Chip
++-+---------------------------------------------------+-----------------------+-----------------+--------------|
+|*|The House of the Dead III                          | Sega, 2002            | GDROM GDX-0001  | 317-0348-COM |
+| |Crazy Taxi High Roller                             | Sega, 2003            | GDROM GDX-0002  | 317-0300-COM |
+| |Crazy Taxi High Roller (Rev A)                     | Sega, 2003            | GDROM GDX-0002A | 317-0300-COM |
+|*|Crazy Taxi High Roller (Rev B)                     | Sega, 2003            | GDROM GDX-0002B | 317-0300-COM |
+| |Virtua Cop 3                                       | Sega, 2003            | GDROM GDX-0003  | 317-0354-COM |
+|*|Virtua Cop 3 (Rev A)                               | Sega, 2003            | GDROM GDX-0003A | 317-0354-COM |
+| |Out Run 2                                          | Sega, 2003            | GDROM GDX-0004  | 317-0372-COM |
+|*|Out Run 2 (Rev A)                                  | Sega, 2003            | GDROM GDX-0004A | 317-0372-COM |
+| |Out Run 2 Beta (Rev P)                             | Sega, 2003            | GDROM GDX-0004P |              |
+| |Sega Golf Club Network Pro Tour                    | Sega, 2004            | GDROM GDX-0005  |              |
+| |Sega Network Taisen Mahjong MJ 2                   | Sega, 2004            | GDROM GDX-0006  |              |
+| |Sega Network Taisen Mahjong MJ 2 (Rev A)           | Sega, 2004            | GDROM GDX-0006A |              |
+| |Sega Network Taisen Mahjong MJ 2 (Rev B)           | Sega, 2004            | GDROM GDX-0006B |              |
+|*|Sega Network Taisen Mahjong MJ 2 (Rev C)           | Sega, 2004            | GDROM GDX-0006C |              |
+| |Sega Network Taisen Mahjong MJ 2 (Rev D)           | Sega, 2004            | GDROM GDX-0006D |              |
+| |Sega Network Taisen Mahjong MJ 2 (Rev E)           | Sega, 2005            | GDROM GDX-0006E |              |
+|*|Ollie King                                         | Sega, 2004            | GDROM GDX-0007  | 317-0377-COM |
+| |Wangan Midnight Maximum Tune (Japan)               | Namco, 2004           | GDROM GDX-0008  | 317-5101-JPN |
+| |Wangan Midnight Maximum Tune (Japan) (Rev A)       | Namco, 2004           | GDROM GDX-0008A | 317-5101-JPN |
+|*|Wangan Midnight Maximum Tune (Japan) (Rev B)       | Namco, 2004           | GDROM GDX-0008B | 317-5101-JPN |
+| |Wangan Midnight Maximum Tune (Export)              | Namco, 2004           | GDROM GDX-0009  | 317-5101-COM |
+| |Wangan Midnight Maximum Tune (Export) (Rev A)      | Namco, 2004           | GDROM GDX-0009A | 317-5101-COM |
+|*|Wangan Midnight Maximum Tune (Export) (Rev B)      | Namco, 2004           | GDROM GDX-0009B | 317-5101-COM |
+| |Outrun 2 SP (Japan)                                | Sega, 2004            | GDROM GDX-0011  |              |
+| |Ghost Squad                                        | Sega, 2004            | GDROM GDX-0012  | 317-0398-COM |
+|*|Ghost Squad (Rev A)                                | Sega, 2004            | GDROM GDX-0012A | 317-0398-COM |
+|*|Gundam Battle Operating Simulator                  | Banpresto, 2005       | GDROM GDX-0013  | 317-0400-JPN |
+| |Outrun 2 Special Tours                             | Sega, 2004            | GDROM GDX-0014  |              |
+|*|Outrun 2 Special Tours (Rev A)                     | Sega, 2004            | GDROM GDX-0014A |              |
+|*|Wangan Midnight Maximum Tune 2 (Export)            | Namco, 2005           | GDROM GDX-0015  | 317-5106-COM |
+| |Wangan Midnight Maximum Tune 2 (Japan)             | Namco, 2005           | GDROM GDX-0016  | 317-5106-JPN |
+|*|Wangan Midnight Maximum Tune 2 (Japan) (Rev A)     | Namco, 2005           | GDROM GDX-0016A | 317-5106-JPN |
+| |Sega Network Taisen Mahjong MJ 3                   | Sega, 2005            | GDROM GDX-0017  |              |
+| |Sega Network Taisen Mahjong MJ 3 (Rev A)           | Sega, 2005            | GDROM GDX-0017A |              |
+| |Sega Network Taisen Mahjong MJ 3 (Rev B)           | Sega, 2005            | GDROM GDX-0017B |              |
+| |Sega Network Taisen Mahjong MJ 3 (Rev C)           | Sega, 2005            | GDROM GDX-0017C |              |
+|*|Sega Network Taisen Mahjong MJ 3 (Rev D)           | Sega, 2005            | GDROM GDX-0017D |              |
+| |Sega Club Golf 2006: Next Tours                    | Sega, 2005            | GDROM GDX-0018  |              |
+|*|Sega Club Golf 2006: Next Tours (Rev A)            | Sega, 2005            | GDROM GDX-0018A |              |
+| |Sega Network Taisen Mahjong MJ 3 Evolution         | Sega, 2006            | GDROM GDX-0021  |              |
+| |Sega Network Taisen Mahjong MJ 3 Evolution (Rev A) | Sega, 2006            | GDROM GDX-0021A |              |
+| |Firmware Update For Compact Flash Box              | Sega, 200x            | GDROM GDX-0024  |              |
+| |Firmware Update For Compact Flash Box (Rev A)      | Sega, 200x            | GDROM GDX-0024A |              |
++-+---------------------------------------------------+-----------------------+-----------------+--------------+
 * denotes these games are archived.
+
+   Game (Unknown media)                                Manufacturer            Media             Key Chip
++-+---------------------------------------------------+-----------------------+-----------------+--------------|
+| |Mobile Suit Gundam 0079 - Card Builder             | Dimps/Banpresto, 2005 |                 |              |
+| |Mobile Suit Gundam 0079 - Card Builder (Ver 1.007) | Dimps/Banpresto, 2006 |                 |              |
+| |Mobile Suit Gundam 0079 - Card Builder (Ver 2.00)  | Dimps/Banpresto, 2006 |                 |              |
+| |Mobile Suit Gundam 0079 - Card Builder (Ver 2.01)  | Dimps/Banpresto, 2006 |                 |              |
+| |Mobile Suit Gundam 0079 - Card Builder (Ver 2.02)  | Dimps/Banpresto, 2006 |                 |              |
+| |Mobile Suit Gundam 0083 - Card Builder             | Dimps/Banpresto, 2007 |                 |              |
+| |Mobile Suit Gundam 0083 - Card Builder Ryouyuu Gek.| Dimps/Banpresto, 2007 |                 |              |
+| |Quest Of D                                         | Sega, 2004            |                 |              |
+| |Quest Of D (Ver 1.02)                              | Sega, 2004            |                 |              |
+| |Quest Of D (Ver 1.10)                              | Sega, 2004            |                 |              |
+| |Quest Of D (Ver 1.10a)                             | Sega, 2004            |                 |              |
+| |Quest Of D (Ver 1.20)                              | Sega, 2005            |                 |              |
+| |Quest Of D (Ver 1.20a)                             | Sega, 2005            |                 |              |
+| |Quest Of D (Ver 1.21)                              | Sega, 2005            |                 |              |
+| |Quest Of D (Ver 2.00)                              | Sega, 2005            |                 |              |
+| |Quest Of D (Ver 2.01)                              | Sega, 2005            |                 |              |
+| |Quest Of D (Ver 2.02b)                             | Sega, 2006            |                 |              |
+| |Quest Of D (Ver 3.00)                              | Sega, 2006            |                 |              |
+| |Quest Of D (Ver 3.01)                              | Sega, 2006            |                 |              |
+| |Quest Of D (Ver 4.00)                              | Sega, 2007            |                 |              |
+| |Quest Of D (Ver 4.00b)                             | Sega, 2008            |                 |              |
+| |Quest Of D (Ver 4.00c)                             | Sega, 2008            |                 |              |
+| |Quest Of D (Ver 4.01)                              | Sega, 2008            |                 |              |
+| |Sangokushi Taisen                                  | Sega, 2005            |                 |              |
+| |Sangokushi Taisen (Ver 1.03)                       | Sega, 2005            |                 |              |
+| |Sangokushi Taisen (Ver 1.10)                       | Sega, 2005            |                 |              |
+| |Sangokushi Taisen (Ver 1.11)                       | Sega, 2005            |                 |              |
+| |Sangokushi Taisen (Ver 1.12)                       | Sega, 2006            |                 |              |
+| |Sangokushi Taisen 2                                | Sega, 2006            |                 |              |
+| |Sangokushi Taisen 2 (Ver 2.01)                     | Sega, 2006            |                 |              |
+| |Sangokushi Taisen 3                                | Sega, 2008            |                 |              |
+| |Sega Golf Club Network Pro Tour 2005               | Sega, 2005            |                 |              |
++-+---------------------------------------------------+-----------------------+-----------------+--------------+
 If you can help with the undumped games or know of missing Chihiro games, please contact...
 http://guru.mameworld.info/  or  http://www.mamedev.org
 
@@ -319,7 +343,7 @@ Dump info:
 Network Board Dump : Ver1305.bin
 Media Board dump   : FPR21042_M29W160ET.bin
 Base Board Dumps   : ic10_g24lc64.bin ic11_24lc024.bin pc20_g24lc64.bin
-Xbox Board Dump    : Not dumped
+Xbox Board Dump    : chihiro_xbox_bios.bin
 
 FPR21042_M29W160ET.bin :
 As in Triforce, it consists of two versions in the same flash, the first MB of the flash has
@@ -338,11 +362,24 @@ Thanks to Alex, Mr Mudkips, and Philip Burke for this info.
 #include "emu.h"
 #include "cpu/i386/i386.h"
 #include "machine/pci.h"
-#include "includes/naomibd.h"
+#include "machine/pic8259.h"
+#include "machine/pit8253.h"
+#include "machine/idectrl.h"
+#include "machine/naomigd.h"
 #include "debug/debugcon.h"
 #include "debug/debugcmd.h"
+#include "debug/debugcpu.h"
 
-/* jamtable instructions for Chihiro
+#define LOG_PCI
+
+static struct {
+	device_t	*pic8259_1;
+	device_t	*pic8259_2;
+	device_t	*ide;
+} chihiro_devices;
+
+
+/* jamtable instructions for Chihiro (different from console)
 St.     Instr.       Comment
 0x01    POKEPCI      PCICONF[OP2] := OP1
 0x02    OUTB         PORT[OP2] := OP1
@@ -360,22 +397,26 @@ St.     Instr.       Comment
 /* jamtable disassembler */
 static void jamtable_disasm(running_machine &machine, address_space *space,UINT32 address,UINT32 size) // 0xff000080 == fff00080
 {
-	UINT32 base,addr;
+	offs_t base,addr;
 	UINT32 opcode,op1,op2;
 	char sop1[16];
 	char sop2[16];
 	char pcrel[16];
-//  int prefix;
 
-	addr=address;
+	addr=(offs_t)address;
+	if (!debug_cpu_translate(space,TRANSLATE_READ_DEBUG,&addr))
+	{
+		debug_console_printf(machine,"Address is unmapped.\n");
+		return;
+	}
 	while (1)
 	{
 		base=addr;
 		opcode=space->read_byte(addr);
 		addr++;
-		op1=space->read_dword(addr);
+		op1=space->read_dword_unaligned(addr);
 		addr+=4;
-		op2=space->read_dword(addr);
+		op2=space->read_dword_unaligned(addr);
 		addr+=4;
 		if (opcode == 0xe1)
 		{
@@ -385,14 +426,12 @@ static void jamtable_disasm(running_machine &machine, address_space *space,UINT3
 			sprintf(sop2,"%08X",op2);
 			sprintf(sop1,"ACC");
 			sprintf(pcrel,"PC+ACC");
-//          prefix=1;
 		}
 		else
 		{
 			sprintf(sop2,"%08X",op2);
 			sprintf(sop1,"%08X",op1);
 			sprintf(pcrel,"%08X",base+9+op1);
-//          prefix=0;
 		}
 		debug_console_printf(machine,"%08X ",base);
 		// dl=instr ebx=par1 eax=par2
@@ -452,7 +491,7 @@ static void jamtable_disasm(running_machine &machine, address_space *space,UINT3
 	}
 }
 
-void jamtable_disasm_command(running_machine &machine, int ref, int params, const char **param)
+static void jamtable_disasm_command(running_machine &machine, int ref, int params, const char **param)
 {
 	address_space *space=machine.firstcpu->space();
 	UINT64	addr,size;
@@ -466,37 +505,191 @@ void jamtable_disasm_command(running_machine &machine, int ref, int params, cons
 	jamtable_disasm(machine, space, (UINT32)addr, (UINT32)size);
 }
 
-/*
-St.     Instr.       Comment
-0x02    PEEK         ACC := MEM[OP1]
-0x03    POKE         MEM[OP1] := OP2
-0x04    POKEPCI      PCICONF[OP1] := OP2
-0x05    PEEKPCI      ACC := PCICONF[OP1]
-0x06    AND/OR       ACC := (ACC & OP1) | OP2
-0x07    (prefix)     execute the instruction code in OP1 with OP1 := OP2, OP2 := ACC
-0x08    BNE          IF ACC = OP1 THEN PC := PC + OP2
-0x09    BRA          PC := PC + OP2
-0x10    AND/OR ACC2  (unused/defunct) ACC2 := (ACC2 & OP1) | OP2
-0x11    OUTB         PORT[OP1] := OP2
-0x12    INB          ACC := PORT(OP1)
-0xEE    END
-*/
-#ifdef UNUSED_FUNCTION
-static READ32_HANDLER( chihiro_jamtable )
+static void dump_string_command(running_machine &machine, int ref, int params, const char **param)
 {
-	return 0xEEEEEEEE;
+	address_space *space=machine.firstcpu->space();
+	UINT64	addr;
+	offs_t address;
+	UINT32 length,maximumlength;
+	offs_t buffer;
+
+	if (params < 1)
+		return;
+	if (!debug_command_parameter_number(machine, param[0], &addr))
+		return;
+	address=(offs_t)addr;
+	if (!debug_cpu_translate(space,TRANSLATE_READ_DEBUG,&address))
+	{
+		debug_console_printf(machine,"Address is unmapped.\n");
+		return;
+	}
+	length=space->read_word_unaligned(address);
+	maximumlength=space->read_word_unaligned(address+2);
+	buffer=space->read_dword_unaligned(address+4);
+	debug_console_printf(machine,"Length %d word\n",length);
+	debug_console_printf(machine,"MaximumLength %d word\n",maximumlength);
+	debug_console_printf(machine,"Buffer %08X byte* ",buffer);
+	if (!debug_cpu_translate(space,TRANSLATE_READ_DEBUG,&buffer))
+	{
+		debug_console_printf(machine,"\nBuffer is unmapped.\n");
+		return;
+	}
+	if (length > 256)
+		length=256;
+	for (int a=0;a < length;a++)
+	{
+		UINT8 c=space->read_byte(buffer+a);
+		debug_console_printf(machine,"%c",c);
+	}
+	debug_console_printf(machine,"\n");
 }
-#endif
+
+static void dump_process_command(running_machine &machine, int ref, int params, const char **param)
+{
+	address_space *space=machine.firstcpu->space();
+	UINT64 addr;
+	offs_t address;
+
+	if (params < 1)
+		return;
+	if (!debug_command_parameter_number(machine, param[0], &addr))
+		return;
+	address=(offs_t)addr;
+	if (!debug_cpu_translate(space,TRANSLATE_READ_DEBUG,&address))
+	{
+		debug_console_printf(machine,"Address is unmapped.\n");
+		return;
+	}
+	debug_console_printf(machine,"ReadyListHead {%08X,%08X} _LIST_ENTRY\n",space->read_dword_unaligned(address),space->read_dword_unaligned(address+4));
+	debug_console_printf(machine,"ThreadListHead {%08X,%08X} _LIST_ENTRY\n",space->read_dword_unaligned(address+8),space->read_dword_unaligned(address+12));
+	debug_console_printf(machine,"StackCount %d dword\n",space->read_dword_unaligned(address+16));
+	debug_console_printf(machine,"ThreadQuantum %d dword\n",space->read_dword_unaligned(address+20));
+	debug_console_printf(machine,"BasePriority %d byte\n",space->read_byte(address+24));
+	debug_console_printf(machine,"DisableBoost %d byte\n",space->read_byte(address+25));
+	debug_console_printf(machine,"DisableQuantum %d byte\n",space->read_byte(address+26));
+	debug_console_printf(machine,"_padding %d byte\n",space->read_byte(address+27));
+}
+
+static void dump_list_command(running_machine &machine, int ref, int params, const char **param)
+{
+	address_space *space=machine.firstcpu->space();
+	UINT64 addr,offs,start,old;
+	offs_t address,offset;
+
+	if (params < 1)
+		return;
+	if (!debug_command_parameter_number(machine, param[0], &addr))
+		return;
+	offs=0;
+	offset=0;
+	if (params >= 2)
+	{
+		if (!debug_command_parameter_number(machine, param[1], &offs))
+			return;
+		offset=(offs_t)offs;
+	}
+	start=addr;
+	address=(offs_t)addr;
+	if (!debug_cpu_translate(space,TRANSLATE_READ_DEBUG,&address))
+	{
+		debug_console_printf(machine,"Address is unmapped.\n");
+		return;
+	}
+	if (params >= 2)
+		debug_console_printf(machine,"Entry    Object\n");
+	else
+		debug_console_printf(machine,"Entry\n");
+	for (int num=0;num < 32;num++)
+	{
+		if (params >= 2)
+			debug_console_printf(machine,"%08X %08X\n",(UINT32)addr,(offs_t)addr-offset);
+		else
+			debug_console_printf(machine,"%08X\n",(UINT32)addr);
+		old=addr;
+		addr=space->read_dword_unaligned(address);
+		if (addr == start)
+			break;
+		if (addr == old)
+			break;
+		address=(offs_t)addr;
+		if (!debug_cpu_translate(space,TRANSLATE_READ_DEBUG,&address))
+			break;
+	}
+}
+
+static void help_command(running_machine &machine, int ref, int params, const char **param)
+{
+	debug_console_printf(machine,"Available Chihiro commands:\n");
+	debug_console_printf(machine,"  chihiro jamdis,<start>,<size> -- Disassemble <size> bytes of JamTable instructions starting at <start>\n");
+	debug_console_printf(machine,"  chihiro dump_string,<address> -- Dump _STRING object at <address>\n");
+	debug_console_printf(machine,"  chihiro dump_process,<address> -- Dump _PROCESS object at <address>\n");
+	debug_console_printf(machine,"  chihiro dump_list,<address>[,<offset>] -- Dump _LIST_ENTRY chain starting at <address>\n");
+	debug_console_printf(machine,"  chihiro help -- this list\n");
+}
+
+static void chihiro_debug_commands(running_machine &machine, int ref, int params, const char **param)
+{
+	if (params < 1)
+		return;
+	if (strcmp("jamdis",param[0]) == 0)
+		jamtable_disasm_command(machine,ref,params-1,param+1);
+	else if (strcmp("dump_string",param[0]) == 0)
+		dump_string_command(machine,ref,params-1,param+1);
+	else if (strcmp("dump_process",param[0]) == 0)
+		dump_process_command(machine,ref,params-1,param+1);
+	else if (strcmp("dump_list",param[0]) == 0)
+		dump_list_command(machine,ref,params-1,param+1);
+	else
+		help_command(machine,ref,params-1,param+1);
+}
+
+/*
+ * geforce 3d placeholder
+ */
+
+static READ32_HANDLER( geforce_r )
+{
+static int x;
+
+	if (offset == 0x1804f6) {
+		x = x ^ 0x08080808;
+		return x;
+	}
+	return 0;
+}
+
+static WRITE32_HANDLER( geforce_w )
+{
+}
 
 static UINT32 dummy_pci_r(device_t *busdevice, device_t *device, int function, int reg, UINT32 mem_mask)
 {
-	logerror("  bus:%d function:%d register:%d mask:%08X\n",((pci_bus_config *)downcast<const legacy_device_base *>(busdevice)->inline_config())->busnum,function,reg,mem_mask);
+#ifdef LOG_PCI
+	logerror("  bus:0 function:%d register:%d mask:%08X\n",function,reg,mem_mask);
+#endif
 	return 0;
 }
 
 static void dummy_pci_w(device_t *busdevice, device_t *device, int function, int reg, UINT32 data, UINT32 mem_mask)
 {
-	logerror("  bus:%d function:%d register:%d data:%08X mask:%08X\n",((pci_bus_config *)downcast<const legacy_device_base *>(busdevice)->inline_config())->busnum,function,reg,data,mem_mask);
+#ifdef LOG_PCI
+	logerror("  bus:0 function:%d register:%d data:%08X mask:%08X\n",function,reg,data,mem_mask);
+#endif
+}
+
+static UINT32 geforce_pci_r(device_t *busdevice, device_t *device, int function, int reg, UINT32 mem_mask)
+{
+#ifdef LOG_PCI
+	logerror("  bus:1 function:%d register:%d mask:%08X\n",function,reg,mem_mask);
+#endif
+	return 0;
+}
+
+static void geforce_pci_w(device_t *busdevice, device_t *device, int function, int reg, UINT32 data, UINT32 mem_mask)
+{
+#ifdef LOG_PCI
+	logerror("  bus:1 function:%d register:%d data:%08X mask:%08X\n",function,reg,data,mem_mask);
+#endif
 }
 
 static READ32_HANDLER( dummy_r )
@@ -508,11 +701,225 @@ static WRITE32_HANDLER( dummy_w )
 {
 }
 
+/*
+ * IDE
+ */
+
+INLINE int convert_to_offset_and_size32(offs_t *offset, UINT32 mem_mask)
+{
+	int size = 4;
+
+	/* determine which real offset */
+	if (!ACCESSING_BITS_0_7)
+	{
+		(*offset)++, size = 3;
+		if (!ACCESSING_BITS_8_15)
+		{
+			(*offset)++, size = 2;
+			if (!ACCESSING_BITS_16_23)
+				(*offset)++, size = 1;
+		}
+	}
+
+	/* determine the real size */
+	if (ACCESSING_BITS_24_31)
+		return size;
+	size--;
+	if (ACCESSING_BITS_16_23)
+		return size;
+	size--;
+	if (ACCESSING_BITS_8_15)
+		return size;
+	size--;
+	return size;
+}
+
+static READ32_HANDLER( ide_r )
+{
+	int size;
+
+	offset *= 4;
+	size = convert_to_offset_and_size32(&offset, mem_mask);
+
+	return ide_controller_r(chihiro_devices.ide, offset+0x01f0, size) << ((offset & 3) * 8);
+}
+
+static WRITE32_HANDLER( ide_w )
+{
+	int size;
+
+	offset *= 4;
+	size = convert_to_offset_and_size32(&offset, mem_mask);
+	data = data >> ((offset & 3) * 8);
+
+	ide_controller_w(chihiro_devices.ide, offset+0x01f0, size, data);
+}
+
+static void ide_interrupt(device_t *device, int state)
+{
+	pic8259_ir6_w(chihiro_devices.pic8259_2, state); // IRQ 14
+}
+
+void get_info(device_t *device, UINT8 *buffer, UINT16 &cylinders, UINT8 &sectors, UINT8 &heads)
+{
+	cylinders=65535;
+	sectors=255;
+	heads=255;
+}
+
+int read_sector(device_t *device, UINT32 lba, void *buffer)
+{
+	int off;
+	UINT8 *data;
+
+	logerror("baseboard: read sector lba %08x\n",lba);
+	off=(lba&0x7ff)*512;
+	data=device->machine().region("others")->base();
+	memcpy(buffer,data+off,512);
+	return 1;
+}
+
+int write_sector(device_t *device, UINT32 lba, const void *buffer)
+{
+	logerror("baseboard: write sector lba %08x\n",lba);
+	return 1;
+}
+
+ide_hardware baseboard={get_info,read_sector,write_sector};
+
+/*
+ * PIC & PIT
+ */
+
+static WRITE_LINE_DEVICE_HANDLER( chihiro_pic8259_1_set_int_line )
+{
+	cputag_set_input_line(device->machine(), "maincpu", 0, state ? HOLD_LINE : CLEAR_LINE);
+}
+
+static READ8_DEVICE_HANDLER( get_slave_ack )
+{
+	if (offset==2) { // IRQ = 2
+		return pic8259_acknowledge(chihiro_devices.pic8259_2);
+	}
+	return 0x00;
+}
+
+static const struct pic8259_interface chihiro_pic8259_1_config =
+{
+	DEVCB_LINE(chihiro_pic8259_1_set_int_line),
+	DEVCB_LINE_VCC,
+	DEVCB_HANDLER(get_slave_ack)
+};
+
+static const struct pic8259_interface chihiro_pic8259_2_config =
+{
+	DEVCB_DEVICE_LINE("pic8259_1", pic8259_ir2_w),
+	DEVCB_LINE_GND,
+	DEVCB_NULL
+};
+
+static IRQ_CALLBACK(irq_callback)
+{
+	int r = 0;
+	r = pic8259_acknowledge(chihiro_devices.pic8259_2);
+	if (r==0)
+	{
+		r = pic8259_acknowledge( chihiro_devices.pic8259_1);
+	}
+	return r;
+}
+
+static WRITE_LINE_DEVICE_HANDLER( chihiro_pit8254_out0_changed )
+{
+	if ( device->machine().device("pic8259_1") )
+	{
+		pic8259_ir0_w(device->machine().device("pic8259_1"), state);
+	}
+}
+
+static WRITE_LINE_DEVICE_HANDLER( chihiro_pit8254_out2_changed )
+{
+	//chihiro_speaker_set_input( state ? 1 : 0 );
+}
+
+static const struct pit8253_config chihiro_pit8254_config =
+{
+	{
+		{
+			1125000,				/* heartbeat IRQ */
+			DEVCB_NULL,
+			DEVCB_LINE(chihiro_pit8254_out0_changed)
+		}, {
+			1125000,				/* (unused) dram refresh */
+			DEVCB_NULL,
+			DEVCB_NULL
+		}, {
+			1125000,				/* (unused) pio port c pin 4, and speaker polling enough */
+			DEVCB_NULL,
+			DEVCB_LINE(chihiro_pit8254_out2_changed)
+		}
+	}
+};
+
+/*
+ * SMbus devices
+ */
+
+static UINT8 pic16lc_buffer[0xff];
+
+int smbus_pic16lc(int command,int rw,int data)
+{
+	if (rw == 1) { // read
+		if (command == 0) {
+			if (pic16lc_buffer[0] == 'D')
+				pic16lc_buffer[0]='X';
+			else if (pic16lc_buffer[0] == 'X')
+				pic16lc_buffer[0]='B';
+			else if (pic16lc_buffer[0] == 'B')
+				pic16lc_buffer[0]='D';
+		}
+		logerror("pic16lc: %d %d %d\n",command,rw,pic16lc_buffer[command]);
+		return pic16lc_buffer[command];
+	} else
+		if (command == 0)
+			pic16lc_buffer[0]='B';
+		else
+			pic16lc_buffer[command]=(UINT8)data;
+	logerror("pic16lc: %d %d %d\n",command,rw,data);
+	return 0;
+}
+
 int smbus_cx25871(int command,int rw,int data)
 {
 	logerror("cx25871: %d %d %d\n",command,rw,data);
 	return 0;
 }
+
+static int eeprom_buffer[256];
+
+int smbus_eeprom(int command,int rw,int data)
+{
+	if (rw == 1) { // 8003b744,3b744=0x90 0x90
+		// hack to avoid hanging if eeprom contents are not correct
+		// this would need dumping the serial eeprom on the xbox board
+		if (command == 0) {
+			chihiro_devices.pic8259_1->machine().firstcpu->space(0)->write_byte(0x3b744,0x90);
+			chihiro_devices.pic8259_1->machine().firstcpu->space(0)->write_byte(0x3b745,0x90);
+			chihiro_devices.pic8259_1->machine().firstcpu->space(0)->write_byte(0x3b766,0xc9);
+			chihiro_devices.pic8259_1->machine().firstcpu->space(0)->write_byte(0x3b767,0xc3);
+		}
+		data = eeprom_buffer[command]+eeprom_buffer[command+1]*256;
+		logerror("eeprom: %d %d %d\n",command,rw,data);
+		return data;
+	}
+	logerror("eeprom: %d %d %d\n",command,rw,data);
+	eeprom_buffer[command]=data;
+	return 0;
+}
+
+/*
+ * SMbus controller
+ */
 
 typedef struct _smbus_state {
 	int status;
@@ -535,9 +942,9 @@ void smbus_register_device(int address,int (*handler)(int command,int rw,int dat
 static READ32_HANDLER( smbus_r )
 {
 	if ((offset == 0) && (mem_mask == 0xff)) // 0 smbus status
-		smbusst.words[offset] = (smbusst.words[offset] & ~mem_mask) | (smbusst.status << 0);
-	if ((offset == 1) && (mem_mask == 0xff0000)) // 6 smbus data
-		smbusst.words[offset] = (smbusst.words[offset] & ~mem_mask) | (smbusst.data << 16);
+		smbusst.words[offset] = (smbusst.words[offset] & ~mem_mask) | ((smbusst.status << 0) & mem_mask);
+	if ((offset == 1) && ((mem_mask == 0x00ff0000) || (mem_mask == 0xffff0000))) // 6 smbus data
+		smbusst.words[offset] = (smbusst.words[offset] & ~mem_mask) | ((smbusst.data << 16) & mem_mask);
 	return smbusst.words[offset];
 }
 
@@ -545,22 +952,32 @@ static WRITE32_HANDLER( smbus_w )
 {
 	COMBINE_DATA(smbusst.words);
 	if ((offset == 0) && (mem_mask == 0xff)) // 0 smbus status
+	{
+		if (!((smbusst.status ^ data) & 0x10)) // clearing interrupt
+			pic8259_ir3_w(chihiro_devices.pic8259_2, 0); // IRQ 11
 		smbusst.status &= ~data;
+	}
 	if ((offset == 0) && (mem_mask == 0xff0000)) // 2 smbus control
 	{
 		data=data>>16;
 		smbusst.control = data;
-		if ((smbusst.control & 6) == 2)
-		{
-			if (smbusst.devices[smbusst.address & 127]) {
-				if (smbusst.rw == 0) {
-					smbusst.devices[smbusst.address & 127](smbusst.command,smbusst.rw,smbusst.data);
-				}
-				else {
-					smbusst.data=smbusst.devices[smbusst.address & 127](smbusst.command,smbusst.rw,smbusst.data);
+		int cycletype = smbusst.control & 7;
+		if (smbusst.control & 8) { // start
+			if ((cycletype & 6) == 2)
+			{
+				if (smbusst.devices[smbusst.address])
+					if (smbusst.rw == 0)
+						smbusst.devices[smbusst.address](smbusst.command,smbusst.rw,smbusst.data);
+					else
+						smbusst.data=smbusst.devices[smbusst.address](smbusst.command,smbusst.rw,smbusst.data);
+				else
+					logerror("SMBUS: access to missing device at address %d\n",smbusst.address);
+				smbusst.status |= 0x10;
+				if (smbusst.control & 0x10)
+				{
+					pic8259_ir3_w(chihiro_devices.pic8259_2, 1); // IRQ 11
 				}
 			}
-			smbusst.status |= 0x10;
 		}
 	}
 	if ((offset == 1) && (mem_mask == 0xff)) // 4 smbus address
@@ -568,7 +985,7 @@ static WRITE32_HANDLER( smbus_w )
 		smbusst.address = data >> 1;
 		smbusst.rw = data & 1;
 	}
-	if ((offset == 1) && (mem_mask == 0xff0000)) // 6 smbus data
+	if ((offset == 1) && ((mem_mask == 0x00ff0000) || (mem_mask == 0xffff0000))) // 6 smbus data
 	{
 		data=data>>16;
 		smbusst.data = data;
@@ -580,28 +997,43 @@ static WRITE32_HANDLER( smbus_w )
 
 static ADDRESS_MAP_START( xbox_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x00000000, 0x07ffffff) AM_RAM
+	AM_RANGE(0xfd000000, 0xfdffffff) AM_READWRITE(geforce_r, geforce_w)
 	AM_RANGE(0xff000000, 0xffffffff) AM_ROM AM_REGION("bios", 0) AM_MIRROR(0x00f80000)
 ADDRESS_MAP_END
 
 static ADDRESS_MAP_START(xbox_map_io, AS_IO, 32)
+	AM_RANGE(0x0020, 0x0023) AM_DEVREADWRITE8("pic8259_1", pic8259_r, pic8259_w, 0xffffffff)
+	AM_RANGE(0x0040, 0x0043) AM_DEVREADWRITE8("pit8254", pit8253_r, pit8253_w, 0xffffffff)
+	AM_RANGE(0x00a0, 0x00a3) AM_DEVREADWRITE8("pic8259_2", pic8259_r, pic8259_w, 0xffffffff)
+	AM_RANGE(0x01f0, 0x01f7) AM_READWRITE(ide_r, ide_w)
 	AM_RANGE(0x0cf8, 0x0cff) AM_DEVREADWRITE("pcibus", pci_32le_r, pci_32le_w)
 	AM_RANGE(0x8000, 0x80ff) AM_READWRITE(dummy_r, dummy_w)
 	AM_RANGE(0xc000, 0xc0ff) AM_READWRITE(smbus_r, smbus_w)
+	AM_RANGE(0xff60, 0xff67) AM_DEVREADWRITE("ide", ide_bus_master32_r, ide_bus_master32_w)
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( chihiro )
 INPUT_PORTS_END
 
-static MACHINE_START( chihiro )
-{
-	smbus_register_device(0x45,smbus_cx25871);
-	if (machine.debug_flags & DEBUG_FLAG_ENABLED)
-		debug_console_register_command(machine,"jamdis",CMDFLAG_NONE,0,2,3,jamtable_disasm_command);
-}
-
 static SCREEN_UPDATE( chihiro )
 {
     return 0;
+}
+
+static MACHINE_START( chihiro )
+{
+	memset(pic16lc_buffer,0,sizeof(pic16lc_buffer));
+	pic16lc_buffer[0]='B';
+	pic16lc_buffer[4]=2; // A/V connector, 2=vga
+	smbus_register_device(0x10,smbus_pic16lc);
+	smbus_register_device(0x45,smbus_cx25871);
+	smbus_register_device(0x54,smbus_eeprom);
+	device_set_irq_callback(machine.device("maincpu"), irq_callback);
+	chihiro_devices.pic8259_1 = machine.device( "pic8259_1" );
+	chihiro_devices.pic8259_2 = machine.device( "pic8259_2" );
+	chihiro_devices.ide = machine.device( "ide" );
+	if (machine.debug_flags & DEBUG_FLAG_ENABLED)
+		debug_console_register_command(machine,"chihiro",CMDFLAG_NONE,0,1,4,chihiro_debug_commands);
 }
 
 static MACHINE_CONFIG_START( chihiro_base, driver_device )
@@ -621,7 +1053,13 @@ static MACHINE_CONFIG_START( chihiro_base, driver_device )
 	MCFG_PCI_BUS_DEVICE(30, "AGP Host to PCI Bridge", dummy_pci_r, dummy_pci_w)
 	MCFG_PCI_BUS_ADD("agpbus", 1)
 	MCFG_PCI_BUS_SIBLING("pcibus")
-	MCFG_PCI_BUS_DEVICE(0, "NV2A GeForce 3MX Integrated GPU/Northbridge", dummy_pci_r, dummy_pci_w)
+	MCFG_PCI_BUS_DEVICE(0, "NV2A GeForce 3MX Integrated GPU/Northbridge", geforce_pci_r, geforce_pci_w)
+	MCFG_PIC8259_ADD( "pic8259_1", chihiro_pic8259_1_config )
+	MCFG_PIC8259_ADD( "pic8259_2", chihiro_pic8259_2_config )
+	MCFG_PIT8254_ADD( "pit8254", chihiro_pit8254_config )
+	MCFG_IDE_CONTROLLER_ADD( "ide", ide_interrupt )
+	MCFG_IDE_BUS_MASTER_SPACE( "maincpu", PROGRAM )
+	MCFG_IDE_CONNECTED_TO( &baseboard )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
@@ -637,7 +1075,7 @@ static MACHINE_CONFIG_START( chihiro_base, driver_device )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( chihirogd, chihiro_base )
-	MCFG_NAOMI_DIMM_BOARD_ADD("rom_board", "gdrom", "user1", "picreturn")
+	MCFG_NAOMI_GDROM_BOARD_ADD("rom_board", "gdrom", "pic", NULL, "maincpu", NULL)
 MACHINE_CONFIG_END
 
 #define ROM_LOAD16_WORD_SWAP_BIOS(bios,name,offset,length,hash) \
@@ -650,19 +1088,19 @@ MACHINE_CONFIG_END
 	ROM_REGION( 0x1000000, "bios", 0) \
 	ROM_SYSTEM_BIOS( 0, "bios0", "Chihiro Bios" ) \
 	ROM_LOAD_BIOS( 0,  "chihiro_xbox_bios.bin", 0x000000, 0x80000, CRC(66232714) SHA1(b700b0041af8f84835e45d1d1250247bf7077188) ) \
-	ROM_REGION( 0x200000, "others", 0) \
+	ROM_REGION( 0x404080, "others", 0) \
 	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "fpr21042_m29w160et.bin", 0x000000, 0x200000, CRC(a4fcab0b) SHA1(a13cf9c5cdfe8605d82150b7573652f419b30197) ) \
-	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "ic10_g24lc64.bin", 0x000000, 0x2000, CRC(cfc5e06f) SHA1(3ababd4334d8d57abb22dd98bd2d347df39648d9) ) \
-	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "ic11_24lc024.bin", 0x000000, 0x80, CRC(8dc8374e) SHA1(cc03a0650bfac4bf6cb66e414bbef121cba53efe) ) \
-	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "pc20_g24lc64.bin", 0x000000, 0x2000, CRC(7742ab62) SHA1(82dad6e2a75bab4a4840dc6939462f1fb9b95101) ) \
-	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "ver1305.bin", 0x000000, 0x200000, CRC(a738ea1c) SHA1(45d94d0c39be1cb3db9fab6610a88a550adda4e9) ) \
+	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "ic10_g24lc64.bin", 0x200000, 0x2000, CRC(cfc5e06f) SHA1(3ababd4334d8d57abb22dd98bd2d347df39648d9) ) \
+	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "ic11_24lc024.bin", 0x202000, 0x80, CRC(8dc8374e) SHA1(cc03a0650bfac4bf6cb66e414bbef121cba53efe) ) \
+	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "pc20_g24lc64.bin", 0x202080, 0x2000, CRC(7742ab62) SHA1(82dad6e2a75bab4a4840dc6939462f1fb9b95101) ) \
+	ROM_LOAD16_WORD_SWAP_BIOS( 0,  "ver1305.bin", 0x204080, 0x200000, CRC(a738ea1c) SHA1(45d94d0c39be1cb3db9fab6610a88a550adda4e9) ) \
 
 ROM_START( chihiro )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 ROM_END
 
 
@@ -673,7 +1111,7 @@ ROM_START( hotd3 )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0001", 0,  SHA1(174c72f851d0c97e8993227467f16b0781ed2f5c) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0348-com.data", 0x00, 0x50, CRC(d28219ef) SHA1(40dbbc092bc9f99b8d2ae67fbefacd62184f90ec) )
 ROM_END
 
@@ -683,7 +1121,7 @@ ROM_START( outr2 )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0004a", 0, SHA1(27acd2d0680e6bafa0d052f60b4372adc37224fd) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0372-com.data", 0x00, 0x50, CRC(a15c9666) SHA1(fd36c524744acb33e579ccb257c71375a5d3af67) )
 ROM_END
 
@@ -711,7 +1149,7 @@ ROM_START( ghostsqu )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0012a", 0,  SHA1(d7d78ce4992cb16ee5b4ac6ca7a37c46b07e8c14) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0398-com.data", 0x00, 0x50, CRC(8c5391a2) SHA1(e64cadeb30c94c3cd4002630cd79cc76c7bde2ed) )
 ROM_END
 
@@ -722,7 +1160,7 @@ ROM_START( gundamos )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0013", 0, SHA1(96b3dafcc2d2d6803fe3bf43a245d43ee5e0e5a6) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0013.data", 0x00, 0x50, CRC(0479c383) SHA1(7e86a037d2f9d09cec61a38cb19de510bf9482b3) )
 ROM_END
 
@@ -756,7 +1194,7 @@ ROM_START( vcop3 )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0003a", 0,  SHA1(cdfec1d2ef02ae9e29cb1462f08904177bc4c9ea) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0354-com.data", 0x00, 0x50,  CRC(df7e3217) SHA1(9f0f4bf6b15f3b6eeea81eaa27b3d25bd94110da) )
 ROM_END
 
@@ -767,7 +1205,7 @@ ROM_START( mj2 )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0006c", 0, SHA1(505653117a73ed8b256ccf19450e7573a4dc57e9) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE) // key was missing
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE) // key was missing
 	ROM_LOAD("gdx-0006c.pic_data", 0x00, 0x50, NO_DUMP )
 ROM_END
 
@@ -777,7 +1215,7 @@ ROM_START( ollie )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0007", 0, SHA1(8898a571a427936bffcecd3ef27cb79087d22798) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0007.data", 0x00, 0x50, CRC(d2a8b31f) SHA1(e9ee2df30031826db6bc4bd91969e6680255dcf9) )
 ROM_END
 
@@ -789,7 +1227,7 @@ ROM_START( wangmid )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0009b", 0, SHA1(e032b9fd8d5d09255592f02f7531a608e8179c9c) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0009b.data", 0x00, 0x50, CRC(3af801f3) SHA1(e9a2558930f3f1f55d5b3c2cadad69329d931f26) )
 ROM_END
 
@@ -800,7 +1238,7 @@ ROM_START( wangmid2 )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0015", 0, SHA1(259483fd211a70c23205ffd852316d616c5a2740) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-5106-com.data", 0x00, 0x50, CRC(75c716aa) SHA1(5c2bcf3d28a80b336c6882d5aeb010d04327f8c1) )
 ROM_END
 
@@ -811,7 +1249,7 @@ ROM_START( wangmd2b )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0016a", 0, SHA1(cb306df60550bbd8df312634cb97014bb39f1631) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-5106-com.data", 0x00, 0x50, CRC(75c716aa) SHA1(5c2bcf3d28a80b336c6882d5aeb010d04327f8c1) )
 ROM_END
 
@@ -822,7 +1260,7 @@ ROM_START( mj3 )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0017d", 0, SHA1(cfbbd452c8f4efe0e99f398f5521fc3574b913bb) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE) // key was missing
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE) // key was missing
 	ROM_LOAD("gdx-0017d.pic_data", 0x00, 0x50, NO_DUMP )
 ROM_END
 
@@ -832,7 +1270,7 @@ ROM_START( scg06nt )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0018a", 0, SHA1(e6f3dc8066392854ad7d83f81d3cbc81a5e340b3) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
+	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0018.data", 0x00, 0x50, CRC(1a210abd) SHA1(43a54d028315d2dfa9f8ea6fb59265e0b980b02f) )
 ROM_END
 
@@ -841,8 +1279,6 @@ ROM_START( outr2st )
 
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0014a", 0, SHA1(4f9656634c47631f63eab554a13d19b15558217e) )
-
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 
 	ROM_REGION( 0x4000, "pic", ROMREGION_ERASEFF)	// number was not readable on pic, please fix if known
 	ROM_LOAD( "317-0xxx-com.pic", 0x000000, 0x004000, CRC(f94cf26f) SHA1(dd4af2b52935c7b2d8cd196ec1a30c0ef0993322) )
@@ -854,26 +1290,24 @@ ROM_START( crtaxihr )
 	DISK_REGION( "gdrom" )
 	DISK_IMAGE_READONLY( "gdx-0002b", 0, SHA1(4056ebd5587d6c897f475240bc5a4075a995aa8c) )
 
-	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
-
 	ROM_REGION( 0x4000, "pic", ROMREGION_ERASEFF)
 	ROM_LOAD( "317-0353-com.pic", 0x000000, 0x004000, CRC(1c6830b1) SHA1(75be47441783c18ee296209a34c432864deed70d) )
 ROM_END
 
 
 
-GAME( 200?, chihiro,  0,       chihiro_base, chihiro, 0, ROT0, "Sega",      "Chihiro Bios", GAME_NO_SOUND|GAME_NOT_WORKING|GAME_IS_BIOS_ROOT )
+GAME( 2002, chihiro,  0,       chihiro_base, chihiro, 0, ROT0, "Sega",      "Chihiro Bios", GAME_NO_SOUND|GAME_NOT_WORKING|GAME_IS_BIOS_ROOT )
 GAME( 2002, hotd3,    chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "The House of the Dead III (GDX-0001)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2003, crtaxihr, chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Crazy Taxi High Roller (Rev B) (GDX-0002B)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2003, vcop3,    chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Virtua Cop 3 (Rev A) (GDX-0003A)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2003, outr2,    chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Out Run 2 (Rev A) (GDX-0004A)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2005, mj2,      chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Sega Network Taisen Mahjong MJ 2 (Rev C) (GDX-0006C)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2005, ollie,    chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Ollie King (GDX-0007)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2005, wangmid,  chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Wangan Midnight Maximum Tune (Export) (Rev B) (GDX-0009B)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2005, ghostsqu, chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Ghost Squad (Rev A) (GDX-0012A)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2004, mj2,      chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Sega Network Taisen Mahjong MJ 2 (Rev C) (GDX-0006C)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2004, ollie,    chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Ollie King (GDX-0007)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2004, wangmid,  chihiro, chihirogd,    chihiro, 0, ROT0, "Namco",     "Wangan Midnight Maximum Tune (Export) (Rev B) (GDX-0009B)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2004, ghostsqu, chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Ghost Squad (Rev A) (GDX-0012A)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2005, gundamos, chihiro, chihirogd,    chihiro, 0, ROT0, "Banpresto", "Gundam Battle Operating Simulator (GDX-0013)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2004, outr2st,  chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Out Run 2 Special Tours (Rev A) (GDX-0014A)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2005, wangmid2, chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Wangan Midnight Maximum Tune 2 (Export) (GDX-0015)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2005, wangmd2b, chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Wangan Midnight Maximum Tune 2 (Japan) (Rev A) (GDX-0016A)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2005, wangmid2, chihiro, chihirogd,    chihiro, 0, ROT0, "Namco",     "Wangan Midnight Maximum Tune 2 (Export) (GDX-0015)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2005, wangmd2b, chihiro, chihirogd,    chihiro, 0, ROT0, "Namco",     "Wangan Midnight Maximum Tune 2 (Japan) (Rev A) (GDX-0016A)", GAME_NO_SOUND|GAME_NOT_WORKING )
 GAME( 2005, mj3,      chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Sega Network Taisen Mahjong MJ 3 (Rev D) (GDX-0017D)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2006, scg06nt,  chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Sega Club Golf 2006 Next Tours (Rev A) (GDX-0018A)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2005, scg06nt,  chihiro, chihirogd,    chihiro, 0, ROT0, "Sega",      "Sega Club Golf 2006 Next Tours (Rev A) (GDX-0018A)", GAME_NO_SOUND|GAME_NOT_WORKING )

@@ -25,7 +25,7 @@ struct dskdsk_tag
 };
 
 
-static struct dskdsk_tag *get_tag(floppy_image *floppy)
+static struct dskdsk_tag *get_tag(floppy_image_legacy *floppy)
 {
 	struct dskdsk_tag *tag;
 	tag = (dskdsk_tag *)floppy_tag(floppy);
@@ -50,22 +50,22 @@ FLOPPY_IDENTIFY( dsk_dsk_identify )
 	return FLOPPY_ERROR_SUCCESS;
 }
 
-static int dsk_get_heads_per_disk(floppy_image *floppy)
+static int dsk_get_heads_per_disk(floppy_image_legacy *floppy)
 {
 	return get_tag(floppy)->heads;
 }
 
-static int dsk_get_tracks_per_disk(floppy_image *floppy)
+static int dsk_get_tracks_per_disk(floppy_image_legacy *floppy)
 {
 	return get_tag(floppy)->tracks;
 }
 
-static UINT64 dsk_get_track_offset(floppy_image *floppy, int head, int track)
+static UINT64 dsk_get_track_offset(floppy_image_legacy *floppy, int head, int track)
 {
 	return get_tag(floppy)->track_offsets[(track<<1) + head];
 }
 
-static floperr_t get_offset(floppy_image *floppy, int head, int track, int sector, int sector_is_index, UINT64 *offset)
+static floperr_t get_offset(floppy_image_legacy *floppy, int head, int track, int sector, int sector_is_index, UINT64 *offset)
 {
 	UINT64 offs;
 	UINT64 track_offset;
@@ -108,7 +108,7 @@ static floperr_t get_offset(floppy_image *floppy, int head, int track, int secto
 
 
 
-static floperr_t internal_dsk_read_sector(floppy_image *floppy, int head, int track, int sector, int sector_is_index, void *buffer, size_t buflen)
+static floperr_t internal_dsk_read_sector(floppy_image_legacy *floppy, int head, int track, int sector, int sector_is_index, void *buffer, size_t buflen)
 {
 	UINT64 offset;
 	floperr_t err;
@@ -121,7 +121,7 @@ static floperr_t internal_dsk_read_sector(floppy_image *floppy, int head, int tr
 
 
 
-static floperr_t internal_dsk_write_sector(floppy_image *floppy, int head, int track, int sector, int sector_is_index, const void *buffer, size_t buflen, int ddam)
+static floperr_t internal_dsk_write_sector(floppy_image_legacy *floppy, int head, int track, int sector, int sector_is_index, const void *buffer, size_t buflen, int ddam)
 {
 	UINT64 offset;
 	floperr_t err;
@@ -136,27 +136,27 @@ static floperr_t internal_dsk_write_sector(floppy_image *floppy, int head, int t
 
 
 
-static floperr_t dsk_read_sector(floppy_image *floppy, int head, int track, int sector, void *buffer, size_t buflen)
+static floperr_t dsk_read_sector(floppy_image_legacy *floppy, int head, int track, int sector, void *buffer, size_t buflen)
 {
 	return internal_dsk_read_sector(floppy, head, track, sector, FALSE, buffer, buflen);
 }
 
-static floperr_t dsk_write_sector(floppy_image *floppy, int head, int track, int sector, const void *buffer, size_t buflen, int ddam)
+static floperr_t dsk_write_sector(floppy_image_legacy *floppy, int head, int track, int sector, const void *buffer, size_t buflen, int ddam)
 {
 	return internal_dsk_write_sector(floppy, head, track, sector, FALSE, buffer, buflen, ddam);
 }
 
-static floperr_t dsk_read_indexed_sector(floppy_image *floppy, int head, int track, int sector, void *buffer, size_t buflen)
+static floperr_t dsk_read_indexed_sector(floppy_image_legacy *floppy, int head, int track, int sector, void *buffer, size_t buflen)
 {
 	return internal_dsk_read_sector(floppy, head, track, sector, TRUE, buffer, buflen);
 }
 
-static floperr_t dsk_write_indexed_sector(floppy_image *floppy, int head, int track, int sector, const void *buffer, size_t buflen, int ddam)
+static floperr_t dsk_write_indexed_sector(floppy_image_legacy *floppy, int head, int track, int sector, const void *buffer, size_t buflen, int ddam)
 {
 	return internal_dsk_write_sector(floppy, head, track, sector, TRUE, buffer, buflen, ddam);
 }
 
-static floperr_t dsk_get_sector_length(floppy_image *floppy, int head, int track, int sector, UINT32 *sector_length)
+static floperr_t dsk_get_sector_length(floppy_image_legacy *floppy, int head, int track, int sector, UINT32 *sector_length)
 {
 	floperr_t err;
 	err = get_offset(floppy, head, track, sector, FALSE, NULL);
@@ -169,7 +169,7 @@ static floperr_t dsk_get_sector_length(floppy_image *floppy, int head, int track
 	return FLOPPY_ERROR_SUCCESS;
 }
 
-static floperr_t dsk_get_indexed_sector_info(floppy_image *floppy, int head, int track, int sector_index, int *cylinder, int *side, int *sector, UINT32 *sector_length, unsigned long *flags)
+static floperr_t dsk_get_indexed_sector_info(floppy_image_legacy *floppy, int head, int track, int sector_index, int *cylinder, int *side, int *sector, UINT32 *sector_length, unsigned long *flags)
 {
 	floperr_t retVal;
 	UINT64 offset;
@@ -255,3 +255,139 @@ FLOPPY_CONSTRUCT( dsk_dsk_construct )
 	callbacks->get_indexed_sector_info = dsk_get_indexed_sector_info;
 	return FLOPPY_ERROR_SUCCESS;
 }
+
+#include "emu.h"
+#include "dsk_dsk.h"
+
+#define DSK_FORMAT_HEADER	"MV - CPC"
+#define EXT_FORMAT_HEADER	"EXTENDED CPC DSK"
+
+dsk_format::dsk_format() : floppy_image_format_t()
+{
+}
+
+const char *dsk_format::name() const
+{
+	return "dsk";
+}
+
+const char *dsk_format::description() const
+{
+	return "CPC DSK Format";
+}
+
+const char *dsk_format::extensions() const
+{
+	return "dsk";
+}
+
+bool dsk_format::supports_save() const
+{
+	return false;
+}
+
+int dsk_format::identify(io_generic *io)
+{
+	UINT8 header[16];
+
+	io_generic_read(io, &header, 0, sizeof(header));
+	if ( memcmp( header, DSK_FORMAT_HEADER, 8 ) ==0) {
+		return 100;
+	}
+	if ( memcmp( header, EXT_FORMAT_HEADER, 16 ) ==0) {
+		return 100;
+	}
+	return 0;
+}
+
+
+#pragma pack(1)
+
+struct track_header
+{
+	UINT8 headertag[13];
+	UINT16 unused1;
+	UINT8 unused1b;
+	UINT8 track_number;
+	UINT8 side_number;
+	UINT8 datarate;
+	UINT8 rec_mode;
+	UINT8 sector_size_code;
+	UINT8 number_of_sector;
+	UINT8 gap3_length;
+	UINT8 filler_byte;
+};
+
+struct sector_header
+{
+	UINT8   track;
+	UINT8   side;
+	UINT8   sector_id;
+	UINT8   sector_size_code;
+	UINT8	fdc_status_reg1;
+	UINT8	fdc_status_reg2;
+	UINT16  data_lenght;
+};
+
+#pragma pack()
+
+bool dsk_format::load(io_generic *io, floppy_image *image)
+{
+	UINT8 header[100];
+	bool extendformat = FALSE;
+
+	io_generic_read(io, &header, 0, sizeof(header));
+	if ( memcmp( header, EXT_FORMAT_HEADER, 16 ) ==0) {
+		extendformat = TRUE;
+	}
+
+	int heads = header[0x31];
+	int skip = 1;
+	if (heads==1) {
+		skip = 2;
+	}
+	int tracks  = header[0x30];
+	UINT64 track_offsets[84*2];
+	int cnt =0;
+	if (!extendformat) {
+		int tmp = 0x100;
+		for (int i=0; i<tracks * heads; i++)
+		{
+			track_offsets[cnt] = tmp;
+			tmp += pick_integer_le(header, 0x32, 2);
+			cnt += skip;
+		}
+	} else  {
+		int tmp = 0x100;
+		for (int i=0; i<tracks * heads; i++)
+		{
+			track_offsets[cnt] = tmp;
+			tmp += header[0x34 + i] << 8;
+			cnt += skip;
+		}
+	}
+
+	int counter = 0;
+	for(int track=0; track < tracks; track++) {
+		for(int side=0; side < heads; side++) {
+			// read location of
+			track_header tr;
+			io_generic_read(io, &tr,track_offsets[(track<<1)+side],sizeof(tr));
+			//printf("%d,%d %d, %d\n",track,side,tr.track_number, tr.gap3_length);
+			int sec_location = track_offsets[(track<<1)+side] + 0x100;
+			for(int j=0;j<tr.number_of_sector;j++)
+			{
+				sector_header sector;
+				io_generic_read(io, &sector,track_offsets[(track<<1)+side]+sizeof(tr)+(sizeof(sector)*j),sizeof(sector));
+				//printf("sec %02x %08x\n",sector.sector_id,sec_location);
+
+				sec_location += sector.data_lenght;
+			}
+			counter++;
+		}
+	}
+	return FALSE;
+}
+
+const floppy_format_type FLOPPY_DSK_FORMAT = &floppy_image_format_creator<dsk_format>;
+

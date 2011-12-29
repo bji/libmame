@@ -137,6 +137,8 @@ public:
 	slider_state *init_slider_list();
 
 private:
+	void					enumerate_screens();
+
 	void					end_avi_recording();
 	void					begin_avi_recording(const char *name);
 
@@ -146,7 +148,11 @@ private:
 	win_window_info *       window;						// D3D window info
 
 	bool					master_enable;				// overall enable flag
-	bool					external_ini;				// external ini flag
+	bool					paused;						// whether or not rendering is currently paused
+	int						num_screens;				// number of emulated physical screens
+	int						lastidx;					// index of the last-encountered target
+	bool					write_ini;					// enable external ini saving
+	bool					read_ini;					// enable external ini loading
 	int						prescale_force_x;			// prescale force x
 	int						prescale_force_y;			// prescale force y
 	int						prescale_size_x;			// prescale size x
@@ -155,6 +161,7 @@ private:
 	bitmap_t *				shadow_bitmap;				// shadow mask bitmap for post-processing shader
 	d3d_texture_info *		shadow_texture;				// shadow mask texture for post-processing shader
 	int						registered_targets;			// number of registered HLSL targets (i.e., screens)
+	int						cyclic_target_idx;			// cyclic index of next HLSL target slot
 	hlsl_options *			options;					// current uniform state
 	avi_file *				avi_output_file;			// AVI file
 	bitmap_t *				avi_snap;					// AVI snapshot
@@ -190,8 +197,11 @@ private:
 	d3d_vertex *			fsfx_vertices;				// pointer to our full-screen-quad object
 
 	// render targets
+	int						raw_target_idx[9];			// Number of targets currently in use
 	int						target_use_count[9];		// Whether or not a target has been used yet
 	d3d_texture_info *		target_in_use[9];			// Target texture that is currently in use
+	int						target_width[9];			// Render target width
+	int						target_height[9];			// Render target height
 	d3d_surface *			last_target[9];				// Render target surface pointer for each screen's previous frame
 	d3d_texture *			last_texture[9];			// Render target texture pointer for each screen's previous frame
 	d3d_surface *			prescaletarget0[9];			// Render target surface pointer (prescale, if necessary)

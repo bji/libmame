@@ -57,13 +57,13 @@ VIDEO_START(lethalen)
 	// the US and Japanese cabinets apparently use different mirror setups
 	if (!strcmp(machine.system().name, "lethalenj"))
 	{
-		k056832_set_layer_offs(state->m_k056832, 0, -196, 0);
-		k056832_set_layer_offs(state->m_k056832, 1, -194, 0);
-		k056832_set_layer_offs(state->m_k056832, 2, -192, 0);
-		k056832_set_layer_offs(state->m_k056832, 3, -190, 0);
+		k056832_set_layer_offs(state->m_k056832, 0, -195, 0);
+		k056832_set_layer_offs(state->m_k056832, 1, -193, 0);
+		k056832_set_layer_offs(state->m_k056832, 2, -191, 0);
+		k056832_set_layer_offs(state->m_k056832, 3, -189, 0);
 	}
 	else
-	{ /* fixme */
+	{
 		k056832_set_layer_offs(state->m_k056832, 0, 188, 0);
 		k056832_set_layer_offs(state->m_k056832, 1, 190, 0);
 		k056832_set_layer_offs(state->m_k056832, 2, 192, 0);
@@ -109,14 +109,14 @@ SCREEN_UPDATE(lethalen)
 	bitmap_fill(bitmap, cliprect, 7168);
 	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
 
-	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 3, 0, 1);
-	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 2, 0, 2);
-	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 1, 0, 4);
+	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 3, K056832_DRAW_FLAG_MIRROR, 1);
+	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 2, K056832_DRAW_FLAG_MIRROR, 2);
+	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 1, K056832_DRAW_FLAG_MIRROR, 4);
 
 	k053245_sprites_draw_lethal(state->m_k053244, bitmap, cliprect);
 
 	// force "A" layer over top of everything
-	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 0, 0, 0);
+	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, 0, K056832_DRAW_FLAG_MIRROR, 0);
 
 	return 0;
 }
