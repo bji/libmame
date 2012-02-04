@@ -78,7 +78,7 @@ else
 endif
 endif
 
-MAME_OBJ := $(realpath $(BUILD_DIR))/libmame/obj
+MAME_OBJ := $(abspath $(BUILD_DIR))/libmame/obj
 
 MAME_OUTPUT_DIRECTORY := $(MAME_OBJ)/posix/mame
 
