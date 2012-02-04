@@ -425,8 +425,13 @@ EMULATOR = $(FULLNAME)$(EXE)
 # all sources are under the src/ directory
 SRC = src
 
+# Allow MAME_OBJ to specify the path to the obj directory
+ifndef MAME_OBJ
+    MAME_OBJ = obj
+endif
+
 # build the targets in different object dirs, so they can co-exist
-OBJ = obj/$(OSD)/$(FULLNAME)
+OBJ = $(MAME_OBJ)/$(OSD)/$(FULLNAME)
 
 
 

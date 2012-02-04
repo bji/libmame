@@ -78,7 +78,9 @@ else
 endif
 endif
 
-MAME_OUTPUT_DIRECTORY := $(LIBMAME_PROJECT_PREFIX)/obj/posix/mame
+MAME_OBJ := $(realpath $(BUILD_DIR))/libmame/obj
+
+MAME_OUTPUT_DIRECTORY := $(MAME_OBJ)/posix/mame
 
 ifeq ($(PTR64),1)
     MAME_OUTPUT_DIRECTORY := $(MAME_OUTPUT_DIRECTORY)64
@@ -134,11 +136,11 @@ $(LIBMAME_STATIC_LIBRARY_BUILD): libmame-static-build
 # Build targets
 .PHONY: libmame-build
 libmame-build:
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= MAME_OBJ=$(MAME_OBJ) CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 
 .PHONY: libmame-static-build
 libmame-static-build:
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 MAME_OBJ=$(MAME_OBJ) CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -146,5 +148,5 @@ libmame-static-build:
 .PHONY: libmame-clean
 libmame-clean:
 	$(QUIET_ECHO) $(LIBMAME_PROJECT_PREFIX)/obj: Cleaning
-	$(VERBOSE_SHOW) rm -rf $(LIBMAME_PROJECT_PREFIX)/obj
+	$(VERBOSE_SHOW) rm -rf $(MAME_OUTPUT_DIRECTORY)
 # -----------------------------------------------------------------------------
