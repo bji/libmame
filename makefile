@@ -388,9 +388,13 @@ ifdef DEBUG
 SUFFIXDEBUG = d
 endif
 
-# static library builds get the 's' suffix
+# static library builds get the 's' suffix, but not on Windows, for
+# which all object files are PIC so the static and shared libraries can be
+# built from the same objects
+ifneq ($(TARGETOS),win32)
 ifdef STATIC
 SUFFIXSTATIC = s
+endif
 endif
 
 # gprof builds get an addition 'p' suffix
@@ -421,8 +425,13 @@ EMULATOR = $(FULLNAME)$(EXE)
 # all sources are under the src/ directory
 SRC = src
 
+# Allow MAME_OBJ to specify the path to the obj directory
+ifndef MAME_OBJ
+    MAME_OBJ = obj
+endif
+
 # build the targets in different object dirs, so they can co-exist
-OBJ = obj/$(OSD)/$(FULLNAME)
+OBJ = $(MAME_OBJ)/$(OSD)/$(FULLNAME)
 
 
 
@@ -799,6 +808,7 @@ ifdef SYMBOLS
 	@echo Deleting $(FULLNAME).sym...
 	$(RM) $(FULLNAME).sym
 endif
+	@rm -f libmame_arargs
 
 .PHONY: checkautodetect
 checkautodetect:

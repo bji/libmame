@@ -164,22 +164,20 @@ static void convert_year(const game_driver *driver, GameInfo *gameinfo)
 {
     const char *yearstr = driver->year;
 
+    gameinfo->year_of_release = 0;
+
     if (yearstr) {
-        gameinfo->year_of_release = 0;
         while (*yearstr) {
             if ((*yearstr >= '0') && (*yearstr <= '9')) {
                 gameinfo->year_of_release *= 10;
                 gameinfo->year_of_release += *yearstr - '0';
             }
             else {
-                gameinfo->year_of_release = -1;
+                gameinfo->year_of_release = 0;
                 break;
             }
             yearstr++;
         }
-    }
-    else {
-        gameinfo->year_of_release = -1;
     }
 }
 
@@ -461,7 +459,13 @@ static void convert_settings(const ioport_list *ioportlist,
             }
 
             desc->name = input_field_name(field);
-            desc->tag = field->port().tag();
+            const char *tag = field->port().tag();
+            if (tag) {
+                desc->tag = copy_string(tag);
+            }
+            else {
+                desc->tag = 0;
+            }
             desc->mask = field->mask;
             const input_setting_config *setting;
             for (setting = field->settinglist().first(); setting; 
@@ -1204,6 +1208,9 @@ void LibMame_Games_Deinitialize()
             }
             if (gameinfo->dipswitches) {
                 for (int j = 0; j < gameinfo->dipswitch_count; j++) {
+                    if (gameinfo->dipswitches[j].tag) {
+                        osd_free((char *) (gameinfo->dipswitches[j].tag));
+                    }
                     if (gameinfo->dipswitches[j].value_names) {
                         osd_free((const char **) 
                                  gameinfo->dipswitches[j].value_names);

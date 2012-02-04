@@ -25,32 +25,43 @@ LIBMAMEOBJS = $(OBJ)/libmame/hashtable.o \
 # rules
 #------------------------------------------------
 
-# Because of command line length limits in Microsoft Windows, use GNU tools
-# @file option
-
 ifdef STATIC
+
+# Because of command line length limits in Microsoft Windows, use GNU tools
+# @file option.  Unfortunately creating this file from within a rule is
+# difficult because just echoing the lines to the file results in command
+# lines that are too long.  I can think of no way to do this except via
+# makefile hackery.
+
+LIBMAME = $(OBJ)/libmame.a
+LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) \
+                       $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
+                       $(SOUNDOBJS) $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) \
+                       $(COTHREADOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
+                       $(DRIVLISTOBJ)
+
+$(OBJ)/libmame/libmame_arargs:
+		$(shell rm -f $(OBJ)/libmame/libmame_arargs)
+		$(foreach word,crs $(LIBMAME) $(LIBMAME_STATIC_OBJS),$(shell echo $(word) >> $(OBJ)/libmame/libmame_arargs))
 
 # It would be nice to somehow resolve all symbols in libmame.a, leaving only
 # the LibMame_* symbols as undefined, but this doesn't seem possible with ld.
 # I don't understand why ld doesn't have an option for linking a bunch of
 # object files into another object file with all relocations done, and yet
 # leaving unresolved symbols unresolved; but it doesn't.
-LIBMAME = $(OBJ)/libmame.a
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) $(DEVLISTOBJ) \
-            $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) $(SOUNDOBJS) \
-            $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) $(COTHREADOBJS) \
-            $(ZLIBOBJS) $(SOFTFLOATOBJS) $(DRIVLISTOBJ)
+
+$(LIBMAME): $(LIBMAME_STATIC_OBJS) | $(OBJ)/libmame/libmame_arargs
 			$(ECHO) Archiving $@...
-			@echo "crs $@ $^" > $(OBJ)/libmame/arargs
-			$(AR) @$(OBJ)/libmame/arargs
+			$(AR) @$(OBJ)/libmame/libmame_arargs
 
 else
 
 VERSION_SCRIPT := $(SRC)/libmame/libmame.version
 
+LIBMAME = $(OBJ)/libmame$(SHLIB)
+
 ifdef SYMBOLS
 
-LIBMAME = $(OBJ)/libmame$(SHLIB)
 $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
             $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) \
             $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) \
@@ -60,7 +71,6 @@ $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
 
 else
 
-LIBMAME = $(OBJ)/libmame$(SHLIB)
 $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
             $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) \
             $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) \

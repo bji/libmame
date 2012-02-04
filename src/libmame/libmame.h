@@ -731,26 +731,6 @@ typedef struct LibMame_ScreenResolution
 
 
 /**
- * This describes the name and location of a sound sample.
- **/
-typedef struct LibMame_SoundSample
-{
-    /**
-     * This is the name of the sample, which is a file name of a sound file as
-     * stored in a sound sample ZIP file.
-     **/
-    const char *name;
-
-    /**
-     * This is the game number of the game that has the actual sample.  Some
-     * games reference sound sample files from other games, and thus use a
-     * different source game number than their own game number.
-     **/
-    int source_gamenum;
-} LibMame_SoundSample;
-
-
-/**
  * This describes a chip that MAME emulates.
  **/
 typedef struct LibMame_Chip
@@ -946,7 +926,7 @@ typedef struct LibMame_BiosSet
 
     /**
      * These are the numbers of the game's ROMs that make up this BIOS set.
-     * To get the details of rom N, call LibMame_Get_Game_Image(gamenum, N).
+     * To get the details of rom N, call LibMame_Get_Game_Rom(gamenum, N).
      **/
     const int *rom_numbers;
 } LibMame_BiosSet;
@@ -1794,10 +1774,10 @@ const char *LibMame_Get_Game_Full_Name(int gamenum);
 
 
 /**
- * Returns the year that a game was released, or -1 if the year is unknown.
+ * Returns the year that a game was released, or 0 if the year is unknown.
  *
  * @param gamenum is the game number of the game
- * @return the year that a game was released, or -1 if the year is unknown.
+ * @return the year that a game was released, or 0 if the year is unknown.
  **/
 int LibMame_Get_Game_Year_Of_Release(int gamenum);
 
