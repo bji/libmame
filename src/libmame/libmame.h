@@ -822,8 +822,8 @@ typedef struct LibMame_PerPlayerControllers
     int normal_button_flags;
 
     /**
-     * These are the names of the normal buttons, or NULL if the button has
-     * no name, one per button type.
+     * These are the names of the normal buttons, or an empty string if the
+     * button has no name, one per button type.
      **/
     const char *normal_button_names[LibMame_NormalButtonTypeCount];
 
@@ -868,8 +868,8 @@ typedef struct LibMame_SharedControllers
     int special_button_flags;
 
     /**
-     * These are the names of the special buttons, or NULL if the special
-     * button has no name, one per button type.
+     * These are the names of the special buttons, or an empty string if the
+     * special button has no name, one per button type.
      **/
     const char *special_button_names[LibMame_SpecialButtonTypeCount];
 } LibMame_SharedControllers;
@@ -979,20 +979,20 @@ typedef struct LibMame_Image
     const char *clone_of_rom;
 
     /**
-     * If this is non-NULL, it provides a CRC value to be used to validate the
-     * image.
+     * If this is not an empty string, it provides a CRC value to be used to
+     * validate the image.
      **/
     const char *crc;
 
     /**
-     * If this is non-NULL, it provides a SHA-1 hash value to be used to
-     * validate the image.
+     * If this is not an empty string, it provides a SHA-1 hash value to be
+     * used to validate the image.
      **/
     const char *sha1;
 
     /**
-     * If this is non-NULL, it provides a MD5 hash value to be used to
-     * validate the image.
+     * If this is not an empty string, it provides a MD5 hash value to be used
+     * to validate the image.
      **/
     const char *md5;
 } LibMame_Image;

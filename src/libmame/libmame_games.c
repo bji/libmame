@@ -28,6 +28,8 @@
 #define SOURCE_FILE_NAME_MAX 16
 #define INVALID_CONTROLLER_TYPE ((LibMame_ControllerType) -1)
 
+static const char *emptyStringG = "";
+
 typedef struct GameInfo
 {
     bool converted;
@@ -157,6 +159,15 @@ static char *copy_string(const char *string)
     strcpy(ret, string);
 
     return ret;
+}
+
+static void free_string(char *string)
+{
+    if (string == emptyStringG) {
+        return;
+    }
+
+    osd_free(string);
 }
 
 
@@ -464,7 +475,7 @@ static void convert_settings(const ioport_list *ioportlist,
                 desc->tag = copy_string(tag);
             }
             else {
-                desc->tag = 0;
+                desc->tag = emptyStringG;
             }
             desc->mask = field->mask;
             const input_setting_config *setting;
@@ -531,7 +542,8 @@ static void convert_controllers(const ioport_list *ioportlist,
                     gameinfo->controllers.shared.special_button_flags |=
                         (1 << special_count);
                     gameinfo->controllers.shared.
-                        special_button_names[special_count++] = field->name;
+                        special_button_names[special_count++] =
+                        field->name ? field->name : emptyStringG;
                 }
                 break;
             case IPT_JOYSTICK_LEFT:
@@ -675,7 +687,7 @@ static void convert_controllers(const ioport_list *ioportlist,
                     (1 << enumvalue);                                   \
                 gameinfo->                                              \
                     controllers.per_player.normal_button_names[n] =     \
-                    field->name;                                        \
+                    field->name ? field->name : emptyStringG;           \
                 break
                 
 #define CASE_SHARED_BUTTON(iptname, enumvalue)                          \
@@ -954,8 +966,8 @@ static void convert_image_info(const game_driver *driver,
                 image->is_optional = ((is_disk && DISK_ISOPTIONAL(rom)) ||
                                       (!is_disk && ROM_ISOPTIONAL(rom)));
                 image->size_if_known = is_disk ? 0 : rom_file_size(rom);
-                image->clone_of_game = 0;
-                image->clone_of_rom = 0;
+                image->clone_of_game = emptyStringG;
+                image->clone_of_rom = emptyStringG;
 
                 int clone_of = g_drivers.Get().find(driver->parent);
                 if (clone_of != -1) {
@@ -971,14 +983,20 @@ static void convert_image_info(const game_driver *driver,
                                 if (hashes == 
                                     hash_collection(ROM_GETHASHDATA(prom))) {
                                     image->clone_of_game = driver->parent;
+                                    if (!image->clone_of_game) {
+                                        image->clone_of_game = emptyStringG;
+                                    }
                                     image->clone_of_rom = ROM_GETNAME(prom);
+                                    if (!image->clone_of_rom) {
+                                        image->clone_of_rom = emptyStringG;
+                                    }
                                     break;
                                 }
                             }
                         }
                     }
                 }
-                image->crc = image->sha1 = image->md5 = 0;
+                image->crc = image->sha1 = image->md5 = emptyStringG;
                 if (!hashes.flag(hash_collection::FLAG_NO_DUMP)) {
                     for (hash_base *hash = hashes.first(); hash != NULL; 
                          hash = hash->next()) {
@@ -1201,15 +1219,15 @@ void LibMame_Games_Deinitialize()
             }
             if (gameinfo->chips) {
                 for (int j = 0; j < gameinfo->chip_count; j++) {
-                    osd_free((char *) (gameinfo->chips[j].tag));
-                    osd_free((char *) (gameinfo->chips[j].name));
+                    free_string((char *) (gameinfo->chips[j].tag));
+                    free_string((char *) (gameinfo->chips[j].name));
                 }
                 osd_free(gameinfo->chips);
             }
             if (gameinfo->dipswitches) {
                 for (int j = 0; j < gameinfo->dipswitch_count; j++) {
                     if (gameinfo->dipswitches[j].tag) {
-                        osd_free((char *) (gameinfo->dipswitches[j].tag));
+                        free_string((char *) (gameinfo->dipswitches[j].tag));
                     }
                     if (gameinfo->dipswitches[j].value_names) {
                         osd_free((const char **) 
@@ -1228,13 +1246,13 @@ void LibMame_Games_Deinitialize()
                 for (int j = 0; j < gameinfo->rom_count; j++) {
                     LibMame_Image *img = &(gameinfo->roms[j]);
                     if (img->crc) {
-                        osd_free((char *) (img->crc));
+                        free_string((char *) (img->crc));
                     }
                     if (img->sha1) {
-                        osd_free((char *) (img->sha1));
+                        free_string((char *) (img->sha1));
                     }
                     if (img->md5) {
-                        osd_free((char *) (img->md5));
+                        free_string((char *) (img->md5));
                     }
                 }
                 osd_free(gameinfo->roms);
@@ -1243,13 +1261,13 @@ void LibMame_Games_Deinitialize()
                 for (int j = 0; j < gameinfo->hdd_count; j++) {
                     LibMame_Image *img = &(gameinfo->hdds[j]);
                     if (img->crc) {
-                        osd_free((char *) (img->crc));
+                        free_string((char *) (img->crc));
                     }
                     if (img->sha1) {
-                        osd_free((char *) (img->sha1));
+                        free_string((char *) (img->sha1));
                     }
                     if (img->md5) {
-                        osd_free((char *) (img->md5));
+                        free_string((char *) (img->md5));
                     }
                 }
                 osd_free(gameinfo->hdds);
