@@ -1028,46 +1028,46 @@ typedef struct LibMame_PerPlayerControlsState
 
     /**
      * This value is the current horizontal position of the analog joystick,
-     * mapped to a range from -65536 (full left) to 65536 (full right).
+     * mapped to a range from -65535 (full left) to 65535 (full right).
      **/
     int analog_joystick_horizontal_state;
 
     /**
      * This value is the current vertical position of the analog joystick,
-     * mapped to a range from -65536 (full down) to 65536 (full up).
+     * mapped to a range from -65535 (full down) to 65535 (full up).
      **/
     int analog_joystick_vertical_state;
 
     /**
      * This value is the change in position of the spinner since the last
-     * time it was polled, mapped to a range from -65536 (furthest possible
-     * spin left) to 65536 (furthest possible spin right).
+     * time it was polled, mapped to a range from -65535 (furthest possible
+     * spin left) to 65535 (furthest possible spin right).
      **/
     int spinner_delta;
 
     /**
      * This value is the change in position of the vertical spinner since the
-     * last time it was polled, mapped to a range from -65536 (furthest
-     * possible spin down) to 65536 (furthest possible spin up).
+     * last time it was polled, mapped to a range from -65535 (furthest
+     * possible spin down) to 65535 (furthest possible spin up).
      **/
     int vertical_spinner_delta;
 
     /**
      * This value is the current paddle position, mapped to a range from
-     * -65536 (full left) to 65536 (full right).
+     * -65535 (full left) to 65535 (full right).
      **/
     int paddle_state;
 
     /**
      * This value is the current vertical paddle position, mapped to a range
-     * from -65536 (full left) to 65536 (full right).
+     * from -65535 (full left) to 65535 (full right).
      **/
     int vertical_paddle_state;
 
     /**
      * This value is the change in position of the trackball along the
      * horizontal axis since the last time it was polled, mapped to a range
-     * from -65536 (furthest possible roll left) 65536 (furthest possible roll
+     * from -65535 (furthest possible roll left) 65535 (furthest possible roll
      * right).
      **/
     int trackball_horizontal_delta;
@@ -1075,14 +1075,14 @@ typedef struct LibMame_PerPlayerControlsState
     /**
      * This value is the change in position of the trackball along the
      * vertical axis since the last time it was polled, mapped to a range
-     * from -65536 (furthest possible roll down) 65536 (furthest possible roll
+     * from -65535 (furthest possible roll down) 65535 (furthest possible roll
      * up).
      **/
     int trackball_vertical_delta;
 
     /**
      * This value is the current horizontal position of the analog joystick,
-     * mapped to a range from -65536 (left edge of screen) to 65536 (right
+     * mapped to a range from -65535 (left edge of screen) to 65535 (right
      * edge of screen).  Any values outside this range indicates off of the
      * screen if present in either lightgun_horizontal_position_state or
      * lightgun_vertical_position_state.
@@ -1091,7 +1091,7 @@ typedef struct LibMame_PerPlayerControlsState
 
     /**
      * This value is the current vertical position of the analog joystick,
-     * mapped to a range from -65536 (left edge of screen) to 65536 (right
+     * mapped to a range from -65535 (left edge of screen) to 65535 (right
      * edge of screen).  Any values outside this range indicates indicates off
      * of the screen if present in either lightgun_horizontal_position_state
      * or lightgun_vertical_position_state.
@@ -1100,19 +1100,19 @@ typedef struct LibMame_PerPlayerControlsState
 
     /**
      * This value is the current paddle position, mapped to a range from
-     * -65536 (not pressed) to 65536 (fully pressed).
+     * -65535 (not pressed) to 65535 (fully pressed).
      **/
     int pedal_state;
 
     /**
      * This value is the current second pedal position, mapped to a range from
-     * -65536 (not pressed) to 65536 (fully pressed).
+     * -65535 (not pressed) to 65535 (fully pressed).
      **/
     int pedal2_state;
 
     /**
      * This value is the current third pedal position, mapped to a range from
-     * -65536 (not pressed) to 65536 (fully pressed).
+     * -65535 (not pressed) to 65535 (fully pressed).
      **/
     int pedal3_state;
 

@@ -496,6 +496,15 @@ static INT32 get_controller_state(void *, void *data)
     LibMame_SharedControlsState *shared_state =
         &(g_state.controls_state.shared);
 
+    /* MAME defines input ranges from -65536 to +65536 inclusive.  This is 17
+       bits which is cumbersome.  So libmame allows ranges of -65535 to
+       +65535, which is 16 bits in each direction and much less cumbersome.
+       Just in case MAME treats the maximum or minimum of a range specially,
+       we'll map an input of -65535 to -65536 for MAME and same for +65535 and
+       +65536. */
+#define RANGED(value) ((value == -65535) ? -65536 : \
+                       (value == 65535) ? 65536 : value)
+
     switch (input_type) {
     case libmame_input_type_invalid:
         /* This is an input type that we don't handle (yet) */
@@ -515,34 +524,36 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_right_joystick:
         return (perplayer_state->right_joystick_state & (1 << input_number));
     case libmame_input_type_analog_joystick_horizontal:
-        return perplayer_state->analog_joystick_horizontal_state;
+        return RANGED(perplayer_state->analog_joystick_horizontal_state);
     case libmame_input_type_analog_joystick_vertical:
-        return perplayer_state->analog_joystick_vertical_state;
+        return RANGED(perplayer_state->analog_joystick_vertical_state);
     case libmame_input_type_spinner:
-        return perplayer_state->spinner_delta;
+        return RANGED(perplayer_state->spinner_delta);
     case libmame_input_type_vertical_spinner:
-        return perplayer_state->vertical_spinner_delta;
+        return RANGED(perplayer_state->vertical_spinner_delta);
     case libmame_input_type_paddle:
-        return perplayer_state->paddle_state; 
+        return RANGED(perplayer_state->paddle_state);
     case libmame_input_type_vertical_paddle:
-        return perplayer_state->vertical_paddle_state;
+        return RANGED(perplayer_state->vertical_paddle_state);
     case libmame_input_type_trackball_horizontal:
-        return perplayer_state->trackball_horizontal_delta;
+        return RANGED(perplayer_state->trackball_horizontal_delta);
     case libmame_input_type_trackball_vertical:
-        return perplayer_state->trackball_vertical_delta;
+        return RANGED(perplayer_state->trackball_vertical_delta);
     case libmame_input_type_lightgun_horizontal:
-        return perplayer_state->lightgun_horizontal_state;
+        return RANGED(perplayer_state->lightgun_horizontal_state);
     case libmame_input_type_lightgun_vertical:
-        return perplayer_state->lightgun_vertical_state;
+        return RANGED(perplayer_state->lightgun_vertical_state);
     case libmame_input_type_pedal:
-        return perplayer_state->pedal_state;
+        return RANGED(perplayer_state->pedal_state);
     case libmame_input_type_pedal2:
-        return perplayer_state->pedal2_state;
+        return RANGED(perplayer_state->pedal2_state);
     case libmame_input_type_pedal3:
-        return perplayer_state->pedal3_state;
+        return RANGED(perplayer_state->pedal3_state);
     case libmame_input_type_Ui_button:
         return (shared_state->ui_input_state == input_number);
     }
+
+#undef RANGED
 
     /* Weird, this is not an input type that we know about */
     return 0;
