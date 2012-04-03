@@ -883,7 +883,7 @@ typedef struct LibMame_AllControllers
     /**
      * This is the per-player controllers descriptors; each player is assumed
      * to have the same controllers, so this describes the controller set that
-     * every player uses for this game
+     * every player uses for this game.
      **/
     LibMame_PerPlayerControllers per_player;
 
@@ -1198,8 +1198,9 @@ typedef struct LibMame_SharedControlsState
 typedef struct LibMame_AllControlsState
 {
     /**
-     * This is the per-player controls state, one per player.  Not all games
-     * use all players.
+     * This is the per-player controls state, one per player, with player 1 at
+     * index 0, player 2 and index 1, up to player 8 at index 7.  Not all
+     * games use all players.
      **/
     LibMame_PerPlayerControlsState per_player[8];
 
