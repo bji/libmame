@@ -505,6 +505,11 @@ static INT32 get_controller_state(void *, void *data)
 #define RANGED(value) ((value == -65535) ? -65536 : \
                        (value == 65535) ? 65536 : value)
 
+    /* Supply only half-axis for pedal inputs (negative pedal values make
+     * no sense) */
+#define PEDAL(value) ((value < 0) ? ((value == -65535) ? -65536 : -value) : \
+                      (value == 65535) ? 65536 : value)
+
     switch (input_type) {
     case libmame_input_type_invalid:
         /* This is an input type that we don't handle (yet) */
@@ -544,11 +549,11 @@ static INT32 get_controller_state(void *, void *data)
     case libmame_input_type_lightgun_vertical:
         return RANGED(perplayer_state->lightgun_vertical_state);
     case libmame_input_type_pedal:
-        return RANGED(perplayer_state->pedal_state);
+        return PEDAL(perplayer_state->pedal_state);
     case libmame_input_type_pedal2:
-        return RANGED(perplayer_state->pedal2_state);
+        return PEDAL(perplayer_state->pedal2_state);
     case libmame_input_type_pedal3:
-        return RANGED(perplayer_state->pedal3_state);
+        return PEDAL(perplayer_state->pedal3_state);
     case libmame_input_type_Ui_button:
         return (shared_state->ui_input_state == input_number);
     }

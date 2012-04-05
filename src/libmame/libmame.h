@@ -1099,20 +1099,23 @@ typedef struct LibMame_PerPlayerControlsState
     int lightgun_vertical_state;
 
     /**
-     * This value is the current paddle position, mapped to a range from
-     * -65535 (not pressed) to 65535 (fully pressed).
+     * This value is the current pedal position, mapped to a range from
+     * 0 (not pressed) to 65535 (fully pressed).  If the value is negative,
+     * it is inverted before being used (i.e. -1000 will be used as 1000).
      **/
     int pedal_state;
 
     /**
      * This value is the current second pedal position, mapped to a range from
-     * -65535 (not pressed) to 65535 (fully pressed).
+     * 0 (not pressed) to 65535 (fully pressed).  If the value is negative, it
+     * is inverted before being used (i.e. -1000 will be used as 1000).
      **/
     int pedal2_state;
 
     /**
      * This value is the current third pedal position, mapped to a range from
-     * -65535 (not pressed) to 65535 (fully pressed).
+     * 0 (not pressed) to 65535 (fully pressed).  If the value is negative, it
+     * is inverted before being used (i.e. -1000 will be used as 1000).
      **/
     int pedal3_state;
 
