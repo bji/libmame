@@ -394,9 +394,9 @@ static libmame_input_descriptor g_input_descriptors[] =
 
     { IPT_AD_STICK_X, ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS) },
 	{ IPT_AD_STICK_Y, ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS) },
-    // XXX TODO - figure out how to handle IPT_AD_STICK_Z },
-    // { IPT_AD_STICK_Z, // ANALOG_INPUT(pedal, ITEM_ID_XAXIS) },
-    { IPT_AD_STICK_Z, INVALID_INPUT },
+    // IPT_AD_STICK_Z is only ever used as a throttle input when there
+    // isn't otherwise a pedal
+    { IPT_AD_STICK_Z, ANALOG_INPUT(pedal, ITEM_ID_ZAXIS) },
 	{ IPT_PADDLE, ANALOG_INPUT(paddle, ITEM_ID_XAXIS) },
 	{ IPT_PADDLE_V, ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS) },
     { IPT_PEDAL, ANALOG_INPUT(pedal, ITEM_ID_XAXIS) },
@@ -404,11 +404,10 @@ static libmame_input_descriptor g_input_descriptors[] =
     { IPT_PEDAL3, ANALOG_INPUT(pedal3, ITEM_ID_ZAXIS) },
     { IPT_LIGHTGUN_X, ANALOG_INPUT(lightgun_horizontal, ITEM_ID_XAXIS) },
     { IPT_LIGHTGUN_Y, ANALOG_INPUT(lightgun_vertical, ITEM_ID_YAXIS) },
-    // XXX TODO - figure out how to handle arbitrary IPT_POSITIONAL stuff
-    // { IPT_POSITIONAL, // ANALOG_INPUT(paddle, ITEM_ID_XAXIS) },
-    { IPT_POSITIONAL, INVALID_INPUT },
-    // IPT_POSITIONAL_V, // ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS) },
-    { IPT_POSITIONAL_V, INVALID_INPUT },
+    // Using paddles for positionals.  It is possible that some games have
+    // both, which will suck.
+    { IPT_POSITIONAL, ANALOG_INPUT(paddle, ITEM_ID_XAXIS) },
+    { IPT_POSITIONAL_V, ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS) },
     { IPT_DIAL, ANALOG_INPUT(spinner, ITEM_ID_RXAXIS) },
     { IPT_DIAL_V, ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS) },
     { IPT_TRACKBALL_X, ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS) },

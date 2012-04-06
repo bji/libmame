@@ -619,8 +619,13 @@ static void convert_controllers(const ioport_list *ioportlist,
                 }
                 break;
             case IPT_PADDLE:
+            case IPT_POSITIONAL:
                 gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Paddle);
+                break;
+            case IPT_POSITIONAL_V:
+                gameinfo->controllers.per_player.controller_flags |= 
+                    (1 << LibMame_ControllerType_VerticalPaddle);
                 break;
             case IPT_DIAL:
                 gameinfo->controllers.per_player.controller_flags |= 
@@ -632,30 +637,9 @@ static void convert_controllers(const ioport_list *ioportlist,
                     (1 << LibMame_ControllerType_Trackball);
                 break;
             case IPT_AD_STICK_X:
-                if (gameinfo->controllers.per_player.controller_flags &
-                    (1 << LibMame_ControllerType_AnalogVerticalJoystick)) {
-                    gameinfo->controllers.per_player.controller_flags &=
-                        ~(1 << LibMame_ControllerType_AnalogVerticalJoystick);
-                    gameinfo->controllers.per_player.controller_flags |=
-                        (1 << LibMame_ControllerType_Analog8WayJoystick);
-                }
-                else {
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_AnalogHorizontalJoystick);
-                }
-                break;
             case IPT_AD_STICK_Y:
-                if (gameinfo->controllers.per_player.controller_flags &
-                    (1 << LibMame_ControllerType_AnalogHorizontalJoystick)) {
-                    gameinfo->controllers.per_player.controller_flags &=
-                        ~(1 << LibMame_ControllerType_AnalogHorizontalJoystick);
-                    gameinfo->controllers.per_player.controller_flags |=
-                        (1 << LibMame_ControllerType_Analog8WayJoystick);
-                }
-                else {
-                    gameinfo->controllers.per_player.controller_flags |= 
-                        (1 << LibMame_ControllerType_AnalogVerticalJoystick);
-                }
+                gameinfo->controllers.per_player.controller_flags |=
+                    (1 << LibMame_ControllerType_Analog8WayJoystick);
                 break;
             case IPT_LIGHTGUN_X:
             case IPT_LIGHTGUN_Y:
@@ -663,6 +647,7 @@ static void convert_controllers(const ioport_list *ioportlist,
                     (1 << LibMame_ControllerType_Lightgun);
                 break;
             case IPT_PEDAL:
+            case IPT_AD_STICK_Z:
                 gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Pedal);
                 break;

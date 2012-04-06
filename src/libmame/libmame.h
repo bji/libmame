@@ -323,8 +323,6 @@ typedef enum
     LibMame_ControllerType_RightVerticalJoystick,
     LibMame_ControllerType_Right4WayJoystick,
     LibMame_ControllerType_Right8WayJoystick,
-    LibMame_ControllerType_AnalogHorizontalJoystick,
-    LibMame_ControllerType_AnalogVerticalJoystick,
     LibMame_ControllerType_Analog8WayJoystick,
     LibMame_ControllerType_Spinner,
     LibMame_ControllerType_VerticalSpinner,
