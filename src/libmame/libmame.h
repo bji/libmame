@@ -315,10 +315,18 @@ typedef enum
  **/
 typedef enum
 {
+    /**
+     * The left joystick types are mutually exclusive (i.e. can only have one
+     * of these in any given game).
+     **/
     LibMame_ControllerType_LeftHorizontalJoystick,
     LibMame_ControllerType_LeftVerticalJoystick,
     LibMame_ControllerType_Left4WayJoystick,
     LibMame_ControllerType_Left8WayJoystick,
+    /**
+     * The right joystick types are mutually exclusive (i.e. can only have one
+     * of these in any given game).
+     **/
     LibMame_ControllerType_RightHorizontalJoystick,
     LibMame_ControllerType_RightVerticalJoystick,
     LibMame_ControllerType_Right4WayJoystick,
