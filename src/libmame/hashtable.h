@@ -16,10 +16,6 @@
 
 namespace Hash
 {
-#if 0
-    /* To fix emacs indentation */
-}
-#endif
 
 /**
  * HashCode stores a hash code; it wraps an unsigned int so as to allow a
