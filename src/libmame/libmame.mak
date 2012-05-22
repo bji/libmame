@@ -14,10 +14,10 @@ OBJDIRS += $(OBJ)/libmame
 
 # These are the libmame objects
 
-LIBMAMEOBJS = $(OBJ)/libmame/hashtable.o \
-              $(OBJ)/libmame/libmame_idv.o \
-              $(OBJ)/libmame/libmame_games.o \
-              $(OBJ)/libmame/libmame_options.o \
+LIBMAMEOBJS = $(OBJ)/libmame/hashtable.o                                     \
+              $(OBJ)/libmame/libmame_idv.o                                   \
+              $(OBJ)/libmame/libmame_games.o                                 \
+              $(OBJ)/libmame/libmame_options.o                               \
               $(OBJ)/libmame/libmame_rungame.o
 
 
@@ -34,11 +34,11 @@ ifdef STATIC
 # makefile hackery.
 
 LIBMAME = $(OBJ)/libmame.a
-LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS) \
-                       $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS) \
-                       $(SOUNDOBJS) $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) \
-                       $(COTHREADOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS) \
-                       $(DRIVLISTOBJ)
+LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS)            \
+                       $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS)   \
+                       $(SOUNDOBJS) $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS)  \
+                       $(COTHREADOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS)          \
+                       $(DRIVLISTOBJ) $(DEVLISTOBJ) 
 
 $(OBJ)/libmame/libmame_arargs:
 		$(shell rm -f $(OBJ)/libmame/libmame_arargs)
@@ -62,21 +62,21 @@ LIBMAME = $(OBJ)/libmame$(SHLIB)
 
 ifdef SYMBOLS
 
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
-            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) \
-            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) \
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ)        \
+            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND)  \
+            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD)      \
             $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -o $@ $^ -lpthread
 
 else
 
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) \
-            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) \
-            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) \
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ)        \
+            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND)  \
+            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD)      \
             $(LIBOCORE) $(ZLIB)
 			$(ECHO) Linking $@...
-			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT) \
+			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT)  \
                 -o $@ $^ -lpthread
 			$(ECHO) Stripping $@...
 			$(STRIP) --strip-unneeded $@
