@@ -75,7 +75,7 @@ ifeq ($(TARGET_ARCH),x86_64)
     LIBMAME_PTR64 := 1
 else
 ifeq ($(TARGET_ARCH),x86)
-xo    LIBMAME_PTR64 := 0
+    LIBMAME_PTR64 := 0
 else
     $(error "ERROR: Unknown TARGET_ARCH: $(TARGET_ARCH)")
 endif
