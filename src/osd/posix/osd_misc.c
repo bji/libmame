@@ -16,7 +16,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "osdcore.h"
-#include "osdepend.h"
 
 /**
  * Undo mame definition of malloc and free as macros.  That doesn't seem

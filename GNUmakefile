@@ -136,13 +136,17 @@ $(LIBMAME_STATIC_LIBRARY): $(LIBMAME_STATIC_LIBRARY_BUILD)
 # Library targets 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
+# NOWERROR is currently required because MAME doesn't compile cleanly with
+# gcc 4.7
 $(LIBMAME_SHARED_LIBRARY_BUILD):
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(LIBMAME_PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= MAME_OBJ=$(LIBMAME_OBJ) CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+	$(VERBOSE_SHOW) $(MAKE) NOWERROR=1 BUILD_LIBMAME=1 PTR64=$(LIBMAME_PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC= MAME_OBJ=$(LIBMAME_OBJ) CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 
 # Unfortunately, make recursion is necessary because the makefiles for
 # MAME do not fit into the managed makefile scheme
+# NOWERROR is currently required because MAME doesn't compile cleanly with
+# gcc 4.7
 $(LIBMAME_STATIC_LIBRARY_BUILD):
-	$(VERBOSE_SHOW) $(MAKE) BUILD_LIBMAME=1 PTR64=$(LIBMAME_PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 MAME_OBJ=$(LIBMAME_OBJ) CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
+	$(VERBOSE_SHOW) $(MAKE) NOWERROR=1 BUILD_LIBMAME=1 PTR64=$(LIBMAME_PTR64) DEBUG=$(DEBUG) PROFILE=$(PROFILE) SYMBOLS=$(DEBUG) STATIC=1 MAME_OBJ=$(LIBMAME_OBJ) CFLAGS_EXTRA="$(LIBMAME_CFLAGS_EXTRA)" LDFLAGS_EXTRA="$(LIBMAME_LDFLAGS_EXTRA)" -C $(LIBMAME_PROJECT_PREFIX) -f makefile libmame
 # -----------------------------------------------------------------------------
 
 

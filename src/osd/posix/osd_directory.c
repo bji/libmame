@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "osdcore.h"
-#include "osdepend.h"
 #include "osd_util.h"
 
 struct _osd_directory
