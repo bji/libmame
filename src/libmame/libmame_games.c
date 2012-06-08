@@ -1091,7 +1091,6 @@ static void convert_source_file_name(const game_driver *driver,
 static void convert_game_info(GameInfo *gameinfo)
 {
     const game_driver &driver = g_drivers.Get().driver(gameinfo->driver_index);
-
 	machine_config &machineconfig = g_drivers.Get().config
         (gameinfo->driver_index);
     ioport_list ioportlist;
