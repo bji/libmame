@@ -9,20 +9,15 @@
 #include "video/deco16ic.h"
 #include "video/decospr.h"
 
-WRITE16_HANDLER( rohga_buffer_spriteram16_w )
+WRITE16_MEMBER(rohga_state::rohga_buffer_spriteram16_w)
 {
 	// Spriteram seems to be triple buffered (no sprite lag on real pcb, but there
 	// is on driver with only double buffering)
-	rohga_state *state = space->machine().driver_data<rohga_state>();
-	memcpy(state->m_spriteram, space->machine().generic.buffered_spriteram.u16, 0x800);
-	memcpy(space->machine().generic.buffered_spriteram.u16, space->machine().generic.spriteram.u16, 0x800);
+	m_spriteram->copy();
 }
 
 VIDEO_START( rohga )
 {
-	rohga_state *state = machine.driver_data<rohga_state>();
-	state->m_spriteram = auto_alloc_array(machine, UINT16, 0x800/2);
-	state->save_pointer(NAME(state->m_spriteram), 0x800/2);
 	machine.device<decospr_device>("spritegen1")->set_col_callback(rohga_col_callback);
 	machine.device<decospr_device>("spritegen1")->set_pri_callback(rohga_pri_callback);
 }
@@ -73,7 +68,7 @@ SCREEN_UPDATE_IND16( rohga )
 	UINT16 priority = decocomn_priority_r(state->m_decocomn, 0, 0xffff);
 
 	/* Update playfields */
-	flip_screen_set(screen.machine(), BIT(flip, 7));
+	state->flip_screen_set(BIT(flip, 7));
 	deco16ic_pf_update(state->m_deco_tilegen1, state->m_pf1_rowscroll, state->m_pf2_rowscroll);
 	deco16ic_pf_update(state->m_deco_tilegen2, state->m_pf3_rowscroll, state->m_pf4_rowscroll);
 
@@ -109,7 +104,7 @@ SCREEN_UPDATE_IND16( rohga )
 		break;
 	}
 
-	screen.machine().device<decospr_device>("spritegen1")->draw_sprites(bitmap, cliprect, screen.machine().generic.buffered_spriteram.u16, 0x400, true);
+	screen.machine().device<decospr_device>("spritegen1")->draw_sprites(bitmap, cliprect, state->m_spriteram->buffer(), 0x400, true);
 	deco16ic_tilemap_1_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 0);
 
 	return 0;
@@ -176,11 +171,11 @@ SCREEN_UPDATE_RGB32( wizdfire )
 	UINT16 priority = decocomn_priority_r(state->m_decocomn, 0, 0xffff);
 
 	/* draw sprite gfx to temp bitmaps */
-	screen.machine().device<decospr_device>("spritegen2")->draw_sprites(bitmap, cliprect, screen.machine().generic.buffered_spriteram2.u16, 0x400, true);
-	screen.machine().device<decospr_device>("spritegen1")->draw_sprites(bitmap, cliprect, screen.machine().generic.buffered_spriteram.u16, 0x400, true);
+	screen.machine().device<decospr_device>("spritegen2")->draw_sprites(bitmap, cliprect, state->m_spriteram2->buffer(), 0x400, true);
+	screen.machine().device<decospr_device>("spritegen1")->draw_sprites(bitmap, cliprect, state->m_spriteram->buffer(), 0x400, true);
 
 	/* Update playfields */
-	flip_screen_set(screen.machine(), BIT(flip, 7));
+	state->flip_screen_set(BIT(flip, 7));
 	deco16ic_pf_update(state->m_deco_tilegen1, 0, 0);
 	deco16ic_pf_update(state->m_deco_tilegen2, state->m_pf3_rowscroll, state->m_pf4_rowscroll);
 
@@ -213,11 +208,11 @@ SCREEN_UPDATE_RGB32( nitrobal )
 	/* draw sprite gfx to temp bitmaps */
 	screen.machine().device<decospr_device>("spritegen1")->set_alt_format(true);
 	screen.machine().device<decospr_device>("spritegen2")->set_alt_format(true);
-	screen.machine().device<decospr_device>("spritegen2")->draw_sprites(bitmap, cliprect, screen.machine().generic.buffered_spriteram2.u16, 0x400, false);
-	screen.machine().device<decospr_device>("spritegen1")->draw_sprites(bitmap, cliprect, screen.machine().generic.buffered_spriteram.u16, 0x400, false);
+	screen.machine().device<decospr_device>("spritegen2")->draw_sprites(bitmap, cliprect, state->m_spriteram2->buffer(), 0x400, false);
+	screen.machine().device<decospr_device>("spritegen1")->draw_sprites(bitmap, cliprect, state->m_spriteram->buffer(), 0x400, false);
 
 	/* Update playfields */
-	flip_screen_set(screen.machine(), BIT(flip, 7));
+	state->flip_screen_set(BIT(flip, 7));
 	deco16ic_pf_update(state->m_deco_tilegen1, state->m_pf1_rowscroll, state->m_pf2_rowscroll);
 	deco16ic_pf_update(state->m_deco_tilegen2, state->m_pf3_rowscroll, state->m_pf4_rowscroll);
 

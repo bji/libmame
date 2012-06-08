@@ -39,6 +39,7 @@
 
 #include "emu.h"
 #include "emuopts.h"
+#include "drivenum.h"
 
 #include <ctype.h>
 
@@ -276,7 +277,7 @@ void emu_options::update_slot_options()
 	// create the configuration
 	machine_config config(*cursystem, *this);
 	slot_interface_iterator iter(config.root_device());
-	for (const device_slot_interface *slot = iter.first(); slot != NULL; slot = iter.next())
+	for (device_slot_interface *slot = iter.first(); slot != NULL; slot = iter.next())
 	{
 		// retrieve info about the device instance
 		if (exists(slot->device().tag()+1)) {
@@ -321,7 +322,9 @@ void emu_options::add_device_options(bool isfirst)
 		// retrieve info about the device instance
 		astring option_name;
 		option_name.printf("%s;%s", image->instance_name(), image->brief_instance_name());
-
+		if (strcmp(image->device_typename(image->image_type()),image->instance_name())==0){
+			option_name.printf("%s;%s;%s1;%s1", image->instance_name(), image->brief_instance_name(), image->instance_name(), image->brief_instance_name());
+		}
 		// add the option
 		if (!exists(image->instance_name())) {
 			entry[0].name = option_name;
@@ -373,6 +376,9 @@ bool emu_options::parse_slot_devices(int argc, char *argv[], astring &error_stri
 	}
 	result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
 	update_slot_options();
+	while (add_slot_options(false));
+	add_device_options(true);
+	result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
 	return result;
 }
 
@@ -501,6 +507,8 @@ void emu_options::set_system_name(const char *name)
 		// then add the options
 		add_device_options(true);
 		update_slot_options();
+		while (add_slot_options(false));
+		add_device_options(true);
 	}
 }
 

@@ -91,46 +91,40 @@ VIDEO_START( slapfight )
 
 ***************************************************************************/
 
-WRITE8_HANDLER( slapfight_videoram_w )
+WRITE8_MEMBER(slapfght_state::slapfight_videoram_w)
 {
-	slapfght_state *state = space->machine().driver_data<slapfght_state>();
-	state->m_slapfight_videoram[offset]=data;
-	state->m_pf1_tilemap->mark_tile_dirty(offset);
+	m_slapfight_videoram[offset]=data;
+	m_pf1_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( slapfight_colorram_w )
+WRITE8_MEMBER(slapfght_state::slapfight_colorram_w)
 {
-	slapfght_state *state = space->machine().driver_data<slapfght_state>();
-	state->m_slapfight_colorram[offset]=data;
-	state->m_pf1_tilemap->mark_tile_dirty(offset);
+	m_slapfight_colorram[offset]=data;
+	m_pf1_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( slapfight_fixram_w )
+WRITE8_MEMBER(slapfght_state::slapfight_fixram_w)
 {
-	slapfght_state *state = space->machine().driver_data<slapfght_state>();
-	state->m_slapfight_fixvideoram[offset]=data;
-	state->m_fix_tilemap->mark_tile_dirty(offset);
+	m_slapfight_fixvideoram[offset]=data;
+	m_fix_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( slapfight_fixcol_w )
+WRITE8_MEMBER(slapfght_state::slapfight_fixcol_w)
 {
-	slapfght_state *state = space->machine().driver_data<slapfght_state>();
-	state->m_slapfight_fixcolorram[offset]=data;
-	state->m_fix_tilemap->mark_tile_dirty(offset);
+	m_slapfight_fixcolorram[offset]=data;
+	m_fix_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( slapfight_flipscreen_w )
+WRITE8_MEMBER(slapfght_state::slapfight_flipscreen_w)
 {
-	slapfght_state *state = space->machine().driver_data<slapfght_state>();
 	logerror("Writing %02x to flipscreen\n",offset);
-	if (offset==0) state->m_flipscreen=1; /* Port 0x2 is flipscreen */
-	else state->m_flipscreen=0; /* Port 0x3 is normal */
+	if (offset==0) m_flipscreen=1; /* Port 0x2 is flipscreen */
+	else m_flipscreen=0; /* Port 0x3 is normal */
 }
 
-WRITE8_HANDLER( slapfight_palette_bank_w )
+WRITE8_MEMBER(slapfght_state::slapfight_palette_bank_w)
 {
-	slapfght_state *state = space->machine().driver_data<slapfght_state>();
-	state->m_slapfight_palette_bank = offset;
+	m_slapfight_palette_bank = offset;
 }
 
 static void slapfght_log_vram(running_machine &machine)
@@ -142,7 +136,7 @@ static void slapfght_log_vram(running_machine &machine)
 		int i;
 		for (i=0; i<0x800; i++)
 		{
-			logerror("Offset:%03x   TileRAM:%02x   AttribRAM:%02x   SpriteRAM:%02x\n",i, state->m_slapfight_videoram[i],state->m_slapfight_colorram[i],machine.generic.spriteram.u8[i]);
+			logerror("Offset:%03x   TileRAM:%02x   AttribRAM:%02x   SpriteRAM:%02x\n",i, state->m_slapfight_videoram[i],state->m_slapfight_colorram[i],state->m_spriteram->live()[i]);
 		}
 	}
 #endif
@@ -156,10 +150,10 @@ static void slapfght_log_vram(running_machine &machine)
 static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int priority_to_display )
 {
 	slapfght_state *state = machine.driver_data<slapfght_state>();
-	UINT8 *buffered_spriteram = machine.generic.buffered_spriteram.u8;
+	UINT8 *buffered_spriteram = state->m_spriteram->buffer();
 	int offs;
 
-	for (offs = 0;offs < machine.generic.spriteram_size;offs += 4)
+	for (offs = 0;offs < state->m_spriteram->bytes();offs += 4)
 	{
 		int sx, sy;
 
@@ -212,7 +206,7 @@ SCREEN_UPDATE_IND16( perfrman )
 SCREEN_UPDATE_IND16( slapfight )
 {
 	slapfght_state *state = screen.machine().driver_data<slapfght_state>();
-	UINT8 *buffered_spriteram = screen.machine().generic.buffered_spriteram.u8;
+	UINT8 *buffered_spriteram = state->m_spriteram->buffer();
 	int offs;
 
 	screen.machine().tilemap().set_flip_all(state->m_flipscreen ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0);
@@ -232,7 +226,7 @@ SCREEN_UPDATE_IND16( slapfight )
 	state->m_pf1_tilemap->draw(bitmap, cliprect, 0,0);
 
 	/* Draw the sprites */
-	for (offs = 0;offs < screen.machine().generic.spriteram_size;offs += 4)
+	for (offs = 0;offs < state->m_spriteram->bytes();offs += 4)
 	{
 		if (state->m_flipscreen)
 			drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[2],

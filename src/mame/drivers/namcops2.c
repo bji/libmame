@@ -18,9 +18,73 @@
     Copyright Nicola Salmoria and the MAME Team.
     Visit http://mamedev.org for licensing and usage restrictions.
 
+
+List of Namco System 246 games:
+* Battle Gear 3 (Taito, 2002)
+* Battle Gear 3 Tuned (Taito, 2003)
+* Bloody Roar 3 (Namco / 8ing / Raizing, 2000)
+* Capcom Fighting Jam (Capcom, 2004)
+* Cobra: The Arcade (Namco, 2004)
+* Dragon Chronicles (Namco, 2002)
+* Fate/Unlimited Codes (Capcom / Type-Moon / Cavia / 8ing, 2008)
+* Getchu Play! Tottoko Hamutaro (Banpresto, 2007)
+* Mobile Suit Gundam SEED: Federation Vs. Z.A.F.T. (Capcom / Banpresto, 2005)
+* Mobile Suit Gundam SEED Destiny: Federation Vs. Z.A.F.T. II (Banpresto, 2006)
+* Mobile Suit Gundam Z: AEUG Vs. Titans (Capcom / Banpresto, 2003)
+* Mobile Suit Gundam Z: AEUG Vs. Titans DX (Capcom / Banpresto, 2004)
+* Minnade Kitaeru Zennou Training (Namco, 2006)
+* Netchuu Pro Yakyuu 2002 (Namco, 2002)
+* Pride GP 2003 (Capcom, 2003)
+* Quiz and Variety Sukusuku Inufuku 2 (Namco / AMI / Hamster, 2007)
+* Quiz Mobile Suit Gundam: Tou. Senshi (Banpresto, 2006)
+* Raizin Ping Pong (Taito, 2001)
+* Ridge Racer V: Arcade Battle (Namco, 2000)
+* Sengoku Basara X Cross (Capcom / ARC System Works, 2008)
+* Smash Court Pro Tournament (Namco, 2001)
+* Soul Calibur II (Namco, 2002)
+* Soul Calibur II Ver.D (Namco, 2003)
+* Soul Calibur III Arcade Edition (Namco, 2006)
+* Taiko No Tatsujin 7 (Namco, 2005)
+* Taiko No Tatsujin 8 (Namco, 2006)
+* Technic Beat (Arika, 2002)
+* Tekken 4 (Namco, 2001)
+* Time Crisis 3 (Namco, 2002)
+* Vampire Night (Namco / Sega / WOW Entertainment, 2000)
+* Wangan Midnight (Namco, 2001)
+* Wangan Midnight R (Namco, 2002)
+* Zoids Infinity (Taito, 2004)
+
+List of Namco System 256 Games
+* Chou Dragon Ball Z (Banpresto, 2005)
+* Druaga Online - The Story of Aon (Namco, 2005)
+* Kinnikuman Muscle Grand Prix (Banpresto, 2006)
+* Kinnikuman Muscle Grand Prix 2 (Banpresto, 2007)
+* Kinnikuman Muscle Grand Prix 2 Tokumori (Banpresto, 2008)
+* Mobile Suit Gundam SEED Destiny: Federation Vs. Z.A.F.T. II (Banpresto, 2006)
+* Mobile Suit Gundam: Gundam Vs. Gundam (Banpresto, 2008)
+* Mobile Suit Gundam: Gundam Vs. Gundam Next (Banpresto, 2009)
+* Quiz and Variety Sukusuku Inufuku 2 (Namco / AMI / Hamster, 2007)
+* Sengoku Basara X Cross (Capcom / ARC System Works, 2008)
+* Taiko No Tatsujin 9 (Namco, 2006)
+* Taiko No Tatsujin 10 (Namco, 2007)
+* Taiko No Tatsujin 11 (Namco, 2008)
+* Taiko No Tatsujin 12 (Namco, 2008)
+* Taiko No Tatsujin 12 Don! (Namco, 2009)
+* Taiko No Tatsujin 13 (Namco, 2009)
+* Taiko No Tatsujin 14 (Namco, 2010)
+* Tekken 5 (Namco, 2004)
+* Tekken 5.1 (Namco, 2005)
+* Tekken 5 Dark Resurrection (Namco, 2005)
+* The Battle of YuYu Hakusho (Banpresto, 2006)
+* THE iDOLM@STER (Namco, 2005)
+* Zoids Infinity EX (Taito, 2005)
+* Zoids Infinity EX Plus (Taito, 2006)
+
+List of System Super 256 Games
+* Time Crisis 4 (Namco, 2006)
+
 ***************************************************************************/
 
-#define ADDRESS_MAP_MODERN
 
 #include "emu.h"
 #include "cpu/mips/mips3.h"
@@ -192,15 +256,26 @@ ROM_START( soulcl2b )
 ROM_END
 
 ROM_START( soulclb3 )
-	ROM_REGION(0x200000, "bios", 0)
-	SYSTEM246_BIOS
+    ROM_REGION(0x200000, "bios", 0)
+    SYSTEM246_BIOS
 
-	ROM_REGION(0x840000, "key", ROMREGION_ERASE00)
-        ROM_LOAD( "sc31001-na-a.ic002", 0x000000, 0x800000, CRC(ddbe9774) SHA1(6bb2d31cb669336345b5508bcca56936ea97c04a) )
-        ROM_LOAD( "sc31001-na-a_spr.ic002", 0x800000, 0x040000, CRC(18c6f56d) SHA1(13bc6a3688985c0cd9900b063824a4af691a1b31) )
+    ROM_REGION(0x840000, "key", ROMREGION_ERASE00)
+    ROM_LOAD( "sc31001-na-a.ic002", 0x000000, 0x800000, CRC(ddbe9774) SHA1(6bb2d31cb669336345b5508bcca56936ea97c04a) )
+    ROM_LOAD( "sc31001-na-a_spr.ic002", 0x800000, 0x040000, CRC(18c6f56d) SHA1(13bc6a3688985c0cd9900b063824a4af691a1b31) )
 
-	DISK_REGION("dvd")
-	DISK_IMAGE_READONLY( "sc31001-na-dvd0-b", 0, SHA1(b46ee35083f8fcc091ce562951c55fbdbb929e4b) )
+    DISK_REGION("dvd")
+    DISK_IMAGE_READONLY( "sc31001-na-dvd0-b", 0, SHA1(b46ee35083f8fcc091ce562951c55fbdbb929e4b) )
+ROM_END
+
+ROM_START( soulclb3a )
+    ROM_REGION(0x200000, "bios", 0)
+    SYSTEM246_BIOS
+
+    ROM_REGION(0x840000, "key", ROMREGION_ERASE00)
+    ROM_LOAD( "sc31002-na-a.ic002", 0x000000, 0x840000, CRC(2ebf91ff) SHA1(01e628344b2cde2edbda9ffea53af6a63e3bddf1) )
+
+    DISK_REGION("dvd")
+    DISK_IMAGE_READONLY( "sc31001-na-dvd0-b", 0, SHA1(b46ee35083f8fcc091ce562951c55fbdbb929e4b) )
 ROM_END
 
 ROM_START( sukuinuf )
@@ -270,6 +345,17 @@ ROM_START( tekken4b )
 	ROM_REGION(0x840000, "key", ROMREGION_ERASE00)
         ROM_LOAD( "tef1vera.bin", 0x000000, 0x800000, CRC(154c615b) SHA1(3823daa6dd5e8d9699f8d832d7ca690559b84e96) )
         ROM_LOAD( "tef1vera.spr", 0x800000, 0x040000, CRC(64e12053) SHA1(04383cf928b4fd82290d7cccc7b23104fbf2c2f2) )
+
+	DISK_REGION("dvd")
+	DISK_IMAGE_READONLY( "tef1dvd0", 0, SHA1(f39aa37156245f622a6e19e8a0e081418e247b36) )
+ROM_END
+
+ROM_START( tekken4c )
+	ROM_REGION(0x200000, "bios", 0)
+	SYSTEM246_BIOS
+
+	ROM_REGION(0x840000, "key", ROMREGION_ERASE00)
+    ROM_LOAD( "tef1verc.ic002", 0x000000, 0x840000, CRC(92697a2b) SHA1(e9ec254d52187f5be0d9be58b25821c1e63bba8e) )
 
 	DISK_REGION("dvd")
 	DISK_IMAGE_READONLY( "tef1dvd0", 0, SHA1(f39aa37156245f622a6e19e8a0e081418e247b36) )
@@ -370,6 +456,7 @@ GAME(2002, soulcl2b, soulclb2, system246, system246, 0, ROT0, "Namco", "Soul Cal
 GAME(2002, tekken4,    sys246, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF3 Ver. C)", GAME_IS_SKELETON)
 GAME(2002, tekken4a,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF2 Ver. A)", GAME_IS_SKELETON)
 GAME(2002, tekken4b,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF1 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, tekken4c,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF1 Ver. C)", GAME_IS_SKELETON)
 GAME(2003, timecrs3,   sys246, system246, system246, 0, ROT0, "Namco", "Time Crisis 3 (TST1)", GAME_IS_SKELETON)
 GAME(2003, zgundm,     sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Mobile Suit Z-Gundam: A.E.U.G. vs Titans (ZGA1 Ver. A)", GAME_IS_SKELETON)
 GAME(2004, fghtjam,    sys246, system246, system246, 0, ROT0, "Capcom / Namco", "Capcom Fighting Jam (JAM1 Ver. A)", GAME_IS_SKELETON)
@@ -377,6 +464,7 @@ GAME(2004, sukuinuf,   sys246, system246, system246, 0, ROT0, "Namco", "Quiz and
 GAME(2004, zgundmdx,   sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Mobile Suit Z-Gundam: A.E.U.G. vs Titans DX (ZDX1 Ver. A)", GAME_IS_SKELETON)
 GAME(2005, gundzaft,   sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Gundam Seed: Federation vs. Z.A.F.T. (SED1 Ver. A)", GAME_IS_SKELETON)
 GAME(2005, soulclb3,   sys246, system246, system246, 0, ROT0, "Namco", "Soul Calibur III (SC31001-NA-A)", GAME_IS_SKELETON)
+GAME(2005, soulclb3a,soulclb3, system246, system246, 0, ROT0, "Namco", "Soul Calibur III (SC31002-NA-A)", GAME_IS_SKELETON)
 
 GAME(2004, sys256,          0, system256, system246, 0, ROT0, "Namco", "System 256 BIOS", GAME_IS_SKELETON|GAME_IS_BIOS_ROOT)
 GAME(2005, tekken51,   sys256, system256, system246, 0, ROT0, "Namco", "Tekken 5.1 (TE51 Ver. B)", GAME_IS_SKELETON)

@@ -13,17 +13,14 @@
 #include "emuopts.h"
 #include "video/vector.h"
 #include "machine/laserdsc.h"
-#include "profiler.h"
 #include "render.h"
 #include "cheat.h"
 #include "rendfont.h"
 #include "ui.h"
 #include "uiinput.h"
-#include "uimenu.h"
 #include "uimain.h"
 #include "uigfx.h"
 #include <ctype.h>
-
 
 
 /***************************************************************************
@@ -952,7 +949,7 @@ static astring &warnings_string(running_machine &machine, astring &string)
 			string.cat(" have not been correctly dumped.\n");
 		}
 		/* add one line per warning flag */
-		if (input_machine_has_keyboard(machine))
+		if (machine.ioport().has_keyboard())
 			string.cat("The keyboard emulation may not be 100% accurate.\n");
 		if (machine.system().flags & GAME_IMPERFECT_COLORS)
 			string.cat("The colors aren't 100% accurate.\n");
@@ -1032,12 +1029,9 @@ static astring &warnings_string(running_machine &machine, astring &string)
 
 astring &game_info_astring(running_machine &machine, astring &string)
 {
-	screen_device_iterator scriter(machine.root_device());
-	int scrcount = scriter.count();
-	int found_sound = FALSE;
-
 	/* print description, manufacturer, and CPU: */
-	string.printf("%s\n%s %s\n\nCPU:\n", machine.system().description, machine.system().year, machine.system().manufacturer);
+	astring tempstr;
+	string.printf("%s\n%s %s\nDriver: %s\n\nCPU:\n", machine.system().description, machine.system().year, machine.system().manufacturer, core_filename_extract_base(tempstr, machine.system().source_file).cstr());
 
 	/* loop over all CPUs */
 	execute_interface_iterator execiter(machine.root_device());
@@ -1074,6 +1068,7 @@ astring &game_info_astring(running_machine &machine, astring &string)
 	/* loop over all sound chips */
 	sound_interface_iterator snditer(machine.root_device());
 	tagmap_t<UINT8> soundtags;
+	bool found_sound = false;
 	for (device_sound_interface *sound = snditer.first(); sound != NULL; sound = snditer.next())
 	{
 		if (soundtags.add(sound->device().tag(), 1, FALSE) == TMERR_DUPLICATE)
@@ -1082,7 +1077,7 @@ astring &game_info_astring(running_machine &machine, astring &string)
 		/* append the Sound: string */
 		if (!found_sound)
 			string.cat("\nSound:\n");
-		found_sound = TRUE;
+		found_sound = true;
 
 		/* count how many identical sound chips we have */
 		int count = 1;
@@ -1110,12 +1105,13 @@ astring &game_info_astring(running_machine &machine, astring &string)
 
 	/* display screen information */
 	string.cat("\nVideo:\n");
+	screen_device_iterator scriter(machine.root_device());
+	int scrcount = scriter.count();
 	if (scrcount == 0)
 		string.cat("None\n");
 	else
 	{
-		screen_device_iterator iter(machine.root_device());
-		for (screen_device *screen = iter.first(); screen != NULL; screen = iter.next())
+		for (screen_device *screen = scriter.first(); screen != NULL; screen = scriter.next())
 		{
 			if (scrcount > 1)
 			{
@@ -1233,7 +1229,7 @@ static void process_natural_keyboard(running_machine &machine)
 	{
 		/* if this was a UI_EVENT_CHAR event, post it */
 		if (event.event_type == UI_EVENT_CHAR)
-			inputx_postc(machine, event.ch);
+			machine.ioport().natkeyboard().post(event.ch);
 	}
 
 	/* process natural keyboard keys that don't get UI_EVENT_CHARs */
@@ -1256,7 +1252,7 @@ static void process_natural_keyboard(running_machine &machine)
 			*key_down_ptr |= key_down_mask;
 
 			/* post the key */
-			inputx_postc(machine, UCHAR_MAMEKEY_BEGIN + code.item_id());
+			machine.ioport().natkeyboard().post(UCHAR_MAMEKEY_BEGIN + code.item_id());
 		}
 		else if (!pressed && (*key_down_ptr & key_down_mask))
 		{
@@ -1279,7 +1275,7 @@ void ui_paste(running_machine &machine)
 	if (text != NULL)
 	{
 		/* post the text */
-		inputx_post_utf8(machine, text);
+		machine.ioport().natkeyboard().post_utf8(text);
 
 		/* free the string */
 		osd_free(text);
@@ -1337,10 +1333,10 @@ static UINT32 handler_ingame(running_machine &machine, render_container *contain
 	}
 
 	/* determine if we should disable the rest of the UI */
-	int ui_disabled = (input_machine_has_keyboard(machine) && !machine.ui_active());
+	int ui_disabled = (machine.ioport().has_keyboard() && !machine.ui_active());
 
 	/* is ScrLk UI toggling applicable here? */
-	if (input_machine_has_keyboard(machine))
+	if (machine.ioport().has_keyboard())
 	{
 		/* are we toggling the UI with ScrLk? */
 		if (ui_input_pressed(machine, IPT_UI_TOGGLE_UI))
@@ -1508,7 +1504,7 @@ static UINT32 handler_ingame(running_machine &machine, render_container *contain
 		machine.video().set_throttled(!machine.video().throttled());
 
 	/* check for fast forward */
-	if (input_type_pressed(machine, IPT_UI_FAST_FORWARD, 0))
+	if (machine.ioport().type_pressed(IPT_UI_FAST_FORWARD))
 	{
 		machine.video().set_fastforward(true);
 		ui_show_fps_temp(0.5);
@@ -1660,8 +1656,8 @@ static slider_state *slider_alloc(running_machine &machine, const char *title, I
 
 static slider_state *slider_init(running_machine &machine)
 {
-	input_field_config *field;
-	input_port_config *port;
+	ioport_field *field;
+	ioport_port *port;
 	slider_state *listhead = NULL;
 	slider_state **tailptr = &listhead;
 	astring string;
@@ -1672,14 +1668,11 @@ static slider_state *slider_init(running_machine &machine)
 	tailptr = &(*tailptr)->next;
 
 	/* add per-channel volume */
-	speaker_input info;
-	for (item = 0; machine.sound().indexed_speaker_input(item, info); item++)
+	mixer_input info;
+	for (item = 0; machine.sound().indexed_mixer_input(item, info); item++)
 	{
 		INT32 maxval = 2000;
-		INT32 defval = info.stream->initial_input_gain(info.inputnum) * 1000.0f + 0.5f;
-
-		if (defval > 1000)
-			maxval = 2 * defval;
+		INT32 defval = 1000;
 
 		info.stream->input_name(info.inputnum, string);
 		string.cat(" Volume");
@@ -1688,12 +1681,12 @@ static slider_state *slider_init(running_machine &machine)
 	}
 
 	/* add analog adjusters */
-	for (port = machine.m_portlist.first(); port != NULL; port = port->next())
-		for (field = port->fieldlist().first(); field != NULL; field = field->next())
-			if (field->type == IPT_ADJUSTER)
+	for (port = machine.ioport().first_port(); port != NULL; port = port->next())
+		for (field = port->first_field(); field != NULL; field = field->next())
+			if (field->type() == IPT_ADJUSTER)
 			{
 				void *param = (void *)field;
-				*tailptr = slider_alloc(machine, field->name, 0, field->defvalue, 100, 1, slider_adjuster, param);
+				*tailptr = slider_alloc(machine, field->name(), 0, field->defvalue(), 100, 1, slider_adjuster, param);
 				tailptr = &(*tailptr)->next;
 			}
 
@@ -1794,15 +1787,15 @@ static slider_state *slider_init(running_machine &machine)
 
 #ifdef MAME_DEBUG
 	/* add crosshair adjusters */
-	for (port = machine.m_portlist.first(); port != NULL; port = port->next())
-		for (field = port->fieldlist().first(); field != NULL; field = field->next())
-			if (field->crossaxis != CROSSHAIR_AXIS_NONE && field->player == 0)
+	for (port = machine.ioport().first_port(); port != NULL; port = port->next())
+		for (field = port->first_field(); field != NULL; field = field->next())
+			if (field->crosshair_axis() != CROSSHAIR_AXIS_NONE && field->player() == 0)
 			{
 				void *param = (void *)field;
-				string.printf("Crosshair Scale %s", (field->crossaxis == CROSSHAIR_AXIS_X) ? "X" : "Y");
+				string.printf("Crosshair Scale %s", (field->crosshair_axis() == CROSSHAIR_AXIS_X) ? "X" : "Y");
 				*tailptr = slider_alloc(machine, string, -3000, 1000, 3000, 100, slider_crossscale, param);
 				tailptr = &(*tailptr)->next;
-				string.printf("Crosshair Offset %s", (field->crossaxis == CROSSHAIR_AXIS_X) ? "X" : "Y");
+				string.printf("Crosshair Offset %s", (field->crosshair_axis() == CROSSHAIR_AXIS_X) ? "X" : "Y");
 				*tailptr = slider_alloc(machine, string, -3000, 0, 3000, 100, slider_crossoffset, param);
 				tailptr = &(*tailptr)->next;
 			}
@@ -1833,18 +1826,18 @@ static INT32 slider_volume(running_machine &machine, void *arg, astring *string,
 
 static INT32 slider_mixervol(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	speaker_input info;
-	if (!machine.sound().indexed_speaker_input((FPTR)arg, info))
+	mixer_input info;
+	if (!machine.sound().indexed_mixer_input((FPTR)arg, info))
 		return 0;
 	if (newval != SLIDER_NOCHANGE)
 	{
-		INT32 curval = floor(info.stream->input_gain(info.inputnum) * 1000.0f + 0.5f);
+		INT32 curval = floor(info.stream->user_gain(info.inputnum) * 1000.0f + 0.5f);
 		if (newval > curval && (newval - curval) <= 4) newval += 4; // round up on increment
-		info.stream->set_input_gain(info.inputnum, (float)newval * 0.001f);
+		info.stream->set_user_gain(info.inputnum, (float)newval * 0.001f);
 	}
 	if (string != NULL)
-		string->printf("%4.2f", info.stream->input_gain(info.inputnum));
-	return floor(info.stream->input_gain(info.inputnum) * 1000.0f + 0.5f);
+		string->printf("%4.2f", info.stream->user_gain(info.inputnum));
+	return floor(info.stream->user_gain(info.inputnum) * 1000.0f + 0.5f);
 }
 
 
@@ -1855,14 +1848,14 @@ static INT32 slider_mixervol(running_machine &machine, void *arg, astring *strin
 
 static INT32 slider_adjuster(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	const input_field_config *field = (const input_field_config *)arg;
-	input_field_user_settings settings;
+	ioport_field *field = (ioport_field *)arg;
+	ioport_field::user_settings settings;
 
-	input_field_get_user_settings(field, &settings);
+	field->get_user_settings(settings);
 	if (newval != SLIDER_NOCHANGE)
 	{
 		settings.value = newval;
-		input_field_set_user_settings(field, &settings);
+		field->set_user_settings(settings);
 	}
 	if (string != NULL)
 		string->printf("%d%%", settings.value);
@@ -2208,13 +2201,13 @@ static char *slider_get_screen_desc(screen_device &screen)
 #ifdef MAME_DEBUG
 static INT32 slider_crossscale(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	input_field_config *field = (input_field_config *)arg;
+	ioport_field *field = (ioport_field *)arg;
 
 	if (newval != SLIDER_NOCHANGE)
-		field->crossscale = (float)newval * 0.001f;
+		field->set_crosshair_scale(float(newval) * 0.001);
 	if (string != NULL)
-		string->printf("%s %s %1.3f", "Crosshair Scale", (field->crossaxis == CROSSHAIR_AXIS_X) ? "X" : "Y", (float)newval * 0.001f);
-	return floor(field->crossscale * 1000.0f + 0.5f);
+		string->printf("%s %s %1.3f", "Crosshair Scale", (field->crosshair_axis() == CROSSHAIR_AXIS_X) ? "X" : "Y", float(newval) * 0.001f);
+	return floor(field->crosshair_scale() * 1000.0f + 0.5f);
 }
 #endif
 
@@ -2227,13 +2220,13 @@ static INT32 slider_crossscale(running_machine &machine, void *arg, astring *str
 #ifdef MAME_DEBUG
 static INT32 slider_crossoffset(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	input_field_config *field = (input_field_config *)arg;
+	ioport_field *field = (ioport_field *)arg;
 
 	if (newval != SLIDER_NOCHANGE)
-		field->crossoffset = (float)newval * 0.001f;
+		field->set_crosshair_offset(float(newval) * 0.001f);
 	if (string != NULL)
-		string->printf("%s %s %1.3f", "Crosshair Offset", (field->crossaxis == CROSSHAIR_AXIS_X) ? "X" : "Y", (float)newval * 0.001f);
-	return field->crossoffset;
+		string->printf("%s %s %1.3f", "Crosshair Offset", (field->crosshair_axis() == CROSSHAIR_AXIS_X) ? "X" : "Y", float(newval) * 0.001f);
+	return field->crosshair_offset();
 }
 #endif
 

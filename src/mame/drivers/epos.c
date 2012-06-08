@@ -30,22 +30,21 @@
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "machine/8255ppi.h"
+#include "machine/i8255.h"
 #include "sound/ay8910.h"
 #include "includes/epos.h"
 
-static WRITE8_HANDLER( dealer_decrypt_rom )
+WRITE8_MEMBER(epos_state::dealer_decrypt_rom)
 {
-	epos_state *state = space->machine().driver_data<epos_state>();
 
 	if (offset & 0x04)
-		state->m_counter = (state->m_counter + 1) & 0x03;
+		m_counter = (m_counter + 1) & 0x03;
 	else
-		state->m_counter = (state->m_counter - 1) & 0x03;
+		m_counter = (m_counter - 1) & 0x03;
 
-//  logerror("PC %08x: ctr=%04x\n",cpu_get_pc(&space->device()), state->m_counter);
+//  logerror("PC %08x: ctr=%04x\n",cpu_get_pc(&space.device()), m_counter);
 
-	memory_set_bank(space->machine(), "bank1", state->m_counter);
+	membank("bank1")->set_entry(m_counter);
 
 	// is the 2nd bank changed by the counter or it always uses the 1st key?
 }
@@ -57,18 +56,18 @@ static WRITE8_HANDLER( dealer_decrypt_rom )
  *
  *************************************/
 
-static ADDRESS_MAP_START( epos_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( epos_map, AS_PROGRAM, 8, epos_state )
 	AM_RANGE(0x0000, 0x77ff) AM_ROM
 	AM_RANGE(0x7800, 0x7fff) AM_RAM
-	AM_RANGE(0x8000, 0xffff) AM_RAM AM_BASE_SIZE_MEMBER(epos_state, m_videoram, m_videoram_size)
+	AM_RANGE(0x8000, 0xffff) AM_RAM AM_SHARE("videoram")
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( dealer_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( dealer_map, AS_PROGRAM, 8, epos_state )
 	AM_RANGE(0x0000, 0x5fff) AM_ROMBANK("bank1")
 	AM_RANGE(0x6000, 0x6fff) AM_ROMBANK("bank2")
 	AM_RANGE(0x7000, 0x7fff) AM_RAM
-	AM_RANGE(0x8000, 0xffff) AM_RAM AM_BASE_SIZE_MEMBER(epos_state, m_videoram, m_videoram_size)
+	AM_RANGE(0x8000, 0xffff) AM_RAM AM_SHARE("videoram")
 ADDRESS_MAP_END
 
 /*************************************
@@ -77,21 +76,23 @@ ADDRESS_MAP_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( io_map, AS_IO, 8, epos_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("DSW") AM_WRITE(watchdog_reset_w)
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("SYSTEM") AM_WRITE(epos_port_1_w)
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("INPUTS") AM_DEVWRITE("aysnd", ay8910_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("INPUTS") AM_DEVWRITE_LEGACY("aysnd", ay8910_data_w)
 	AM_RANGE(0x03, 0x03) AM_READ_PORT("UNK")
-	AM_RANGE(0x06, 0x06) AM_DEVWRITE("aysnd", ay8910_address_w)
+	AM_RANGE(0x06, 0x06) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( dealer_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( dealer_io_map, AS_IO, 8, epos_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("ppi8255", i8255_device, read, write)
 	AM_RANGE(0x20, 0x24) AM_WRITE(dealer_decrypt_rom)
+	AM_RANGE(0x34, 0x34) AM_DEVWRITE_LEGACY("aysnd", ay8910_data_w)
 	AM_RANGE(0x38, 0x38) AM_READ_PORT("DSW")
-//  AM_RANGE(0x40, 0x40) AM_WRITE(watchdog_reset_w)
+	AM_RANGE(0x3C, 0x3C) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_w)
+	AM_RANGE(0x40, 0x40) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
 
 
@@ -102,18 +103,19 @@ ADDRESS_MAP_END
 */
 static WRITE8_DEVICE_HANDLER( write_prtc )
 {
-	memory_set_bank(device->machine(), "bank2", data & 0x01);
+	device->machine().root_device().membank("bank2")->set_entry(data & 0x01);
 }
 
-static const ppi8255_interface ppi8255_intf =
+static I8255A_INTERFACE( ppi8255_intf )
 {
 	DEVCB_INPUT_PORT("INPUTS"),		/* Port A read */
-	DEVCB_NULL,						/* Port B read */
-	DEVCB_NULL,						/* Port C read */
 	DEVCB_NULL,						/* Port A write */
+	DEVCB_NULL,						/* Port B read */
 	DEVCB_NULL,						/* Port B write */
-	DEVCB_HANDLER(write_prtc),		/* Port C write */
+	DEVCB_NULL,						/* Port C read */
+	DEVCB_HANDLER(write_prtc)		/* Port C write */
 };
+
 
 /*************************************
  *
@@ -382,12 +384,12 @@ static MACHINE_RESET( epos )
 
 static MACHINE_START( dealer )
 {
-	UINT8 *ROM = machine.region("maincpu")->base();
-	memory_configure_bank(machine, "bank1", 0, 4, &ROM[0x0000], 0x10000);
-	memory_configure_bank(machine, "bank2", 0, 2, &ROM[0x6000], 0x1000);
+	UINT8 *ROM = machine.root_device().memregion("maincpu")->base();
+	machine.root_device().membank("bank1")->configure_entries(0, 4, &ROM[0x0000], 0x10000);
+	machine.root_device().membank("bank2")->configure_entries(0, 2, &ROM[0x6000], 0x1000);
 
-	memory_set_bank(machine, "bank1", 0);
-	memory_set_bank(machine, "bank2", 0);
+	machine.root_device().membank("bank1")->set_entry(0);
+	machine.root_device().membank("bank2")->set_entry(0);
 
 	MACHINE_START_CALL(epos);
 }
@@ -426,7 +428,7 @@ static MACHINE_CONFIG_START( dealer, epos_state )
 	MCFG_CPU_IO_MAP(dealer_io_map)
 	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
 
-	MCFG_PPI8255_ADD( "ppi8255", ppi8255_intf )
+	MCFG_I8255A_ADD( "ppi8255", ppi8255_intf )
 
 	MCFG_MACHINE_START(dealer)
 	MCFG_MACHINE_RESET(epos)
@@ -608,7 +610,7 @@ ROM_END
 
 static DRIVER_INIT( dealer )
 {
-	UINT8 *rom = machine.region("maincpu")->base();
+	UINT8 *rom = machine.root_device().memregion("maincpu")->base();
 	int A;
 
 	/* Key 0 */

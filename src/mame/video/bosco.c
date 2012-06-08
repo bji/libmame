@@ -16,6 +16,7 @@
 
 PALETTE_INIT( bosco )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	int i;
 
 	machine.colortable = colortable_alloc(machine, 32+64);
@@ -135,9 +136,9 @@ VIDEO_START( bosco )
 
 	state->m_bg_tilemap->set_scrolldx(3,3);
 
-	machine.generic.spriteram_size = 0x0c;
-	machine.generic.spriteram.u8 = state->m_videoram + 0x03d4;
-	machine.generic.spriteram2.u8 = machine.generic.spriteram.u8 + 0x0800;
+	state->m_spriteram = state->m_videoram + 0x03d4;
+	state->m_spriteram_size = 0x0c;
+	state->m_spriteram2 = state->m_spriteram + 0x0800;
 	state->m_bosco_radarx = state->m_videoram + 0x03f0;
 	state->m_bosco_radary = state->m_bosco_radarx + 0x0800;
 
@@ -191,11 +192,12 @@ WRITE8_HANDLER( bosco_starclr_w )
 
 static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
-	UINT8 *spriteram = machine.generic.spriteram.u8;
-	UINT8 *spriteram_2 = machine.generic.spriteram2.u8;
+	bosco_state *state =  machine.driver_data<bosco_state>();
+	UINT8 *spriteram = state->m_spriteram;
+	UINT8 *spriteram_2 = state->m_spriteram2;
 	int offs;
 
-	for (offs = 0;offs < machine.generic.spriteram_size;offs += 2)
+	for (offs = 0;offs < state->m_spriteram_size;offs += 2)
 	{
 		int sx = spriteram[offs + 1] - 1;
 		int sy = 240 - spriteram_2[offs];
@@ -203,7 +205,7 @@ static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const r
 		int flipy = spriteram[offs] & 2;
 		int color = spriteram_2[offs + 1] & 0x3f;
 
-		if (flip_screen_get(machine))
+		if (state->flip_screen())
 		{
 			sx += 128-2;
 			sy += 8;
@@ -229,7 +231,7 @@ static void draw_bullets(running_machine &machine, bitmap_ind16 &bitmap, const r
 		int x = state->m_bosco_radarx[offs] + ((~state->m_bosco_radarattr[offs] & 0x01) << 8);
 		int y = 253 - state->m_bosco_radary[offs];
 
-		if (flip_screen_get(machine))
+		if (state->flip_screen())
 		{
 			x += 96-2;
 			y += 8;
@@ -288,7 +290,7 @@ SCREEN_UPDATE_IND16( bosco )
        the screen, and clip it to only the position where it is supposed to be shown */
 	rectangle fg_clip = cliprect;
 	rectangle bg_clip = cliprect;
-	if (flip_screen_get(screen.machine()))
+	if (state->flip_screen())
 	{
 		bg_clip.min_x = 20*8;
 		fg_clip.max_x = 20*8-1;
@@ -300,7 +302,7 @@ SCREEN_UPDATE_IND16( bosco )
 	}
 
 	bitmap.fill(get_black_pen(screen.machine()), cliprect);
-	draw_stars(screen.machine(),bitmap,cliprect,flip_screen_get(screen.machine()));
+	draw_stars(screen.machine(),bitmap,cliprect,state->flip_screen());
 
 	state->m_bg_tilemap->draw(bitmap, bg_clip, 0,0);
 	state->m_fg_tilemap->draw(bitmap, fg_clip, 0,0);

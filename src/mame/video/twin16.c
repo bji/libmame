@@ -40,47 +40,44 @@ enum
 };
 
 
-WRITE16_HANDLER( twin16_text_ram_w )
+WRITE16_MEMBER(twin16_state::twin16_text_ram_w)
 {
-	twin16_state *state = space->machine().driver_data<twin16_state>();
-	COMBINE_DATA(&state->m_text_ram[offset]);
-	state->m_text_tilemap->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_text_ram[offset]);
+	m_text_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( twin16_paletteram_word_w )
+WRITE16_MEMBER(twin16_state::twin16_paletteram_word_w)
 {	// identical to tmnt_paletteram_w
-	COMBINE_DATA(space->machine().generic.paletteram.u16 + offset);
+	COMBINE_DATA(m_generic_paletteram_16 + offset);
 	offset &= ~1;
 
-	data = ((space->machine().generic.paletteram.u16[offset] & 0xff) << 8) | (space->machine().generic.paletteram.u16[offset + 1] & 0xff);
-	palette_set_color_rgb(space->machine(), offset / 2, pal5bit(data >> 0), pal5bit(data >> 5), pal5bit(data >> 10));
+	data = ((m_generic_paletteram_16[offset] & 0xff) << 8) | (m_generic_paletteram_16[offset + 1] & 0xff);
+	palette_set_color_rgb(machine(), offset / 2, pal5bit(data >> 0), pal5bit(data >> 5), pal5bit(data >> 10));
 }
 
-WRITE16_HANDLER( fround_gfx_bank_w )
+WRITE16_MEMBER(twin16_state::fround_gfx_bank_w)
 {
-	twin16_state *state = space->machine().driver_data<twin16_state>();
-	COMBINE_DATA(&state->m_gfx_bank);
+	COMBINE_DATA(&m_gfx_bank);
 }
 
-WRITE16_HANDLER( twin16_video_register_w )
+WRITE16_MEMBER(twin16_state::twin16_video_register_w)
 {
-	twin16_state *state = space->machine().driver_data<twin16_state>();
 	switch (offset)
 	{
 		case 0:
-			COMBINE_DATA( &state->m_video_register );
+			COMBINE_DATA( &m_video_register );
 
-			flip_screen_x_set(space->machine(), state->m_video_register & TWIN16_SCREEN_FLIPX);
-			flip_screen_y_set(space->machine(), state->m_video_register & TWIN16_SCREEN_FLIPY);
+			flip_screen_x_set(m_video_register & TWIN16_SCREEN_FLIPX);
+			flip_screen_y_set(m_video_register & TWIN16_SCREEN_FLIPY);
 
 			break;
 
-		case 1: COMBINE_DATA( &state->m_scrollx[0] ); break;
-		case 2: COMBINE_DATA( &state->m_scrolly[0] ); break;
-		case 3: COMBINE_DATA( &state->m_scrollx[1] ); break;
-		case 4: COMBINE_DATA( &state->m_scrolly[1] ); break;
-		case 5: COMBINE_DATA( &state->m_scrollx[2] ); break;
-		case 6: COMBINE_DATA( &state->m_scrolly[2] ); break;
+		case 1: COMBINE_DATA( &m_scrollx[0] ); break;
+		case 2: COMBINE_DATA( &m_scrolly[0] ); break;
+		case 3: COMBINE_DATA( &m_scrollx[1] ); break;
+		case 4: COMBINE_DATA( &m_scrolly[1] ); break;
+		case 5: COMBINE_DATA( &m_scrollx[2] ); break;
+		case 6: COMBINE_DATA( &m_scrolly[2] ); break;
 
 		default:
 			logerror("unknown video_register write:%d", data );
@@ -134,11 +131,10 @@ WRITE16_HANDLER( twin16_video_register_w )
  *   3  | ------------xxxx | color
  */
 
-READ16_HANDLER( twin16_sprite_status_r )
+READ16_MEMBER(twin16_state::twin16_sprite_status_r)
 {
-	twin16_state *state = space->machine().driver_data<twin16_state>();
 	// bit 0: busy, other bits: dunno
-	return state->m_sprite_busy;
+	return m_sprite_busy;
 }
 
 static TIMER_CALLBACK( twin16_sprite_tick )
@@ -162,7 +158,7 @@ static int twin16_set_sprite_timer( running_machine &machine )
 void twin16_spriteram_process( running_machine &machine )
 {
 	twin16_state *state = machine.driver_data<twin16_state>();
-	UINT16 *spriteram16 = machine.generic.spriteram.u16;
+	UINT16 *spriteram16 = state->m_spriteram->live();
 	UINT16 dx = state->m_scrollx[0];
 	UINT16 dy = state->m_scrolly[0];
 
@@ -224,8 +220,8 @@ void twin16_spriteram_process( running_machine &machine )
 static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap )
 {
 	twin16_state *state = machine.driver_data<twin16_state>();
-	const UINT16 *source = 0x1800+machine.generic.buffered_spriteram.u16 + 0x800 - 4;
-	const UINT16 *finish = 0x1800+machine.generic.buffered_spriteram.u16;
+	const UINT16 *source = 0x1800+state->m_spriteram->buffer() + 0x800 - 4;
+	const UINT16 *finish = 0x1800+state->m_spriteram->buffer();
 
 	for (; source >= finish; source -= 4)
 	{
@@ -552,12 +548,11 @@ SCREEN_VBLANK( twin16 )
 			/* if the sprite preprocessor is used, sprite ram is copied to an external buffer first,
             as evidenced by 1-frame sprite lag in gradius2 and devilw otherwise, though there's probably
             more to it than that */
-			memcpy(&screen.machine().generic.buffered_spriteram.u16[0x1800],state->m_sprite_buffer,0x800*sizeof(UINT16));
-			memcpy(state->m_sprite_buffer,&screen.machine().generic.spriteram.u16[0x1800],0x800*sizeof(UINT16));
+			memcpy(&state->m_spriteram->buffer()[0x1800],state->m_sprite_buffer,0x800*sizeof(UINT16));
+			memcpy(state->m_sprite_buffer,&state->m_spriteram->live()[0x1800],0x800*sizeof(UINT16));
 		}
 		else {
-			address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
-			buffer_spriteram16_w(space,0,0,0xffff);
+			state->m_spriteram->copy();
 		}
 	}
 }

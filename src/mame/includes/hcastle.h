@@ -4,18 +4,25 @@
 
 *************************************************************************/
 
+#include "video/bufsprite.h"
+
 class hcastle_state : public driver_device
 {
 public:
 	hcastle_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_spriteram(*this, "spriteram"),
+		  m_spriteram2(*this, "spriteram2") ,
+		m_paletteram(*this, "paletteram"),
+		m_pf1_videoram(*this, "pf1_videoram"),
+		m_pf2_videoram(*this, "pf2_videoram"){ }
 
+	required_device<buffered_spriteram8_device> m_spriteram;
+	required_device<buffered_spriteram8_device> m_spriteram2;
 	/* memory pointers */
-	UINT8 *    m_pf1_videoram;
-	UINT8 *    m_pf2_videoram;
-	UINT8 *    m_paletteram;
-//  UINT8 *    m_spriteram;
-//  UINT8 *    m_spriteram2;
+	required_shared_ptr<UINT8> m_paletteram;
+	required_shared_ptr<UINT8> m_pf1_videoram;
+	required_shared_ptr<UINT8> m_pf2_videoram;
 
 	/* video-related */
 	tilemap_t    *m_fg_tilemap;
@@ -30,17 +37,21 @@ public:
 	device_t *m_audiocpu;
 	device_t *m_k007121_1;
 	device_t *m_k007121_2;
+
+	DECLARE_WRITE8_MEMBER(hcastle_bankswitch_w);
+	DECLARE_WRITE8_MEMBER(hcastle_soundirq_w);
+	DECLARE_WRITE8_MEMBER(hcastle_coin_w);
+	DECLARE_WRITE8_MEMBER(hcastle_pf1_video_w);
+	DECLARE_WRITE8_MEMBER(hcastle_pf2_video_w);
+	DECLARE_WRITE8_MEMBER(hcastle_gfxbank_w);
+	DECLARE_READ8_MEMBER(hcastle_gfxbank_r);
+	DECLARE_WRITE8_MEMBER(hcastle_pf1_control_w);
+	DECLARE_WRITE8_MEMBER(hcastle_pf2_control_w);
 };
 
 
 /*----------- defined in video/hcastle.c -----------*/
 
-WRITE8_HANDLER( hcastle_pf1_video_w );
-WRITE8_HANDLER( hcastle_pf2_video_w );
-READ8_HANDLER( hcastle_gfxbank_r );
-WRITE8_HANDLER( hcastle_gfxbank_w );
-WRITE8_HANDLER( hcastle_pf1_control_w );
-WRITE8_HANDLER( hcastle_pf2_control_w );
 
 PALETTE_INIT( hcastle );
 SCREEN_UPDATE_IND16( hcastle );

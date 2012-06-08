@@ -10,7 +10,7 @@
 //============================================================
 
 // standard sdl header
-#include <SDL/SDL.h>
+#include "sdlinc.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -175,7 +175,7 @@ void osd_sleep(osd_ticks_t duration)
 //  osd_num_processors
 //============================================================
 
-int osd_num_processors(void)
+int osd_get_num_processors(void)
 {
     ULONG numprocs = 1;
 

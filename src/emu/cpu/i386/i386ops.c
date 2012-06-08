@@ -62,45 +62,74 @@ static UINT8 I386OP(shift_rotate8)(i386_state *cpustate, UINT8 modrm, UINT32 val
 		switch( (modrm >> 3) & 0x7 )
 		{
 			case 0:			/* ROL rm8, i8 */
+				if(!(shift & 7))
+				{
+					if(shift & 0x18)
+					{
+						cpustate->CF = src & 1;
+						cpustate->OF = (src & 1) ^ ((src >> 7) & 1);
+					}
+					break;
+				}
+				shift &= 7;
 				dst = ((src & ((UINT8)0xff >> shift)) << shift) |
 					  ((src & ((UINT8)0xff << (8-shift))) >> (8-shift));
-				cpustate->CF = (src >> (8-shift)) & 0x1;
+				cpustate->CF = dst & 0x1;
+				cpustate->OF = (dst & 1) ^ (dst >> 7);
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_REG, CYCLES_ROTATE_MEM);
 				break;
 			case 1:			/* ROR rm8, i8 */
+				if(!(shift & 7))
+				{
+					if(shift & 0x18)
+					{
+						cpustate->CF = (src >> 7) & 1;
+						cpustate->OF = ((src >> 7) & 1) ^ ((src >> 6) & 1);
+					}
+					break;
+				}
+				shift &= 7;
 				dst = ((src & ((UINT8)0xff << shift)) >> shift) |
 					  ((src & ((UINT8)0xff >> (8-shift))) << (8-shift));
-				cpustate->CF = (src >> (shift-1)) & 0x1;
+				cpustate->CF = (dst >> 7) & 1;
+				cpustate->OF = ((dst >> 7) ^ (dst >> 6)) & 1;
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_REG, CYCLES_ROTATE_MEM);
 				break;
 			case 2:			/* RCL rm8, i8 */
+				shift %= 9;
 				dst = ((src & ((UINT8)0xff >> shift)) << shift) |
 					  ((src & ((UINT8)0xff << (9-shift))) >> (9-shift)) |
 					  (cpustate->CF << (shift-1));
-				cpustate->CF = (src >> (8-shift)) & 0x1;
+				if(shift) cpustate->CF = (src >> (8-shift)) & 0x1;
+				cpustate->OF = cpustate->CF ^ ((dst >> 7) & 1);
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_CARRY_REG, CYCLES_ROTATE_CARRY_MEM);
 				break;
 			case 3:			/* RCR rm8, i8 */
+				shift %= 9;
 				dst = ((src & ((UINT8)0xff << shift)) >> shift) |
 					  ((src & ((UINT8)0xff >> (8-shift))) << (9-shift)) |
 					  (cpustate->CF << (8-shift));
-				cpustate->CF = (src >> (shift-1)) & 0x1;
+				if(shift) cpustate->CF = (src >> (shift-1)) & 0x1;
+				cpustate->OF = ((dst >> 7) ^ (dst >> 6)) & 1;
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_CARRY_REG, CYCLES_ROTATE_CARRY_MEM);
 				break;
 			case 4:			/* SHL/SAL rm8, i8 */
 			case 6:
+				shift &= 31;
 				dst = src << shift;
-				cpustate->CF = (src & (1 << (8-shift))) ? 1 : 0;
+				cpustate->CF = (src >> (8 - shift)) & 0x1;
 				SetSZPF8(dst);
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_REG, CYCLES_ROTATE_MEM);
 				break;
 			case 5:			/* SHR rm8, i8 */
+				shift &= 31;
 				dst = src >> shift;
 				cpustate->CF = (src & (1 << (shift-1))) ? 1 : 0;
 				SetSZPF8(dst);
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_REG, CYCLES_ROTATE_MEM);
 				break;
 			case 7:			/* SAR rm8, i8 */
+				shift &= 31;
 				dst = (INT8)src >> shift;
 				cpustate->CF = (src & (1 << (shift-1))) ? 1 : 0;
 				SetSZPF8(dst);
@@ -351,7 +380,7 @@ static void I386OP(cmpsb)(i386_state *cpustate)				// Opcode 0xa6
 	ead = i386_translate(cpustate, ES, cpustate->address_size ? REG32(EDI) : REG16(DI), 0 );
 	src = READ8(cpustate,eas);
 	dst = READ8(cpustate,ead);
-	SUB8(cpustate,dst, src);
+	SUB8(cpustate,src, dst);
 	BUMP_SI(cpustate,1);
 	BUMP_DI(cpustate,1);
 	CYCLES(cpustate,CYCLES_CMPS);
@@ -420,7 +449,7 @@ static void I386OP(jg_rel8)(i386_state *cpustate)			// Opcode 0x7f
 static void I386OP(jge_rel8)(i386_state *cpustate)			// Opcode 0x7d
 {
 	INT8 disp = FETCH(cpustate);
-	if( (cpustate->SF == cpustate->OF) ) {
+	if(cpustate->SF == cpustate->OF) {
 		NEAR_BRANCH(cpustate,disp);
 		CYCLES(cpustate,CYCLES_JCC_DISP8);		/* TODO: Timing = 7 + m */
 	} else {
@@ -736,7 +765,10 @@ static void I386OP(mov_rm16_sreg)(i386_state *cpustate)		// Opcode 0x8c
 	int s = (modrm >> 3) & 0x7;
 
 	if( modrm >= 0xc0 ) {
-		STORE_RM16(modrm, cpustate->sreg[s].selector);
+		if(cpustate->operand_size)
+			STORE_RM32(modrm, cpustate->sreg[s].selector);
+		else
+			STORE_RM16(modrm, cpustate->sreg[s].selector);
 		CYCLES(cpustate,CYCLES_MOV_SREG_REG);
 	} else {
 		UINT32 ea = GetEA(cpustate,modrm,1);
@@ -749,6 +781,7 @@ static void I386OP(mov_sreg_rm16)(i386_state *cpustate)		// Opcode 0x8e
 {
 	UINT16 selector;
 	UINT8 modrm = FETCH(cpustate);
+	bool fault;
 	int s = (modrm >> 3) & 0x7;
 
 	if( modrm >= 0xc0 ) {
@@ -760,21 +793,14 @@ static void I386OP(mov_sreg_rm16)(i386_state *cpustate)		// Opcode 0x8e
 		CYCLES(cpustate,CYCLES_MOV_MEM_SREG);
 	}
 
-	if(s == SS)
+	i386_sreg_load(cpustate,selector,s,&fault);
+	if((s == SS) && !fault)
 	{
 		if(cpustate->IF != 0) // if external interrupts are enabled
 		{
 			cpustate->IF = 0;  // reset IF for the next instruction
 			cpustate->delayed_interrupt_enable = 1;
 		}
-	}
-
-	if(PROTECTED_MODE && !(V8086_MODE))  // no checks in virtual 8086 mode?
-		i386_protected_mode_sreg_load(cpustate,selector,s);
-	else
-	{
-		cpustate->sreg[s].selector = selector;
-		i386_load_segment_descriptor(cpustate, s );
 	}
 }
 
@@ -1186,7 +1212,16 @@ static void I386OP(repeat)(i386_state *cpustate, int invert_flag)
 	{
 		cpustate->eip = repeated_eip;
 		cpustate->pc = repeated_pc;
-		I386OP(decode_opcode)(cpustate);
+		try
+		{
+			I386OP(decode_opcode)(cpustate);
+		}
+		catch (UINT64 e)
+		{
+			cpustate->eip = cpustate->prev_eip;
+			throw e;
+		}
+
 		CYCLES_NUM(cycle_adjustment);
 
 		if (cpustate->address_size)
@@ -1370,7 +1405,7 @@ static void I386OP(setge_rm8)(i386_state *cpustate)			// Opcode 0x0f 9d
 {
 	UINT8 modrm = FETCH(cpustate);
 	UINT8 value = 0;
-	if( (cpustate->SF == cpustate->OF) ) {
+	if(cpustate->SF == cpustate->OF) {
 		value = 1;
 	}
 	if( modrm >= 0xc0 ) {
@@ -2071,9 +2106,7 @@ static void I386OP(groupF6_8)(i386_state *cpustate)			// Opcode 0xf6
 							cpustate->CF = 1;
 					}
 				} else {
-					cpustate->ext = 0;
 					i386_trap(cpustate, 0, 0, 0);
-					cpustate->ext = 1;
 				}
 			}
 			break;
@@ -2105,9 +2138,7 @@ static void I386OP(groupF6_8)(i386_state *cpustate)			// Opcode 0xf6
 							cpustate->CF = 1;
 					}
 				} else {
-					cpustate->ext = 0;
 					i386_trap(cpustate, 0, 0, 0);
-					cpustate->ext = 1;
 				}
 			}
 			break;
@@ -2408,12 +2439,8 @@ static void I386OP(wait)(i386_state *cpustate)				// Opcode 0x9B
 
 static void I386OP(lock)(i386_state *cpustate)				// Opcode 0xf0
 {
-	if(PROTECTED_MODE)
-	{
-		UINT8 IOPL = cpustate->IOP1 | (cpustate->IOP2 << 1);
-		if(cpustate->CPL > IOPL)
-			FAULT(FAULT_GP,0);
-	}
+	// lock doesn't depend on iopl on 386
+	// TODO: lock causes UD on unlockable opcodes
 	CYCLES(cpustate,CYCLES_LOCK);		// TODO: Determine correct cycle count
 	I386OP(decode_opcode)(cpustate);
 }

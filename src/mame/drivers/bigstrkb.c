@@ -34,9 +34,9 @@ lev 7 : 0x7c : 0000 05be - xxx
 
 /* some regions might be too large */
 
-static ADDRESS_MAP_START( bigstrkb_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( bigstrkb_map, AS_PROGRAM, 16, bigstrkb_state )
 	AM_RANGE(0x000000, 0x07ffff) AM_ROM
-//  AM_RANGE(0x0c0000, 0x0cffff) AM_READWRITE(megasys1_vregs_C_r, megasys1_vregs_C_w) AM_BASE(&megasys1_vregs)
+//  AM_RANGE(0x0c0000, 0x0cffff) AM_READWRITE_LEGACY(megasys1_vregs_C_r, megasys1_vregs_C_w) AM_BASE_LEGACY(&megasys1_vregs)
 
 	AM_RANGE(0x0C2004, 0x0C2005) AM_WRITENOP
 	AM_RANGE(0x0C200C, 0x0C200d) AM_WRITENOP
@@ -48,16 +48,16 @@ static ADDRESS_MAP_START( bigstrkb_map, AS_PROGRAM, 16 )
 
 	AM_RANGE(0x0D0000, 0x0dffff) AM_RAM  // 0xd2000 - 0xd3fff?   0xd8000?
 
-	AM_RANGE(0x0e0000, 0x0e3fff) AM_RAM_WRITE(bsb_videoram2_w) AM_BASE_MEMBER(bigstrkb_state,m_videoram2)
-	AM_RANGE(0x0e8000, 0x0ebfff) AM_RAM_WRITE(bsb_videoram3_w) AM_BASE_MEMBER(bigstrkb_state,m_videoram3)
-	AM_RANGE(0x0ec000, 0x0effff) AM_RAM_WRITE(bsb_videoram_w) AM_BASE_MEMBER(bigstrkb_state,m_videoram)
+	AM_RANGE(0x0e0000, 0x0e3fff) AM_RAM_WRITE(bsb_videoram2_w) AM_SHARE("videoram2")
+	AM_RANGE(0x0e8000, 0x0ebfff) AM_RAM_WRITE(bsb_videoram3_w) AM_SHARE("videoram3")
+	AM_RANGE(0x0ec000, 0x0effff) AM_RAM_WRITE(bsb_videoram_w) AM_SHARE("videoram")
 
 	AM_RANGE(0x0f0000, 0x0f7fff) AM_RAM
-	AM_RANGE(0x0f8000, 0x0f87ff) AM_RAM_WRITE(paletteram16_RRRRGGGGBBBBRGBx_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0x0f8000, 0x0f87ff) AM_RAM_WRITE(paletteram_RRRRGGGGBBBBRGBx_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0x0f8800, 0x0fffff) AM_RAM
 
 	AM_RANGE(0x1f0000, 0x1f7fff) AM_RAM
-	AM_RANGE(0x1f8000, 0x1f87ff) AM_RAM AM_BASE_MEMBER(bigstrkb_state,m_spriteram)
+	AM_RANGE(0x1f8000, 0x1f87ff) AM_RAM AM_SHARE("spriteram")
 	AM_RANGE(0x1f8800, 0x1fffff) AM_RAM
 
 	AM_RANGE(0x700000, 0x700001) AM_READ_PORT("DSW0")
@@ -65,13 +65,13 @@ static ADDRESS_MAP_START( bigstrkb_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x700004, 0x700005) AM_READ_PORT("SYSTEM")
 	AM_RANGE(0x70000a, 0x70000b) AM_READ_PORT("P2")
 	AM_RANGE(0x70000c, 0x70000d) AM_READ_PORT("P1")
-	AM_RANGE(0x700020, 0x700027) AM_WRITEONLY AM_BASE_MEMBER(bigstrkb_state,m_vidreg1)
-	AM_RANGE(0x700030, 0x700037) AM_WRITEONLY AM_BASE_MEMBER(bigstrkb_state,m_vidreg2)
+	AM_RANGE(0x700020, 0x700027) AM_WRITEONLY AM_SHARE("vidreg1")
+	AM_RANGE(0x700030, 0x700037) AM_WRITEONLY AM_SHARE("vidreg2")
 
 	AM_RANGE(0xB00000, 0xB00001) AM_WRITENOP
 
-	AM_RANGE(0xE00000, 0xE00001) AM_DEVREADWRITE8_MODERN("oki1", okim6295_device, read, write, 0x00ff)
-	AM_RANGE(0xE00002, 0xE00003) AM_DEVREADWRITE8_MODERN("oki2", okim6295_device, read, write, 0x00ff)
+	AM_RANGE(0xE00000, 0xE00001) AM_DEVREADWRITE8("oki1", okim6295_device, read, write, 0x00ff)
+	AM_RANGE(0xE00002, 0xE00003) AM_DEVREADWRITE8("oki2", okim6295_device, read, write, 0x00ff)
 
 	AM_RANGE(0xE00008, 0xE00009) AM_WRITENOP
 	AM_RANGE(0xE0000c, 0xE0000d) AM_WRITENOP
@@ -257,6 +257,39 @@ ROM_START( bigstrkb )
 	ROM_LOAD( "footgaa.009", 0x00000, 0x40000, CRC(19bf0896) SHA1(30c8e030d7dbcd38f213010596c8f9c5b8089f62) )
 ROM_END
 
+// same as bigstrkb, but less buggy/better presentation, and teams are Italian league instead of international
+ROM_START( bigstrkba )
+	ROM_REGION( 0x80000, "maincpu", 0 ) /* 68000 Code */
+    ROM_LOAD16_BYTE( "15.cpu16", 0x000000, 0x040000, CRC(204551b5) SHA1(bfc8d284801a2c11677431287bc2e5b8ba7737db) )
+    ROM_LOAD16_BYTE( "16.cpu17", 0x000001, 0x040000, CRC(3ba6997b) SHA1(86c0318a48b42b4622f3397c55584e0779e4f626) )
+
+	ROM_REGION( 0x40000, "gfx1", 0  ) /* 8x8x4 FG Tiles */
+    ROM_LOAD( "5.bin", 0x000000, 0x010000, CRC(f51ea151) SHA1(fd80280fa99cd08b9f458a4d4078ce59a926b4bc) )
+    ROM_LOAD( "6.bin", 0x010000, 0x010000, CRC(754d750e) SHA1(d0a6be6d373e95404733c125126bbeeed03e370e) )
+    ROM_LOAD( "7.bin", 0x020000, 0x010000, CRC(fbc52546) SHA1(daae9451629b67d532dfd4825b552944e1c585d8) )
+    ROM_LOAD( "8.bin", 0x030000, 0x010000, CRC(62c63eaa) SHA1(4a408703a3d70159d78b0c213ff52a95a8a07884) )
+
+	ROM_REGION( 0x200000, "gfx2", ROMREGION_INVERT  ) /* 16x16x4 BG Tiles */
+    ROM_LOAD( "1.bin", 0x000000, 0x080000, CRC(c4eb9746) SHA1(ed4436e79abdb043349ee20d22c5454590ab5837) )
+    ROM_LOAD( "2.bin", 0x080000, 0x080000, CRC(aa0beb78) SHA1(42cde54203cab4169099172cfce090725102e44c) )
+    ROM_LOAD( "3.bin", 0x100000, 0x080000, CRC(d02298c5) SHA1(d3da72cc4edc8a6c9c8ec76bb566ded6d0b7b453) )
+    ROM_LOAD( "4.bin", 0x180000, 0x080000, CRC(069ac008) SHA1(30b90d80177de744624e9d9618eebe5471042afd) )
+
+	ROM_REGION( 0x080000, "gfx3", ROMREGION_INVERT ) /* 16x16x4 Sprites */
+	ROM_LOAD( "footgaa.011", 0x000000, 0x20000, CRC(c3924fea) SHA1(85b6775b5aa8c518a1e169b97379a210e25e67c9) )
+    ROM_LOAD( "12.bin",      0x020000, 0x20000, CRC(8e15ea09) SHA1(e591811bb5ecb1782a77883b3ee27212fb703f22) )
+	ROM_LOAD( "footgaa.013", 0x040000, 0x20000, CRC(26ce4b7f) SHA1(4bfd1de6d73dc5e720972bba477081dba0b05ab3) )
+	ROM_LOAD( "footgaa.014", 0x060000, 0x20000, CRC(c3cfc500) SHA1(5dc5780b9977b0544601471004c656c2fd738bcd) )
+
+	ROM_REGION( 0x40000, "oki1", 0 ) /* Samples? */
+	ROM_LOAD( "footgaa.010", 0x00000, 0x40000, CRC(53014576) SHA1(7f3402b33ef5992a6ae51ce07f0fcdc267c51beb) )
+
+	ROM_REGION( 0x40000, "oki2", 0 ) /* Samples? */
+	ROM_LOAD( "footgaa.009", 0x00000, 0x40000, CRC(19bf0896) SHA1(30c8e030d7dbcd38f213010596c8f9c5b8089f62) )
+ROM_END
+
+
 /* GAME drivers */
 
 GAME( 1992, bigstrkb, bigstrik, bigstrkb, bigstrkb, 0, ROT0, "bootleg", "Big Striker (bootleg)", GAME_IMPERFECT_SOUND | GAME_NO_COCKTAIL )
+GAME( 1992, bigstrkba,bigstrik, bigstrkb, bigstrkb, 0, ROT0, "bootleg", "Big Striker (bootleg w/Italian teams)", GAME_IMPERFECT_SOUND | GAME_NO_COCKTAIL )

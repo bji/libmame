@@ -75,8 +75,8 @@
 #define PSG_BC_LATCH_ADDRESS    ( MUSIC_PORT2_PSG_BDIR | MUSIC_PORT2_PSG_BC1 )
 
 
-#define PLAY(samp,id,loop)      sample_start( samp, id, id, loop )
-#define STOP(samp,id)           sample_stop( samp, id )
+#define PLAY(samp,id,loop)      samp->start( id, id, loop )
+#define STOP(samp,id)           samp->stop( id )
 
 
 /* sample file names */
@@ -127,7 +127,7 @@ static int psgData = 0;
 WRITE8_HANDLER( carnival_audio_1_w )
 {
 	static int port1State = 0;
-	device_t *samples = space->machine().device("samples");
+	samples_device *samples = space->machine().device<samples_device>("samples");
 	int bitsChanged;
 	int bitsGoneHigh;
 	int bitsGoneLow;
@@ -206,7 +206,7 @@ WRITE8_HANDLER( carnival_audio_1_w )
 
 WRITE8_HANDLER( carnival_audio_2_w )
 {
-	device_t *samples = space->machine().device("samples");
+	samples_device *samples = space->machine().device<samples_device>("samples");
 	int bitsChanged;
 	int bitsGoneHigh;
 	int bitsGoneLow;
@@ -285,14 +285,14 @@ static WRITE8_DEVICE_HANDLER( carnival_music_port_2_w )
 }
 
 
-static ADDRESS_MAP_START( carnival_audio_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( carnival_audio_map, AS_PROGRAM, 8, driver_device )
 	AM_RANGE(0x0000, 0x07ff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( carnival_audio_io_map, AS_IO, 8 )
-	AM_RANGE(MCS48_PORT_T1, MCS48_PORT_T1) AM_READ(carnival_music_port_t1_r)
-	AM_RANGE(MCS48_PORT_P1, MCS48_PORT_P1) AM_WRITE(carnival_music_port_1_w)
-	AM_RANGE(MCS48_PORT_P2, MCS48_PORT_P2) AM_DEVWRITE("psg", carnival_music_port_2_w)
+static ADDRESS_MAP_START( carnival_audio_io_map, AS_IO, 8, driver_device )
+	AM_RANGE(MCS48_PORT_T1, MCS48_PORT_T1) AM_READ_LEGACY(carnival_music_port_t1_r)
+	AM_RANGE(MCS48_PORT_P1, MCS48_PORT_P1) AM_WRITE_LEGACY(carnival_music_port_1_w)
+	AM_RANGE(MCS48_PORT_P2, MCS48_PORT_P2) AM_DEVWRITE_LEGACY("psg", carnival_music_port_2_w)
 ADDRESS_MAP_END
 
 
@@ -306,7 +306,6 @@ MACHINE_CONFIG_FRAGMENT( carnival_audio )
 	MCFG_SOUND_ADD("psg", AY8910, PSG_CLOCK)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.10)
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(carnival_samples_interface)
+	MCFG_SAMPLES_ADD("samples", carnival_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.25)
 MACHINE_CONFIG_END

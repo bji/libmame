@@ -71,19 +71,18 @@ static MACHINE_START( marineb )
 	state->save_item(NAME(state->m_marineb_active_low_flipscreen));
 }
 
-static WRITE8_HANDLER( irq_mask_w )
+WRITE8_MEMBER(marineb_state::irq_mask_w)
 {
-	marineb_state *state = space->machine().driver_data<marineb_state>();
 
-	state->m_irq_mask = data & 1;
+	m_irq_mask = data & 1;
 }
 
-static ADDRESS_MAP_START( marineb_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( marineb_map, AS_PROGRAM, 8, marineb_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 	AM_RANGE(0x8000, 0x87ff) AM_RAM
-	AM_RANGE(0x8800, 0x8bff) AM_RAM_WRITE(marineb_videoram_w) AM_BASE_MEMBER(marineb_state, m_videoram)
-	AM_RANGE(0x8c00, 0x8c3f) AM_RAM AM_BASE_MEMBER(marineb_state, m_spriteram)  /* Hoccer only */
-	AM_RANGE(0x9000, 0x93ff) AM_RAM_WRITE(marineb_colorram_w) AM_BASE_MEMBER(marineb_state, m_colorram)
+	AM_RANGE(0x8800, 0x8bff) AM_RAM_WRITE(marineb_videoram_w) AM_SHARE("videoram")
+	AM_RANGE(0x8c00, 0x8c3f) AM_RAM AM_SHARE("spriteram")  /* Hoccer only */
+	AM_RANGE(0x9000, 0x93ff) AM_RAM_WRITE(marineb_colorram_w) AM_SHARE("colorram")
 	AM_RANGE(0x9800, 0x9800) AM_WRITE(marineb_column_scroll_w)
 	AM_RANGE(0x9a00, 0x9a00) AM_WRITE(marineb_palette_bank_0_w)
 	AM_RANGE(0x9c00, 0x9c00) AM_WRITE(marineb_palette_bank_1_w)
@@ -96,15 +95,15 @@ static ADDRESS_MAP_START( marineb_map, AS_PROGRAM, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( marineb_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( marineb_io_map, AS_IO, 8, marineb_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x08, 0x09) AM_DEVWRITE("ay1", ay8910_address_data_w)
+	AM_RANGE(0x08, 0x09) AM_DEVWRITE_LEGACY("ay1", ay8910_address_data_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( wanted_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( wanted_io_map, AS_IO, 8, marineb_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x01) AM_DEVWRITE("ay1", ay8910_address_data_w)
-	AM_RANGE(0x02, 0x03) AM_DEVWRITE("ay2", ay8910_address_data_w)
+	AM_RANGE(0x00, 0x01) AM_DEVWRITE_LEGACY("ay1", ay8910_address_data_w)
+	AM_RANGE(0x02, 0x03) AM_DEVWRITE_LEGACY("ay2", ay8910_address_data_w)
 ADDRESS_MAP_END
 
 
@@ -743,9 +742,9 @@ ROM_START( springer )
 	ROM_LOAD( "springer.7",    0x1000, 0x1000, CRC(95ab8fc0) SHA1(74dad6fe1edd38b22656cf6cd9e4a57012bf0d60) )
 
 	ROM_REGION( 0x4000, "gfx2", 0 )
-	ROM_LOAD( "springer.8",    0x0000, 0x1000, CRC(a54bafdc) SHA1(70f1a9ab116dc2a195aa9026ed1004101897d274) )
+	ROM_LOAD( "springer.9",    0x0000, 0x1000, CRC(fa302775) SHA1(412afdc620be95e70b3b782d1a08e4a46777e710) )
 							/* 0x1000-0x1fff empty for my convinience */
-	ROM_LOAD( "springer.9",    0x2000, 0x1000, CRC(fa302775) SHA1(412afdc620be95e70b3b782d1a08e4a46777e710) )
+	ROM_LOAD( "springer.8",    0x2000, 0x1000, CRC(a54bafdc) SHA1(70f1a9ab116dc2a195aa9026ed1004101897d274) )
 							/* 0x3000-0x3fff empty for my convinience */
 
 	ROM_REGION( 0x0200, "proms", 0 )
@@ -840,21 +839,21 @@ AY-3-8912    AY-3-8912                                             BCM12COL.K7
 
 ROM_START( bcruzm12 )
 	ROM_REGION( 0x10000, "maincpu", 0 )
-	ROM_LOAD( "d-84_3.bin",		   0x0000, 0x2000, CRC(132baa3d) SHA1(79f7a1dc49b6e45e68f4008f3ee4e383846f75d5) )
-	ROM_LOAD( "d-84_2.bin",		   0x2000, 0x2000, CRC(1a788d1f) SHA1(5029f93f45d328a282d56e010eee68287b6b9306) )
-	ROM_LOAD( "d-84_1.bin",		   0x4000, 0x2000, CRC(9d5b3017) SHA1(bced3f39faf94ce25cba382010f2c2ed322e9d7b) )
+	ROM_LOAD( "d-84_3.12c",	   0x0000, 0x2000, CRC(132baa3d) SHA1(79f7a1dc49b6e45e68f4008f3ee4e383846f75d5) )
+	ROM_LOAD( "d-84_2.12b",	   0x2000, 0x2000, CRC(1a788d1f) SHA1(5029f93f45d328a282d56e010eee68287b6b9306) )
+	ROM_LOAD( "d-84_1.12ab",   0x4000, 0x2000, CRC(9d5b3017) SHA1(bced3f39faf94ce25cba382010f2c2ed322e9d7b) )
 
 	ROM_REGION( 0x4000, "gfx1", 0 )
-	ROM_LOAD( "d-84_5.bin",		   0x0000, 0x2000, CRC(2e963f6a) SHA1(dcc32ab4a4fa241b6f4a211642d00f6e0438f466) )
-	ROM_LOAD( "d-84_4.bin",		   0x2000, 0x2000, CRC(fe186459) SHA1(3b0ee1fe98c835271f5b67de5ca0507827e25d71) )
+	ROM_LOAD( "d-84_5.17f",	   0x0000, 0x2000, CRC(2e963f6a) SHA1(dcc32ab4a4fa241b6f4a211642d00f6e0438f466) )
+	ROM_LOAD( "d-84_4.17ef",   0x2000, 0x2000, CRC(fe186459) SHA1(3b0ee1fe98c835271f5b67de5ca0507827e25d71) )
 
 	ROM_REGION( 0x4000, "gfx2", 0 )
-	ROM_LOAD( "d-84_7.bin",		   0x0000, 0x2000, CRC(a5be90ef) SHA1(6037d924296ba62999aafe665396fef142d73df2) )
-	ROM_LOAD( "d-84_6.bin",		   0x2000, 0x2000, CRC(1337dc01) SHA1(c55bfc6dd15a499dd71da0acc5016035a7c51f16) )
+	ROM_LOAD( "d-84_7.17h",	   0x0000, 0x2000, CRC(a5be90ef) SHA1(6037d924296ba62999aafe665396fef142d73df2) )
+	ROM_LOAD( "d-84_6.17fh",   0x2000, 0x2000, CRC(1337dc01) SHA1(c55bfc6dd15a499dd71da0acc5016035a7c51f16) )
 
 	ROM_REGION( 0x0200, "proms", 0 )
-	ROM_LOAD( "bcm12col.k7",	   0x0000, 0x0100, CRC(bf4f2671) SHA1(dde6da568ecf0121910f4b507c83fe6230b07c8d) )	/* palette low 4 bits */
-	ROM_LOAD( "bcm12col.k6",	   0x0100, 0x0100, CRC(59f955f6) SHA1(6d6d784971569e0af7cec8bd36659f24a652cd6a) )	/* palette high 4 bits */
+	ROM_LOAD( "bcm12col.7k",   0x0000, 0x0100, CRC(bf4f2671) SHA1(dde6da568ecf0121910f4b507c83fe6230b07c8d) )	/* palette low 4 bits */
+	ROM_LOAD( "bcm12col.6k",   0x0100, 0x0100, CRC(59f955f6) SHA1(6d6d784971569e0af7cec8bd36659f24a652cd6a) )	/* palette high 4 bits */
 ROM_END
 
 ROM_START( hopprobo )

@@ -1106,7 +1106,16 @@ $(CPUOBJ)/mc68hc11/mc68hc11.o:	$(CPUSRC)/mc68hc11/mc68hc11.c \
 
 ifneq ($(filter M680X0,$(CPUS)),)
 OBJDIRS += $(CPUOBJ)/m68000
-CPUOBJS += $(CPUOBJ)/m68000/m68kcpu.o $(CPUOBJ)/m68000/m68kops.o
+CPUOBJS += $(CPUOBJ)/m68000/m68kcpu.o $(CPUOBJ)/m68000/m68kops.o \
+	$(CPUOBJ)/m68000/68307sim.o \
+	$(CPUOBJ)/m68000/68307bus.o \
+	$(CPUOBJ)/m68000/68307ser.o \
+	$(CPUOBJ)/m68000/68307tmu.o \
+	$(CPUOBJ)/m68000/68340sim.o \
+	$(CPUOBJ)/m68000/68340dma.o \
+	$(CPUOBJ)/m68000/68340ser.o \
+	$(CPUOBJ)/m68000/68340tmu.o \
+
 DASMOBJS += $(CPUOBJ)/m68000/m68kdasm.o
 M68KMAKE = $(BUILDOUT)/m68kmake$(BUILD_EXE)
 endif
@@ -1140,6 +1149,16 @@ endif
 $(CPUOBJ)/m68000/m68kcpu.o: 	$(CPUOBJ)/m68000/m68kops.c \
 								$(CPUSRC)/m68000/m68kcpu.h $(CPUSRC)/m68000/m68kfpu.c $(CPUSRC)/m68000/m68kmmu.h
 
+# m68kcpu.h now includes m68kops.h; m68kops.h won't exist until m68kops.c has been made
+$(CPUSRC)/m68000/m68kcpu.h: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68307sim.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68307bus.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68307ser.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68307tmu.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68340sim.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68340dma.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68340ser.c: $(CPUOBJ)/m68000/m68kops.c
+$(CPUSRC)/m68000/68340tmu.c: $(CPUOBJ)/m68000/m68kops.c
 
 
 #-------------------------------------------------
@@ -1710,12 +1729,10 @@ endif
 
 $(CPUOBJ)/tms57002/tms57002.o:	$(CPUSRC)/tms57002/tms57002.c \
 								$(CPUSRC)/tms57002/tms57002.h \
-								$(CPUSRC)/tms57002/tms57kpr.h \
 								$(CPUOBJ)/tms57002/tms57002.inc
 
 $(CPUOBJ)/tms57002/tms57kdec.o:	$(CPUSRC)/tms57002/tms57kdec.c \
 								$(CPUSRC)/tms57002/tms57002.h \
-								$(CPUSRC)/tms57002/tms57kpr.h \
 								$(CPUOBJ)/tms57002/tms57002.inc
 
 $(CPUOBJ)/tms57002/57002dsm.o:	$(CPUSRC)/tms57002/57002dsm.c \

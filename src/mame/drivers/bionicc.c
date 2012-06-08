@@ -70,50 +70,45 @@
  *
  *************************************/
 
-static WRITE16_HANDLER( hacked_controls_w )
+WRITE16_MEMBER(bionicc_state::hacked_controls_w)
 {
-	bionicc_state *state = space->machine().driver_data<bionicc_state>();
 
-	logerror("%06x: hacked_controls_w %04x %02x\n", cpu_get_pc(&space->device()), offset, data);
-	COMBINE_DATA(&state->m_inp[offset]);
+	logerror("%06x: hacked_controls_w %04x %02x\n", cpu_get_pc(&space.device()), offset, data);
+	COMBINE_DATA(&m_inp[offset]);
 }
 
-static READ16_HANDLER( hacked_controls_r )
+READ16_MEMBER(bionicc_state::hacked_controls_r)
 {
-	bionicc_state *state = space->machine().driver_data<bionicc_state>();
 
-	logerror("%06x: hacked_controls_r %04x %04x\n", cpu_get_pc(&space->device()), offset, state->m_inp[offset]);
-	return state->m_inp[offset];
+	logerror("%06x: hacked_controls_r %04x %04x\n", cpu_get_pc(&space.device()), offset, m_inp[offset]);
+	return m_inp[offset];
 }
 
-static WRITE16_HANDLER( bionicc_mpu_trigger_w )
+WRITE16_MEMBER(bionicc_state::bionicc_mpu_trigger_w)
 {
-	bionicc_state *state = space->machine().driver_data<bionicc_state>();
 
-	data = input_port_read(space->machine(), "SYSTEM") >> 12;
-	state->m_inp[0] = data ^ 0x0f;
+	data = ioport("SYSTEM")->read() >> 12;
+	m_inp[0] = data ^ 0x0f;
 
-	data = input_port_read(space->machine(), "P2");
-	state->m_inp[1] = data ^ 0xff;
+	data = ioport("P2")->read();
+	m_inp[1] = data ^ 0xff;
 
-	data = input_port_read(space->machine(), "P1");
-	state->m_inp[2] = data ^ 0xff;
+	data = ioport("P1")->read();
+	m_inp[2] = data ^ 0xff;
 }
 
 
-static WRITE16_HANDLER( hacked_soundcommand_w )
+WRITE16_MEMBER(bionicc_state::hacked_soundcommand_w)
 {
-	bionicc_state *state = space->machine().driver_data<bionicc_state>();
 
-	COMBINE_DATA(&state->m_soundcommand);
-	soundlatch_w(space, 0, state->m_soundcommand & 0xff);
+	COMBINE_DATA(&m_soundcommand);
+	soundlatch_byte_w(space, 0, m_soundcommand & 0xff);
 }
 
-static READ16_HANDLER( hacked_soundcommand_r )
+READ16_MEMBER(bionicc_state::hacked_soundcommand_r)
 {
-	bionicc_state *state = space->machine().driver_data<bionicc_state>();
 
-	return state->m_soundcommand;
+	return m_soundcommand;
 }
 
 
@@ -146,30 +141,30 @@ static TIMER_DEVICE_CALLBACK( bionicc_scanline )
  *
  *************************************/
 
-static ADDRESS_MAP_START( main_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( main_map, AS_PROGRAM, 16, bionicc_state )
 	AM_RANGE(0x000000, 0x03ffff) AM_ROM
 	AM_RANGE(0xfe0000, 0xfe07ff) AM_RAM	/* RAM? */
-	AM_RANGE(0xfe0800, 0xfe0cff) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
+	AM_RANGE(0xfe0800, 0xfe0cff) AM_RAM AM_SHARE("spriteram")
 	AM_RANGE(0xfe0d00, 0xfe3fff) AM_RAM              /* RAM? */
 	AM_RANGE(0xfe4000, 0xfe4001) AM_WRITE(bionicc_gfxctrl_w)	/* + coin counters */
 	AM_RANGE(0xfe4000, 0xfe4001) AM_READ_PORT("SYSTEM")
 	AM_RANGE(0xfe4002, 0xfe4003) AM_READ_PORT("DSW")
 	AM_RANGE(0xfe8010, 0xfe8017) AM_WRITE(bionicc_scroll_w)
 	AM_RANGE(0xfe801a, 0xfe801b) AM_WRITE(bionicc_mpu_trigger_w)	/* ??? not sure, but looks like it */
-	AM_RANGE(0xfec000, 0xfecfff) AM_RAM_WRITE(bionicc_txvideoram_w) AM_BASE_MEMBER(bionicc_state, m_txvideoram)
-	AM_RANGE(0xff0000, 0xff3fff) AM_RAM_WRITE(bionicc_fgvideoram_w) AM_BASE_MEMBER(bionicc_state, m_fgvideoram)
-	AM_RANGE(0xff4000, 0xff7fff) AM_RAM_WRITE(bionicc_bgvideoram_w) AM_BASE_MEMBER(bionicc_state, m_bgvideoram)
-	AM_RANGE(0xff8000, 0xff87ff) AM_RAM_WRITE(bionicc_paletteram_w) AM_BASE_MEMBER(bionicc_state, m_paletteram)
+	AM_RANGE(0xfec000, 0xfecfff) AM_RAM_WRITE(bionicc_txvideoram_w) AM_SHARE("txvideoram")
+	AM_RANGE(0xff0000, 0xff3fff) AM_RAM_WRITE(bionicc_fgvideoram_w) AM_SHARE("fgvideoram")
+	AM_RANGE(0xff4000, 0xff7fff) AM_RAM_WRITE(bionicc_bgvideoram_w) AM_SHARE("bgvideoram")
+	AM_RANGE(0xff8000, 0xff87ff) AM_RAM_WRITE(bionicc_paletteram_w) AM_SHARE("paletteram")
 	AM_RANGE(0xffc000, 0xfffff7) AM_RAM	/* working RAM */
 	AM_RANGE(0xfffff8, 0xfffff9) AM_READWRITE(hacked_soundcommand_r, hacked_soundcommand_w)      /* hack */
 	AM_RANGE(0xfffffa, 0xffffff) AM_READWRITE(hacked_controls_r, hacked_controls_w)	/* hack */
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( sound_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( sound_map, AS_PROGRAM, 8, bionicc_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
-	AM_RANGE(0x8000, 0x8001) AM_DEVREADWRITE("ymsnd", ym2151_r, ym2151_w)
-	AM_RANGE(0xa000, 0xa000) AM_READ(soundlatch_r)
+	AM_RANGE(0x8000, 0x8001) AM_DEVREADWRITE_LEGACY("ymsnd", ym2151_r, ym2151_w)
+	AM_RANGE(0xa000, 0xa000) AM_READ(soundlatch_byte_r)
 	AM_RANGE(0xc000, 0xc7ff) AM_RAM
 ADDRESS_MAP_END
 
@@ -375,20 +370,20 @@ static MACHINE_CONFIG_START( bionicc, bionicc_state )
 	MCFG_MACHINE_RESET(bionicc)
 
 	/* video hardware */
-	MCFG_VIDEO_ATTRIBUTES(VIDEO_BUFFERS_SPRITERAM)
-
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
 	MCFG_SCREEN_UPDATE_STATIC(bionicc)
-	MCFG_SCREEN_VBLANK_STATIC(bionicc)
+	MCFG_SCREEN_VBLANK_DEVICE("spriteram", buffered_spriteram16_device, vblank_copy_rising)
 
 	MCFG_GFXDECODE(bionicc)
 	MCFG_PALETTE_LENGTH(1024)
 
 	MCFG_VIDEO_START(bionicc)
+
+	MCFG_BUFFERED_SPRITERAM16_ADD("spriteram")
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 

@@ -66,18 +66,18 @@ typedef void (*atarigen_scanline_func)(screen_device &screen, int scanline);
 typedef struct _atarivc_state_desc atarivc_state_desc;
 struct _atarivc_state_desc
 {
-	UINT32 latch1;								/* latch #1 value (-1 means disabled) */
-	UINT32 latch2;								/* latch #2 value (-1 means disabled) */
-	UINT32 rowscroll_enable;					/* true if row-scrolling is enabled */
-	UINT32 palette_bank;						/* which palette bank is enabled */
+	UINT32 latch1;							/* latch #1 value (-1 means disabled) */
+	UINT32 latch2;							/* latch #2 value (-1 means disabled) */
+	UINT32 rowscroll_enable;				/* true if row-scrolling is enabled */
+	UINT32 palette_bank;					/* which palette bank is enabled */
 	UINT32 pf0_xscroll;						/* playfield 1 xscroll */
 	UINT32 pf0_xscroll_raw;					/* playfield 1 xscroll raw value */
 	UINT32 pf0_yscroll;						/* playfield 1 yscroll */
 	UINT32 pf1_xscroll;						/* playfield 2 xscroll */
 	UINT32 pf1_xscroll_raw;					/* playfield 2 xscroll raw value */
 	UINT32 pf1_yscroll;						/* playfield 2 yscroll */
-	UINT32 mo_xscroll;							/* sprite xscroll */
-	UINT32 mo_yscroll;							/* sprite xscroll */
+	UINT32 mo_xscroll;						/* sprite xscroll */
+	UINT32 mo_yscroll;						/* sprite xscroll */
 };
 
 
@@ -98,7 +98,19 @@ public:
 		: driver_device(mconfig, type, tag),
 		  m_earom(*this, "earom"),
 		  m_eeprom(*this, "eeprom"),
-		  m_eeprom_size(*this, "eeprom") { }
+		  m_eeprom32(*this, "eeprom"),
+		  m_playfield(*this, "playfield"),
+		  m_playfield2(*this, "playfield2"),
+		  m_playfield_upper(*this, "playfield_up"),
+		  m_alpha(*this, "alpha"),
+		  m_alpha2(*this, "alpha2"),
+		  m_xscroll(*this, "xscroll"),
+		  m_yscroll(*this, "yscroll"),
+		  m_playfield32(*this, "playfield32"),
+		  m_alpha32(*this, "alpha32"),
+		  m_atarivc_data(*this, "atarivc_data"),
+		  m_atarivc_eof_data(*this, "atarivc_eof")
+	{ }
 
 	// users must call through to these
 	virtual void machine_start();
@@ -115,7 +127,7 @@ public:
 	UINT8				m_earom_control;
 
 	optional_shared_ptr<UINT16> m_eeprom;
-	optional_shared_size m_eeprom_size;
+	optional_shared_ptr<UINT32> m_eeprom32;
 
 	UINT8				m_scanline_int_state;
 	UINT8				m_sound_int_state;
@@ -126,24 +138,24 @@ public:
 	UINT8				m_cpu_to_sound_ready;
 	UINT8				m_sound_to_cpu_ready;
 
-	UINT16 *			m_playfield;
-	UINT16 *			m_playfield2;
-	UINT16 *			m_playfield_upper;
-	UINT16 *			m_alpha;
-	UINT16 *			m_alpha2;
-	UINT16 *			m_xscroll;
-	UINT16 *			m_yscroll;
+	optional_shared_ptr<UINT16> m_playfield;
+	optional_shared_ptr<UINT16> m_playfield2;
+	optional_shared_ptr<UINT16> m_playfield_upper;
+	optional_shared_ptr<UINT16> m_alpha;
+	optional_shared_ptr<UINT16> m_alpha2;
+	optional_shared_ptr<UINT16> m_xscroll;
+	optional_shared_ptr<UINT16> m_yscroll;
 
-	UINT32 *			m_playfield32;
-	UINT32 *			m_alpha32;
+	optional_shared_ptr<UINT32> m_playfield32;
+	optional_shared_ptr<UINT32> m_alpha32;
 
 	tilemap_t *			m_playfield_tilemap;
 	tilemap_t *			m_playfield2_tilemap;
 	tilemap_t *			m_alpha_tilemap;
 	tilemap_t *			m_alpha2_tilemap;
 
-	UINT16 *			m_atarivc_data;
-	UINT16 *			m_atarivc_eof_data;
+	optional_shared_ptr<UINT16> m_atarivc_data;
+	optional_shared_ptr<UINT16> m_atarivc_eof_data;
 	atarivc_state_desc	m_atarivc_state;
 
 	/* internal state */
@@ -177,6 +189,8 @@ public:
 	UINT32					m_playfield2_latch;
 
 	atarigen_screen_timer	m_screen_timer[2];
+
+	DECLARE_DIRECT_UPDATE_MEMBER(atarigen_slapstic_setdirect);
 };
 
 

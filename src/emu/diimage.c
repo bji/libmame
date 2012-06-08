@@ -38,9 +38,10 @@
 ***************************************************************************/
 
 #include "emu.h"
+#include "emuopts.h"
+#include "drivenum.h"
 #include "ui.h"
 #include "zippath.h"
-#include "uimenu.h"
 #include "uiimage.h"
 #include "uiswlist.h"
 
@@ -49,6 +50,7 @@
 //**************************************************************************
 const image_device_type_info device_image_interface::m_device_info_array[] =
 	{
+		{ IO_UNKNOWN,	"unknown",		"unkn" },
 		{ IO_CARTSLOT,	"cartridge",	"cart" }, /*  0 */
 		{ IO_FLOPPY,	"floppydisk",	"flop" }, /*  1 */
 		{ IO_HARDDISK,	"harddisk",		"hard" }, /*  2 */
@@ -64,6 +66,7 @@ const image_device_type_info device_image_interface::m_device_info_array[] =
 		{ IO_MEMCARD,	"memcard",		"memc" }, /* 12 */
 		{ IO_CDROM,     "cdrom",        "cdrm" }, /* 13 */
 		{ IO_MAGTAPE,	"magtape",		"magt" }, /* 14 */
+		{ IO_ROM,		"romimage",		"rom"  }, /* 15 */
 	};
 
 
@@ -421,7 +424,7 @@ UINT8 *device_image_interface::get_software_region(const char *tag)
 		return NULL;
 
 	sprintf( full_tag, "%s:%s", device().tag(), tag );
-	return device().machine().region( full_tag )->base();
+	return device().machine().root_device().memregion( full_tag )->base();
 }
 
 
@@ -434,7 +437,7 @@ UINT32 device_image_interface::get_software_region_length(const char *tag)
     char full_tag[256];
 
     sprintf( full_tag, "%s:%s", device().tag(), tag );
-    return device().machine().region( full_tag )->bytes();
+    return device().machine().root_device().memregion( full_tag )->bytes();
 }
 
 
@@ -498,7 +501,8 @@ void device_image_interface::image_checkhash()
     device_image_partialhash_func partialhash;
 
     /* only calculate CRC if it hasn't been calculated, and the open_mode is read only */
-    if (m_hash.first() == NULL && m_readonly && !m_created)
+    UINT32 crcval;
+    if (!m_hash.crc(crcval) && m_readonly && !m_created)
     {
         /* do not cause a linear read of 600 megs please */
         /* TODO: use SHA1 in the CHD header as the hash */
@@ -845,7 +849,7 @@ bool device_image_interface::load_software(char *swlist, char *swname, rom_entry
     load_internal - core image loading
 -------------------------------------------------*/
 
-bool device_image_interface::load_internal(const char *path, bool is_create, int create_format, option_resolution *create_args)
+bool device_image_interface::load_internal(const char *path, bool is_create, int create_format, option_resolution *create_args, bool just_load)
 {
     UINT32 open_plan[4];
     int i;
@@ -872,7 +876,7 @@ bool device_image_interface::load_internal(const char *path, bool is_create, int
         goto done;
 
 	/* Check if there's a software list defined for this device and use that if we're not creating an image */
-	if (!filename_has_period)
+	if (!filename_has_period && !just_load)
 	{
 		softload = load_software_part( device().machine().options(), this, path, &m_software_info_ptr, &m_software_part_ptr, &m_full_software_name, &m_software_list_name );
 		// if we had launched from softlist with a specified part, e.g. "shortname:part"
@@ -926,6 +930,10 @@ bool device_image_interface::load_internal(const char *path, bool is_create, int
     /* success! */
 
 done:
+	if (just_load) {
+		if(m_err) clear();
+		return m_err ? IMAGE_INIT_FAIL : IMAGE_INIT_PASS;
+	}
     if (m_err!=0) {
 		if (!m_init_phase)
 		{
@@ -962,9 +970,26 @@ done:
 
 bool device_image_interface::load(const char *path)
 {
-    return load_internal(path, FALSE, 0, NULL);
+    return load_internal(path, FALSE, 0, NULL, FALSE);
 }
 
+/*-------------------------------------------------
+    open_image_file - opening plain image file
+-------------------------------------------------*/
+
+bool device_image_interface::open_image_file(emu_options &options)
+{
+	const char* path = options.value(instance_name());
+	if (strlen(path)>0)
+	{
+		set_init_phase();
+		if (load_internal(path, FALSE, 0, NULL, TRUE)==IMAGE_INIT_PASS)
+		{
+			if (software_entry()==NULL) return true;
+		}
+	}
+	return false;
+}
 
 /*-------------------------------------------------
     image_finish_load - special call - only use
@@ -1016,7 +1041,7 @@ bool device_image_interface::finish_load()
 bool device_image_interface::create(const char *path, const image_device_format *create_format, option_resolution *create_args)
 {
     int format_index = (create_format != NULL) ? create_format->m_index : 0;
-    return load_internal(path, TRUE, format_index, create_args);
+    return load_internal(path, TRUE, format_index, create_args, FALSE);
 }
 
 
@@ -1075,7 +1100,7 @@ void device_image_interface::unload()
     update_names - update brief and instance names
 -------------------------------------------------*/
 
-void device_image_interface::update_names()
+void device_image_interface::update_names(const device_type device_type, const char *inst, const char *brief)
 {
 	image_interface_iterator iter(device().mconfig().root_device());
 	int count = 0;
@@ -1084,18 +1109,20 @@ void device_image_interface::update_names()
 	{
 		if (this == image)
 			index = count;
-		if (image->image_type() == image_type())
+		if ((image->image_type() == image_type() && device_type==NULL) || (device_type==image->device().type()))
 			count++;
 	}
+	const char *inst_name = (device_type!=NULL) ? inst : device_typename(image_type());
+	const char *brief_name = (device_type!=NULL) ? brief : device_brieftypename(image_type());
 	if (count > 1)
 	{
-		m_instance_name.printf("%s%d", device_typename(image_type()), index + 1);
-		m_brief_instance_name.printf("%s%d", device_brieftypename(image_type()), index + 1);
+		m_instance_name.printf("%s%d", inst_name , index + 1);
+		m_brief_instance_name.printf("%s%d", brief_name, index + 1);
 	}
 	else
 	{
-		m_instance_name = device_typename(image_type());
-		m_brief_instance_name = device_brieftypename(image_type());
+		m_instance_name = inst_name;
+		m_brief_instance_name = brief_name;
 	}
 }
 
@@ -1233,7 +1260,7 @@ void ui_menu_control_device_image::handle()
 				zippath_closedir(directory);
 		}
 		submenu_result = -1;
-		ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_file_selector(machine(), container, image, current_directory, current_file, true, true, can_create, &submenu_result)));
+		ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_file_selector(machine(), container, image, current_directory, current_file, true, image->image_interface()!=NULL, can_create, &submenu_result)));
 		state = SELECT_FILE;
 		break;
 	}

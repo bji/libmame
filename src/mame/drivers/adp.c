@@ -157,11 +157,14 @@ class adp_state : public driver_device
 public:
 	adp_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag),
-		  m_h63484(*this, "h63484")
+		  m_h63484(*this, "h63484"),
+		  m_microtouch(*this, "microtouch")
 		{ }
 
 	required_device<h63484_device> m_h63484;
+	required_device<microtouch_device> m_microtouch;
 
+	DECLARE_WRITE8_MEMBER(microtouch_tx);
 	UINT32 screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
 	/* misc */
@@ -172,6 +175,10 @@ public:
 	/* devices */
 	device_t *m_maincpu;
 	device_t *m_duart;
+	DECLARE_READ16_MEMBER(test_r);
+	DECLARE_WRITE16_MEMBER(wh2_w);
+	DECLARE_WRITE8_MEMBER(ramdac_io_w);
+	DECLARE_READ8_MEMBER(h63484_rom_r);
 };
 
 
@@ -258,35 +265,40 @@ if (!screen.machine().input().code_pressed(KEYCODE_O)) // debug: toggle window
 
 ***************************************************************************/
 
-static void duart_irq_handler( device_t *device, UINT8 vector )
+static void duart_irq_handler( device_t *device, int state, UINT8 vector )
 {
-	adp_state *state = device->machine().driver_data<adp_state>();
-	device_set_input_line_and_vector(state->m_maincpu, 4, HOLD_LINE, vector);
-};
+	adp_state *adp = device->machine().driver_data<adp_state>();
+	device_set_input_line_and_vector(adp->m_maincpu, 4, state, vector);
+}
 
 static void duart_tx( device_t *device, int channel, UINT8 data )
 {
+	adp_state *state = device->machine().driver_data<adp_state>();
 	if (channel == 0)
 	{
-		microtouch_rx(1, &data);
+		state->m_microtouch->rx(*device->machine().memory().first_space(), 0, data);
 	}
-};
+}
 
-static void microtouch_tx( running_machine &machine, UINT8 data )
+WRITE8_MEMBER( adp_state::microtouch_tx )
 {
-	adp_state *state = machine.driver_data<adp_state>();
-	duart68681_rx_data(state->m_duart, 0, data);
+	duart68681_rx_data(m_duart, 0, data);
 }
 
 static UINT8 duart_input( device_t *device )
 {
-	return input_port_read(device->machine(), "DSW1");
+	return device->machine().root_device().ioport("DSW1")->read();
 }
+
+static const microtouch_interface adb_microtouch_config =
+{
+	DEVCB_DRIVER_MEMBER(adp_state, microtouch_tx),
+	NULL
+};
 
 static MACHINE_START( skattv )
 {
 	adp_state *state = machine.driver_data<adp_state>();
-	microtouch_init(machine, microtouch_tx, 0);
 
 	state->m_maincpu = machine.device("maincpu");
 	state->m_duart = machine.device("duart68681");
@@ -307,7 +319,7 @@ static MACHINE_START( skattv )
 
 	// hack to handle acrt rom
 	{
-		UINT16 *rom = (UINT16*)machine.region("gfx1")->base();
+		UINT16 *rom = (UINT16*)state->memregion("gfx1")->base();
 		int i;
 
 		device_t *hd63484 = machine.device("hd63484");
@@ -368,52 +380,50 @@ static PALETTE_INIT( adp )
     }
 }
 
-static READ16_HANDLER( test_r )
+READ16_MEMBER(adp_state::test_r)
 {
-	adp_state *state = space->machine().driver_data<adp_state>();
 	int value = 0xffff;
 
-	switch (state->m_mux_data)
+	switch (m_mux_data)
 	{
-		case 0x00: value = input_port_read(space->machine(), "x0"); break;
-		case 0x01: value = input_port_read(space->machine(), "x1"); break;
-		case 0x02: value = input_port_read(space->machine(), "x2"); break;
-		case 0x03: value = input_port_read(space->machine(), "1P_UP"); break;
-		case 0x04: value = input_port_read(space->machine(), "1P_B1"); break;
-		case 0x05: value = input_port_read(space->machine(), "x5"); break;
-		case 0x06: value = input_port_read(space->machine(), "1P_RIGHT"); break;
-		case 0x07: value = input_port_read(space->machine(), "1P_DOWN"); break;
-		case 0x08: value = input_port_read(space->machine(), "1P_LEFT"); break;
-		case 0x09: value = input_port_read(space->machine(), "x9"); break;
-		case 0x0a: value = input_port_read(space->machine(), "x10"); break;
-		case 0x0b: value = input_port_read(space->machine(), "x11"); break;
-		case 0x0c: value = input_port_read(space->machine(), "x12"); break;
-		case 0x0d: value = input_port_read(space->machine(), "x13"); break;
-		case 0x0e: value = input_port_read(space->machine(), "1P_START"); break;
-		case 0x0f: value = input_port_read(space->machine(), "1P_COIN"); break;
+		case 0x00: value = ioport("x0")->read(); break;
+		case 0x01: value = ioport("x1")->read(); break;
+		case 0x02: value = ioport("x2")->read(); break;
+		case 0x03: value = ioport("1P_UP")->read(); break;
+		case 0x04: value = ioport("1P_B1")->read(); break;
+		case 0x05: value = ioport("x5")->read(); break;
+		case 0x06: value = ioport("1P_RIGHT")->read(); break;
+		case 0x07: value = ioport("1P_DOWN")->read(); break;
+		case 0x08: value = ioport("1P_LEFT")->read(); break;
+		case 0x09: value = ioport("x9")->read(); break;
+		case 0x0a: value = ioport("x10")->read(); break;
+		case 0x0b: value = ioport("x11")->read(); break;
+		case 0x0c: value = ioport("x12")->read(); break;
+		case 0x0d: value = ioport("x13")->read(); break;
+		case 0x0e: value = ioport("1P_START")->read(); break;
+		case 0x0f: value = ioport("1P_COIN")->read(); break;
 	}
 
-	state->m_mux_data++;
-	state->m_mux_data &= 0xf;
+	m_mux_data++;
+	m_mux_data &= 0xf;
 /*
-    switch (space->machine().rand() & 3)
+    switch (machine().rand() & 3)
     {
         case 0:
             return 0;
         case 1:
             return 0xffff;
         default:
-            return space->machine().rand() & 0xffff;
+            return machine().rand() & 0xffff;
     }
 */
-	return value | (space->machine().rand() & 0x0000);
+	return value | (machine().rand() & 0x0000);
 }
 
 /*???*/
-static WRITE16_HANDLER(wh2_w)
+WRITE16_MEMBER(adp_state::wh2_w)
 {
-	adp_state *state = space->machine().driver_data<adp_state>();
-	state->m_register_active = data;
+	m_register_active = data;
 }
 
 static READ8_DEVICE_HANDLER(t2_r)
@@ -435,64 +445,63 @@ static READ8_DEVICE_HANDLER(t2_r)
 	return res;
 }
 
-static ADDRESS_MAP_START( skattv_mem, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( skattv_mem, AS_PROGRAM, 16, adp_state )
 	AM_RANGE(0x000000, 0x0fffff) AM_ROM
-	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE_MODERN("h63484", h63484_device, status_r, address_w)
-	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE_MODERN("h63484", h63484_device, data_r, data_w)
+	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE("h63484", h63484_device, status_r, address_w)
+	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE("h63484", h63484_device, data_r, data_w)
 	AM_RANGE(0x800100, 0x800101) AM_READWRITE(test_r,wh2_w) //related to input
-	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
-	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8("duart68681", duart68681_r, duart68681_w, 0xff )
+	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8_LEGACY("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
+	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8_LEGACY("duart68681", duart68681_r, duart68681_w, 0xff )
 	AM_RANGE(0xffc000, 0xffffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( quickjac_mem, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( quickjac_mem, AS_PROGRAM, 16, adp_state )
 	AM_RANGE(0x000000, 0x01ffff) AM_ROM
 //  AM_RANGE(0x400000, 0x40001f) ?
-	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE_MODERN("h63484", h63484_device, status_r, address_w) // bad
-	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE_MODERN("h63484", h63484_device, data_r, data_w) // bad
-	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
-	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8("duart68681", duart68681_r, duart68681_w, 0xff )
+	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE("h63484", h63484_device, status_r, address_w) // bad
+	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE("h63484", h63484_device, data_r, data_w) // bad
+	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8_LEGACY("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
+	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8_LEGACY("duart68681", duart68681_r, duart68681_w, 0xff )
 	AM_RANGE(0xff0000, 0xffffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( backgamn_mem, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( backgamn_mem, AS_PROGRAM, 16, adp_state )
 	AM_RANGE(0x000000, 0x01ffff) AM_ROM
 	AM_RANGE(0x100000, 0x10003f) AM_RAM
 	AM_RANGE(0x200000, 0x20003f) AM_RAM
-	AM_RANGE(0x400000, 0x40001f) AM_DEVREADWRITE8("duart68681", duart68681_r, duart68681_w, 0xff )
+	AM_RANGE(0x400000, 0x40001f) AM_DEVREADWRITE8_LEGACY("duart68681", duart68681_r, duart68681_w, 0xff )
 	AM_RANGE(0x500000, 0x503fff) AM_RAM //work RAM
 	AM_RANGE(0x600006, 0x600007) AM_NOP //(r) is discarded (watchdog?)
 ADDRESS_MAP_END
 
-static WRITE8_HANDLER( ramdac_io_w )
+WRITE8_MEMBER(adp_state::ramdac_io_w)
 {
-	adp_state *state = space->machine().driver_data<adp_state>();
 	switch(offset)
 	{
 		case 0:
-			state->m_pal.offs = data;
-			state->m_pal.offs_internal = 0;
+			m_pal.offs = data;
+			m_pal.offs_internal = 0;
 			break;
 		case 2:
 			//mask pen reg
 			break;
 		case 1:
-			switch(state->m_pal.offs_internal)
+			switch(m_pal.offs_internal)
 			{
 				case 0:
-					state->m_pal.r = ((data & 0x3f) << 2) | ((data & 0x30) >> 4);
-					state->m_pal.offs_internal++;
+					m_pal.r = ((data & 0x3f) << 2) | ((data & 0x30) >> 4);
+					m_pal.offs_internal++;
 					break;
 				case 1:
-					state->m_pal.g = ((data & 0x3f) << 2) | ((data & 0x30) >> 4);
-					state->m_pal.offs_internal++;
+					m_pal.g = ((data & 0x3f) << 2) | ((data & 0x30) >> 4);
+					m_pal.offs_internal++;
 					break;
 				case 2:
-					state->m_pal.b = ((data & 0x3f) << 2) | ((data & 0x30) >> 4);
-					palette_set_color(space->machine(), state->m_pal.offs, MAKE_RGB(state->m_pal.r, state->m_pal.g, state->m_pal.b));
-					state->m_pal.offs_internal = 0;
-					state->m_pal.offs++;
-					state->m_pal.offs&=0xff;
+					m_pal.b = ((data & 0x3f) << 2) | ((data & 0x30) >> 4);
+					palette_set_color(machine(), m_pal.offs, MAKE_RGB(m_pal.r, m_pal.g, m_pal.b));
+					m_pal.offs_internal = 0;
+					m_pal.offs++;
+					m_pal.offs&=0xff;
 					break;
 			}
 
@@ -500,25 +509,25 @@ static WRITE8_HANDLER( ramdac_io_w )
 	}
 }
 
-static ADDRESS_MAP_START( funland_mem, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( funland_mem, AS_PROGRAM, 16, adp_state )
 	AM_RANGE(0x000000, 0x0fffff) AM_ROM
-	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE_MODERN("h63484", h63484_device, status_r, address_w)
-	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE_MODERN("h63484", h63484_device, data_r, data_w)
+	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE("h63484", h63484_device, status_r, address_w)
+	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE("h63484", h63484_device, data_r, data_w)
 	AM_RANGE(0x800088, 0x80008d) AM_WRITE8(ramdac_io_w, 0x00ff)
 	AM_RANGE(0x800100, 0x800101) AM_RAM //???
-	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
-	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8("duart68681", duart68681_r, duart68681_w, 0xff )
+	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8_LEGACY("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
+	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8_LEGACY("duart68681", duart68681_r, duart68681_w, 0xff )
 	AM_RANGE(0xfc0000, 0xffffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( fstation_mem, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( fstation_mem, AS_PROGRAM, 16, adp_state )
 	AM_RANGE(0x000000, 0x0fffff) AM_ROM
 	//400000-40001f?
-	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE_MODERN("h63484", h63484_device, status_r, address_w)
-	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE_MODERN("h63484", h63484_device, data_r, data_w)
+	AM_RANGE(0x800080, 0x800081) AM_DEVREADWRITE("h63484", h63484_device, status_r, address_w)
+	AM_RANGE(0x800082, 0x800083) AM_DEVREADWRITE("h63484", h63484_device, data_r, data_w)
 	AM_RANGE(0x800100, 0x800101) AM_RAM //???
-	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
-	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8("duart68681", duart68681_r, duart68681_w, 0xff )
+	AM_RANGE(0x800140, 0x800143) AM_DEVREADWRITE8_LEGACY("aysnd", ay8910_r, ay8910_address_data_w, 0x00ff) //18b too
+	AM_RANGE(0x800180, 0x80019f) AM_DEVREADWRITE8_LEGACY("duart68681", duart68681_r, duart68681_w, 0xff )
 	AM_RANGE(0xfc0000, 0xffffff) AM_RAM
 ADDRESS_MAP_END
 
@@ -530,8 +539,6 @@ INPUT_PORTS_END
 #endif
 
 static INPUT_PORTS_START( skattv )
-	PORT_INCLUDE(microtouch)
-
 	PORT_START("DSW1")
 	PORT_BIT( 0x0001, IP_ACTIVE_HIGH,  IPT_COIN5    )
 	PORT_BIT( 0x0002, IP_ACTIVE_LOW,  IPT_COIN6    )
@@ -628,20 +635,20 @@ static const ay8910_interface ay8910_config =
 	DEVCB_NULL
 };
 
-static READ8_HANDLER( h63484_rom_r )
+READ8_MEMBER(adp_state::h63484_rom_r)
 {
-	UINT8 *rom = space->machine().region("gfx1")->base();
+	UINT8 *rom = memregion("gfx1")->base();
 
 	return rom[offset];
 }
 
-static ADDRESS_MAP_START( adp_h63484_map, AS_0, 8 )
-	AM_RANGE(0x00000, 0x7ffff) AM_DEVREADWRITE_MODERN("h63484",h63484_device, vram_r,vram_w)
+static ADDRESS_MAP_START( adp_h63484_map, AS_0, 8, adp_state )
+	AM_RANGE(0x00000, 0x7ffff) AM_DEVREADWRITE("h63484",h63484_device, vram_r,vram_w)
 	AM_RANGE(0x80000, 0xbffff) AM_READ(h63484_rom_r)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( fashiong_h63484_map, AS_0, 8 )
-	AM_RANGE(0x00000, 0x7ffff) AM_DEVREADWRITE_MODERN("h63484",h63484_device, vram_r,vram_w)
+static ADDRESS_MAP_START( fashiong_h63484_map, AS_0, 8, adp_state )
+	AM_RANGE(0x00000, 0x7ffff) AM_DEVREADWRITE("h63484",h63484_device, vram_r,vram_w)
 //  AM_RANGE(0x40000, 0x7ffff) AM_ROM AM_REGION("gfx1", 0)
 ADDRESS_MAP_END
 
@@ -661,6 +668,7 @@ static MACHINE_CONFIG_START( quickjac, adp_state )
 	MCFG_MACHINE_RESET(skattv)
 
 	MCFG_DUART68681_ADD( "duart68681", XTAL_8_664MHz / 2, skattv_duart68681_config )
+	MCFG_MICROTOUCH_ADD( "microtouch", adb_microtouch_config )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
@@ -692,6 +700,7 @@ static MACHINE_CONFIG_START( skattv, adp_state )
 	MCFG_MACHINE_RESET(skattv)
 
 	MCFG_DUART68681_ADD( "duart68681", XTAL_8_664MHz / 2, skattv_duart68681_config )
+	MCFG_MICROTOUCH_ADD( "microtouch", adb_microtouch_config )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
@@ -719,6 +728,7 @@ static MACHINE_CONFIG_START( backgamn, adp_state )
 	MCFG_CPU_PROGRAM_MAP(backgamn_mem)
 
 	MCFG_DUART68681_ADD( "duart68681", XTAL_8_664MHz / 2, skattv_duart68681_config )
+	MCFG_MICROTOUCH_ADD( "microtouch", adb_microtouch_config )
 
 	MCFG_MACHINE_START(skattv)
 	MCFG_MACHINE_RESET(skattv)
@@ -853,11 +863,11 @@ ROM_START( fstation )
 ROM_END
 
 
-GAME( 1990, backgamn,        0, backgamn,    skattv,    0, ROT0,  "ADP",     "Backgammon", GAME_NOT_WORKING )
-GAME( 1993, quickjac,        0, quickjac,    skattv,    0, ROT0,  "ADP",     "Quick Jack", GAME_NOT_WORKING )
-GAME( 1994, skattv,          0, skattv,      skattv,    0, ROT0,  "ADP",     "Skat TV", GAME_NOT_WORKING )
-GAME( 1995, skattva,    skattv, skattv,      skattv,    0, ROT0,  "ADP",     "Skat TV (version TS3)", GAME_NOT_WORKING )
-GAME( 1997, fashiong,        0, fashiong,    skattv,    0, ROT0,  "ADP",     "Fashion Gambler", GAME_NOT_WORKING )
-GAME( 1997, fashiong2,fashiong, fashiong,    skattv,    0, ROT0,  "ADP",     "Fashion Gambler (Set 2)", GAME_NOT_WORKING )
-GAME( 1999, funlddlx,        0, funland,     skattv,    0, ROT0,  "Stella",  "Funny Land de Luxe", GAME_NOT_WORKING )
-GAME( 2000, fstation,        0, fstation,    skattv,    0, ROT0,  "ADP",     "Fun Station Spielekoffer 9 Spiele", GAME_NOT_WORKING )
+GAME( 1990, backgamn,  0,        backgamn,    skattv,    0, ROT0,  "ADP",     "Backgammon", GAME_NOT_WORKING )
+GAME( 1993, quickjac,  0,        quickjac,    skattv,    0, ROT0,  "ADP",     "Quick Jack", GAME_NOT_WORKING )
+GAME( 1994, skattv,    0,        skattv,      skattv,    0, ROT0,  "ADP",     "Skat TV", GAME_NOT_WORKING )
+GAME( 1995, skattva,   skattv,   skattv,      skattv,    0, ROT0,  "ADP",     "Skat TV (version TS3)", GAME_NOT_WORKING )
+GAME( 1997, fashiong,  0,        fashiong,    skattv,    0, ROT0,  "ADP",     "Fashion Gambler (set 1)", GAME_NOT_WORKING )
+GAME( 1997, fashiong2, fashiong, fashiong,    skattv,    0, ROT0,  "ADP",     "Fashion Gambler (set 2)", GAME_NOT_WORKING )
+GAME( 1999, funlddlx,  0,        funland,     skattv,    0, ROT0,  "Stella",  "Funny Land de Luxe", GAME_NOT_WORKING )
+GAME( 2000, fstation,  0,        fstation,    skattv,    0, ROT0,  "ADP",     "Fun Station Spielekoffer 9 Spiele", GAME_NOT_WORKING )

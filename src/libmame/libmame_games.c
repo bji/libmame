@@ -15,6 +15,7 @@
 #include <string.h>
 #include "hashtable.h"
 #include "emu.h"
+#include "drivenum.h"
 #include "emuopts.h"
 #include "config.h"
 #include "hash.h"
@@ -293,22 +294,17 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
 {
     const char **destsample = gameinfo->sound_samples;
 
+    Hash::Table<Hash::StringKey, int> addedSamples;
+
 	// iterate over sample devices
+
 	samples_device_iterator iter(machineconfig->root_device());
 	for (samples_device *device = iter.first(); device != NULL;
          device = iter.next())
 	{
-		const char *const *samplenames = 
-            ((const samples_interface *) device->static_config())->samplenames;
-
-		if (samplenames == NULL) {
-            continue;
-        }
-        
-        /* iterate over sample names */
-        for (int i = 0; samplenames[i]; i++) {
-            const char *samplename = samplenames[i];
-
+		samples_iterator sampiter(*device);
+		for (const char *samplename = sampiter.first(); samplename != NULL; samplename = sampiter.next())
+		{
             /* "*" sample indicates the sample source */
             if (*samplename == '*') {
                 if (!just_count && (gameinfo->sound_samples_source == -1) &&
@@ -320,25 +316,20 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
                 }
                 continue;
             }
-
-            /* Find the index of the first sample with the same name as this */
-            int j;
-            for (j = 0; j < i; j++) {
-                if (!strcmp(samplenames[j], samplename)) {
-                    break;
-                }
+            
+            int *val;
+            if (addedSamples.Put(samplename, val)) {
+                // Already there, skip it
+                continue;
             }
+            *val = 1;
 
-            /* If this is the first occurrence of this sample name, then use
-               it; otherwise it's a duplicate that we already used so ignore */
-            if (j == i) {
-                if (just_count) {
-                    gameinfo->sound_samples_count++;
-                }
-                else {
-                    *destsample = samplename;
-                    destsample++;
-                }
+            if (just_count) {
+                gameinfo->sound_samples_count++;
+            }
+            else {
+                *destsample = samplename;
+                destsample++;
             }
         }
     }
@@ -452,12 +443,11 @@ static void convert_chips(const machine_config *machineconfig,
 static void convert_settings(const ioport_list *ioportlist,
                              GameInfo *gameinfo)
 {
-	input_port_config *port;
-	const input_field_config *field;
-    
-	for (port = ioportlist->first(); port; port = port->next()) {
-		for (field = port->fieldlist().first(); field; field = field->next()) {
-            if (field->type == IPT_DIPSWITCH) {
+	for (ioport_port *port = ioportlist->first(); port != NULL; 
+         port = port->next())
+		for (ioport_field *field = port->first_field(); field != NULL; 
+             field = field->next())
+            if (field->type() == IPT_DIPSWITCH) {
                 gameinfo->dipswitch_count++;
             }
         }

@@ -38,6 +38,7 @@
 
 PALETTE_INIT( karnov )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	int i;
 
 	for (i = 0; i < machine.total_colors(); i++)
@@ -127,7 +128,7 @@ SCREEN_UPDATE_IND16( karnov )
 {
 	karnov_state *state = screen.machine().driver_data<karnov_state>();
 	draw_background(screen.machine(), bitmap, cliprect);
-	screen.machine().device<deco_karnovsprites_device>("spritegen")->draw_sprites(screen.machine(), bitmap, cliprect,  screen.machine().generic.buffered_spriteram.u16, 0x800, 0);
+	screen.machine().device<deco_karnovsprites_device>("spritegen")->draw_sprites(screen.machine(), bitmap, cliprect, state->m_spriteram->buffer(), 0x800, 0);
 	state->m_fix_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
@@ -145,18 +146,16 @@ static TILE_GET_INFO( get_fix_tile_info )
 			0);
 }
 
-WRITE16_HANDLER( karnov_videoram_w )
+WRITE16_MEMBER(karnov_state::karnov_videoram_w)
 {
-	karnov_state *state = space->machine().driver_data<karnov_state>();
-	COMBINE_DATA(&state->m_videoram[offset]);
-	state->m_fix_tilemap->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_videoram[offset]);
+	m_fix_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( karnov_playfield_swap_w )
+WRITE16_MEMBER(karnov_state::karnov_playfield_swap_w)
 {
-	karnov_state *state = space->machine().driver_data<karnov_state>();
 	offset = ((offset & 0x1f) << 5) | ((offset & 0x3e0) >> 5);
-	COMBINE_DATA(&state->m_pf_data[offset]);
+	COMBINE_DATA(&m_pf_data[offset]);
 }
 
 /******************************************************************************/

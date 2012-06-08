@@ -154,7 +154,7 @@ float bitbanger_device::tune_value(void)
 UINT32 bitbanger_device::baud_value(void)
 {
 	static const float bauds[] = { 150.0f, 300.0f, 600.0f, 1200.0f, 2400.0f, 4800.0f, 9600.0f,
-            14400.0f, 28800.0f, 38400.0f, 57600.0f, 115200.0f};
+            14400.0f, 19200.0f, 28800.0f, 38400.0f, 57600.0f, 115200.0f};
 	float result = tune_value() * bauds[m_baud];
 	return (UINT32)result;
 }
@@ -167,7 +167,7 @@ UINT32 bitbanger_device::baud_value(void)
 const char *bitbanger_device::baud_string(void)
 {
 	static const char *const bauds[] = { "150", "300", "600", "1200", "2400", "4800",
-                     "9600", "14400", "28800", "38400", "57600", "115200"};
+                     "9600", "14400", "19200", "28800", "38400", "57600", "115200"};
 
 	return(bauds[m_baud]);
 }
@@ -303,8 +303,6 @@ void bitbanger_device::bytes_to_bits_81N(void)
 
 void bitbanger_device::device_start(void)
 {
-	const bitbanger_config *config = (const bitbanger_config *) static_config();
-
 	/* output config */
 	m_build_count = 0;
 	m_output_timer = timer_alloc(TIMER_OUTPUT);
@@ -316,13 +314,13 @@ void bitbanger_device::device_start(void)
 	m_input_buffer_cursor = 0;
 
 	/* defaults */
-	m_mode = config->m_default_mode;
-	m_baud = config->m_default_baud;
-	m_tune = config->m_default_tune;
+	m_mode = m_default_mode;
+	m_baud = m_default_baud;
+	m_tune = m_default_tune;
 	m_current_baud = attotime::from_hz(baud_value());
 
 	/* callback */
-	m_input_callback.resolve(config->m_input_callback, *this);
+	m_input_func.resolve(m_input_callback, *this);
 }
 
 
@@ -333,6 +331,18 @@ void bitbanger_device::device_start(void)
 
 void bitbanger_device::device_config_complete(void)
 {
+	const _bitbanger_config *intf = reinterpret_cast<const _bitbanger_config *>(static_config());
+	if(intf != NULL)
+	{
+		*static_cast<_bitbanger_config *>(this) = *intf;
+	}
+	else
+	{
+		memset(&m_input_callback, 0, sizeof(m_input_callback));
+		m_default_mode = 0;
+		m_default_baud = 0;
+		m_default_tune = 0;
+	}
 	update_names();
 }
 
@@ -433,10 +443,7 @@ void bitbanger_device::set_input_line(UINT8 line)
 	if (m_current_input != line)
 	{
 		m_current_input = line;
-		if (!m_input_callback.isnull())
-		{
-			m_input_callback(line ? ASSERT_LINE : CLEAR_LINE);
-		}
+		m_input_func(line ? ASSERT_LINE : CLEAR_LINE);
 	}
 }
 

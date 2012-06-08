@@ -163,9 +163,10 @@ endif
 
 # uncomment and specify architecture-specific optimizations here
 # some examples:
-#   optimize for I686:   ARCHOPTS = -march=pentiumpro
-#   optimize for Core 2: ARCHOPTS = -march=core2
-#   optimize for G4:     ARCHOPTS = -mcpu=G4
+#   ARCHOPTS = -march=pentiumpro  # optimize for I686
+#   ARCHOPTS = -march=core2       # optimize for Core 2
+#   ARCHOPTS = -march=native      # optimize for local machine (auto detect)
+#   ARCHOPTS = -mcpu=G4           # optimize for G4
 # note that we leave this commented by default so that you can
 # configure this in your environment and never have to think about it
 # ARCHOPTS =
@@ -222,6 +223,12 @@ BUILD_ZLIB = 1
 # space and compile time, and would typically only be enabled for a final
 # build
 # STATIC = 1
+
+# uncomment next line to build libflac as part of MAME build
+BUILD_FLAC = 1
+
+# uncomment next line to build jpeglib as part of MAME build
+BUILD_JPEGLIB = 1
 
 # uncomment next line to include the symbols
 # SYMBOLS = 1
@@ -471,7 +478,14 @@ endif
 
 # need to ensure FLAC functions are statically linked
 ifndef BUILD_LIBMAME
+ifeq ($(BUILD_FLAC),1)
 DEFS += -DFLAC__NO_DLL
+endif
+endif
+
+# define USE_SYSTEM_JPEGLIB if library shipped with MAME is not used
+ifneq ($(BUILD_JPEGLIB),1)
+DEFS += -DUSE_SYSTEM_JPEGLIB
 endif
 
 
@@ -538,18 +552,14 @@ endif
 # add the optimization flag
 CCOMFLAGS += -O$(OPTIMIZE)
 
-# if we are optimizing, include optimization options
-# and make all errors into warnings
-ifneq ($(OPTIMIZE),0)
-ifneq ($(TARGETOS),os2)
+# add the error warning flag
 ifndef NOWERROR
-CCOMFLAGS += -Werror -fno-strict-aliasing $(ARCHOPTS)
-else
-CCOMFLAGS += -fno-strict-aliasing $(ARCHOPTS)
+CCOMFLAGS += -Werror
 endif
-else
+
+# if we are optimizing, include optimization options
+ifneq ($(OPTIMIZE),0)
 CCOMFLAGS += -fno-strict-aliasing $(ARCHOPTS)
-endif
 endif
 
 # add a basic set of warnings
@@ -670,8 +680,6 @@ VERSIONOBJ = $(OBJ)/version.o
 EMUINFOOBJ = $(OBJ)/$(TARGET)/$(TARGET).o
 DRIVLISTSRC = $(OBJ)/$(TARGET)/$(SUBTARGET)/drivlist.c
 DRIVLISTOBJ = $(OBJ)/$(TARGET)/$(SUBTARGET)/drivlist.o
-DEVLISTSRC = $(OBJ)/$(TARGET)/$(SUBTARGET)/devlist.c
-DEVLISTOBJ = $(OBJ)/$(TARGET)/$(SUBTARGET)/devlist.o
 
 
 
@@ -701,13 +709,30 @@ LIBS += -lz
 ZLIB =
 endif
 
+# add flac library
+ifeq ($(BUILD_FLAC),1)
+INCPATH += -I$(SRC)/lib/util
+FLAC_LIB = $(OBJ)/libflac.a
+# $(OBJ)/libflac++.a
+else
+LIBS += -lFLAC
+FLAC_LIB =
+endif
+
+# add jpeglib image library
+ifeq ($(BUILD_JPEGLIB),1)
+INCPATH += -I$(SRC)/lib/libjpeg
+JPEG_LIB = $(OBJ)/libjpeg.a
+else
+LIBS += -ljpeg
+JPEG_LIB =
+endif
+
 # add SoftFloat floating point emulation library
 SOFTFLOAT = $(OBJ)/libsoftfloat.a
 
 # add formats emulation library
 FORMATS_LIB = $(OBJ)/libformats.a
-
-JPEG_LIB = $(OBJ)/libjpeg.a
 
 #-------------------------------------------------
 # 'default' target needs to go here, before the 
@@ -720,9 +745,8 @@ default: maketree buildtools emulator
 .PHONY: all
 all: default tools
 
-FLAC_LIB = $(OBJ)/libflac.a 
-# $(OBJ)/libflac++.a
 
+7Z_LIB = $(OBJ)/lib7z.a 
 
 #-------------------------------------------------
 # defines needed by multiple make files 
@@ -823,15 +847,15 @@ $(sort $(OBJDIRS)):
 
 ifndef EXECUTABLE_DEFINED
 
-# always recompile the version string
-$(VERSIONOBJ): $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(ZLIB) $(SOFTFLOAT) $(FORMATS_LIB) $(LIBOCORE) $(RESFILE)
-
-$(EMULATOR): $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(JPEG_LIB) $(FLAC_LIB) $(FORMATS_LIB) $(LIBOCORE) $(ZLIB) $(RESFILE)
+$(EMULATOR): $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(JPEG_LIB) $(FLAC_LIB) $(7Z_LIB) $(FORMATS_LIB) $(ZLIB) $(LIBOCORE) $(RESFILE)
+	$(CC) $(CDEFS) $(CFLAGS) -c $(SRC)/version.c -o $(VERSIONOBJ)
 	@echo Linking $@...
 	$(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@
 ifeq ($(TARGETOS),win32)
 ifdef SYMBOLS
+ifndef MSVC_BUILD
 	$(OBJDUMP) --section=.text --line-numbers --syms --demangle $@ >$(FULLNAME).sym
+endif
 endif
 endif
 
@@ -868,17 +892,9 @@ $(DRIVLISTOBJ): $(DRIVLISTSRC)
 	@echo Compiling $<...
 	$(CC) $(CDEFS) $(CFLAGS) -c $< -o $@
 
-$(DEVLISTOBJ): $(DEVLISTSRC)
-	@echo Compiling $<...
-	$(CC) $(CDEFS) $(CFLAGS) -c $< -o $@
-
 $(DRIVLISTSRC): $(SRC)/$(TARGET)/$(SUBTARGET).lst $(MAKELIST_TARGET)
 	@echo Building driver list $<...
 	@$(MAKELIST) $< >$@
-
-$(DEVLISTSRC): $(SRC)/$(TARGET)/$(SUBTARGET)_dev.lst $(MAKEDEV_TARGET)
-	@echo Building device list $<...
-	@$(MAKEDEV) $< >$@
 
 $(OBJ)/%.a:
 	$(ECHO) Archiving $@...

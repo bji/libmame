@@ -21,7 +21,6 @@
 # for details
 #-------------------------------------------------
 
-
 # uncomment and edit next line to specify a distribution
 # supported debian-stable, ubuntu-intrepid
 
@@ -48,17 +47,20 @@
 
 USE_DISPATCH_GL = 1
 
-# uncomment and change the next line to compile and link to specific
-# SDL library. This is currently supported for unix and win32.
+# The following settings are currently supported for unix only.
 # There is no need to play with this option unless you are doing
 # active development on sdlmame or SDL.
 
-ifeq ($(TARGETOS),win32)
-#SDL_INSTALL_ROOT = /usr/local/sdl13w32
-else
-#SDL_INSTALL_ROOT = /usr/local/sdl13
-#SDL_INSTALL_ROOT = /usr/local/test
-endif
+# uncomment the next line to compile and link against SDL2.0
+
+# SDL_LIBVER = sdl2
+
+# uncomment the next line to use couriersud's multi-keyboard patch for sdl2.0
+# SDL2_MULTIAPI = 1
+
+# uncomment the next line to specify where you have installed
+# SDL. Equivalent to the ./configure --prefix=<path>
+# SDL_INSTALL_ROOT = /usr/local/sdl13
 
 # uncomment and change the next line to build the gtk debugger for win32
 # Get what you need here: http://www.gtk.org/download-windows.html
@@ -69,6 +71,25 @@ endif
 ###########################################################################
 ##################   END USER-CONFIGURABLE OPTIONS   ######################
 ###########################################################################
+
+ifndef SDL_LIBVER
+SDL_LIBVER = sdl
+endif
+
+ifdef SDL_INSTALL_ROOT
+SDL_CONFIG = $(SDL_INSTALL_ROOT)/bin/$(SDL_LIBVER)-config
+else
+SDL_CONFIG = $(SDL_LIBVER)-config
+endif
+
+ifeq ($(SDL_LIBVER),sdl2)
+DEFS += -DSDLMAME_SDL2=1
+	ifeq ($(SDL2_MULTIAPI),1)
+	DEFS += -DSDL2_MULTIAPI
+	endif
+else
+DEFS += -DSDLMAME_SDL2=0
+endif
 
 ifdef NOASM
 DEFS += -DSDLMAME_NOASM
@@ -169,7 +190,7 @@ SYNC_IMPLEMENTATION = tc
 endif
 
 ifeq ($(TARGETOS),macosx)
-BASE_TARGETOS = macosx
+BASE_TARGETOS = unix
 DEFS += -DSDLMAME_UNIX -DSDLMAME_MACOSX -DSDLMAME_DARWIN
 DEBUGOBJS = $(SDLOBJ)/debugosx.o
 SYNC_IMPLEMENTATION = ntc
@@ -189,6 +210,7 @@ else
 CCOMFLAGS += -arch ppc
 LDFLAGS += -arch ppc
 endif
+$(OBJ)/emu/cpu/tms57002/tms57002.o : CCOMFLAGS += -O0
 else	# BIGENDIAN
 ifeq ($(PTR64),1)
 CCOMFLAGS += -arch x86_64
@@ -271,7 +293,7 @@ OSDCOREOBJS = \
 	$(SDLOBJ)/sdlptty_$(BASE_TARGETOS).o	\
 	$(SDLOBJ)/sdlsocket.o	\
 	$(SDLOBJ)/sdlmisc_$(BASE_TARGETOS).o	\
-	$(SDLOBJ)/sdlos_$(BASE_TARGETOS).o	\
+	$(SDLOBJ)/sdlos_$(SDLOS_TARGETOS).o	\
 	$(SDLOBJ)/sdlsync_$(SYNC_IMPLEMENTATION).o     \
 	$(SDLOBJ)/sdlwork.o
 
@@ -288,8 +310,9 @@ OSDOBJS = \
 	$(SDLOBJ)/output.o \
 	$(SDLOBJ)/watchdog.o
 
-# Add SDL1.3 support
-ifdef SDL_INSTALL_ROOT
+# Add SDL2.0 support
+
+ifeq ($(SDL_LIBVER),sdl2)
 OSDOBJS += $(SDLOBJ)/draw13.o
 endif
 
@@ -312,10 +335,38 @@ INCPATH += -include $(SDLSRC)/sdlprefix.h
 # BASE_TARGETOS specific configurations
 #-------------------------------------------------
 
+SDLOS_TARGETOS = $(BASE_TARGETOS)
+
 #-------------------------------------------------
 # Unix
 #-------------------------------------------------
 ifeq ($(BASE_TARGETOS),unix)
+
+#-------------------------------------------------
+# Mac OS X
+#-------------------------------------------------
+
+ifeq ($(TARGETOS),macosx)
+OSDCOREOBJS += $(SDLOBJ)/osxutils.o
+SDLOS_TARGETOS = macosx
+
+ifndef MACOSX_USE_LIBSDL
+# Compile using framework (compile using libSDL is the exception)
+LIBS += -framework SDL -framework Cocoa -framework OpenGL -lpthread
+else
+# Compile using installed libSDL (Fink or MacPorts):
+#
+# Remove the "/SDL" component from the include path so that we can compile
+# files (header files are #include "SDL/something.h", so the extra "/SDL"
+# causes a significant problem)
+INCPATH += `sdl-config --cflags | sed 's:/SDL::'`
+CCOMFLAGS += -DNO_SDL_GLEXT
+# Remove libSDLmain, as its symbols conflict with SDLMain_tmpl.m
+LIBS += `sdl-config --libs | sed 's/-lSDLmain//'` -lpthread
+DEFS += -DMACOSX_USE_LIBSDL
+endif   # MACOSX_USE_LIBSDL
+
+else   # ifeq ($(TARGETOS),macosx)
 
 DEFS += -DSDLMAME_UNIX
 DEBUGOBJS = $(SDLOBJ)/debugwin.o $(SDLOBJ)/dview.o $(SDLOBJ)/debug-sup.o $(SDLOBJ)/debug-intf.o
@@ -323,6 +374,28 @@ LIBGL = -lGL
 ifeq ($(NO_X11),1)
 NO_DEBUGGER = 1
 endif
+
+INCPATH += `$(SDL_CONFIG) --cflags  | sed -e 's:/SDL[2]*::' -e 's:\(-D[^ ]*\)::g'`
+CCOMFLAGS += `$(SDL_CONFIG) --cflags  | sed -e 's:/SDL[2]*::' -e 's:\(-I[^ ]*\)::g'`
+LIBS += -lm `$(SDL_CONFIG) --libs`
+
+ifeq ($(SDL_LIBVER),sdl2)
+ifdef SDL_INSTALL_ROOT
+# FIXME: remove the directfb ref. later. This is just there for now to work around an issue with SDL1.3 and SDL2.0
+INCPATH += -I$(SDL_INSTALL_ROOT)/include/directfb
+endif
+endif
+
+INCPATH += `pkg-config --cflags fontconfig`
+LIBS += `pkg-config --libs fontconfig`
+
+ifeq ($(SDL_LIBVER),sdl2)
+LIBS += -lSDL2_ttf -lutil
+else
+LIBS += -lSDL_ttf -lutil
+endif
+
+endif # not Mac OS X
 
 ifneq (,$(findstring ppc,$(UNAME)))
 # override for preprocessor weirdness on PPC Linux
@@ -349,32 +422,6 @@ CCOMFLAGS += -m32
 LDFLAGS += -m32
 endif
 endif
-
-ifndef SDL_INSTALL_ROOT
-INCPATH += `sdl-config --cflags  | sed -e 's:/SDL::' -e 's:\(-D[^ ]*\)::g'`
-CCOMFLAGS += `sdl-config --cflags  | sed -e 's:/SDL::' -e 's:\(-I[^ ]*\)::g'`
-LIBS += -lm `sdl-config --libs`
-
-else
-# The commented out statements document what sdl-config returns when build from svn.
-# sdl-config --libs on ubuntu returns "-L/usr/lib -lSDL" which is not what we really
-# want in a multi-version SDL environment. Should the svn sdl-config at some point
-# return the same output, we need the commented out section again.
-
-#INCPATH += -I$(SDL_INSTALL_ROOT)/include
-#CCOMFLAGS += -D_GNU_SOURCE=1
-#LIBS += -lm -L$(SDL_INSTALL_ROOT)/lib -Wl,-rpath,$(SDL_INSTALL_ROOT)/lib -lSDL
-
-# FIXME: remove the directfb ref. later. This is just there for now to work around an issue with SDL1.3.
-INCPATH += -I$(SDL_INSTALL_ROOT)/include/directfb
-INCPATH += `$(SDL_INSTALL_ROOT)/bin/sdl-config --cflags  | sed -e 's:/SDL::' -e 's:\(-D[^ ]*\)::g'`
-CCOMFLAGS += `$(SDL_INSTALL_ROOT)/bin/sdl-config --cflags  | sed -e 's:/SDL::' -e 's:\(-I[^ ]*\)::g'`
-LIBS += -lm `$(SDL_INSTALL_ROOT)/bin/sdl-config --libs`
-endif
-
-INCPATH += `pkg-config --cflags fontconfig`
-LIBS += `pkg-config --libs fontconfig`
-LIBS += -lSDL_ttf -lutil
 
 endif # Unix
 
@@ -407,31 +454,6 @@ LIBS += -lSDL.dll
 LIBS += -luser32 -lgdi32 -lddraw -ldsound -ldxguid -lwinmm -ladvapi32 -lcomctl32 -lshlwapi
 
 endif	# Win32
-
-#-------------------------------------------------
-# Mac OS X
-#-------------------------------------------------
-
-ifeq ($(BASE_TARGETOS),macosx)
-OSDCOREOBJS += $(SDLOBJ)/osxutils.o
-
-ifndef MACOSX_USE_LIBSDL
-# Compile using framework (compile using libSDL is the exception)
-LIBS += -framework SDL -framework Cocoa -framework OpenGL -lpthread
-else
-# Compile using installed libSDL (Fink or MacPorts):
-#
-# Remove the "/SDL" component from the include path so that we can compile
-# files (header files are #include "SDL/something.h", so the extra "/SDL"
-# causes a significant problem)
-INCPATH += `sdl-config --cflags | sed 's:/SDL::'`
-CCOMFLAGS += -DNO_SDL_GLEXT
-# Remove libSDLmain, as its symbols conflict with SDLMain_tmpl.m
-LIBS += `sdl-config --libs | sed 's/-lSDLmain//'` -lpthread
-DEFS += -DMACOSX_USE_LIBSDL
-endif
-
-endif	# Mac OS X
 
 #-------------------------------------------------
 # OS/2
@@ -591,9 +613,10 @@ $(OSDCLEAN):
 #-------------------------------------------------
 
 testlib:
-	-echo LIBS: $(LIBS)
-	-echo DEFS: $(DEFS)
-	-echo CORE: $(OSDCOREOBJS)
+	@echo LIBS: $(LIBS)
+	@echo INCPATH: $(INCPATH)
+	@echo DEFS: $(DEFS)
+	@echo CORE: $(OSDCOREOBJS)
 
 ifneq ($(TARGETOS),win32)
 BUILD_VERSION = $(shell grep 'build_version\[\] =' src/version.c | sed -e "s/.*= \"//g" -e "s/ .*//g")

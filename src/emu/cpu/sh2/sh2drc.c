@@ -19,7 +19,6 @@
 #include "debugger.h"
 #include "sh2.h"
 #include "sh2comn.h"
-#include "profiler.h"
 
 CPU_DISASSEMBLE( sh2 );
 extern unsigned DasmSH2(char *buffer, unsigned pc, UINT16 opcode);
@@ -781,7 +780,7 @@ static CPU_RESET( sh2 )
 	UINT32 *m;
 
 	void (*f)(UINT32 data);
-	device_irq_callback save_irqcallback;
+	device_irq_acknowledge_callback save_irqcallback;
 
 	m = sh2->m;
 	tsave = sh2->timer;
@@ -3194,9 +3193,9 @@ static READ32_HANDLER(sh2_internal_a5)
     sh2_internal_map - maps SH2 built-ins
 -------------------------------------------------*/
 
-static ADDRESS_MAP_START( sh2_internal_map, AS_PROGRAM, 32 )
-	AM_RANGE(0x40000000, 0xbfffffff) AM_READ(sh2_internal_a5)
-	AM_RANGE(0xe0000000, 0xffffffff) AM_READWRITE(sh2_internal_r, sh2_internal_w)
+static ADDRESS_MAP_START( sh2_internal_map, AS_PROGRAM, 32, legacy_cpu_device )
+	AM_RANGE(0x40000000, 0xbfffffff) AM_READ_LEGACY(sh2_internal_a5)
+	AM_RANGE(0xe0000000, 0xffffffff) AM_READWRITE_LEGACY(sh2_internal_r, sh2_internal_w)
 ADDRESS_MAP_END
 
 /*-------------------------------------------------

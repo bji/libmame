@@ -17,10 +17,11 @@
 #include "emu.h"
 #include "video/s2636.h"
 #include "cpu/s2650/s2650.h"
-#include "includes/cvs.h"
+#include "includes/quasar.h"
 
 PALETTE_INIT( quasar )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	int i;
 
 	/* allocate the colortable */

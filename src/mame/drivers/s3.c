@@ -2,7 +2,6 @@
     Williams System 3
 */
 
-#define ADDRESS_MAP_MODERN
 
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
@@ -127,4 +126,4 @@ GAME( 1977, httip_l1, 0, williams_s3, williams_s3, williams_s3, ROT0, "Williams"
 GAME( 1977, lucky_l1, 0, williams_s3, williams_s3, williams_s3, ROT0, "Williams", "Lucky Seven (L-1)",		GAME_IS_SKELETON_MECHANICAL)
 GAME( 1978, wldcp_l1, 0, williams_s3, williams_s3, williams_s3, ROT0, "Williams", "World Cup Soccer (L-1)", 	GAME_IS_SKELETON_MECHANICAL)
 GAME( 1978, cntct_l1, 0, williams_s3, williams_s3, williams_s3, ROT0, "Williams", "Contact (L-1)",			GAME_IS_SKELETON_MECHANICAL)
-GAME( 1978, disco_l1, 0, williams_s3, williams_s3, williams_s3, ROT0, "Williams", "Disco Fever (L-1",		GAME_IS_SKELETON_MECHANICAL)
+GAME( 1978, disco_l1, 0, williams_s3, williams_s3, williams_s3, ROT0, "Williams", "Disco Fever (L-1)",		GAME_IS_SKELETON_MECHANICAL)

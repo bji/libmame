@@ -907,7 +907,7 @@ void ui_menu::handle_keys(UINT32 flags)
 
 	/* see if any other UI keys are pressed */
 	if (menu_event.iptkey == IPT_INVALID)
-		for (code = __ipt_ui_start; code <= __ipt_ui_end; code++)
+		for (code = IPT_UI_FIRST + 1; code < IPT_UI_LAST; code++)
 		{
 			if (code == IPT_UI_CONFIGURE || (code == IPT_UI_LEFT && ignoreleft) || (code == IPT_UI_RIGHT && ignoreright) || (code == IPT_UI_PAUSE && ignorepause))
 				continue;
@@ -979,6 +979,7 @@ void ui_menu::stack_push(ui_menu *menu)
 {
 	menu->parent = menu_stack;
 	menu_stack = menu;
+	menu->reset(UI_MENU_RESET_SELECT_FIRST);
 	ui_input_reset(menu->machine());
 }
 

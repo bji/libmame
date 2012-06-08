@@ -37,34 +37,34 @@ static MACHINE_START( m90 )
 
 /***************************************************************************/
 
-static WRITE16_HANDLER( m90_coincounter_w )
+WRITE16_MEMBER(m90_state::m90_coincounter_w)
 {
 	if (ACCESSING_BITS_0_7)
 	{
-		coin_counter_w(space->machine(), 0, data & 0x01);
-		coin_counter_w(space->machine(), 1, data & 0x02);
+		coin_counter_w(machine(), 0, data & 0x01);
+		coin_counter_w(machine(), 1, data & 0x02);
 
 		if (data & 0xfc) logerror("Coin counter %02x\n",data);
 	}
 }
 
-static WRITE16_HANDLER( quizf1_bankswitch_w )
+WRITE16_MEMBER(m90_state::quizf1_bankswitch_w)
 {
 	if (ACCESSING_BITS_0_7)
-		memory_set_bank(space->machine(), "bank1", data & 0xf);
+		membank("bank1")->set_entry(data & 0xf);
 }
 
-static WRITE16_HANDLER( dynablsb_sound_command_w )
+WRITE16_MEMBER(m90_state::dynablsb_sound_command_w)
 {
 	if (ACCESSING_BITS_0_7)
 	{
-		soundlatch_w(space, offset, data);
-		cputag_set_input_line(space->machine(), "soundcpu", INPUT_LINE_NMI, PULSE_LINE);
+		soundlatch_byte_w(space, offset, data);
+		cputag_set_input_line(machine(), "soundcpu", INPUT_LINE_NMI, PULSE_LINE);
 	}
 }
 
 #ifdef UNUSED_FUNCTION
-static WRITE16_HANDLER( unknown_w )
+WRITE16_MEMBER(m90_state::unknown_w)
 {
     printf("%04x    ",data);
 }
@@ -72,35 +72,35 @@ static WRITE16_HANDLER( unknown_w )
 
 /***************************************************************************/
 
-static ADDRESS_MAP_START( m90_main_cpu_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( m90_main_cpu_map, AS_PROGRAM, 16, m90_state )
 	AM_RANGE(0x00000, 0x7ffff) AM_ROM
 	AM_RANGE(0x80000, 0x8ffff) AM_ROMBANK("bank1")	/* Quiz F1 only */
 	AM_RANGE(0xa0000, 0xa3fff) AM_RAM
-	AM_RANGE(0xd0000, 0xdffff) AM_RAM_WRITE(m90_video_w) AM_BASE_MEMBER(m90_state, m_video_data)
-	AM_RANGE(0xe0000, 0xe03ff) AM_RAM_WRITE(paletteram16_xBBBBBGGGGGRRRRR_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0xd0000, 0xdffff) AM_RAM_WRITE(m90_video_w) AM_SHARE("video_data")
+	AM_RANGE(0xe0000, 0xe03ff) AM_RAM_WRITE(paletteram_xBBBBBGGGGGRRRRR_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0xffff0, 0xfffff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( dynablsb_main_cpu_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( dynablsb_main_cpu_map, AS_PROGRAM, 16, m90_state )
 	AM_RANGE(0x00000, 0x3ffff) AM_ROM
-	AM_RANGE(0x6000e, 0x60fff) AM_RAM AM_BASE_SIZE_MEMBER(m90_state, m_spriteram, m_spriteram_size)
+	AM_RANGE(0x6000e, 0x60fff) AM_RAM AM_SHARE("spriteram")
 	AM_RANGE(0xa0000, 0xa3fff) AM_RAM
-	AM_RANGE(0xd0000, 0xdffff) AM_RAM_WRITE(m90_video_w) AM_BASE_MEMBER(m90_state, m_video_data)
-	AM_RANGE(0xe0000, 0xe03ff) AM_RAM_WRITE(paletteram16_xBBBBBGGGGGRRRRR_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0xd0000, 0xdffff) AM_RAM_WRITE(m90_video_w) AM_SHARE("video_data")
+	AM_RANGE(0xe0000, 0xe03ff) AM_RAM_WRITE(paletteram_xBBBBBGGGGGRRRRR_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0xffff0, 0xfffff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( bomblord_main_cpu_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( bomblord_main_cpu_map, AS_PROGRAM, 16, m90_state )
 	AM_RANGE(0x00000, 0x7ffff) AM_ROM
 	AM_RANGE(0xa0000, 0xa3fff) AM_RAM
-	AM_RANGE(0xc000e, 0xc0fff) AM_RAM AM_BASE_SIZE_MEMBER(m90_state, m_spriteram, m_spriteram_size)
-	AM_RANGE(0xd0000, 0xdffff) AM_RAM_WRITE(m90_video_w) AM_BASE_MEMBER(m90_state, m_video_data)
-	AM_RANGE(0xe0000, 0xe03ff) AM_RAM_WRITE(paletteram16_xBBBBBGGGGGRRRRR_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0xc000e, 0xc0fff) AM_RAM AM_SHARE("spriteram")
+	AM_RANGE(0xd0000, 0xdffff) AM_RAM_WRITE(m90_video_w) AM_SHARE("video_data")
+	AM_RANGE(0xe0000, 0xe03ff) AM_RAM_WRITE(paletteram_xBBBBBGGGGGRRRRR_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0xffff0, 0xfffff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( m90_main_cpu_io_map, AS_IO, 16 )
-	AM_RANGE(0x00, 0x01) AM_DEVWRITE("m72", m72_sound_command_w)
+static ADDRESS_MAP_START( m90_main_cpu_io_map, AS_IO, 16, m90_state )
+	AM_RANGE(0x00, 0x01) AM_DEVWRITE_LEGACY("m72", m72_sound_command_w)
 	AM_RANGE(0x00, 0x01) AM_READ_PORT("P1_P2")
 	AM_RANGE(0x02, 0x03) AM_WRITE(m90_coincounter_w)
 	AM_RANGE(0x02, 0x03) AM_READ_PORT("SYSTEM")
@@ -109,7 +109,7 @@ static ADDRESS_MAP_START( m90_main_cpu_io_map, AS_IO, 16 )
 	AM_RANGE(0x80, 0x8f) AM_WRITE(m90_video_control_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( dynablsb_main_cpu_io_map, AS_IO, 16 )
+static ADDRESS_MAP_START( dynablsb_main_cpu_io_map, AS_IO, 16, m90_state )
 	AM_RANGE(0x00, 0x01) AM_WRITE(dynablsb_sound_command_w)
 	AM_RANGE(0x00, 0x01) AM_READ_PORT("P1_P2")
 	AM_RANGE(0x02, 0x03) AM_WRITE(m90_coincounter_w)
@@ -123,34 +123,34 @@ ADDRESS_MAP_END
 
 /*****************************************************************************/
 
-static ADDRESS_MAP_START( m90_sound_cpu_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( m90_sound_cpu_map, AS_PROGRAM, 8, m90_state )
 	AM_RANGE(0x0000, 0xefff) AM_ROM
 	AM_RANGE(0xf000, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( m90_sound_cpu_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( m90_sound_cpu_io_map, AS_IO, 8, m90_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x01) AM_DEVREADWRITE("ymsnd", ym2151_r, ym2151_w)
-	AM_RANGE(0x80, 0x80) AM_READ(soundlatch_r)
-	AM_RANGE(0x80, 0x81) AM_DEVWRITE("m72", rtype2_sample_addr_w)
-	AM_RANGE(0x82, 0x82) AM_DEVWRITE("m72", m72_sample_w)
-	AM_RANGE(0x83, 0x83) AM_DEVWRITE("m72", m72_sound_irq_ack_w)
-	AM_RANGE(0x84, 0x84) AM_DEVREAD("m72", m72_sample_r)
+	AM_RANGE(0x00, 0x01) AM_DEVREADWRITE_LEGACY("ymsnd", ym2151_r, ym2151_w)
+	AM_RANGE(0x80, 0x80) AM_READ(soundlatch_byte_r)
+	AM_RANGE(0x80, 0x81) AM_DEVWRITE_LEGACY("m72", rtype2_sample_addr_w)
+	AM_RANGE(0x82, 0x82) AM_DEVWRITE_LEGACY("m72", m72_sample_w)
+	AM_RANGE(0x83, 0x83) AM_DEVWRITE_LEGACY("m72", m72_sound_irq_ack_w)
+	AM_RANGE(0x84, 0x84) AM_DEVREAD_LEGACY("m72", m72_sample_r)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( dynablsb_sound_cpu_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( dynablsb_sound_cpu_io_map, AS_IO, 8, m90_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x01) AM_DEVREADWRITE("ymsnd", ym2151_r, ym2151_w)
-	AM_RANGE(0x80, 0x80) AM_READ(soundlatch_r)
-	AM_RANGE(0x82, 0x82) AM_DEVWRITE("dac", dac_signed_w)
+	AM_RANGE(0x00, 0x01) AM_DEVREADWRITE_LEGACY("ymsnd", ym2151_r, ym2151_w)
+	AM_RANGE(0x80, 0x80) AM_READ(soundlatch_byte_r)
+	AM_RANGE(0x82, 0x82) AM_DEVWRITE_LEGACY("dac", dac_signed_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( m99_sound_cpu_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( m99_sound_cpu_io_map, AS_IO, 8, m90_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x01) AM_DEVWRITE("m72", poundfor_sample_addr_w)
-	AM_RANGE(0x40, 0x41) AM_DEVREADWRITE("ymsnd", ym2151_r, ym2151_w)
-	AM_RANGE(0x42, 0x42) AM_READ(soundlatch_r)
-	AM_RANGE(0x42, 0x42) AM_DEVWRITE("m72", m72_sound_irq_ack_w)
+	AM_RANGE(0x00, 0x01) AM_DEVWRITE_LEGACY("m72", poundfor_sample_addr_w)
+	AM_RANGE(0x40, 0x41) AM_DEVREADWRITE_LEGACY("ymsnd", ym2151_r, ym2151_w)
+	AM_RANGE(0x42, 0x42) AM_READ(soundlatch_byte_r)
+	AM_RANGE(0x42, 0x42) AM_DEVWRITE_LEGACY("m72", m72_sound_irq_ack_w)
 ADDRESS_MAP_END
 
 /*****************************************************************************/
@@ -669,13 +669,13 @@ GFXDECODE_END
 
 static const ym2151_interface ym2151_config =
 {
-	m72_ym2151_irq_handler
+	DEVCB_LINE(m72_ym2151_irq_handler)
 };
 
 /* this bootleg polls the YM2151 instead of taking interrupts from it */
 static const ym2151_interface dynablsb_ym2151_config =
 {
-	NULL
+	DEVCB_NULL
 };
 
 static INTERRUPT_GEN( fake_nmi )
@@ -696,7 +696,7 @@ static INTERRUPT_GEN( bomblord_fake_nmi )
 
 static INTERRUPT_GEN( m90_interrupt )
 {
-	generic_pulse_irq_line(device, NEC_INPUT_LINE_INTP0);
+	generic_pulse_irq_line(device, NEC_INPUT_LINE_INTP0, 1);
 }
 
 static INTERRUPT_GEN( dynablsb_interrupt )
@@ -948,6 +948,24 @@ ROM_START( dynablstb )
 	/* the samples are in the Z80 ROM in this bootleg */
 ROM_END
 
+ROM_START( dynablstb2 )
+	ROM_REGION( CODE_SIZE, "maincpu", 0 )
+    ROM_LOAD16_BYTE( "2.bin", 0x000001, 0x020000, CRC(9c3e996a) SHA1(9244f6a8b498d0f488bbfc68465916ea0560f3be) )
+    ROM_LOAD16_BYTE( "3.bin", 0x000000, 0x020000, CRC(697a2ed9) SHA1(d329987f7a0321414347b8e6a6dfc4304fbe4987) )
+    ROM_COPY( "maincpu", 0x3fff0,  0xffff0, 0x10 )	/* start vector */
+
+	ROM_REGION( 0x10000, "soundcpu", 0 )
+	ROM_LOAD( "db1-17.bin",    0x0000, 0x10000, CRC(e693c32f) SHA1(b6f228d26318718eedae765de9479706a3e4c38d) )
+
+	ROM_REGION( 0x100000, "gfx1", 0 )
+	ROM_LOAD( "bbm-c0.66",    0x000000, 0x40000, CRC(695d2019) SHA1(3537e9fb0e7dc13d6113b4af71cba3c73392335a) )
+	ROM_LOAD( "bbm-c1.67",    0x040000, 0x40000, CRC(4c7c8bbc) SHA1(31ab5557d96c4184a9c02ed1c309f3070d148e25) )
+	ROM_LOAD( "bbm-c2.68",    0x080000, 0x40000, CRC(0700d406) SHA1(0d43a31a726b0de0004beef41307de2508106b69) )
+	ROM_LOAD( "bbm-c3.69",    0x0c0000, 0x40000, CRC(3c3613af) SHA1(f9554a73e95102333e449f6e81f2bb817ec00881) )
+
+	ROM_REGION( 0x20000, "samples", ROMREGION_ERASE00 )	/* samples */
+	/* the samples are in the Z80 ROM in this bootleg */
+ROM_END
 
 /*
 New Dyna Blaster Global Quest
@@ -1167,15 +1185,16 @@ ROM_END
 
 static DRIVER_INIT( quizf1 )
 {
-	memory_configure_bank(machine, "bank1", 0, 16, machine.region("user1")->base(), 0x10000);
-	machine.device("maincpu")->memory().space(AS_IO)->install_legacy_write_handler(0x04, 0x05, FUNC(quizf1_bankswitch_w));
+	m90_state *state = machine.driver_data<m90_state>();
+	state->membank("bank1")->configure_entries(0, 16, state->memregion("user1")->base(), 0x10000);
+	machine.device("maincpu")->memory().space(AS_IO)->install_write_handler(0x04, 0x05, write16_delegate(FUNC(m90_state::quizf1_bankswitch_w),state));
 }
 
 
 
 static DRIVER_INIT( bomblord )
 {
-	UINT16 *ROM = (UINT16 *)(machine.region("maincpu")->base());
+	UINT16 *ROM = (UINT16 *)(machine.root_device().memregion("maincpu")->base());
 
 	for (int i = 0; i < 0x100000 / 2; i += 4)
 	{
@@ -1192,7 +1211,8 @@ GAME( 1991, hasamu,   0,        hasamu,   hasamu,   0,        ROT0, "Irem", "Has
 GAME( 1991, dynablst, 0,        bombrman, dynablst, 0,        ROT0, "Irem (licensed from Hudson Soft)", "Dynablaster / Bomber Man", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
 GAME( 1991, bombrman, dynablst, bombrman, bombrman, 0,        ROT0, "Irem (licensed from Hudson Soft)", "Bomber Man (Japan)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
 GAME( 1991, atompunk, dynablst, bombrman, atompunk, 0,        ROT0, "Irem America (licensed from Hudson Soft)", "Atomic Punk (US)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
-GAME( 1991, dynablstb,dynablst, dynablsb, dynablsb, 0,        ROT0, "bootleg", "Dynablaster / Bomber Man (bootleg)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
+GAME( 1991, dynablstb,dynablst, dynablsb, dynablsb, 0,        ROT0, "bootleg (Seitu)", "Dynablaster / Bomber Man (bootleg)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
+GAME( 1991, dynablstb2,dynablst,dynablsb, dynablsb, 0,        ROT0, "bootleg (Seitu)", "Dynablaster / Bomber Man (bootleg, alt)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
 GAME( 1992, bbmanw,   0,        bbmanw,   bbmanw,   0,        ROT0, "Irem", "Bomber Man World / New Dyna Blaster - Global Quest", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
 GAME( 1992, bbmanwj,  bbmanw,   bbmanwj,  bbmanwj,  0,        ROT0, "Irem", "Bomber Man World (Japan)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
 GAME( 1992, newapunk, bbmanw,   bbmanw,   bbmanwj,  0,        ROT0, "Irem America", "New Atomic Punk - Global Quest (US)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )

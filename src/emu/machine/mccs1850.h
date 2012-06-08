@@ -47,11 +47,9 @@ class mccs1850_device :	public device_t,
 						public device_nvram_interface
 {
 public:
-	typedef delegate<void (bool state)> cb_t;
-
     // construction/destruction
     mccs1850_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
-	void set_cb(cb_t int_cb, cb_t pse_cb, cb_t nuc_cb);
+	void set_cb(line_cb_t int_cb, line_cb_t pse_cb, line_cb_t nuc_cb);
 
 	DECLARE_WRITE_LINE_MEMBER( ce_w );
 	DECLARE_WRITE_LINE_MEMBER( sck_w );
@@ -67,10 +65,6 @@ protected:
     virtual void device_reset();
 	virtual void device_timer(emu_timer &timer, device_timer_id id, int param, void *ptr);
 
-	// device_rtc_interface overrides
-	virtual void rtc_set_time(int year, int month, int day, int day_of_week, int hour, int minute, int second);
-	virtual bool rtc_is_year_2000_compliant() { return false; }
-
 	// device_nvram_interface overrides
 	virtual void nvram_default();
 	virtual void nvram_read(emu_file &file);
@@ -85,7 +79,7 @@ private:
 
 	static const device_timer_id TIMER_CLOCK = 0;
 
-	cb_t int_cb, pse_cb, nuc_cb;
+	line_cb_t int_cb, pse_cb, nuc_cb;
 
 	UINT8 m_ram[0x80];			// RAM
 

@@ -302,7 +302,7 @@ INLINE int sign_double(double x)
     structure based on the configured type
 -------------------------------------------------*/
 
-void ppccom_init(powerpc_state *ppc, powerpc_flavor flavor, UINT8 cap, int tb_divisor, legacy_cpu_device *device, device_irq_callback irqcallback)
+void ppccom_init(powerpc_state *ppc, powerpc_flavor flavor, UINT8 cap, int tb_divisor, legacy_cpu_device *device, device_irq_acknowledge_callback irqcallback)
 {
 	const powerpc_config *config = (const powerpc_config *)device->static_config();
 
@@ -318,6 +318,9 @@ void ppccom_init(powerpc_state *ppc, powerpc_flavor flavor, UINT8 cap, int tb_di
 	ppc->program = device->space(AS_PROGRAM);
 	ppc->direct = &ppc->program->direct();
 	ppc->system_clock = (config != NULL) ? config->bus_frequency : device->clock();
+	ppc->dcr_read_func = (config != NULL) ? config->dcr_read_func : NULL;
+	ppc->dcr_write_func = (config != NULL) ? config->dcr_write_func : NULL;
+
 	ppc->tb_divisor = (ppc->tb_divisor * device->clock() + ppc->system_clock / 2 - 1) / ppc->system_clock;
 	ppc->codexor = 0;
 	if (!(cap & PPCCAP_4XX) && device->space_config()->m_endianness != ENDIANNESS_NATIVE)
@@ -1084,11 +1087,15 @@ void ppccom_execute_mfdcr(powerpc_state *ppc)
 	}
 
 	/* default handling */
-	mame_printf_debug("DCR %03X read\n", ppc->param0);
-	if (ppc->param0 < ARRAY_LENGTH(ppc->dcr))
-		ppc->param1 = ppc->dcr[ppc->param0];
-	else
-		ppc->param1 = 0;
+	if (!ppc->dcr_read_func) {
+		mame_printf_debug("DCR %03X read\n", ppc->param0);
+		if (ppc->param0 < ARRAY_LENGTH(ppc->dcr))
+			ppc->param1 = ppc->dcr[ppc->param0];
+		else
+			ppc->param1 = 0;
+	} else {
+		ppc->param1 = ppc->dcr_read_func(ppc->device,ppc->param0,0xffffffff);
+	}
 }
 
 
@@ -1172,9 +1179,13 @@ void ppccom_execute_mtdcr(powerpc_state *ppc)
 	}
 
 	/* default handling */
-	mame_printf_debug("DCR %03X write = %08X\n", ppc->param0, ppc->param1);
-	if (ppc->param0 < ARRAY_LENGTH(ppc->dcr))
-		ppc->dcr[ppc->param0] = ppc->param1;
+	if (!ppc->dcr_write_func) {
+		mame_printf_debug("DCR %03X write = %08X\n", ppc->param0, ppc->param1);
+		if (ppc->param0 < ARRAY_LENGTH(ppc->dcr))
+			ppc->dcr[ppc->param0] = ppc->param1;
+	} else {
+		ppc->dcr_write_func(ppc->device,ppc->param0,ppc->param1,0xffffffff);
+	}
 }
 
 
@@ -2146,8 +2157,8 @@ static WRITE8_HANDLER( ppc4xx_spu_w )
     the 4XX
 -------------------------------------------------*/
 
-static ADDRESS_MAP_START( internal_ppc4xx, AS_PROGRAM, 32 )
-	AM_RANGE(0x40000000, 0x4000000f) AM_READWRITE8(ppc4xx_spu_r, ppc4xx_spu_w, 0xffffffff)
+static ADDRESS_MAP_START( internal_ppc4xx, AS_PROGRAM, 32, legacy_cpu_device )
+	AM_RANGE(0x40000000, 0x4000000f) AM_READWRITE8_LEGACY(ppc4xx_spu_r, ppc4xx_spu_w, 0xffffffff)
 ADDRESS_MAP_END
 
 

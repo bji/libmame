@@ -2,7 +2,6 @@
     Sega/Stern Whitestar
 */
 
-#define ADDRESS_MAP_MODERN
 
 #include "emu.h"
 #include "video/mc6845.h"
@@ -18,7 +17,8 @@ public:
         m_dmdcpu(*this, "dmdcpu"),
 		m_mc6845(*this, "mc6845"),
 		m_decobsmt(*this, "decobsmt")
-        { }
+        ,
+		m_vram(*this, "vram"){ }
 
 	required_device<cpu_device> m_maincpu;
 	required_device<cpu_device> m_dmdcpu;
@@ -30,7 +30,7 @@ public:
 	UINT8 m_dmd_status;
 	UINT8 m_dmd_busy;
 
-    UINT8 *m_vram;
+	required_shared_ptr<UINT8> m_vram;
 
 	DECLARE_WRITE8_MEMBER(dmd_latch_w);
     DECLARE_READ8_MEMBER(dmd_latch_r);
@@ -98,12 +98,12 @@ WRITE8_MEMBER(whitestar_state::switch_w)
 
 WRITE8_MEMBER(whitestar_state::bank_w)
 {
-	memory_set_bankptr(machine(), "bank1", machine().region("user1")->base() + (data & 0x1f) * 0x4000);
+	membank("bank1")->set_base(machine().root_device().memregion("user1")->base() + (data & 0x1f) * 0x4000);
 }
 
 WRITE8_MEMBER(whitestar_state::dmd_bank_w)
 {
-	memory_set_bankptr(machine(), "dmd_bank1", machine().region("dmdcpu")->base() + (data & 0x1f) * 0x4000);
+	membank("dmd_bank1")->set_base(machine().root_device().memregion("dmdcpu")->base() + (data & 0x1f) * 0x4000);
 }
 
 READ8_MEMBER(whitestar_state::dmd_latch_r)
@@ -158,7 +158,7 @@ WRITE8_MEMBER(whitestar_state::dmd_status_w)
 
 static ADDRESS_MAP_START( whitestar_dmd_map, AS_PROGRAM, 8, whitestar_state )
 	AM_RANGE(0x0000, 0x1fff) AM_RAM
-	AM_RANGE(0x2000, 0x2fff) AM_RAM AM_BASE(m_vram) // video out
+	AM_RANGE(0x2000, 0x2fff) AM_RAM AM_SHARE("vram") // video out
 	AM_RANGE(0x3000, 0x3000) AM_DEVREADWRITE("mc6845", mc6845_device, register_r, address_w)
 	AM_RANGE(0x3001, 0x3001) AM_DEVWRITE("mc6845", mc6845_device, register_w)
 	AM_RANGE(0x3002, 0x3002) AM_WRITE(dmd_bank_w)
@@ -170,8 +170,8 @@ ADDRESS_MAP_END
 
 static MACHINE_RESET( whitestar )
 {
-	memory_set_bankptr(machine, "bank1", machine.region("user1")->base());
-	memory_set_bankptr(machine, "dmd_bank1", machine.region("dmdcpu")->base());
+	machine.root_device().membank("bank1")->set_base(machine.root_device().memregion("user1")->base());
+	machine.root_device().membank("dmd_bank1")->set_base(machine.root_device().memregion("dmdcpu")->base());
 }
 
 static DRIVER_INIT( whitestar )
@@ -2207,8 +2207,8 @@ ROM_START(spacejmg)
 	ROM_LOAD("spcjam.u7", 0x0000, 0x10000, CRC(c693d853) SHA1(3e81e60967dff496c681962f3ff8c7c1fbb7746a))
 	ROM_REGION(0x1000000, "bsmt", 0 )
 	ROM_LOAD("spcjam.u17", 0x000000, 0x80000, CRC(ccefe457) SHA1(4186dee689fbfc08e5070ccfe8d4be95220cd87b))
-	ROM_LOAD("spcjam.u21", 0x080000, 0x80000, CRC(9e7fe0a6) SHA1(187e5893f84d0c0fd70d15c3978fc3fc51e12a51))
-	ROM_LOAD("spcjam.u36", 0x100000, 0x80000, CRC(7d11e1eb) SHA1(96d4635b1edf8a22947a5cd529ce9025cf7d0c71))
+	ROM_LOAD("spcjamg.u21", 0x080000, 0x80000, CRC(9e7fe0a6) SHA1(187e5893f84d0c0fd70d15c3978fc3fc51e12a51))
+	ROM_LOAD("spcjamg.u36", 0x100000, 0x80000, CRC(7d11e1eb) SHA1(96d4635b1edf8a22947a5cd529ce9025cf7d0c71))
 ROM_END
 ROM_START(spacejmf)
 	ROM_REGION(0x80000, "user1", 0)
@@ -2222,8 +2222,8 @@ ROM_START(spacejmf)
 	ROM_LOAD("spcjam.u7", 0x0000, 0x10000, CRC(c693d853) SHA1(3e81e60967dff496c681962f3ff8c7c1fbb7746a))
 	ROM_REGION(0x1000000, "bsmt", 0 )
 	ROM_LOAD("spcjam.u17", 0x000000, 0x80000, CRC(ccefe457) SHA1(4186dee689fbfc08e5070ccfe8d4be95220cd87b))
-	ROM_LOAD("spcjam.u21", 0x080000, 0x80000, CRC(9e7fe0a6) SHA1(187e5893f84d0c0fd70d15c3978fc3fc51e12a51))
-	ROM_LOAD("spcjam.u36", 0x100000, 0x80000, CRC(7d11e1eb) SHA1(96d4635b1edf8a22947a5cd529ce9025cf7d0c71))
+	ROM_LOAD("spcjamf.u21", 0x080000, 0x80000, CRC(9e7fe0a6) SHA1(187e5893f84d0c0fd70d15c3978fc3fc51e12a51))
+	ROM_LOAD("spcjamf.u36", 0x100000, 0x80000, CRC(7d11e1eb) SHA1(96d4635b1edf8a22947a5cd529ce9025cf7d0c71))
 ROM_END
 ROM_START(spacejmi)
 	ROM_REGION(0x80000, "user1", 0)
@@ -2237,8 +2237,8 @@ ROM_START(spacejmi)
 	ROM_LOAD("spcjam.u7", 0x0000, 0x10000, CRC(c693d853) SHA1(3e81e60967dff496c681962f3ff8c7c1fbb7746a))
 	ROM_REGION(0x1000000, "bsmt", 0 )
 	ROM_LOAD("spcjam.u17", 0x000000, 0x80000, CRC(ccefe457) SHA1(4186dee689fbfc08e5070ccfe8d4be95220cd87b))
-	ROM_LOAD("spcjam.u21", 0x080000, 0x80000, CRC(9e7fe0a6) SHA1(187e5893f84d0c0fd70d15c3978fc3fc51e12a51))
-	ROM_LOAD("spcjam.u36", 0x100000, 0x80000, CRC(7d11e1eb) SHA1(96d4635b1edf8a22947a5cd529ce9025cf7d0c71))
+	ROM_LOAD("spcjami.u21", 0x080000, 0x80000, CRC(9e7fe0a6) SHA1(187e5893f84d0c0fd70d15c3978fc3fc51e12a51))
+	ROM_LOAD("spcjami.u36", 0x100000, 0x80000, CRC(7d11e1eb) SHA1(96d4635b1edf8a22947a5cd529ce9025cf7d0c71))
 ROM_END
 
 /*-------------------------------------------------------------------
@@ -2975,8 +2975,8 @@ ROM_START(ctchzdlx)
 	ROM_REGION(0x010000, "soundcpu", 0)
 	ROM_LOAD("ctcu7d.bin", 0x0000, 0x10000, CRC(92bfe454) SHA1(8182f7ac84addf8bdb7976a85c801edf3424d16b))
 	ROM_REGION(0x1000000, "bsmt", 0)
-	ROM_LOAD("ctcu17.bin", 0x000000, 0x80000, CRC(7ee35d17) SHA1(f2c9b70285926fc782a2e1289532395cd8dbf999))
-	ROM_LOAD("ctcu21.bin", 0x080000, 0x80000, CRC(84dd40ac) SHA1(c9327b95f1730a3aa741540c28078f214af214b8))
+	ROM_LOAD("ctcdxu17.bin", 0x000000, 0x80000, CRC(7ee35d17) SHA1(f2c9b70285926fc782a2e1289532395cd8dbf999))
+	ROM_LOAD("ctcdxu21.bin", 0x080000, 0x80000, CRC(84dd40ac) SHA1(c9327b95f1730a3aa741540c28078f214af214b8))
 ROM_END
 
 /*-------------------------------------------------------------------

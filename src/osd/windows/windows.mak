@@ -160,6 +160,9 @@ CPPONLYFLAGS += /wd4800
 # disable better packing warning
 CPPONLYFLAGS += /wd4371
 
+# disable side effects warning in STL headers
+CPPONLYFLAGS += /wd4548
+
 # disable macro redefinition warning
 CCOMFLAGS += /wd4005
 
@@ -239,11 +242,6 @@ endif
 # add our prefix files to the mix
 CCOMFLAGS += -include $(WINSRC)/winprefix.h
 
-# for 32-bit apps, add unicows for Unicode support on Win9x
-ifneq ($(PTR64),1)
-LIBS += -lunicows
-endif
-
 # ensure we statically link the gcc runtime lib
 LDFLAGS += -static-libgcc
 TEST_GCC = $(shell gcc --version)
@@ -281,7 +279,8 @@ OSDCOREOBJS = \
 	$(WINOBJ)/winutil.o \
 	$(WINOBJ)/winclip.o \
 	$(WINOBJ)/winsocket.o \
-	$(WINOBJ)/winwork.o
+	$(WINOBJ)/winwork.o \
+	$(WINOBJ)/winptty.o
 
 
 

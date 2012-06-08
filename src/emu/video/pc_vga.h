@@ -20,11 +20,12 @@ struct pc_svga_interface
 	int seq_regcount;
 	int gc_regcount;
 	int crtc_regcount;
-	void (*choosevideomode)(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect, const UINT8 *sequencer, const UINT8 *crtc, const UINT8 *gc, int *width, int *height);
+	void (*choosevideomode)(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect, const UINT8 *sequencer, const UINT8 *crtc, int *width, int *height);
 };
 
 void pc_vga_init(running_machine &machine, read8_space_func read_dipswitch, const struct pc_svga_interface *svga_intf);
 void pc_vga_io_init(running_machine &machine, address_space *mem_space, offs_t mem_offset, address_space *io_space, offs_t port_offset);
+void pc_vga_gamtor_io_init(running_machine &machine, address_space *mem_space, offs_t mem_offset, address_space *io_space, offs_t port_offset);
 void pc_svga_trident_io_init(running_machine &machine, address_space *mem_space, offs_t mem_offset, address_space *io_space, offs_t port_offset);
 void pc_vga_reset(running_machine &machine);
 void *pc_vga_memory(void);
@@ -41,6 +42,8 @@ WRITE8_HANDLER(vga_port_03d0_w);
 WRITE8_HANDLER(vga_mem_w);
 
 /* per-device implementations */
+READ8_HANDLER(tseng_et4k_03b0_r);
+WRITE8_HANDLER(tseng_et4k_03b0_w);
 READ8_HANDLER(tseng_et4k_03c0_r);
 WRITE8_HANDLER(tseng_et4k_03c0_w);
 READ8_HANDLER(tseng_et4k_03d0_r);
@@ -54,6 +57,17 @@ READ8_HANDLER(trident_03d0_r);
 WRITE8_HANDLER(trident_03d0_w);
 READ8_HANDLER(trident_mem_r);
 WRITE8_HANDLER(trident_mem_w);
+
+READ8_HANDLER(s3_port_03b0_r);
+WRITE8_HANDLER(s3_port_03b0_w);
+READ8_HANDLER(s3_port_03c0_r);
+WRITE8_HANDLER(s3_port_03c0_w);
+READ8_HANDLER(s3_port_03d0_r);
+WRITE8_HANDLER(s3_port_03d0_w);
+READ8_HANDLER(s3_port_9ae8_r);
+WRITE8_HANDLER(s3_port_9ae8_w);
+READ8_HANDLER(s3_mem_r);
+WRITE8_HANDLER(s3_mem_w);
 
 /*
   pega notes (paradise)

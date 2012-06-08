@@ -8,9 +8,18 @@ class hotstuff_state : public driver_device
 {
 public:
 	hotstuff_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag) ,
+		m_bitmapram(*this, "bitmapram"){ }
 
-	UINT16* m_bitmapram;
+	required_shared_ptr<UINT16> m_bitmapram;
+	struct
+	{
+		UINT8 index;
+	}m_ioboard;
+	DECLARE_READ8_MEMBER(ioboard_status_r);
+	DECLARE_READ8_MEMBER(ioboard_unk_r);
+	DECLARE_WRITE8_MEMBER(ioboard_data_w);
+	DECLARE_WRITE8_MEMBER(ioboard_reg_w);
 };
 
 
@@ -62,12 +71,51 @@ SCREEN_UPDATE_RGB32( hotstuff )
 	return 0;
 }
 
-static ADDRESS_MAP_START( hotstuff_map, AS_PROGRAM, 16 )
+/* TODO: identify this ... */
+READ8_MEMBER(hotstuff_state::ioboard_status_r)
+{
+	UINT8 res;
+
+	printf("STATUS R\n");
+
+	switch(m_ioboard.index)
+	{
+		case 0x0c: res = 0x80|0x10; break;
+		default: res = 0; break;//machine().rand(); break;
+	}
+
+	return res;
+}
+
+READ8_MEMBER(hotstuff_state::ioboard_unk_r)
+{
+	printf("UNK R\n");
+
+	return 0xff;
+}
+
+WRITE8_MEMBER(hotstuff_state::ioboard_data_w)
+{
+	printf("DATA %02x\n",data);
+}
+
+WRITE8_MEMBER(hotstuff_state::ioboard_reg_w)
+{
+
+	m_ioboard.index = data;
+	printf("REG %02x\n",data);
+}
+
+static ADDRESS_MAP_START( hotstuff_map, AS_PROGRAM, 16, hotstuff_state )
 	AM_RANGE(0x000000, 0x07ffff) AM_ROM
+	AM_RANGE(0x080000, 0x0fffff) AM_NOP //ROM AM_REGION("data", 0)
 
 	AM_RANGE(0x400000, 0x40ffff) AM_RAM
 
-	AM_RANGE(0x980000, 0x9bffff) AM_RAM AM_BASE_MEMBER(hotstuff_state, m_bitmapram)
+	AM_RANGE(0x680000, 0x680001) AM_READWRITE8(ioboard_status_r,ioboard_data_w,0xff00)
+	AM_RANGE(0x680000, 0x680001) AM_READWRITE8(ioboard_unk_r,ioboard_reg_w,0x00ff)
+
+	AM_RANGE(0x980000, 0x9bffff) AM_RAM AM_SHARE("bitmapram")
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( hotstuff )

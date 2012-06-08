@@ -57,7 +57,6 @@ EMUOBJS = \
 	$(EMUOBJ)/devcb.o \
 	$(EMUOBJ)/devcpu.o \
 	$(EMUOBJ)/device.o \
-	$(EMUOBJ)/devimage.o \
 	$(EMUOBJ)/devlegcy.o \
 	$(EMUOBJ)/didisasm.o \
 	$(EMUOBJ)/diexec.o \
@@ -72,6 +71,7 @@ EMUOBJS = \
 	$(EMUOBJ)/distate.o \
 	$(EMUOBJ)/drawgfx.o \
 	$(EMUOBJ)/driver.o \
+	$(EMUOBJ)/drivenum.o \
 	$(EMUOBJ)/emualloc.o \
 	$(EMUOBJ)/emucore.o \
 	$(EMUOBJ)/emuopts.o \
@@ -110,7 +110,6 @@ EMUOBJS = \
 	$(EMUOBJ)/uimenu.o \
 	$(EMUOBJ)/validity.o \
 	$(EMUOBJ)/video.o \
-	$(EMUOBJ)/watchdog.o \
 	$(EMUOBJ)/debug/debugcmd.o \
 	$(EMUOBJ)/debug/debugcon.o \
 	$(EMUOBJ)/debug/debugcpu.o \
@@ -134,7 +133,6 @@ EMUSOUNDOBJS = \
 	$(EMUOBJ)/sound/wavwrite.o \
 
 EMUAUDIOOBJS = \
-	$(EMUAUDIO)/generic.o \
 
 EMUDRIVEROBJS = \
 	$(EMUDRIVERS)/empty.o \
@@ -187,6 +185,7 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/i8243.o		\
 	$(EMUMACHINE)/i8251.o		\
 	$(EMUMACHINE)/i8255.o		\
+	$(EMUMACHINE)/i8279.o		\
 	$(EMUMACHINE)/i8355.o		\
 	$(EMUMACHINE)/idectrl.o		\
 	$(EMUMACHINE)/im6402.o		\
@@ -220,6 +219,9 @@ EMUMACHINEOBJS = \
 	$(EMUMACHINE)/msm6242.o		\
 	$(EMUMACHINE)/ncr539x.o 	\
 	$(EMUMACHINE)/nmc9306.o		\
+    $(EMUMACHINE)/nscsi_bus.o   \
+    $(EMUMACHINE)/nscsi_cd.o    \
+    $(EMUMACHINE)/nscsi_hd.o    \
 	$(EMUMACHINE)/nvram.o		\
 	$(EMUMACHINE)/pc16552d.o	\
 	$(EMUMACHINE)/pci.o			\
@@ -265,6 +267,7 @@ EMUMACHINEOBJS = \
 
 EMUVIDEOOBJS = \
 	$(EMUVIDEO)/315_5124.o		\
+	$(EMUVIDEO)/bufsprite.o		\
 	$(EMUVIDEO)/cdp1861.o		\
 	$(EMUVIDEO)/cdp1862.o		\
 	$(EMUVIDEO)/crt9007.o		\

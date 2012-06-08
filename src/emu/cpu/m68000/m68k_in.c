@@ -367,8 +367,8 @@ name    size  proc   ea   bit pattern       A+-DXWLdxI  0 1 2 3 4 2 F  000 010 0
 M68KMAKE_TABLE_START
 1010       0  .     .     1010............  ..........  U U U U U U U   4   4   4   4   4   4   4
 1111       0  .     .     1111............  ..........  U U U U U U U   4   4   4   4   4   4   4
-040fpu0   32  .     .     11110010........  ..........  . . . U U U .   .   .   .   0   0   0   .
-040fpu1   32  .     .     11110011........  ..........  . . . U U U .   .   .   .   0   0   0   .
+040fpu0   32  .     .     11110010........  ..........  . . U U U U .   .   .   0   0   0   0   .
+040fpu1   32  .     .     11110011........  ..........  . . U U U U .   .   .   0   0   0   0   .
 abcd       8  rr    .     1100...100000...  ..........  U U U U U U U   6   6   4   4   4   4   4
 abcd       8  mm    ax7   1100111100001...  ..........  U U U U U U U  18  18  16  16  16  16  16
 abcd       8  mm    ay7   1100...100001111  ..........  U U U U U U U  18  18  16  16  16  16  16
@@ -759,7 +759,8 @@ pack      16  mm    ay7   1000...101001111  ..........  . . U U U U U   .   .  1
 pack      16  mm    axy7  1000111101001111  ..........  . . U U U U U   .   .  13  13  13  13  13
 pack      16  mm    .     1000...101001...  ..........  . . U U U U U   .   .  13  13  13  13  13
 pea       32  .     .     0100100001......  A..DXWLdx.  U U U U U U U   6   6   5   5   5   5   5
-pflush    32  .     .     1111010100011000  ..........  . . . . S S .   .   .   .   .   4   4   4 TODO: correct timing
+pflusha   32  .     .     1111010100011...  ..........  . . . . S S .   .   .   .   .   4   4   4 TODO: correct timing
+pflushan  32  .     .     1111010100010...  ..........  . . . . S S .   .   .   .   .   4   4   4 TODO: correct timing
 pmmu      32  .     .     1111000.........  ..........  . . S S S S S   .   .   8   8   8   8   8
 ptest     32  .     .     1111010101.01...  ..........  . . . . S . .   .   .   .   .   8   .   .
 reset      0  .     .     0100111001110000  ..........  S S S S S S S   0   0   0   0   0   0   0
@@ -2659,7 +2660,8 @@ M68KMAKE_OP(bfexts, 32, ., .)
 		}
 		width = ((width-1) & 31) + 1;
 
-		data = (offset+width) < 16 ? (m68ki_read_16((mc68kcpu), ea) << 16) : m68ki_read_32((mc68kcpu), ea);
+		data = (offset+width) < 8 ? (m68ki_read_8((mc68kcpu), ea) << 24) :
+				(offset+width) < 16 ? (m68ki_read_16((mc68kcpu), ea) << 16) : m68ki_read_32((mc68kcpu), ea);
 
 		data = MASK_OUT_ABOVE_32(data<<offset);
 
@@ -2744,7 +2746,8 @@ M68KMAKE_OP(bfextu, 32, ., .)
 		}
 		width = ((width-1) & 31) + 1;
 
-		data = (offset+width) < 16 ? (m68ki_read_16((mc68kcpu), ea) << 16) : m68ki_read_32((mc68kcpu), ea);
+		data = (offset+width) < 8 ? (m68ki_read_8((mc68kcpu), ea) << 24) :
+				(offset+width) < 16 ? (m68ki_read_16((mc68kcpu), ea) << 16) : m68ki_read_32((mc68kcpu), ea);
 		data = MASK_OUT_ABOVE_32(data<<offset);
 
 		if((offset+width) > 32)
@@ -2941,11 +2944,16 @@ M68KMAKE_OP(bfins, 32, ., .)
 		(mc68kcpu)->not_z_flag = insert_base;
 		insert_long = insert_base >> offset;
 
-		data_long = (offset+width) < 16 ? (m68ki_read_16((mc68kcpu), ea) << 16) : m68ki_read_32((mc68kcpu), ea);
+		data_long = (offset+width) < 8 ? (m68ki_read_8((mc68kcpu), ea) << 24) :
+				(offset+width) < 16 ? (m68ki_read_16((mc68kcpu), ea) << 16) : m68ki_read_32((mc68kcpu), ea);
 		(mc68kcpu)->v_flag = VFLAG_CLEAR;
 		(mc68kcpu)->c_flag = CFLAG_CLEAR;
 
-		if((width + offset) < 16)
+		if((width + offset) < 8)
+		{
+			m68ki_write_8((mc68kcpu), ea, ((data_long & ~mask_long) | insert_long) >> 24);
+		}
+		else if((width + offset) < 16)
 		{
 			m68ki_write_16((mc68kcpu), ea, ((data_long & ~mask_long) | insert_long) >> 16);
 		}
@@ -8204,11 +8212,21 @@ M68KMAKE_OP(pea, 32, ., .)
 	m68ki_push_32((mc68kcpu), ea);
 }
 
-M68KMAKE_OP(pflush, 32, ., .)
+M68KMAKE_OP(pflusha, 32, ., .)
 {
 	if ((CPU_TYPE_IS_EC020_PLUS((mc68kcpu)->cpu_type)) && ((mc68kcpu)->has_pmmu))
 	{
-		logerror("68040: unhandled PFLUSH\n");
+		logerror("68040: unhandled PFLUSHA (ir=%04x)\n", mc68kcpu->ir);
+		return;
+	}
+	m68ki_exception_1111(mc68kcpu);
+}
+
+M68KMAKE_OP(pflushan, 32, ., .)
+{
+	if ((CPU_TYPE_IS_EC020_PLUS((mc68kcpu)->cpu_type)) && ((mc68kcpu)->has_pmmu))
+	{
+		logerror("68040: unhandled PFLUSHAN (ir=%04x)\n", mc68kcpu->ir);
 		return;
 	}
 	m68ki_exception_1111(mc68kcpu);
@@ -9017,6 +9035,31 @@ rte_loop:
 				(mc68kcpu)->instr_mode = INSTRUCTION_YES;
 				(mc68kcpu)->run_mode = RUN_MODE_NORMAL;
 				return;
+			case 7: /* 68040 access error */
+				new_sr = m68ki_pull_16(mc68kcpu);
+				new_pc = m68ki_pull_32(mc68kcpu);
+				m68ki_fake_pull_16(mc68kcpu);	/* $06: format word */
+				m68ki_fake_pull_32(mc68kcpu);	/* $08: effective address */
+				m68ki_fake_pull_16(mc68kcpu);	/* $0c: special status word */
+				m68ki_fake_pull_16(mc68kcpu);	/* $0e: wb3s */
+				m68ki_fake_pull_16(mc68kcpu);	/* $10: wb2s */
+				m68ki_fake_pull_16(mc68kcpu);	/* $12: wb1s */
+				m68ki_fake_pull_32(mc68kcpu);	/* $14: data fault address */
+				m68ki_fake_pull_32(mc68kcpu);	/* $18: wb3a */
+				m68ki_fake_pull_32(mc68kcpu);	/* $1c: wb3d */
+				m68ki_fake_pull_32(mc68kcpu);	/* $20: wb2a */
+				m68ki_fake_pull_32(mc68kcpu);	/* $24: wb2d */
+				m68ki_fake_pull_32(mc68kcpu);	/* $28: wb1a */
+				m68ki_fake_pull_32(mc68kcpu);	/* $2c: wb1d/pd0 */
+				m68ki_fake_pull_32(mc68kcpu);	/* $30: pd1 */
+				m68ki_fake_pull_32(mc68kcpu);	/* $34: pd2 */
+				m68ki_fake_pull_32(mc68kcpu);	/* $38: pd3 */
+				m68ki_jump((mc68kcpu), new_pc);
+				m68ki_set_sr((mc68kcpu), new_sr);
+				(mc68kcpu)->instr_mode = INSTRUCTION_YES;
+				(mc68kcpu)->run_mode = RUN_MODE_NORMAL;
+				return;
+
 			case 0x0a: /* Bus Error at instruction boundary */
 				new_sr = m68ki_pull_16(mc68kcpu);
 				new_pc = m68ki_pull_32(mc68kcpu);
@@ -10447,8 +10490,17 @@ M68KMAKE_OP(cinv, 32, ., .)
 {
 	if(CPU_TYPE_IS_040_PLUS((mc68kcpu)->cpu_type))
 	{
-		logerror("%s at %08x: called unimplemented instruction %04x (cinv)\n",
-					 (mc68kcpu)->device->tag(), REG_PC(mc68kcpu) - 2, (mc68kcpu)->ir);
+		UINT16 ir = mc68kcpu->ir;
+		UINT8 cache = (ir >> 6) & 3;
+//      UINT8 scope = (ir >> 3) & 3;
+//      logerror("68040 %s: pc=%08x ir=%04x cache=%d scope=%d register=%d\n", ir & 0x0020 ? "cpush" : "cinv", REG_PPC(mc68kcpu), ir, cache, scope, ir & 7);
+		switch (cache)
+		{
+		case 2:
+		case 3:
+			// we invalidate/push the whole instruction cache
+			m68ki_ic_clear(mc68kcpu);
+		}
 		return;
 	}
 	m68ki_exception_1111(mc68kcpu);

@@ -460,13 +460,15 @@ class vegas_state : public driver_device
 public:
 	vegas_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag),
-		  m_timekeeper(*this, "timekeeper") { }
+		  m_timekeeper(*this, "timekeeper") ,
+		m_rambase(*this, "rambase"),
+		m_nile_regs(*this, "nile_regs"),
+		m_rombase(*this, "rombase"){ }
 
 	required_device<m48t37_device> m_timekeeper;
-	UINT32 *m_rambase;
-	UINT32 *m_rombase;
-	size_t m_ramsize;
-	UINT32 *m_nile_regs;
+	required_shared_ptr<UINT32> m_rambase;
+	required_shared_ptr<UINT32> m_nile_regs;
+	required_shared_ptr<UINT32> m_rombase;
 	UINT16 m_nile_irq_state;
 	UINT16 m_ide_irq_state;
 	UINT32 m_pci_bridge_regs[0x40];
@@ -544,7 +546,7 @@ static MACHINE_START( vegas )
 	mips3drc_set_options(machine.device("maincpu"), MIPS3DRC_FASTEST_OPTIONS + MIPS3DRC_STRICT_VERIFY + MIPS3DRC_FLUSH_PC);
 
 	/* configure fast RAM regions for DRC */
-	mips3drc_add_fastram(machine.device("maincpu"), 0x00000000, state->m_ramsize - 1, FALSE, state->m_rambase);
+	mips3drc_add_fastram(machine.device("maincpu"), 0x00000000, state->m_rambase.bytes() - 1, FALSE, state->m_rambase);
 	mips3drc_add_fastram(machine.device("maincpu"), 0x1fc00000, 0x1fc7ffff, TRUE, state->m_rombase);
 
 	/* register for save states */
@@ -1426,7 +1428,7 @@ static WRITE32_HANDLER( analog_port_w )
 
 	if (data < 8 || data > 15)
 		logerror("%08X:Unexpected analog port select = %08X\n", cpu_get_pc(&space->device()), data);
-	state->m_pending_analog_read = input_port_read_safe(space->machine(), portnames[data & 7], 0);
+	state->m_pending_analog_read = state->ioport(portnames[data & 7])->read_safe(0);
 }
 
 
@@ -1559,7 +1561,7 @@ static void remap_dynamic_addresses(running_machine &machine)
 
 	/* DCS2 */
 	base = state->m_nile_regs[NREG_DCS2] & 0x1fffff00;
-	if (base >= state->m_ramsize)
+	if (base >= state->m_rambase.bytes())
 	{
 		add_dynamic_address(state, base + 0x0000, base + 0x0003, sio_irq_clear_r, sio_irq_clear_w);
 		add_dynamic_address(state, base + 0x1000, base + 0x1003, sio_irq_enable_r, sio_irq_enable_w);
@@ -1573,22 +1575,22 @@ static void remap_dynamic_addresses(running_machine &machine)
 
 	/* DCS3 */
 	base = state->m_nile_regs[NREG_DCS3] & 0x1fffff00;
-	if (base >= state->m_ramsize)
+	if (base >= state->m_rambase.bytes())
 		add_dynamic_address(state, base + 0x0000, base + 0x0003, analog_port_r, analog_port_w);
 
 	/* DCS4 */
 	base = state->m_nile_regs[NREG_DCS4] & 0x1fffff00;
-	if (base >= state->m_ramsize)
+	if (base >= state->m_rambase.bytes())
 		add_dynamic_address(state, base + 0x0000, base + 0x7fff, timekeeper_r, timekeeper_w);
 
 	/* DCS5 */
 	base = state->m_nile_regs[NREG_DCS5] & 0x1fffff00;
-	if (base >= state->m_ramsize)
+	if (base >= state->m_rambase.bytes())
 		add_dynamic_address(state, base + 0x0000, base + 0x0003, sio_r, sio_w);
 
 	/* DCS6 */
 	base = state->m_nile_regs[NREG_DCS6] & 0x1fffff00;
-	if (base >= state->m_ramsize)
+	if (base >= state->m_rambase.bytes())
 	{
 		add_dynamic_address(state, base + 0x0000, base + 0x003f, midway_ioasic_packed_r, midway_ioasic_packed_w);
 		add_dynamic_address(state, base + 0x1000, base + 0x1003, NULL, asic_fifo_w);
@@ -1603,7 +1605,7 @@ static void remap_dynamic_addresses(running_machine &machine)
 
 	/* DCS7 */
 	base = state->m_nile_regs[NREG_DCS7] & 0x1fffff00;
-	if (base >= state->m_ramsize)
+	if (base >= state->m_rambase.bytes())
 	{
 		add_dynamic_device_address(state, ethernet, base + 0x1000, base + 0x100f, ethernet_r, ethernet_w);
 		if (state->m_dcs_idma_cs == 7)
@@ -1617,7 +1619,7 @@ static void remap_dynamic_addresses(running_machine &machine)
 	if ((state->m_nile_regs[NREG_PCIINIT1] & 0xe) == 0xa)
 	{
 		base = state->m_nile_regs[NREG_PCIW1] & 0x1fffff00;
-		if (base >= state->m_ramsize)
+		if (base >= state->m_rambase.bytes())
 		{
 			add_dynamic_address(state, base + (1 << (21 + 4)) + 0x0000, base + (1 << (21 + 4)) + 0x00ff, pci_3dfx_r, pci_3dfx_w);
 			add_dynamic_address(state, base + (1 << (21 + 5)) + 0x0000, base + (1 << (21 + 5)) + 0x00ff, pci_ide_r, pci_ide_w);
@@ -1629,20 +1631,20 @@ static void remap_dynamic_addresses(running_machine &machine)
 	{
 		/* IDE controller */
 		base = state->m_pci_ide_regs[0x04] & 0xfffffff0;
-		if (base >= state->m_ramsize && base < 0x20000000)
+		if (base >= state->m_rambase.bytes() && base < 0x20000000)
 			add_dynamic_device_address(state, ide, base + 0x0000, base + 0x000f, ide_main_r, ide_main_w);
 
 		base = state->m_pci_ide_regs[0x05] & 0xfffffffc;
-		if (base >= state->m_ramsize && base < 0x20000000)
+		if (base >= state->m_rambase.bytes() && base < 0x20000000)
 			add_dynamic_device_address(state, ide, base + 0x0000, base + 0x0003, ide_alt_r, ide_alt_w);
 
 		base = state->m_pci_ide_regs[0x08] & 0xfffffff0;
-		if (base >= state->m_ramsize && base < 0x20000000)
+		if (base >= state->m_rambase.bytes() && base < 0x20000000)
 			add_dynamic_device_address(state, ide, base + 0x0000, base + 0x0007, ide_bus_master32_r, ide_bus_master32_w);
 
 		/* 3dfx card */
 		base = state->m_pci_3dfx_regs[0x04] & 0xfffffff0;
-		if (base >= state->m_ramsize && base < 0x20000000)
+		if (base >= state->m_rambase.bytes() && base < 0x20000000)
 		{
 			if (voodoo_type == VOODOO_2)
 				add_dynamic_device_address(state, state->m_voodoo, base + 0x000000, base + 0xffffff, voodoo_r, voodoo_w);
@@ -1653,15 +1655,15 @@ static void remap_dynamic_addresses(running_machine &machine)
 		if (voodoo_type >= VOODOO_BANSHEE)
 		{
 			base = state->m_pci_3dfx_regs[0x05] & 0xfffffff0;
-            if (base >= state->m_ramsize && base < 0x20000000)
+            if (base >= state->m_rambase.bytes() && base < 0x20000000)
 				add_dynamic_device_address(state, state->m_voodoo, base + 0x0000000, base + 0x1ffffff, banshee_fb_r, banshee_fb_w);
 
 			base = state->m_pci_3dfx_regs[0x06] & 0xfffffff0;
-            if (base >= state->m_ramsize && base < 0x20000000)
+            if (base >= state->m_rambase.bytes() && base < 0x20000000)
 				add_dynamic_device_address(state, state->m_voodoo, base + 0x0000000, base + 0x00000ff, banshee_io_r, banshee_io_w);
 
 			base = state->m_pci_3dfx_regs[0x0c] & 0xffff0000;
-            if (base >= state->m_ramsize && base < 0x20000000)
+            if (base >= state->m_rambase.bytes() && base < 0x20000000)
 				add_dynamic_device_address(state, state->m_voodoo, base + 0x0000000, base + 0x000ffff, banshee_rom_r, NULL);
 		}
 	}
@@ -1700,19 +1702,19 @@ static void remap_dynamic_addresses(running_machine &machine)
  *
  *************************************/
 
-static ADDRESS_MAP_START( vegas_map_8mb, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( vegas_map_8mb, AS_PROGRAM, 32, vegas_state )
 	ADDRESS_MAP_UNMAP_HIGH
-	AM_RANGE(0x00000000, 0x007fffff) AM_RAM AM_BASE_MEMBER(vegas_state, m_rambase) AM_SIZE_MEMBER(vegas_state, m_ramsize)
-	AM_RANGE(0x1fa00000, 0x1fa00fff) AM_READWRITE(nile_r, nile_w) AM_BASE_MEMBER(vegas_state, m_nile_regs)
-	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_ROM AM_REGION("user1", 0) AM_BASE_MEMBER(vegas_state, m_rombase)
+	AM_RANGE(0x00000000, 0x007fffff) AM_RAM AM_SHARE("rambase")
+	AM_RANGE(0x1fa00000, 0x1fa00fff) AM_READWRITE_LEGACY(nile_r, nile_w) AM_SHARE("nile_regs")
+	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_ROM AM_REGION("user1", 0) AM_SHARE("rombase")
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( vegas_map_32mb, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( vegas_map_32mb, AS_PROGRAM, 32, vegas_state )
 	ADDRESS_MAP_UNMAP_HIGH
-	AM_RANGE(0x00000000, 0x01ffffff) AM_RAM AM_BASE_MEMBER(vegas_state, m_rambase) AM_SIZE_MEMBER(vegas_state, m_ramsize)
-	AM_RANGE(0x1fa00000, 0x1fa00fff) AM_READWRITE(nile_r, nile_w) AM_BASE_MEMBER(vegas_state, m_nile_regs)
-	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_ROM AM_REGION("user1", 0) AM_BASE_MEMBER(vegas_state, m_rombase)
+	AM_RANGE(0x00000000, 0x01ffffff) AM_RAM AM_SHARE("rambase")
+	AM_RANGE(0x1fa00000, 0x1fa00fff) AM_READWRITE_LEGACY(nile_r, nile_w) AM_SHARE("nile_regs")
+	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_ROM AM_REGION("user1", 0) AM_SHARE("rombase")
 ADDRESS_MAP_END
 
 
@@ -2220,8 +2222,8 @@ static MACHINE_CONFIG_START( vegascore, vegas_state )
 	MCFG_MACHINE_RESET(vegas)
 	MCFG_M48T37_ADD("timekeeper")
 
-	MCFG_IDE_CONTROLLER_ADD("ide", ide_interrupt)
-	MCFG_IDE_BUS_MASTER_SPACE("maincpu", PROGRAM)
+	MCFG_IDE_CONTROLLER_ADD("ide", ide_interrupt, ide_devices, "hdd", NULL)
+	MCFG_IDE_BUS_MASTER_SPACE("ide", "maincpu", PROGRAM)
 
 	MCFG_SMC91C94_ADD("ethernet", ethernet_interrupt)
 
@@ -2311,7 +2313,7 @@ ROM_START( gauntleg )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 1.5 11/17/1998 */
 	ROM_LOAD( "legend15.bin", 0x000000, 0x80000, CRC(a8372d70) SHA1(d8cd4fd4d7007ee38bb58b5a818d0f83043d5a48) )
 
-	DISK_REGION( "ide" )	/* Guts 1.5 1/14/1999 Game 1/14/1999 */
+	DISK_REGION( "drive_0" )	/* Guts 1.5 1/14/1999 Game 1/14/1999 */
 	DISK_IMAGE( "gauntleg", 0, SHA1(66eb70e2fba574a7abe54be8bd45310654b24b08) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2323,7 +2325,7 @@ ROM_START( gauntleg12 )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 1.3 9/25/1998 */
 	ROM_LOAD( "legend12.bin", 0x000000, 0x80000, CRC(34674c5f) SHA1(92ec1779f3ab32944cbd953b6e1889503a57794b) )
 
-	DISK_REGION( "ide" )	/* Guts 1.4 10/22/1998 Main 10/23/1998 */
+	DISK_REGION( "drive_0" )	/* Guts 1.4 10/22/1998 Main 10/23/1998 */
 	DISK_IMAGE( "gauntl12", 0, SHA1(c8208e3ce3b02a271dc6b089efa98dd996b66ce0) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2335,7 +2337,7 @@ ROM_START( gauntdl )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 1.7 12/14/1999 */
 	ROM_LOAD( "gauntdl.bin", 0x000000, 0x80000, CRC(3d631518) SHA1(d7f5a3bc109a19c9c7a711d607ff87e11868b536) )
 
-	DISK_REGION( "ide" )	/* Guts: 1.9 3/17/2000 Game 5/9/2000 */
+	DISK_REGION( "drive_0" )	/* Guts: 1.9 3/17/2000 Game 5/9/2000 */
 	DISK_IMAGE( "gauntdl", 0, SHA1(ba3af48171e727c2f7232c06dcf8411cbcf14de8) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2347,7 +2349,7 @@ ROM_START( gauntdl24 )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 1.7 12/14/1999 */
 	ROM_LOAD( "gauntdl.bin", 0x000000, 0x80000, CRC(3d631518) SHA1(d7f5a3bc109a19c9c7a711d607ff87e11868b536) )
 
-	DISK_REGION( "ide" )	/* Guts: 1.9 3/17/2000 Game 3/19/2000 */
+	DISK_REGION( "drive_0" )	/* Guts: 1.9 3/17/2000 Game 3/19/2000 */
 	DISK_IMAGE( "gauntd24", 0, SHA1(3e055794d23d62680732e906cfaf9154765de698) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2359,7 +2361,7 @@ ROM_START( warfa )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 1.9 3/25/1999 */
 	ROM_LOAD( "warboot.v19", 0x000000, 0x80000, CRC(b0c095cd) SHA1(d3b8cccdca83f0ecb49aa7993864cfdaa4e5c6f0) )
 
-	DISK_REGION( "ide" )	/* Guts 1.3 4/20/1999 Game 4/20/1999 */
+	DISK_REGION( "drive_0" )	/* Guts 1.3 4/20/1999 Game 4/20/1999 */
 	DISK_IMAGE( "warfa", 0, SHA1(87f8a8878cd6be716dbd6c68fb1bc7f564ede484) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2371,7 +2373,7 @@ ROM_START( tenthdeg )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "tenthdeg.bio", 0x000000, 0x80000, CRC(1cd2191b) SHA1(a40c48f3d6a9e2760cec809a79a35abe762da9ce) )
 
-	DISK_REGION( "ide" )	/* Guts 5/26/1998 Main 8/25/1998 */
+	DISK_REGION( "drive_0" )	/* Guts 5/26/1998 Main 8/25/1998 */
 	DISK_IMAGE( "tenthdeg", 0, SHA1(41a1a045a2d118cf6235be2cc40bf16dbb8be5d1) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2383,7 +2385,7 @@ ROM_START( roadburn )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 2.6 4/22/1999 */
 	ROM_LOAD( "rbmain.bin", 0x000000, 0x80000, CRC(060e1aa8) SHA1(2a1027d209f87249fe143500e721dfde7fb5f3bc) )
 
-	DISK_REGION( "ide" )	/* Guts 4/22/1999 Game 4/22/1999 */
+	DISK_REGION( "drive_0" )	/* Guts 4/22/1999 Game 4/22/1999 */
 	DISK_IMAGE( "roadburn", 0, SHA1(a62870cceafa6357d7d3505aca250c3f16087566) )
 ROM_END
 
@@ -2392,7 +2394,7 @@ ROM_START( nbashowt )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "nbau27.100", 0x000000, 0x80000, CRC(ff5d620d) SHA1(8f07567929f40a2269a42495dfa9dd5edef688fe) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "nbashowt", 0, SHA1(f7c56bc3dcbebc434de58034986179ae01127f87) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2405,7 +2407,7 @@ ROM_START( nbanfl )
 	ROM_LOAD( "u27nflnba.bin", 0x000000, 0x80000, CRC(6a9bd382) SHA1(18b942df6af86ea944c24166dbe88148334eaff9) )
 //  ROM_LOAD( "bootnflnba.bin", 0x000000, 0x80000, CRC(3def7053) SHA1(8f07567929f40a2269a42495dfa9dd5edef688fe) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "nbanfl", 0, SHA1(f60c627f85f1bf58f2ea674063736a1e516e7e9e) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* Vegas SIO boot ROM */
@@ -2417,7 +2419,7 @@ ROM_START( cartfury )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "bootu27", 0x000000, 0x80000, CRC(c44550a2) SHA1(ad30f1c3382ff2f5902a4cbacbb1f0c4e37f42f9) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "cartfury", 0, SHA1(4c5bc2803297ea9a191bbd8b002d0e46b4ae1563) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2105 data */
@@ -2429,7 +2431,7 @@ ROM_START( sf2049 )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* EPROM 1.02 7/9/1999 */
 	ROM_LOAD( "sf2049.u27", 0x000000, 0x80000, CRC(174ba8fe) SHA1(baba83b811eca659f00514a008a86ef0ac9680ee) )
 
-	DISK_REGION( "ide" )	/* Guts 1.03 9/3/1999 Game 9/8/1999 */
+	DISK_REGION( "drive_0" )	/* Guts 1.03 9/3/1999 Game 9/8/1999 */
 	DISK_IMAGE( "sf2049", 0, SHA1(9e0661b8566a6c78d18c59c11cd3a6628d025405) )
 ROM_END
 
@@ -2438,7 +2440,7 @@ ROM_START( sf2049se )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "sf2049se.u27", 0x000000, 0x80000, CRC(da4ecd9c) SHA1(2574ff3d608ebcc59a63cf6dea13ee7650ae8921) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "sf2049se", 0, SHA1(7b27a8ce2a953050ce267548bb7160b41f3e8054) )
 ROM_END
 
@@ -2447,7 +2449,7 @@ ROM_START( sf2049te )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "sf2049te.u27", 0x000000, 0x80000, CRC(cc7c8601) SHA1(3f37dbd1b32b3ac5caa300725468e8e426f0fb83) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "sf2049te", 0, SHA1(625aa36436587b7bec3e7db1d19793b760e2ea51) )
 ROM_END
 

@@ -20,22 +20,25 @@ class decocass_state : public driver_device
 {
 public:
 	decocass_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_rambase(*this, "rambase"),
+		  m_charram(*this, "charram"),
+		  m_fgvideoram(*this, "fgvideoram"),
+		  m_colorram(*this, "colorram"),
+		  m_tileram(*this, "tileram"),
+		  m_objectram(*this, "objectram"),
+		  m_paletteram(*this, "paletteram") { }
 
 	/* memory pointers */
-	UINT8 *   m_rambase;
-	UINT8 *   m_charram;
-	UINT8 *   m_fgvideoram;
-	UINT8 *   m_colorram;
+	required_shared_ptr<UINT8> m_rambase;
+	required_shared_ptr<UINT8> m_charram;
+	required_shared_ptr<UINT8> m_fgvideoram;
+	required_shared_ptr<UINT8> m_colorram;
 	UINT8 *   m_bgvideoram;	/* shares bits D0-3 with tileram! */
-	UINT8 *   m_tileram;
-	UINT8 *   m_objectram;
-	UINT8 *   m_paletteram;
-	size_t    m_fgvideoram_size;
-	size_t    m_colorram_size;
+	required_shared_ptr<UINT8> m_tileram;
+	required_shared_ptr<UINT8> m_objectram;
+	required_shared_ptr<UINT8> m_paletteram;
 	size_t    m_bgvideoram_size;
-	size_t    m_tileram_size;
-	size_t    m_objectram_size;
 
 	/* video-related */
 	tilemap_t   *m_fg_tilemap;
@@ -141,33 +144,36 @@ MACHINE_START( decocass );
 MACHINE_RESET( decocass );
 MACHINE_RESET( ctsttape );
 MACHINE_RESET( chwy );
-MACHINE_RESET( clocknch );
-MACHINE_RESET( ctisland );
-MACHINE_RESET( csuperas );
-MACHINE_RESET( castfant );
-MACHINE_RESET( cluckypo );
+MACHINE_RESET( cdsteljn );
 MACHINE_RESET( cterrani );
-MACHINE_RESET( cexplore );
+MACHINE_RESET( castfant );
+MACHINE_RESET( csuperas );
+MACHINE_RESET( clocknch );
 MACHINE_RESET( cprogolf );
-MACHINE_RESET( cmissnx );
+MACHINE_RESET( cprogolfj );
+MACHINE_RESET( cluckypo );
+MACHINE_RESET( ctisland );
+MACHINE_RESET( cexplore );
 MACHINE_RESET( cdiscon1 );
-MACHINE_RESET( cptennis );
 MACHINE_RESET( ctornado );
-MACHINE_RESET( cbnj );
-MACHINE_RESET( cburnrub );
+MACHINE_RESET( cmissnx );
+MACHINE_RESET( cptennis );
 MACHINE_RESET( cbtime );
+MACHINE_RESET( cburnrub );
 MACHINE_RESET( cgraplop );
 MACHINE_RESET( cgraplop2 );
+MACHINE_RESET( cskater );
 MACHINE_RESET( clapapa );
-MACHINE_RESET( cfghtice );
 MACHINE_RESET( cprobowl );
 MACHINE_RESET( cnightst );
 MACHINE_RESET( cpsoccer );
+MACHINE_RESET( csdtenis );
+MACHINE_RESET( czeroize );
 MACHINE_RESET( cppicf );
-MACHINE_RESET( cscrtry );
+MACHINE_RESET( cfghtice );
+MACHINE_RESET( type4 );
 MACHINE_RESET( cflyball );
 MACHINE_RESET( cbdash );
-MACHINE_RESET( czeroize );
 
 WRITE8_HANDLER( i8041_p1_w );
 READ8_HANDLER( i8041_p1_r );

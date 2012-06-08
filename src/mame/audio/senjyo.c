@@ -46,19 +46,18 @@ Z80CTC_INTERFACE( senjyo_ctc_intf )
 };
 
 
-WRITE8_HANDLER( senjyo_volume_w )
+WRITE8_MEMBER(senjyo_state::senjyo_volume_w)
 {
-	senjyo_state *state = space->machine().driver_data<senjyo_state>();
-	samples_device *samples = space->machine().device<samples_device>("samples");
+	samples_device *samples = machine().device<samples_device>("samples");
 
-	state->m_single_volume = data & 0x0f;
-	sample_set_volume(samples, 0, state->m_single_volume / 15.0);
+	m_single_volume = data & 0x0f;
+	samples->set_volume(0, m_single_volume / 15.0);
 }
 
 
 static TIMER_CALLBACK( senjyo_sh_update )
 {
-	device_t *samples = machine.device("samples");
+	samples_device *samples = machine.device<samples_device>("samples");
 	senjyo_state *state = machine.driver_data<senjyo_state>();
 
 	/* ctc2 timer single tone generator frequency */
@@ -69,13 +68,13 @@ static TIMER_CALLBACK( senjyo_sh_update )
 	else
 		state->m_single_rate = 0;
 
-	sample_set_freq(samples, 0, state->m_single_rate);
+	samples->set_frequency(0, state->m_single_rate);
 }
 
 
 SAMPLES_START( senjyo_sh_start )
 {
-	running_machine &machine = device->machine();
+	running_machine &machine = device.machine();
 	senjyo_state *state = machine.driver_data<senjyo_state>();
 	int i;
 
@@ -87,8 +86,8 @@ SAMPLES_START( senjyo_sh_start )
 	/* CTC2 single tone generator */
 	state->m_single_rate = 1000;
 	state->m_single_volume = 0;
-	sample_set_volume(device, 0, state->m_single_volume / 15.0);
-	sample_start_raw(device, 0, state->m_single_data, SINGLE_LENGTH, state->m_single_rate, 1);
+	device.set_volume(0, state->m_single_volume / 15.0);
+	device.start_raw(0, state->m_single_data, SINGLE_LENGTH, state->m_single_rate, true);
 
 	machine.scheduler().timer_pulse(machine.primary_screen->frame_period(), FUNC(senjyo_sh_update));
 }

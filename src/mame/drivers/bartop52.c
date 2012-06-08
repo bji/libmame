@@ -32,12 +32,12 @@ public:
 };
 
 
-static ADDRESS_MAP_START(a5200_mem, AS_PROGRAM, 8)
+static ADDRESS_MAP_START(a5200_mem, AS_PROGRAM, 8, bartop52_state )
 	AM_RANGE(0x0000, 0x3fff) AM_RAM
 	AM_RANGE(0x4000, 0xbfff) AM_ROM
-	AM_RANGE(0xc000, 0xc0ff) AM_READWRITE(atari_gtia_r, atari_gtia_w)
-	AM_RANGE(0xd400, 0xd5ff) AM_READWRITE(atari_antic_r, atari_antic_w)
-	AM_RANGE(0xe800, 0xe8ff) AM_DEVREADWRITE("pokey", pokey_r, pokey_w)
+	AM_RANGE(0xc000, 0xc0ff) AM_READWRITE_LEGACY(atari_gtia_r, atari_gtia_w)
+	AM_RANGE(0xd400, 0xd5ff) AM_READWRITE_LEGACY(atari_antic_r, atari_antic_w)
+	AM_RANGE(0xe800, 0xe8ff) AM_DEVREADWRITE("pokey", pokeyn_device, read, write)
 	AM_RANGE(0xf800, 0xffff) AM_ROM
 ADDRESS_MAP_END
 
@@ -137,7 +137,7 @@ static MACHINE_CONFIG_START( a5200, bartop52_state )
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
-	MCFG_SOUND_ADD("pokey", POKEY, FREQ_17_EXACT)
+	MCFG_SOUND_ADD("pokey", POKEYN, FREQ_17_EXACT)
 	MCFG_SOUND_CONFIG(atari_pokey_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.00)
 

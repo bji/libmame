@@ -9,25 +9,9 @@
 #include "includes/gsword.h"
 
 
-static PALETTE_INIT( common )
-{
-	int i;
-
-	/* characters */
-	for (i = 0; i < 0x100; i++)
-		colortable_entry_set_value(machine.colortable, i, i);
-
-	/* sprites */
-	for (i = 0x100; i < 0x200; i++)
-	{
-		UINT8 ctabentry = (BITSWAP8(color_prom[i - 0x100],7,6,5,4,0,1,2,3) & 0x0f) | 0x80;
-		colortable_entry_set_value(machine.colortable, i, ctabentry);
-	}
-}
-
-
 PALETTE_INIT( josvolly )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	int i;
 
 	/* allocate the colortable */
@@ -46,12 +30,22 @@ PALETTE_INIT( josvolly )
 	/* color_prom now points to the beginning of the lookup table */
 	color_prom += 0x300;
 
-	PALETTE_INIT_CALL(common);
+	/* characters */
+	for (i = 0; i < 0x100; i++)
+		colortable_entry_set_value(machine.colortable, i, i);
+
+	/* sprites */
+	for (i = 0x100; i < 0x200; i++)
+	{
+		UINT8 ctabentry = (BITSWAP8(color_prom[i - 0x100],7,6,5,4,0,1,2,3) & 0x0f) | 0x80;
+		colortable_entry_set_value(machine.colortable, i, ctabentry);
+	}
 }
 
 
 PALETTE_INIT( gsword )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	int i;
 
 	/* allocate the colortable */
@@ -87,30 +81,36 @@ PALETTE_INIT( gsword )
 	/* color_prom now points to the beginning of the lookup table */
 	color_prom += 0x200;
 
-	PALETTE_INIT_CALL(common);
-}
+	/* characters */
+	for (i = 0; i < 0x100; i++)
+		colortable_entry_set_value(machine.colortable, i, i);
 
-WRITE8_HANDLER( gsword_videoram_w )
-{
-	gsword_state *state = space->machine().driver_data<gsword_state>();
-	UINT8 *videoram = state->m_videoram;
-	videoram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset);
-}
-
-WRITE8_HANDLER( gsword_charbank_w )
-{
-	gsword_state *state = space->machine().driver_data<gsword_state>();
-	if (state->m_charbank != data)
+	/* sprites */
+	for (i = 0x100; i < 0x200; i++)
 	{
-		state->m_charbank = data;
-		space->machine().tilemap().mark_all_dirty();
+		UINT8 ctabentry = (BITSWAP8(color_prom[i - 0x100],7,6,5,4,0,1,2,3) & 0x0f) | 0x80;
+		colortable_entry_set_value(machine.colortable, i, ctabentry);
 	}
 }
 
-WRITE8_HANDLER( gsword_videoctrl_w )
+WRITE8_MEMBER(gsword_state::gsword_videoram_w)
 {
-	gsword_state *state = space->machine().driver_data<gsword_state>();
+	UINT8 *videoram = m_videoram;
+	videoram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset);
+}
+
+WRITE8_MEMBER(gsword_state::gsword_charbank_w)
+{
+	if (m_charbank != data)
+	{
+		m_charbank = data;
+		machine().tilemap().mark_all_dirty();
+	}
+}
+
+WRITE8_MEMBER(gsword_state::gsword_videoctrl_w)
+{
 	if (data & 0x8f)
 	{
 		popmessage("videoctrl %02x",data);
@@ -118,18 +118,18 @@ WRITE8_HANDLER( gsword_videoctrl_w )
 
 	/* bits 5-6 are char palette bank */
 
-	if (state->m_charpalbank != ((data & 0x60) >> 5))
+	if (m_charpalbank != ((data & 0x60) >> 5))
 	{
-		state->m_charpalbank = (data & 0x60) >> 5;
-		space->machine().tilemap().mark_all_dirty();
+		m_charpalbank = (data & 0x60) >> 5;
+		machine().tilemap().mark_all_dirty();
 	}
 
 	/* bit 4 is flip screen */
 
-	if (state->m_flipscreen != (data & 0x10))
+	if (m_flipscreen != (data & 0x10))
 	{
-		state->m_flipscreen = data & 0x10;
-	    space->machine().tilemap().mark_all_dirty();
+		m_flipscreen = data & 0x10;
+	    machine().tilemap().mark_all_dirty();
 	}
 
 	/* bit 0 could be used but unknown */
@@ -137,10 +137,9 @@ WRITE8_HANDLER( gsword_videoctrl_w )
 	/* other bits unused */
 }
 
-WRITE8_HANDLER( gsword_scroll_w )
+WRITE8_MEMBER(gsword_state::gsword_scroll_w)
 {
-	gsword_state *state = space->machine().driver_data<gsword_state>();
-	state->m_bg_tilemap->set_scrolly(0, data);
+	m_bg_tilemap->set_scrolly(0, data);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -166,7 +165,7 @@ static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const r
 	gsword_state *state = machine.driver_data<gsword_state>();
 	int offs;
 
-	for (offs = 0; offs < state->m_spritexy_size - 1; offs+=2)
+	for (offs = 0; offs < state->m_spritexy_ram.bytes() - 1; offs+=2)
 	{
 		int sx,sy,flipx,flipy,spritebank,tile,color;
 

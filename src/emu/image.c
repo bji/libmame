@@ -251,8 +251,6 @@ void image_device_init(running_machine &machine)
 				fatalerror_exitcode(machine, MAMERR_DEVICE, "Driver requires that device \"%s\" must have an image to load", image->instance_name());
 			}
 		}
-
-		image->call_get_devices();
 	}
 }
 
@@ -469,24 +467,4 @@ void image_battery_save_by_name(emu_options &options, const char *filename, cons
     file_error filerr = file.open(filename);
     if (filerr == FILERR_NONE)
         file.write(buffer, length);
-}
-
-/*-------------------------------------------------
-    image_from_absolute_index - retreives index number
-    of image in device list
--------------------------------------------------*/
-device_image_interface *image_from_absolute_index(running_machine &machine, int absolute_index)
-{
-	image_interface_iterator iter(machine.root_device());
-	return iter.byindex(absolute_index);
-}
-
-/*-------------------------------------------------
-    image_add_device_with_subdevices - adds
-    device with parameters sent, and all subdevices
-    from it's machine config devices list
--------------------------------------------------*/
-void image_add_device_with_subdevices(device_t *owner, device_type type, const char *tag, UINT32 clock)
-{
-	owner->machine().add_dynamic_device(*owner, type, tag, clock);
 }

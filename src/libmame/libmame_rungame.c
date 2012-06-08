@@ -248,7 +248,7 @@ typedef struct LibMame_RunGame_State
  ************************************************************************** **/
 
 /* This maps each MAME IPT_ type to a libmame_input descriptor. */
-static libmame_input_descriptor g_input_descriptors[] =
+static libmame_input_descriptor g_input_descriptors[IPT_COUNT] =
 {
 	{ IPT_INVALID, INVALID_INPUT },
 	{ IPT_UNUSED, INVALID_INPUT },
@@ -256,7 +256,6 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_UNKNOWN, INVALID_INPUT },
 	{ IPT_PORT, INVALID_INPUT },
 	{ IPT_DIPSWITCH, INVALID_INPUT },
-	{ IPT_VBLANK, INVALID_INPUT },
 	{ IPT_CONFIG, INVALID_INPUT },
     { IPT_START1, BUTTON_INPUT(Shared, Start1) },
 	{ IPT_START2, BUTTON_INPUT(Shared, Start2) },
@@ -296,6 +295,7 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_SELECT, INVALID_INPUT },
     { IPT_KEYPAD, INVALID_INPUT },
 	{ IPT_KEYBOARD, INVALID_INPUT },
+    { IPT_DIGITAL_JOYSTICK_FIRST, INVALID_INPUT },
     { IPT_JOYSTICK_UP, JOYSTICK_INPUT(left, LibMame_JoystickDirection_Up) },
     { IPT_JOYSTICK_DOWN, JOYSTICK_INPUT(left, LibMame_JoystickDirection_Down) },
     { IPT_JOYSTICK_LEFT, JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left) },
@@ -317,6 +317,7 @@ static libmame_input_descriptor g_input_descriptors[] =
       JOYSTICK_INPUT(left, LibMame_JoystickDirection_Left) },
     { IPT_JOYSTICKLEFT_RIGHT, 
       JOYSTICK_INPUT(left, LibMame_JoystickDirection_Right) },
+    { IPT_DIGITAL_JOYSTICK_LAST, INVALID_INPUT },
 	{ IPT_BUTTON1, BUTTON_INPUT(Normal, 1) },
 	{ IPT_BUTTON2, BUTTON_INPUT(Normal, 2) },
 	{ IPT_BUTTON3, BUTTON_INPUT(Normal, 3) },
@@ -333,6 +334,7 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_BUTTON14, BUTTON_INPUT(Normal, 14) },
 	{ IPT_BUTTON15, BUTTON_INPUT(Normal, 15) },
 	{ IPT_BUTTON16, BUTTON_INPUT(Normal, 16) },
+    { IPT_MAHJONG_FIRST, INVALID_INPUT },
 	{ IPT_MAHJONG_A, BUTTON_INPUT(Mahjong, A) },
 	{ IPT_MAHJONG_B, BUTTON_INPUT(Mahjong, B) },
 	{ IPT_MAHJONG_C, BUTTON_INPUT(Mahjong, C) },
@@ -362,6 +364,8 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_MAHJONG_FLIP_FLOP, BUTTON_INPUT(Mahjong, Flip_Flop) },
 	{ IPT_MAHJONG_BIG, BUTTON_INPUT(Mahjong, Big) },
 	{ IPT_MAHJONG_SMALL, BUTTON_INPUT(Mahjong, Small) },
+    { IPT_MAHJONG_LAST, INVALID_INPUT },
+    { IPT_HANAFUDA_FIRST, INVALID_INPUT },
 	{ IPT_HANAFUDA_A, BUTTON_INPUT(Hanafuda, A) },
 	{ IPT_HANAFUDA_B, BUTTON_INPUT(Hanafuda, B) },
 	{ IPT_HANAFUDA_C, BUTTON_INPUT(Hanafuda, C) },
@@ -372,6 +376,8 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_HANAFUDA_H, BUTTON_INPUT(Hanafuda, H) },
 	{ IPT_HANAFUDA_YES, BUTTON_INPUT(Hanafuda, Yes) },
 	{ IPT_HANAFUDA_NO, BUTTON_INPUT(Hanafuda, No) },
+    { IPT_HANAFUDA_LAST, INVALID_INPUT },
+    { IPT_GAMBLING_FIRST, INVALID_INPUT },
 	{ IPT_GAMBLE_KEYIN, BUTTON_INPUT(Gambling, Keyin) },
 	{ IPT_GAMBLE_KEYOUT, BUTTON_INPUT(Gambling, Keyout) },
 	{ IPT_GAMBLE_SERVICE, BUTTON_INPUT(Gambling, Service) },
@@ -398,6 +404,9 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_SLOT_STOP3, BUTTON_INPUT(Gambling, Stop3) },
 	{ IPT_SLOT_STOP4, BUTTON_INPUT(Gambling, Stop4) },
 	{ IPT_SLOT_STOP_ALL, BUTTON_INPUT(Gambling, Stop_All) },
+    { IPT_GAMBLING_LAST, INVALID_INPUT },
+    { IPT_ANALOG_FIRST, INVALID_INPUT },
+    { IPT_ANALOG_ABSOLUTE_FIRST, INVALID_INPUT },
 
     { IPT_AD_STICK_X, ANALOG_INPUT(analog_joystick_horizontal, ITEM_ID_XAXIS) },
 	{ IPT_AD_STICK_Y, ANALOG_INPUT(analog_joystick_vertical, ITEM_ID_YAXIS) },
@@ -415,13 +424,16 @@ static libmame_input_descriptor g_input_descriptors[] =
     // both, which will suck.
     { IPT_POSITIONAL, ANALOG_INPUT(paddle, ITEM_ID_XAXIS) },
     { IPT_POSITIONAL_V, ANALOG_INPUT(vertical_paddle, ITEM_ID_YAXIS) },
+    { IPT_ANALOG_ABSOLUTE_LAST, INVALID_INPUT },
     { IPT_DIAL, ANALOG_INPUT(spinner, ITEM_ID_RXAXIS) },
     { IPT_DIAL_V, ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS) },
     { IPT_TRACKBALL_X, ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS) },
     { IPT_TRACKBALL_Y, ANALOG_INPUT(trackball_vertical, ITEM_ID_RYAXIS) },
     { IPT_MOUSE_X, INVALID_INPUT },
     { IPT_MOUSE_Y, INVALID_INPUT },
+    { IPT_ANALOG_LAST, INVALID_INPUT },
     { IPT_ADJUSTER, INVALID_INPUT },
+    { IPT_UI_FIRST, INVALID_INPUT },
     { IPT_UI_CONFIGURE, BUTTON_INPUT(Ui, Configure) },
     { IPT_UI_ON_SCREEN_DISPLAY, BUTTON_INPUT(Ui, On_Screen_Display) },
     { IPT_UI_DEBUG_BREAK, BUTTON_INPUT(Ui, Debug_Break) },
@@ -460,6 +472,27 @@ static libmame_input_descriptor g_input_descriptors[] =
 	{ IPT_UI_PASTE, BUTTON_INPUT(Ui, Paste) },
 	{ IPT_UI_SAVE_STATE, BUTTON_INPUT(Ui, Save_State) },
 	{ IPT_UI_LOAD_STATE, BUTTON_INPUT(Ui, Load_State) },
+    { IPT_OSD_1, INVALID_INPUT },
+    { IPT_OSD_2, INVALID_INPUT },
+    { IPT_OSD_3, INVALID_INPUT },
+    { IPT_OSD_4, INVALID_INPUT },
+    { IPT_OSD_5, INVALID_INPUT },
+    { IPT_OSD_6, INVALID_INPUT },
+    { IPT_OSD_7, INVALID_INPUT },
+    { IPT_OSD_8, INVALID_INPUT },
+    { IPT_OSD_9, INVALID_INPUT },
+    { IPT_OSD_10, INVALID_INPUT },
+    { IPT_OSD_11, INVALID_INPUT },
+    { IPT_OSD_12, INVALID_INPUT },
+    { IPT_OSD_13, INVALID_INPUT },
+    { IPT_OSD_14, INVALID_INPUT },
+    { IPT_OSD_15, INVALID_INPUT },
+    { IPT_OSD_16, INVALID_INPUT },
+    { IPT_UI_LAST, INVALID_INPUT },
+    { IPT_OTHER, INVALID_INPUT },
+    { IPT_SPECIAL, INVALID_INPUT },
+    { IPT_CUSTOM, INVALID_INPUT },
+    { IPT_OUTPUT, INVALID_INPUT }
 };
             
 static int g_input_descriptor_count = 
@@ -733,15 +766,26 @@ static void startup_callback(running_machine &machine)
         int keyboard_count = 0;
         int special_button_index = 0;
 
-        ioport_list &ioportlist = g_state.machine->m_portlist;
+        ioport_manager &man = g_state.machine->ioport();
 
-        input_port_config *port;
-        input_field_config *field;
-
-        for (port = ioportlist.first(); port; port = port->next()) {
-            for (field = port->fieldlist().first(); field; 
+        for (ioport_port *port = man.first_port(); port != NULL;
+             port = port->next()) {
+            for (ioport_field *field = port->first_field(); field != NULL;
                  field = field->next()) {
-                if ((field->type != IPT_OTHER) || !field->name) {
+                // This matches the detection done in 
+                // libmame_games::convert_controllers, to ensure that
+                // the descriptions we inform the user about match the
+                // special input ports we set up here
+                if (field->unused()) {
+                    continue;
+                }
+                if (field->cocktail()) {
+                    continue;
+                }
+                if (field->player() != 0) {
+                    continue;
+                }
+                if ((field->type() != IPT_OTHER) || !field->name()) {
                     continue;
                 }
                 if (!keyboard || (keyboard_item > ITEM_ID_Z)) {
@@ -762,8 +806,32 @@ static void startup_callback(running_machine &machine)
                                    (void *) (uintptr_t) special_button_index++);
                 keyboard_item++;
 
-                port->first_field()->seq[SEQ_TYPE_STANDARD].
+                // XXX bji - this no longer works.  MAME cannot be forced to
+                // use an item input code via a method call, it has to extract
+                // it from some settings values somewhere.
+
+                // The dipswitch and settings stuff has changed significantly
+                // over time and I am not sure that libmame's use of it works
+                // anymore anyway.
+                
+                // It might be better to more significantly hack MAME to
+                // have much, much saner API for querying about controls,
+                // dipswitches, adjusters, and configuration stuff, and
+                // setting those at runtime, than to try to continue to
+                // try to force MAME into doing what I want in this minimal
+                // fashion.
+
+                // Basically, I would leave the macros that are used by all of
+                // the drivers to define their ports and stuff, but
+                // reimplement them into something usable.  Also I would
+                // figure out what minimal API is necessary for the drivers to
+                // acquire input values and re-implement that too.
+#if 0
+                port->first_field()->seq(SEQ_TYPE_STANDARD).
                     set(item_input_code);
+#else
+                (void) item_input_code;
+#endif
             }
         }
     }
@@ -811,6 +879,10 @@ static void set_configuration_value(LibMame_RunningGame *game,
 {
     (void) game;
 
+    // This no longer works; the whole dipswitch/coniguration thing needs
+    // to be redone as per other comments
+
+#if 0
     const input_field_config *config = input_field_by_tag_and_mask
         (*(g_state.machine), tag, mask);
 
@@ -819,6 +891,7 @@ static void set_configuration_value(LibMame_RunningGame *game,
         settings.value = value;
         input_field_set_user_settings(config, &settings);
     }
+#endif
 }
 
 
@@ -1022,7 +1095,7 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
         item_device = NULL;
         int index = 0;
         for (index = 0; index < g_input_descriptor_count; index++) {
-            if (g_input_descriptors[index].ipt_port == entry->type) {
+            if (g_input_descriptors[index].ipt_port == entry->type()) {
                 break;
             }
         }
@@ -1031,8 +1104,8 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
         }
         if (controllers_have_input(g_state.maximum_player_count,
                                    &(g_state.controllers),
-                                   entry->player, index)) {
-            switch (g_input_descriptors[entry->type].type) {
+                                   entry->player(), index)) {
+            switch (g_input_descriptors[entry->type()].type) {
             case libmame_input_type_invalid:
                 break;
 

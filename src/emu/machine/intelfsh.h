@@ -16,6 +16,12 @@
 #define MCFG_SHARP_LH28F016S_ADD(_tag) \
 	MCFG_DEVICE_ADD(_tag, SHARP_LH28F016S, 0)
 
+#define MCFG_ATMEL_29C010_ADD(_tag) \
+	MCFG_DEVICE_ADD(_tag, ATMEL_29C010, 0)
+
+#define MCFG_AMD_29F040_ADD(_tag) \
+	MCFG_DEVICE_ADD(_tag, AMD_29F040, 0)
+
 #define MCFG_AMD_29F080_ADD(_tag) \
 	MCFG_DEVICE_ADD(_tag, AMD_29F080, 0)
 
@@ -49,7 +55,8 @@
 #define MCFG_SHARP_UNK128MBIT_ADD(_tag) \
 	MCFG_DEVICE_ADD(_tag, SHARP_UNK128MBIT, 0)
 
-
+#define MCFG_INTEL_28F320J3D_ADD(_tag) \
+	MCFG_DEVICE_ADD(_tag, INTEL_28F320J3D, 0)
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -71,6 +78,8 @@ public:
 		FLASH_INTEL_28F016S5 = 0x0800,
 		FLASH_FUJITSU_29F016A,
 		FLASH_FUJITSU_29DL16X,
+		FLASH_ATMEL_29C010,
+		FLASH_AMD_29F040,
 		FLASH_AMD_29F080,
 		FLASH_SHARP_LH28F016S,
 		FLASH_INTEL_E28F008SA,
@@ -82,7 +91,8 @@ public:
 		FLASH_SHARP_LH28F400 = 0x1000,
 		FLASH_INTEL_E28F400,
 		FLASH_INTEL_TE28F160,
-		FLASH_SHARP_UNK128MBIT
+		FLASH_SHARP_UNK128MBIT,
+		FLASH_INTEL_28F320J3D
 	};
 
 protected:
@@ -114,6 +124,7 @@ protected:
 	UINT8					m_device_id;
 	UINT8					m_maker_id;
 	bool					m_sector_is_4k;
+	UINT8					m_page_size;
 
 	// internal state
 	UINT8					m_status;
@@ -122,6 +133,7 @@ protected:
 	bool					m_flash_master_lock;
 	emu_timer *				m_timer;
 	INT32					m_bank;
+	UINT8					m_byte_count;
 };
 
 
@@ -180,6 +192,18 @@ class fujitsu_29dl16x_device : public intelfsh8_device
 {
 public:
 	fujitsu_29dl16x_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
+};
+
+class atmel_29c010_device : public intelfsh8_device
+{
+public:
+	atmel_29c010_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
+};
+
+class amd_29f040_device : public intelfsh8_device
+{
+public:
+	amd_29f040_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 };
 
 class amd_29f080_device : public intelfsh8_device
@@ -244,11 +268,18 @@ public:
 	sharp_unk128mbit_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 };
 
+class intel_28f320j3d_device : public intelfsh16_device
+{
+public:
+	intel_28f320j3d_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
+};
 
 
 // device type definition
 extern const device_type INTEL_28F016S5;
 extern const device_type SHARP_LH28F016S;
+extern const device_type ATMEL_29C010;
+extern const device_type AMD_29F040;
 extern const device_type AMD_29F080;
 extern const device_type FUJITSU_29F016A;
 extern const device_type FUJITSU_29DL16X;
@@ -261,6 +292,6 @@ extern const device_type SHARP_LH28F400;
 extern const device_type INTEL_E28F008SA;
 extern const device_type INTEL_TE28F160;
 extern const device_type SHARP_UNK128MBIT;
-
+extern const device_type INTEL_28F320J3D;
 
 #endif

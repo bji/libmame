@@ -10,7 +10,7 @@
 //============================================================
 
 // standard sdl header
-#include <SDL/SDL.h>
+#include "sdlinc.h"
 
 
 #define WIN32_LEAN_AND_MEAN
@@ -160,7 +160,7 @@ void osd_sleep(osd_ticks_t duration)
 //  osd_num_processors
 //============================================================
 
-int osd_num_processors(void)
+int osd_get_num_processors(void)
 {
 	SYSTEM_INFO info;
 

@@ -159,10 +159,10 @@ WRITE8_HANDLER( battles_noise_sound_w )
 	if( (battles_sound_played == 0) && (data == 0xFF) ){
 		samples_device *samples = space->machine().device<samples_device>("samples");
 		if( customio[0] == 0x40 ){
-			sample_start (samples, 0, 0, 0);
+			samples->start(0, 0);
 		}
 		else{
-			sample_start (samples, 0, 1, 0);
+			samples->start(0, 1);
 		}
 	}
 	battles_sound_played = data;
@@ -174,10 +174,10 @@ READ8_HANDLER( battles_input_port_r )
 	switch ( offset )
 	{
 		default:
-		case 0: return ~BITSWAP8(input_port_read(space->machine(), "IN0H"),7,6,5,4,2,3,1,0);
-		case 1: return ~input_port_read(space->machine(), "IN1L");
-		case 2: return ~input_port_read(space->machine(), "IN1H");
-		case 3: return ~input_port_read(space->machine(), "IN0L");
+		case 0: return ~BITSWAP8(space->machine().root_device().ioport("IN0H")->read(),7,6,5,4,2,3,1,0);
+		case 1: return ~space->machine().root_device().ioport("IN1L")->read();
+		case 2: return ~space->machine().root_device().ioport("IN1H")->read();
+		case 3: return ~space->machine().root_device().ioport("IN0L")->read();
 	}
 }
 

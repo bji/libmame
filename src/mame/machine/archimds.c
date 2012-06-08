@@ -74,7 +74,7 @@ void archimedes_request_irq_b(running_machine &machine, int mask)
 
 	if (ioc_regs[IRQ_MASK_B] & mask)
 	{
-		generic_pulse_irq_line(machine.device("maincpu"), ARM_IRQ_LINE);
+		generic_pulse_irq_line(machine.device("maincpu"), ARM_IRQ_LINE, 1);
 	}
 }
 
@@ -84,7 +84,7 @@ void archimedes_request_fiq(running_machine &machine, int mask)
 
 	if (ioc_regs[FIQ_MASK] & mask)
 	{
-		generic_pulse_irq_line(machine.device("maincpu"), ARM_FIRQ_LINE);
+		generic_pulse_irq_line(machine.device("maincpu"), ARM_FIRQ_LINE, 1);
 	}
 }
 
@@ -116,7 +116,7 @@ static TIMER_CALLBACK( vidc_vblank )
 static TIMER_CALLBACK( vidc_video_tick )
 {
 	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
-	static UINT8 *vram = machine.region("vram")->base();
+	static UINT8 *vram = machine.root_device().memregion("vram")->base();
 	UINT32 size;
 
 	size = vidc_vidend-vidc_vidstart+0x10;
@@ -289,7 +289,7 @@ READ32_HANDLER(archimedes_memc_logical_r)
 	{
 		UINT32 *rom;
 
-		rom = (UINT32 *)space->machine().region("maincpu")->base();
+		rom = (UINT32 *)space->machine().root_device().memregion("maincpu")->base();
 
 		return rom[offset & 0x1fffff];
 	}
@@ -355,7 +355,7 @@ READ32_HANDLER(aristmk5_drame_memc_logical_r)
 	{
 		UINT32 *rom;
 
-		rom = (UINT32 *)space->machine().region("maincpu")->base();
+		rom = (UINT32 *)space->machine().root_device().memregion("maincpu")->base();
 
 		return rom[offset & 0x1fffff];
 	}
@@ -406,7 +406,7 @@ DIRECT_UPDATE_HANDLER( a310_setopbase )
 	// if the boot ROM is mapped in, do some trickery to make it show up
 	if (memc_latchrom)
 	{
-		direct.explicit_configure(0x000000, 0x1fffff, 0x1fffff, *direct.space().machine().region("maincpu"));
+		direct.explicit_configure(0x000000, 0x1fffff, 0x1fffff, *direct.space().machine().root_device().memregion("maincpu"));
 	}
 	else	// executing from logical memory
 	{
@@ -855,7 +855,7 @@ WRITE32_HANDLER(archimedes_vidc_w)
 	// 0x00 - 0x3c Video Palette Logical Colors (16 colors)
 	// 0x40 Border Color
 	// 0x44 - 0x4c Cursor Palette Logical Colors
-	if (reg >= 0x00 && reg <= 0x4c)
+	if (reg <= 0x4c)
 	{
 		int r,g,b;
 

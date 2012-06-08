@@ -33,25 +33,20 @@ static TILE_GET_INFO( get_tile_info )
 VIDEO_START( lemmings )
 {
 	lemmings_state *state = machine.driver_data<lemmings_state>();
-	state->m_bitmap0 = auto_bitmap_ind16_alloc(machine, 2048, 256);
 	state->m_vram_tilemap = tilemap_create(machine, get_tile_info, tilemap_scan_cols, 8, 8, 64, 32);
 
-	state->m_vram_buffer = auto_alloc_array(machine, UINT8, 2048 * 64); /* 64 bytes per VRAM character */
-	state->m_sprite_triple_buffer_0 = auto_alloc_array(machine, UINT16, 0x800 / 2);
-	state->m_sprite_triple_buffer_1 = auto_alloc_array(machine, UINT16, 0x800 / 2);
-
 	state->m_vram_tilemap->set_transparent_pen(0);
-	state->m_bitmap0->fill(0x100);
+	state->m_bitmap0.fill(0x100);
 
 	gfx_element_set_source(machine.gfx[2], state->m_vram_buffer);
 
 	machine.device<decospr_device>("spritegen")->alloc_sprite_bitmap();
 	machine.device<decospr_device>("spritegen2")->alloc_sprite_bitmap();
 
-	state->save_item(NAME(*state->m_bitmap0));
-	state->save_pointer(NAME(state->m_vram_buffer), 2048 * 64);
-	state->save_pointer(NAME(state->m_sprite_triple_buffer_0), 0x800 / 2);
-	state->save_pointer(NAME(state->m_sprite_triple_buffer_1), 0x800 / 2);
+	state->save_item(NAME(state->m_bitmap0));
+	state->save_item(NAME(state->m_vram_buffer));
+	state->save_item(NAME(state->m_sprite_triple_buffer_0));
+	state->save_item(NAME(state->m_sprite_triple_buffer_1));
 }
 
 SCREEN_VBLANK( lemmings )
@@ -60,24 +55,22 @@ SCREEN_VBLANK( lemmings )
 	if (vblank_on)
 	{
 		lemmings_state *state = screen.machine().driver_data<lemmings_state>();
-
-		memcpy(state->m_sprite_triple_buffer_0, screen.machine().generic.buffered_spriteram.u16, 0x800);
-		memcpy(state->m_sprite_triple_buffer_1, screen.machine().generic.buffered_spriteram2.u16, 0x800);
+		memcpy(state->m_sprite_triple_buffer_0, state->m_spriteram->buffer(), 0x800);
+		memcpy(state->m_sprite_triple_buffer_1, state->m_spriteram2->buffer(), 0x800);
 	}
 }
 
 /******************************************************************************/
 
 // RAM based
-WRITE16_HANDLER( lemmings_pixel_0_w )
+WRITE16_MEMBER(lemmings_state::lemmings_pixel_0_w)
 {
 
-	lemmings_state *state = space->machine().driver_data<lemmings_state>();
 	int sx, sy, src, old;
 
-	old = state->m_pixel_0_data[offset];
-	COMBINE_DATA(&state->m_pixel_0_data[offset]);
-	src = state->m_pixel_0_data[offset];
+	old = m_pixel_0_data[offset];
+	COMBINE_DATA(&m_pixel_0_data[offset]);
+	src = m_pixel_0_data[offset];
 	if (old == src)
 		return;
 
@@ -87,36 +80,34 @@ WRITE16_HANDLER( lemmings_pixel_0_w )
 	if (sx > 2047 || sy > 255)
 		return;
 
-	state->m_bitmap0->pix16(sy, sx + 0) = ((src >> 8) & 0xf) | 0x100;
-	state->m_bitmap0->pix16(sy, sx + 1) = ((src >> 0) & 0xf) | 0x100;
+	m_bitmap0.pix16(sy, sx + 0) = ((src >> 8) & 0xf) | 0x100;
+	m_bitmap0.pix16(sy, sx + 1) = ((src >> 0) & 0xf) | 0x100;
 }
 
 // RAM based tiles for the FG tilemap
-WRITE16_HANDLER( lemmings_pixel_1_w )
+WRITE16_MEMBER(lemmings_state::lemmings_pixel_1_w)
 {
-	lemmings_state *state = space->machine().driver_data<lemmings_state>();
 	int sx, sy, src, tile;
 
-	COMBINE_DATA(&state->m_pixel_1_data[offset]);
-	src = state->m_pixel_1_data[offset];
+	COMBINE_DATA(&m_pixel_1_data[offset]);
+	src = m_pixel_1_data[offset];
 
 	sy = ((offset << 1) / 0x200);
 	sx = ((offset << 1) & 0x1ff);
 
 	/* Copy pixel to buffer for easier decoding later */
 	tile = ((sx / 8) * 32) + (sy / 8);
-	gfx_element_mark_dirty(space->machine().gfx[2], tile);
-	state->m_vram_buffer[(tile * 64) + ((sx & 7)) + ((sy & 7) * 8)] = (src >> 8) & 0xf;
+	gfx_element_mark_dirty(machine().gfx[2], tile);
+	m_vram_buffer[(tile * 64) + ((sx & 7)) + ((sy & 7) * 8)] = (src >> 8) & 0xf;
 
 	sx += 1; /* Update both pixels in the word */
-	state->m_vram_buffer[(tile * 64) + ((sx & 7)) + ((sy & 7) * 8)] = (src >> 0) & 0xf;
+	m_vram_buffer[(tile * 64) + ((sx & 7)) + ((sy & 7) * 8)] = (src >> 0) & 0xf;
 }
 
-WRITE16_HANDLER( lemmings_vram_w )
+WRITE16_MEMBER(lemmings_state::lemmings_vram_w)
 {
-	lemmings_state *state = space->machine().driver_data<lemmings_state>();
-	COMBINE_DATA(&state->m_vram_data[offset]);
-	state->m_vram_tilemap->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_vram_data[offset]);
+	m_vram_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -158,17 +149,17 @@ SCREEN_UPDATE_RGB32( lemmings )
 	/* Pixel layer can be windowed in hardware (two player mode) */
 	if ((state->m_control_data[6] & 2) == 0)
 	{
-		lemmings_copy_bitmap(screen.machine(), bitmap, *state->m_bitmap0, &x1, &y, cliprect);
+		lemmings_copy_bitmap(screen.machine(), bitmap, state->m_bitmap0, &x1, &y, cliprect);
 	}
 	else
 	{
 		rect.max_x = 159;
 		rect.min_x = 0;
-		lemmings_copy_bitmap(screen.machine(), bitmap, *state->m_bitmap0, &x0, &y, rect);
+		lemmings_copy_bitmap(screen.machine(), bitmap, state->m_bitmap0, &x0, &y, rect);
 
 		rect.max_x = 319;
 		rect.min_x = 160;
-		lemmings_copy_bitmap(screen.machine(), bitmap, *state->m_bitmap0, &x1, &y, rect);
+		lemmings_copy_bitmap(screen.machine(), bitmap, state->m_bitmap0, &x1, &y, rect);
 	}
 
 	screen.machine().device<decospr_device>("spritegen2")->inefficient_copy_sprite_bitmap(bitmap, cliprect, 0x0800, 0x0800, 0x200, 0xff);

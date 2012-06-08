@@ -27,7 +27,7 @@ WRITE8_MEMBER( zodiack_state::attributes_w )
 	{
 		int i;
 
-		for (i = offset / 2; i < m_videoram_size; i += 32)
+		for (i = offset / 2; i < m_videoram.bytes(); i += 32)
 		{
 			m_bg_tilemap->mark_tile_dirty(i);
 			m_fg_tilemap->mark_tile_dirty(i);
@@ -39,15 +39,16 @@ WRITE8_MEMBER( zodiack_state::attributes_w )
 
 WRITE8_MEMBER( zodiack_state::flipscreen_w )
 {
-	if (flip_screen_get(machine()) != (~data & 0x01))
+	if (flip_screen() != (~data & 0x01))
 	{
-		flip_screen_set(machine(), ~data & 0x01);
+		flip_screen_set(~data & 0x01);
 		machine().tilemap().mark_all_dirty();
 	}
 }
 
 PALETTE_INIT( zodiack )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	int i;
 
 	/* allocate the colortable */
@@ -127,19 +128,19 @@ void zodiack_state::video_start()
 	m_fg_tilemap->set_scroll_cols(32);
 
 	/* FIXME: flip_screen_x should not be written. */
-	flip_screen_set_no_update(machine(), 0);
+	flip_screen_set_no_update(0);
 }
 
 void zodiack_state::draw_bullets( bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
-	for (int offs = 0; offs < m_bulletsram_size; offs += 4)
+	for (int offs = 0; offs < m_bulletsram.bytes(); offs += 4)
 	{
 		int x, y;
 
 		x = m_bulletsram[offs + 3] + 7;
 		y = 255 - m_bulletsram[offs + 1];
 
-		if (flip_screen_get(machine()) && m_percuss_hardware)
+		if (flip_screen() && m_percuss_hardware)
 		{
 			y = 255 - y;
 		}
@@ -156,7 +157,7 @@ void zodiack_state::draw_bullets( bitmap_ind16 &bitmap, const rectangle &cliprec
 
 void zodiack_state::draw_sprites( bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
-	for (int offs = m_spriteram_size - 4; offs >= 0; offs -= 4)
+	for (int offs = m_spriteram.bytes() - 4; offs >= 0; offs -= 4)
 	{
 		int flipx, flipy, sx, sy, spritecode;
 
@@ -166,7 +167,7 @@ void zodiack_state::draw_sprites( bitmap_ind16 &bitmap, const rectangle &cliprec
 		flipy = m_spriteram[offs + 1] & 0x80;
 		spritecode = m_spriteram[offs + 1] & 0x3f;
 
-		if (flip_screen_get(machine()) && m_percuss_hardware)
+		if (flip_screen() && m_percuss_hardware)
 		{
 			sy = 240 - sy;
 			flipy = !flipy;

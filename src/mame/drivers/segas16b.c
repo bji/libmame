@@ -1030,7 +1030,7 @@ static void sound_w(running_machine &machine, UINT8 data)
 	if (state->m_soundcpu != NULL)
 	{
 		address_space *space = state->m_maincpu->memory().space(AS_PROGRAM);
-		soundlatch_w(space, 0, data & 0xff);
+		state->soundlatch_byte_w(*space, 0, data & 0xff);
 		device_set_input_line(state->m_soundcpu, 0, HOLD_LINE);
 	}
 }
@@ -1168,11 +1168,11 @@ static READ16_HANDLER( standard_io_r )
 		case 0x1000/2:
 		{
 			static const char *const sysports[] = { "SERVICE", "P1", "UNUSED", "P2" };
-			return input_port_read(space->machine(), sysports[offset & 3]);
+			return space->machine().root_device().ioport(sysports[offset & 3])->read();
 		}
 
 		case 0x2000/2:
-			return input_port_read(space->machine(), (offset & 1) ? "DSW1" : "DSW2");
+			return space->machine().root_device().ioport((offset & 1) ? "DSW1" : "DSW2")->read();
 	}
 	logerror("%06X:standard_io_r - unknown read access to address %04X\n", cpu_get_pc(&space->device()), offset * 2);
 	return segaic16_open_bus_r(space, 0, mem_mask);
@@ -1319,7 +1319,7 @@ static WRITE16_HANDLER( unknown_rgn2_w )
 static WRITE8_DEVICE_HANDLER( upd7759_control_w )
 {
 	segas1x_state *state = device->machine().driver_data<segas1x_state>();
-	int size = device->machine().region("soundcpu")->bytes() - 0x10000;
+	int size = state->memregion("soundcpu")->bytes() - 0x10000;
 	if (size > 0)
 	{
 		int bankoffs = 0;
@@ -1376,7 +1376,7 @@ static WRITE8_DEVICE_HANDLER( upd7759_control_w )
 				bankoffs += (data & 0x07) * 0x04000;
 				break;
 		}
-		memory_set_bankptr(device->machine(), "bank1", device->machine().region("soundcpu")->base() + 0x10000 + (bankoffs % size));
+		state->membank("bank1")->set_base(device->machine().root_device().memregion("soundcpu")->base() + 0x10000 + (bankoffs % size));
 	}
 }
 
@@ -1401,7 +1401,7 @@ static WRITE8_HANDLER( mcu_data_w )
 {
 	segas1x_state *state = space->machine().driver_data<segas1x_state>();
 	state->m_mcu_data = data;
-	generic_pulse_irq_line(state->m_mcu, 1);
+	generic_pulse_irq_line(state->m_mcu, 1, 1);
 }
 #endif
 
@@ -1450,7 +1450,7 @@ static void altbeast_common_i8751_sim(running_machine &machine, offs_t soundoffs
 	}
 
 	/* read inputs */
-	workram[inputoffs] = ~input_port_read(machine, "SERVICE") << 8;
+	workram[inputoffs] = ~machine.root_device().ioport("SERVICE")->read() << 8;
 }
 
 static void altbeasj_i8751_sim(running_machine &machine)
@@ -1534,8 +1534,8 @@ static void goldnaxe_i8751_sim(running_machine &machine)
 	}
 
 	/* read inputs */
-	workram[0x2cd0/2] = (input_port_read(machine, "P1") << 8) | input_port_read(machine, "P2");
-	workram[0x2c96/2] = input_port_read(machine, "SERVICE") << 8;
+	workram[0x2cd0/2] = (state->ioport("P1")->read() << 8) | state->ioport("P2")->read();
+	workram[0x2c96/2] = machine.root_device().ioport("SERVICE")->read() << 8;
 }
 
 
@@ -1557,9 +1557,9 @@ static void tturf_i8751_sim(running_machine &machine)
 	}
 
 	/* read inputs */
-	workram[0x01e6/2] = input_port_read(machine, "SERVICE") << 8;
-	workram[0x01e8/2] = input_port_read(machine, "P1") << 8;
-	workram[0x01ea/2] = input_port_read(machine, "P2") << 8;
+	workram[0x01e6/2] = machine.root_device().ioport("SERVICE")->read() << 8;
+	workram[0x01e8/2] = machine.root_device().ioport("P1")->read() << 8;
+	workram[0x01ea/2] = machine.root_device().ioport("P2")->read() << 8;
 }
 
 
@@ -1591,34 +1591,35 @@ static void wb3_i8751_sim(running_machine &machine)
 
 static READ16_HANDLER( aceattac_custom_io_r )
 {
+	segas1x_state *state = space->machine().driver_data<segas1x_state>();
 	switch (offset & (0x3000/2))
 	{
 		case 0x1000/2:
 			switch (offset & 3)
 			{
 				case 0x01:
-					return input_port_read(space->machine(), "P1");
+					return state->ioport("P1")->read();
 
 				case 0x02:
-					return input_port_read(space->machine(), "DIAL1") | (input_port_read(space->machine(), "DIAL2") << 4);
+					return state->ioport("DIAL1")->read() | (state->ioport("DIAL2")->read() << 4);
 					// low nibble: Sega 56pin Edge "16"-"19" // rotary switch 10positions 4bit-binary-pinout
 					// high nibble: Sega 56pin Edge "T"-"W"  // ditto
 
 				case 0x03:
-					return input_port_read(space->machine(), "P2");
+					return state->ioport("P2")->read();
 			}
 			break;
 		case 0x3000/2:
 			switch (offset & 3)
 			{
-				case 0:	return input_port_read(space->machine(), "HANDX1");
-				case 1:	return input_port_read(space->machine(), "TRACKX1");
-				case 2:	return input_port_read(space->machine(), "TRACKY1");
-				case 3:	return input_port_read(space->machine(), "HANDY1");
-				case 4:	return input_port_read(space->machine(), "HANDX2");
-				case 5:	return input_port_read(space->machine(), "TRACKX2");
-				case 6:	return input_port_read(space->machine(), "TRACKY2");
-				case 7:	return input_port_read(space->machine(), "HANDY2");
+				case 0:	return state->ioport("HANDX1")->read();
+				case 1:	return state->ioport("TRACKX1")->read();
+				case 2:	return state->ioport("TRACKY1")->read();
+				case 3:	return state->ioport("HANDY1")->read();
+				case 4:	return state->ioport("HANDX2")->read();
+				case 5:	return state->ioport("TRACKX2")->read();
+				case 6:	return state->ioport("TRACKY2")->read();
+				case 7:	return state->ioport("HANDY2")->read();
 			}
 			break;
 	}
@@ -1656,19 +1657,20 @@ static WRITE16_HANDLER( atomicp_sound_w )
 
 static READ16_HANDLER( dunkshot_custom_io_r )
 {
+	segas1x_state *state = space->machine().driver_data<segas1x_state>();
 	switch (offset & (0x3000/2))
 	{
 		case 0x3000/2:
 			switch ((offset/2) & 7)
 			{
-				case 0:	return (input_port_read(space->machine(), "ANALOGX1") << 4) >> (8 * (offset & 1));
-				case 1:	return (input_port_read(space->machine(), "ANALOGY1") << 4) >> (8 * (offset & 1));
-				case 2:	return (input_port_read(space->machine(), "ANALOGX2") << 4) >> (8 * (offset & 1));
-				case 3:	return (input_port_read(space->machine(), "ANALOGY2") << 4) >> (8 * (offset & 1));
-				case 4:	return (input_port_read(space->machine(), "ANALOGX3") << 4) >> (8 * (offset & 1));
-				case 5:	return (input_port_read(space->machine(), "ANALOGY3") << 4) >> (8 * (offset & 1));
-				case 6:	return (input_port_read(space->machine(), "ANALOGX4") << 4) >> (8 * (offset & 1));
-				case 7:	return (input_port_read(space->machine(), "ANALOGY4") << 4) >> (8 * (offset & 1));
+				case 0:	return (state->ioport("ANALOGX1")->read() << 4) >> (8 * (offset & 1));
+				case 1:	return (state->ioport("ANALOGY1")->read() << 4) >> (8 * (offset & 1));
+				case 2:	return (state->ioport("ANALOGX2")->read() << 4) >> (8 * (offset & 1));
+				case 3:	return (state->ioport("ANALOGY2")->read() << 4) >> (8 * (offset & 1));
+				case 4:	return (state->ioport("ANALOGX3")->read() << 4) >> (8 * (offset & 1));
+				case 5:	return (state->ioport("ANALOGY3")->read() << 4) >> (8 * (offset & 1));
+				case 6:	return (state->ioport("ANALOGX4")->read() << 4) >> (8 * (offset & 1));
+				case 7:	return (state->ioport("ANALOGY4")->read() << 4) >> (8 * (offset & 1));
 			}
 			break;
 	}
@@ -1714,7 +1716,7 @@ static WRITE16_HANDLER( hwchamp_custom_io_w )
 			switch (offset & 0x30/2)
 			{
 				case 0x20/2:
-					state->m_hwc_input_value = input_port_read_safe(space->machine(), portname[offset & 3], 0xff);
+					state->m_hwc_input_value = state->ioport(portname[offset & 3])->read_safe(0xff);
 					break;
 
 				case 0x30/2:
@@ -1741,15 +1743,16 @@ static WRITE16_HANDLER( hwchamp_custom_io_w )
 
 static READ16_HANDLER( passshtj_custom_io_r )
 {
+	segas1x_state *state = space->machine().driver_data<segas1x_state>();
 	switch (offset & (0x3000/2))
 	{
 		case 0x3000/2:
 			switch (offset & 3)
 			{
-				case 0:	return input_port_read(space->machine(), "P1");
-				case 1:	return input_port_read(space->machine(), "P2");
-				case 2:	return input_port_read(space->machine(), "P3");
-				case 3:	return input_port_read(space->machine(), "P4");
+				case 0:	return state->ioport("P1")->read();
+				case 1:	return state->ioport("P2")->read();
+				case 2:	return state->ioport("P3")->read();
+				case 3:	return state->ioport("P4")->read();
 			}
 			break;
 	}
@@ -1766,15 +1769,16 @@ static READ16_HANDLER( passshtj_custom_io_r )
 
 static READ16_HANDLER( sdi_custom_io_r )
 {
+	segas1x_state *state = space->machine().driver_data<segas1x_state>();
 	switch (offset & (0x3000/2))
 	{
 		case 0x3000/2:
 			switch ((offset/2) & 3)
 			{
-				case 0:	return input_port_read(space->machine(), "ANALOGX1");
-				case 1:	return input_port_read(space->machine(), "ANALOGY1");
-				case 2:	return input_port_read(space->machine(), "ANALOGX2");
-				case 3:	return input_port_read(space->machine(), "ANALOGY2");
+				case 0:	return state->ioport("ANALOGX1")->read();
+				case 1:	return state->ioport("ANALOGY1")->read();
+				case 2:	return state->ioport("ANALOGX2")->read();
+				case 3:	return state->ioport("ANALOGY2")->read();
 			}
 			break;
 	}
@@ -1800,12 +1804,12 @@ static READ16_HANDLER( sjryuko_custom_io_r )
 			switch (offset & 3)
 			{
 				case 1:
-					if (input_port_read_safe(space->machine(), portname[state->m_mj_input_num], 0xff) != 0xff)
+					if (state->ioport(portname[state->m_mj_input_num])->read_safe(0xff) != 0xff)
 						return 0xff & ~(1 << state->m_mj_input_num);
 					return 0xff;
 
 				case 2:
-					return input_port_read_safe(space->machine(), portname[state->m_mj_input_num], 0xff);
+					return state->ioport(portname[state->m_mj_input_num])->read_safe(0xff);
 			}
 			break;
 	}
@@ -1837,9 +1841,9 @@ static WRITE16_HANDLER( sjryuko_custom_io_w )
  *
  *************************************/
 
-static ADDRESS_MAP_START( system16b_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( system16b_map, AS_PROGRAM, 16, segas1x_state )
 	ADDRESS_MAP_UNMAP_HIGH
-	AM_RANGE(0x000000, 0xffffff) AM_READWRITE(segaic16_memory_mapper_lsb_r, segaic16_memory_mapper_lsb_w)
+	AM_RANGE(0x000000, 0xffffff) AM_READWRITE_LEGACY(segaic16_memory_mapper_lsb_r, segaic16_memory_mapper_lsb_w)
 ADDRESS_MAP_END
 
 
@@ -1850,21 +1854,21 @@ ADDRESS_MAP_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( sound_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( sound_map, AS_PROGRAM, 8, segas1x_state )
 	ADDRESS_MAP_UNMAP_HIGH
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 	AM_RANGE(0x8000, 0xdfff) AM_ROMBANK("bank1")
-	AM_RANGE(0xe800, 0xe800) AM_READ(soundlatch_r)
+	AM_RANGE(0xe800, 0xe800) AM_READ(soundlatch_byte_r)
 	AM_RANGE(0xf800, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sound_portmap, AS_IO, 8 )
+static ADDRESS_MAP_START( sound_portmap, AS_IO, 8, segas1x_state )
 	ADDRESS_MAP_UNMAP_HIGH
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x01) AM_MIRROR(0x3e) AM_DEVREADWRITE("ymsnd", ym2151_r, ym2151_w)
-	AM_RANGE(0x40, 0x40) AM_MIRROR(0x3f) AM_DEVWRITE("upd", upd7759_control_w)
-	AM_RANGE(0x80, 0x80) AM_MIRROR(0x3f) AM_DEVREADWRITE("upd", upd7759_status_r, upd7759_port_w)
-	AM_RANGE(0xc0, 0xc0) AM_MIRROR(0x3f) AM_READ(soundlatch_r)
+	AM_RANGE(0x00, 0x01) AM_MIRROR(0x3e) AM_DEVREADWRITE_LEGACY("ymsnd", ym2151_r, ym2151_w)
+	AM_RANGE(0x40, 0x40) AM_MIRROR(0x3f) AM_DEVWRITE_LEGACY("upd", upd7759_control_w)
+	AM_RANGE(0x80, 0x80) AM_MIRROR(0x3f) AM_DEVREADWRITE_LEGACY("upd", upd7759_status_r, upd7759_port_w)
+	AM_RANGE(0xc0, 0xc0) AM_MIRROR(0x3f) AM_READ(soundlatch_byte_r)
 ADDRESS_MAP_END
 
 
@@ -1875,9 +1879,9 @@ ADDRESS_MAP_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( mcu_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( mcu_io_map, AS_IO, 8, segas1x_state )
 	ADDRESS_MAP_UNMAP_HIGH
-	AM_RANGE(0x0000, 0x001f) AM_MIRROR(0xff00) AM_READWRITE(segaic16_memory_mapper_r, segaic16_memory_mapper_w)
+	AM_RANGE(0x0000, 0x001f) AM_MIRROR(0xff00) AM_READWRITE_LEGACY(segaic16_memory_mapper_r, segaic16_memory_mapper_w)
 	AM_RANGE(MCS51_PORT_P1, MCS51_PORT_P1) AM_READ_PORT("SERVICE")
 ADDRESS_MAP_END
 
@@ -3469,7 +3473,7 @@ MACHINE_CONFIG_END
  **************************************************************************************************************************
     Ace Attacker, Sega System 16B
     CPU: FD1094 (317-0059, also 317-0061 version known to be exist)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 ROM_START( aceattac )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -3510,7 +3514,7 @@ ROM_END
  **************************************************************************************************************************
     Alien Syndrome, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 ROM_START( aliensyn )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -3546,7 +3550,10 @@ ROM_END
 /**************************************************************************************************************************
     Alien Syndrome, Sega System 16B
     CPU: FD1089A (317-0033)
-    ROM Board: 171-5358?
+    ROM Board type: 171-5358
+    Sega game ID: 833-6308-03
+      Main board: 837-6312
+       Rom board: 834-6311-03
 */
 ROM_START( aliensyn3 )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -3586,7 +3593,7 @@ ROM_END
 /**************************************************************************************************************************
     Alien Syndrome, Sega System 16B
     CPU: FD1089A (317-0033)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
     Sega game ID: 833-6308
       Main board: 837-6312
        Rom board: 834-6311
@@ -3631,7 +3638,7 @@ ROM_END
  **************************************************************************************************************************
     Altered Beast, Sega System 16B
     CPU: 68000 + i8751 (317-0078)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
     Sega ID# for ROM board: 834-6661-10
 */
 ROM_START( altbeast )
@@ -3666,7 +3673,7 @@ ROM_END
 /**************************************************************************************************************************
     Altered Beast, Sega System 16B
     CPU: 68000 + i8751 (317-0077)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
 ROM_START( altbeastj )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -3709,9 +3716,9 @@ ROM_END
 /**************************************************************************************************************************
     Altered Beast, Sega System 16B
     CPU: 68000 + i8751 (317-0076)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
-ROM_START( altbeast5 )
+ROM_START( altbeast6 )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
 	ROM_LOAD16_BYTE( "epr-11883.a7", 0x000000, 0x20000, CRC(c5b3e8f7) SHA1(06c59d38093330b74f685cb02f8c7311e4a7b38c) )
 	ROM_LOAD16_BYTE( "epr-11882.a5", 0x000001, 0x20000, CRC(9c01170b) SHA1(7651f791e5488ce1143eeb4ad01eb924d1460170) )
@@ -3751,8 +3758,54 @@ ROM_END
 
 /**************************************************************************************************************************
     Altered Beast, Sega System 16B
+    CPU: FD1094 (317-0069)
+    ROM Board type: 171-5521
+    Sega game ID: 833-6660-07
+      Main board: 837-6662-05
+       ROM board: 834-6661-07
+*/
+ROM_START( altbeast5 )
+	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
+	ROM_LOAD16_BYTE( "epr-11742.a7", 0x000000, 0x20000, CRC(61839534) SHA1(0246985ec642fb44d33acbbbec9f6a1936afb302) )
+	ROM_LOAD16_BYTE( "epr-11741.a5", 0x000001, 0x20000, CRC(9b2159cb) SHA1(dba53afcbb42be3e2611d00324bca6544faec071) )
+
+	ROM_REGION( 0x2000, "user1", 0 ) /* decryption key */
+	ROM_LOAD( "317-0069.key", 0x0000, 0x2000, CRC(959e256a) SHA1(392832620ddbe549b3a807ef226dadbf861a16ee) ) /* The "9" was printed over a "3" */
+
+	ROM_REGION( 0xc0000, "gfx1", 0 ) /* tiles */
+	ROM_LOAD( "epr-11722.a14", 0x00000, 0x10000,  CRC(adaa8db5) SHA1(3262c98d13d08c333d16052cac841f44d2f99743) ) /* plane 1 */
+	ROM_LOAD( "epr-11736.b14", 0x20000, 0x10000,  CRC(e9ad5e89) SHA1(769628eee6e194a84aa8a3729f4e7d07dd3ba25c) )
+	ROM_LOAD( "epr-11723.a15", 0x40000, 0x10000,  CRC(131a3f9a) SHA1(8182c3b8ce7a2f02b226cfa2081187593c9d0d0b) ) /* plane 2 */
+	ROM_LOAD( "epr-11737.b15", 0x60000, 0x10000,  CRC(2e420023) SHA1(3aa2c3b6fccafb4d53b6ab99b95181d3eed7c77f) )
+	ROM_LOAD( "epr-11724.a16", 0x80000, 0x10000,  CRC(6f2ed50a) SHA1(55d0c4299e7240b0ef5316b48db7a158145c76ab) ) /* plane 3 */
+	ROM_LOAD( "epr-11738.b16", 0xa0000, 0x10000,  CRC(de3d6d02) SHA1(428811f21c68761022521a17fc4716f6e7214b20) )
+
+	ROM_REGION16_BE( 0x200000, "gfx2", 0 ) /* sprites */
+	ROM_LOAD16_BYTE( "epr-11725.b1",  0x000001, 0x010000, CRC(f8b3684e) SHA1(3de2685cae5fb3c954b8440fafce313072747469) )
+	ROM_LOAD16_BYTE( "epr-11729.b5",  0x000000, 0x010000, CRC(ae3c2793) SHA1(c4f46861ea63ffa3c038a1ef931479b94e5382df) )
+	ROM_LOAD16_BYTE( "epr-11726.b2",  0x040001, 0x010000, CRC(3cce5419) SHA1(fccdbd6d05f5927272e7d6e5f997418d4fa2baf5) )
+	ROM_LOAD16_BYTE( "epr-11730.b6",  0x040000, 0x010000, CRC(3af62b55) SHA1(9f079af88aaf2447948c9ac01c6cbd1e79539704) )
+	ROM_LOAD16_BYTE( "epr-11727.b3",  0x080001, 0x010000, CRC(b0390078) SHA1(9035d9f45c67bdc802710018722943f5b63e8b5d) )
+	ROM_LOAD16_BYTE( "epr-11731.b7",  0x080000, 0x010000, CRC(2a87744a) SHA1(421b3926de046ddeddad05f65fc6b5078af28dbd) )
+	ROM_LOAD16_BYTE( "epr-11728.b4",  0x0c0001, 0x010000, CRC(f3a43fd8) SHA1(d42833ecd0c1920f1a6904d32c096f12d8622141) )
+	ROM_LOAD16_BYTE( "epr-11732.b8",  0x0c0000, 0x010000, CRC(2fb3e355) SHA1(960e0a66b23f79833b011ea35a5a412dffb47083) )
+	ROM_LOAD16_BYTE( "epr-11717.a1",  0x100001, 0x010000, CRC(676be0cb) SHA1(1e7d4c5f231992f111cc7885e97bc5a7267a5e89) )
+	ROM_LOAD16_BYTE( "epr-11733.b10", 0x100000, 0x010000, CRC(802cac94) SHA1(24e5aa74ce8b6c53c78cc33a41a473df3fbce639) )
+	ROM_LOAD16_BYTE( "epr-11718.a2",  0x140001, 0x010000, CRC(882864c2) SHA1(bd44bbdc13e5fd1b5c31c343da00a75b9dd90478) )
+	ROM_LOAD16_BYTE( "epr-11734.b11", 0x140000, 0x010000, CRC(76c704d2) SHA1(35b393071e29b8d122d3f904b923689a7dddc808) )
+	ROM_LOAD16_BYTE( "epr-11719.a3",  0x180001, 0x010000, CRC(339987f7) SHA1(b5650f8bdbd44510e84686b20daf70bc4a564f28) )
+	ROM_LOAD16_BYTE( "epr-11735.b12", 0x180000, 0x010000, CRC(4fe406aa) SHA1(7f068b81f35be4cc4785824ed524d28f201ff0a5) )
+
+	ROM_REGION( 0x50000, "soundcpu", 0 ) /* sound CPU */
+	ROM_LOAD( "epr-11671.a10", 0x00000, 0x08000, CRC(2b71343b) SHA1(8a657f787de2b9d5161ed2c109642a148348af09) )
+	ROM_LOAD( "opr-11672.a11", 0x10000, 0x20000, CRC(bbd7f460) SHA1(bbc5c2219cb3a827d84062b19affd9780da2a3cf) )
+	ROM_LOAD( "opr-11673.a12", 0x30000, 0x20000, CRC(400c4a36) SHA1(de4bdfa91734410e0a7f6a16bf8336db172f458a) )
+ROM_END
+
+/**************************************************************************************************************************
+    Altered Beast, Sega System 16B
     CPU: 68000 + MC-8123B 317-0066
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
     Sega ID# for ROM board: 834-6661-06
 */
 ROM_START( altbeast4 )
@@ -3796,7 +3849,7 @@ ROM_END
 /**************************************************************************************************************************
     Jyuohki (Altered Beast), Sega System 16B
     CPU: FD1094 (317-0068)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
 ROM_START( altbeastj3 )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -3839,7 +3892,7 @@ ROM_END
 /**************************************************************************************************************************
     Altered Beast, Sega System 16B
     CPU: 68000 + MC8123B (317-0066)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
     Sega ID# for ROM board: 834-6661-02
 */
 ROM_START( altbeast2 )
@@ -3873,52 +3926,8 @@ ROM_END
 
 /**************************************************************************************************************************
     Jyuohki (Altered Beast), Sega System 16B
-    CPU: FD1094 (317-0069)
-    ROM Board: 171-5521
-    Sega ID# for ROM board: 834-6661-07
-*/
-ROM_START( altbeastj2 )
-	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
-	ROM_LOAD16_BYTE( "epr-11742.a7", 0x000000, 0x20000, CRC(61839534) SHA1(0246985ec642fb44d33acbbbec9f6a1936afb302) )
-	ROM_LOAD16_BYTE( "epr-11741.a5", 0x000001, 0x20000, CRC(9b2159cb) SHA1(dba53afcbb42be3e2611d00324bca6544faec071) )
-
-	ROM_REGION( 0x2000, "user1", 0 ) /* decryption key */
-	ROM_LOAD( "317-0069.key", 0x0000, 0x2000, NO_DUMP ) /* The "9" was printed over a "3" */
-
-	ROM_REGION( 0xc0000, "gfx1", 0 ) /* tiles */
-	ROM_LOAD( "epr-11722.a14", 0x00000, 0x10000,  CRC(adaa8db5) SHA1(3262c98d13d08c333d16052cac841f44d2f99743) ) /* plane 1 */
-	ROM_LOAD( "epr-11736.b14", 0x20000, 0x10000,  CRC(e9ad5e89) SHA1(769628eee6e194a84aa8a3729f4e7d07dd3ba25c) )
-	ROM_LOAD( "epr-11723.a15", 0x40000, 0x10000,  CRC(131a3f9a) SHA1(8182c3b8ce7a2f02b226cfa2081187593c9d0d0b) ) /* plane 2 */
-	ROM_LOAD( "epr-11737.b15", 0x60000, 0x10000,  CRC(2e420023) SHA1(3aa2c3b6fccafb4d53b6ab99b95181d3eed7c77f) )
-	ROM_LOAD( "epr-11724.a16", 0x80000, 0x10000,  CRC(6f2ed50a) SHA1(55d0c4299e7240b0ef5316b48db7a158145c76ab) ) /* plane 3 */
-	ROM_LOAD( "epr-11738.b16", 0xa0000, 0x10000,  CRC(de3d6d02) SHA1(428811f21c68761022521a17fc4716f6e7214b20) )
-
-	ROM_REGION16_BE( 0x200000, "gfx2", 0 ) /* sprites */
-	ROM_LOAD16_BYTE( "epr-11725.b1",  0x000001, 0x010000, CRC(f8b3684e) SHA1(3de2685cae5fb3c954b8440fafce313072747469) )
-	ROM_LOAD16_BYTE( "epr-11729.b5",  0x000000, 0x010000, CRC(ae3c2793) SHA1(c4f46861ea63ffa3c038a1ef931479b94e5382df) )
-	ROM_LOAD16_BYTE( "epr-11726.b2",  0x040001, 0x010000, CRC(3cce5419) SHA1(fccdbd6d05f5927272e7d6e5f997418d4fa2baf5) )
-	ROM_LOAD16_BYTE( "epr-11730.b6",  0x040000, 0x010000, CRC(3af62b55) SHA1(9f079af88aaf2447948c9ac01c6cbd1e79539704) )
-	ROM_LOAD16_BYTE( "epr-11727.b3",  0x080001, 0x010000, CRC(b0390078) SHA1(9035d9f45c67bdc802710018722943f5b63e8b5d) )
-	ROM_LOAD16_BYTE( "epr-11731.b7",  0x080000, 0x010000, CRC(2a87744a) SHA1(421b3926de046ddeddad05f65fc6b5078af28dbd) )
-	ROM_LOAD16_BYTE( "epr-11728.b4",  0x0c0001, 0x010000, CRC(f3a43fd8) SHA1(d42833ecd0c1920f1a6904d32c096f12d8622141) )
-	ROM_LOAD16_BYTE( "epr-11732.b8",  0x0c0000, 0x010000, CRC(2fb3e355) SHA1(960e0a66b23f79833b011ea35a5a412dffb47083) )
-	ROM_LOAD16_BYTE( "epr-11717.a1",  0x100001, 0x010000, CRC(676be0cb) SHA1(1e7d4c5f231992f111cc7885e97bc5a7267a5e89) )
-	ROM_LOAD16_BYTE( "epr-11733.b10", 0x100000, 0x010000, CRC(802cac94) SHA1(24e5aa74ce8b6c53c78cc33a41a473df3fbce639) )
-	ROM_LOAD16_BYTE( "epr-11718.a2",  0x140001, 0x010000, CRC(882864c2) SHA1(bd44bbdc13e5fd1b5c31c343da00a75b9dd90478) )
-	ROM_LOAD16_BYTE( "epr-11734.b11", 0x140000, 0x010000, CRC(76c704d2) SHA1(35b393071e29b8d122d3f904b923689a7dddc808) )
-	ROM_LOAD16_BYTE( "epr-11719.a3",  0x180001, 0x010000, CRC(339987f7) SHA1(b5650f8bdbd44510e84686b20daf70bc4a564f28) )
-	ROM_LOAD16_BYTE( "epr-11735.b12", 0x180000, 0x010000, CRC(4fe406aa) SHA1(7f068b81f35be4cc4785824ed524d28f201ff0a5) )
-
-	ROM_REGION( 0x50000, "soundcpu", 0 ) /* sound CPU */
-	ROM_LOAD( "epr-11671.a10", 0x00000, 0x08000, CRC(2b71343b) SHA1(8a657f787de2b9d5161ed2c109642a148348af09) )
-	ROM_LOAD( "opr-11672.a11", 0x10000, 0x20000, CRC(bbd7f460) SHA1(bbc5c2219cb3a827d84062b19affd9780da2a3cf) )
-	ROM_LOAD( "opr-11673.a12", 0x30000, 0x20000, CRC(400c4a36) SHA1(de4bdfa91734410e0a7f6a16bf8336db172f458a) )
-ROM_END
-
-/**************************************************************************************************************************
-    Jyuohki (Altered Beast), Sega System 16B
     CPU: FD1094 (317-0065)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
 ROM_START( altbeastj1 )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -3932,14 +3941,6 @@ ROM_START( altbeastj1 )
 	ROM_LOAD( "opr-11674.a14", 0x00000, 0x20000, CRC(a57a66d5) SHA1(5103583d48997abad12a0c5fee26431c486ced52) )
 	ROM_LOAD( "opr-11675.a15", 0x20000, 0x20000, CRC(2ef2f144) SHA1(38d22d609db2d9b6067b5d12f6499436de4605cb) )
 	ROM_LOAD( "opr-11676.a16", 0x40000, 0x20000, CRC(0c04acac) SHA1(87fe2a0dd9913f9550e9b4cbc7e7465b61640e07) )
-/* If this is truly a Japanese set it should use these roms:
-    ROM_LOAD( "epr-11722.a14", 0x00000, 0x10000,  CRC(adaa8db5) SHA1(3262c98d13d08c333d16052cac841f44d2f99743) )
-    ROM_LOAD( "epr-11736.b14", 0x20000, 0x10000,  CRC(e9ad5e89) SHA1(769628eee6e194a84aa8a3729f4e7d07dd3ba25c) )
-    ROM_LOAD( "epr-11723.a15", 0x40000, 0x10000,  CRC(131a3f9a) SHA1(8182c3b8ce7a2f02b226cfa2081187593c9d0d0b) )
-    ROM_LOAD( "epr-11737.b15", 0x60000, 0x10000,  CRC(2e420023) SHA1(3aa2c3b6fccafb4d53b6ab99b95181d3eed7c77f) )
-    ROM_LOAD( "epr-11724.a16", 0x80000, 0x10000,  CRC(6f2ed50a) SHA1(55d0c4299e7240b0ef5316b48db7a158145c76ab) )
-    ROM_LOAD( "epr-11738.b16", 0xa0000, 0x10000,  CRC(de3d6d02) SHA1(428811f21c68761022521a17fc4716f6e7214b20) )
-*/
 
 	ROM_REGION16_BE( 0x100000, "gfx2", 0 ) /* sprites */
 	ROM_LOAD16_BYTE( "epr-11677.b1", 0x00001, 0x20000, CRC(a01425cd) SHA1(72be5ec29e476601f9bf6aaedef9b73cedeb42f0) )
@@ -3950,22 +3951,6 @@ ROM_START( altbeastj1 )
 	ROM_LOAD16_BYTE( "epr-11683.b7", 0x80000, 0x20000, CRC(f9a60f06) SHA1(0cffcfdb02733feaa869198b7e668c58b47c321a) )
 	ROM_LOAD16_BYTE( "epr-11680.b4", 0xc0001, 0x20000, CRC(f43dcdec) SHA1(2941500cf33afca487f19f2329033d5d17aad826) )
 	ROM_LOAD16_BYTE( "epr-11684.b8", 0xc0000, 0x20000, CRC(b20c0edb) SHA1(6c8694d05e3adac37c9015037ab800233371db36) )
-/* If this is truly a Japanese set it should use these roms:
-    ROM_LOAD16_BYTE( "epr-11725.b1",  0x000001, 0x010000, CRC(f8b3684e) SHA1(3de2685cae5fb3c954b8440fafce313072747469) )
-    ROM_LOAD16_BYTE( "epr-11729.b5",  0x000000, 0x010000, CRC(ae3c2793) SHA1(c4f46861ea63ffa3c038a1ef931479b94e5382df) )
-    ROM_LOAD16_BYTE( "epr-11726.b2",  0x040001, 0x010000, CRC(3cce5419) SHA1(fccdbd6d05f5927272e7d6e5f997418d4fa2baf5) )
-    ROM_LOAD16_BYTE( "epr-11730.b6",  0x040000, 0x010000, CRC(3af62b55) SHA1(9f079af88aaf2447948c9ac01c6cbd1e79539704) )
-    ROM_LOAD16_BYTE( "epr-11727.b3",  0x080001, 0x010000, CRC(b0390078) SHA1(9035d9f45c67bdc802710018722943f5b63e8b5d) )
-    ROM_LOAD16_BYTE( "epr-11731.b7",  0x080000, 0x010000, CRC(2a87744a) SHA1(421b3926de046ddeddad05f65fc6b5078af28dbd) )
-    ROM_LOAD16_BYTE( "epr-11728.b4",  0x0c0001, 0x010000, CRC(f3a43fd8) SHA1(d42833ecd0c1920f1a6904d32c096f12d8622141) )
-    ROM_LOAD16_BYTE( "epr-11732.b8",  0x0c0000, 0x010000, CRC(2fb3e355) SHA1(960e0a66b23f79833b011ea35a5a412dffb47083) )
-    ROM_LOAD16_BYTE( "epr-11717.a1",  0x100001, 0x010000, CRC(676be0cb) SHA1(1e7d4c5f231992f111cc7885e97bc5a7267a5e89) )
-    ROM_LOAD16_BYTE( "epr-11733.b10", 0x100000, 0x010000, CRC(802cac94) SHA1(24e5aa74ce8b6c53c78cc33a41a473df3fbce639) )
-    ROM_LOAD16_BYTE( "epr-11718.a2",  0x140001, 0x010000, CRC(882864c2) SHA1(bd44bbdc13e5fd1b5c31c343da00a75b9dd90478) )
-    ROM_LOAD16_BYTE( "epr-11734.b11", 0x140000, 0x010000, CRC(76c704d2) SHA1(35b393071e29b8d122d3f904b923689a7dddc808) )
-    ROM_LOAD16_BYTE( "epr-11719.a3",  0x180001, 0x010000, CRC(339987f7) SHA1(b5650f8bdbd44510e84686b20daf70bc4a564f28) )
-    ROM_LOAD16_BYTE( "epr-11735.b12", 0x180000, 0x010000, CRC(4fe406aa) SHA1(7f068b81f35be4cc4785824ed524d28f201ff0a5) )
-*/
 
 	ROM_REGION( 0x50000, "soundcpu", 0 ) /* sound CPU */
 	ROM_LOAD( "epr-11671.a10", 0x00000, 0x08000, CRC(2b71343b) SHA1(8a657f787de2b9d5161ed2c109642a148348af09) )
@@ -4025,7 +4010,7 @@ ROM_END
  **************************************************************************************************************************
     Aurail, Sega System 16B
     CPU: 68000
-    ROM Board: 171-????
+    ROM Board type: 171-????
 */
 ROM_START( aurail )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -4069,7 +4054,7 @@ ROM_END
 /**************************************************************************************************************************
     Aurail, Sega System 16B
     CPU: FD1089B (317-0168)
-    ROM Board: 171-????
+    ROM Board type: 171-????
 */
 ROM_START( aurail1 )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -4117,7 +4102,7 @@ ROM_END
 /**************************************************************************************************************************
     Aurail, Sega System 16B
     CPU: FD1089A (317-0167)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 
     S1  - -
     S2  ---
@@ -4188,7 +4173,7 @@ ROM_END
  **************************************************************************************************************************
     Bay Route, Sega System 16B
     CPU: FD1094 (317-0116)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( bayroute )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -4221,7 +4206,7 @@ ROM_END
 /**************************************************************************************************************************
     Bay Route, Sega System 16B
     CPU: FD1094 (317-0115)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( bayroutej )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -4254,7 +4239,7 @@ ROM_END
 /**************************************************************************************************************************
     Bay Route, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 ROM_START( bayroute1 )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -4344,7 +4329,7 @@ ROM_END
  **************************************************************************************************************************
     Cotton, Sega System 16B
     CPU: FD1094 (317-0181A)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( cotton )
 	ROM_REGION( 0x100000, "maincpu", 0 ) /* 68000 code */
@@ -4391,7 +4376,7 @@ ROM_END
 /**************************************************************************************************************************
     Cotton, Sega System 16B
     CPU: FD1094 (317-0180T) // T could be wrong, it was handwritten
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( cottonu )
 	ROM_REGION( 0x100000, "maincpu", 0 ) /* 68000 code */
@@ -4438,15 +4423,16 @@ ROM_END
 /**************************************************************************************************************************
     Cotton (Japan), Sega System 16B
     CPU: FD1094 (317-0179A)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
+    Sega ID# for ROM board: 834-8022-04
 */
 ROM_START( cottonj )
 	ROM_REGION( 0x100000, "maincpu", 0 ) /* 68000 code */
-	ROM_LOAD16_BYTE( "epr-13858.a7", 0x000000, 0x20000, CRC(276f42fe) SHA1(47d2f910f6f101628cb0c660e5fd12c0e331bd99) )
-	ROM_LOAD16_BYTE( "epr-13856.a5", 0x000001, 0x20000, CRC(14e6b5e7) SHA1(708c69cddd1c60e729a74f539d40e67b2a6d9d6f) )
+	ROM_LOAD16_BYTE( "epr-13858a.a7", 0x000000, 0x20000, CRC(276f42fe) SHA1(47d2f910f6f101628cb0c660e5fd12c0e331bd99) )
+	ROM_LOAD16_BYTE( "epr-13856a.a5", 0x000001, 0x20000, CRC(14e6b5e7) SHA1(708c69cddd1c60e729a74f539d40e67b2a6d9d6f) )
 	/* empty 0x40000 - 0x80000 */
-	ROM_LOAD16_BYTE( "epr-13859.a8", 0x080000, 0x20000, CRC(4703ef9d) SHA1(8b03a71736a599c337ad5d95cbc812ea38b0cc43) )
-	ROM_LOAD16_BYTE( "epr-13857.a6", 0x080001, 0x20000, CRC(de37e527) SHA1(124ce7c7eef1199c89735556cebf71255573a155) )
+	ROM_LOAD16_BYTE( "epr-13859a.a8", 0x080000, 0x20000, CRC(4703ef9d) SHA1(8b03a71736a599c337ad5d95cbc812ea38b0cc43) )
+	ROM_LOAD16_BYTE( "epr-13857a.a6", 0x080001, 0x20000, CRC(de37e527) SHA1(124ce7c7eef1199c89735556cebf71255573a155) )
 
 	ROM_REGION( 0x2000, "user1", 0 ) /* decryption key */
 	ROM_LOAD( "317-0179a.key", 0x0000, 0x2000, CRC(488096d3) SHA1(5ffe81c141e1016f6a46f8fcee3e6d79c60151c0) )
@@ -4488,7 +4474,7 @@ ROM_END
  **************************************************************************************************************************
     Dunk Shot, Sega System 16B
     CPU: FD1089A (317-0022)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 ROM_START( dunkshot )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -4538,7 +4524,7 @@ ROM_END
  **************************************************************************************************************************
     Dynamite Dux, Sega System 16B
     CPU: FD1094 (317-0096, version uses 317-0094 known to be exist)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 
     Pos.   Silk        Type        Part         Pos.   Silk        Type        Part
 
@@ -4627,7 +4613,7 @@ ROM_END
  **************************************************************************************************************************
     E-Swat (World), Sega System 16B
     CPU: FD1094 (317-0130)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
 */
 ROM_START( eswat )
 	ROM_REGION( 0x080000, "maincpu", 0 ) /* 68000 code */
@@ -4664,7 +4650,7 @@ ROM_END
 /**************************************************************************************************************************
     E-Swat (US), Sega System 16B
     CPU: FD1094 (317-0129)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
     Sega ID# for ROM board: 834-7165-01
 */
 ROM_START( eswatu )
@@ -4701,9 +4687,11 @@ ROM_END
 
 /**************************************************************************************************************************
     E-Swat (Japan), Sega System 16B
-    Game board : 837-7166/833-7164/834-7165
     CPU: FD1094 (317-0128)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
+    Sega game ID: 833-7164
+      Main board: 837-7166
+       ROM board: 834-7165
 */
 ROM_START( eswatj )
 	ROM_REGION( 0x080000, "maincpu", 0 ) /* 68000 code */
@@ -4743,7 +4731,7 @@ ROM_END
  **************************************************************************************************************************
     Excite League, Sega System 16B
     CPU: FD1094 (317-0079)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 ROM_START( exctleag )
 	ROM_REGION( 0x60000, "maincpu", 0 ) /* 68000 code */
@@ -4786,7 +4774,7 @@ ROM_END
  **************************************************************************************************************************
     Flash Point, Sega System 16B
     CPU: FD1094 (317-0127A)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 
     171-5358        834-6764
     ROW A       171-5358
@@ -4838,7 +4826,7 @@ ROM_END
 /**************************************************************************************************************************
     Flash Point, Sega System 16B
     CPU: FD1094 (317-0127A)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
     Sega ID# for ROM board: 834-7122-03
 
     Pos.   Silk        Type        Part         Pos.   Silk        Type        Part
@@ -4886,7 +4874,7 @@ ROM_END
  **************************************************************************************************************************
     Golden Axe, Sega System 16B
     CPU: 68000 + i8751 (317-123A)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
     Sega ID# for ROM board: 834-7002-07
 */
 ROM_START( goldnaxe )
@@ -4924,7 +4912,7 @@ ROM_END
 /**************************************************************************************************************************
     Golden Axe, Sega System 16B
     CPU: FD1094 (317-0122)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
     Sega ID# for ROM board: 834-7002-06
 */
 ROM_START( goldnaxeu )
@@ -4962,7 +4950,7 @@ ROM_END
 /**************************************************************************************************************************
     Golden Axe (Japan), Sega System 16B
     CPU: FD1094 (317-0121)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
     Sega ID# for ROM board: 834-7002-04
 */
 ROM_START( goldnaxej )
@@ -5004,7 +4992,7 @@ ROM_END
 /**************************************************************************************************************************
     Golden Axe (World), Sega System 16B
     CPU: FD1094 (317-0120)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
     Sega ID# for ROM board: 834-7002-11
 */
 ROM_START( goldnaxe3 )
@@ -5046,7 +5034,7 @@ ROM_END
 /**************************************************************************************************************************
     Golden Axe (Japan), Sega System 16B
     CPU: 68000 + i8751 (317-0112)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
     Sega ID# for ROM board: 834-7002-02
 */
 ROM_START( goldnaxe2 )
@@ -5087,7 +5075,7 @@ ROM_END
 /**************************************************************************************************************************
     Golden Axe, Sega System 16B
     CPU: FD1094 (317-0110)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
     Sega ID# for ROM board: 834-7002
 */
 ROM_START( goldnaxe1 )
@@ -5128,7 +5116,7 @@ ROM_END
  **************************************************************************************************************************
     Heavyweight Champ, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
     Filter Board: 834-6383 (takes input from controls and routes through the CN5 connector on the mainboard)
     Sega ID# for ROM board: 834-6398-02
 */
@@ -5175,7 +5163,7 @@ ROM_END
 /**************************************************************************************************************************
     Heavyweight Champ (Japan), Sega System 16B
     CPU: FD1094 (317-0046)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
 ROM_START( hwchampj )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -5226,7 +5214,7 @@ ROM_END
  **************************************************************************************************************************
     MVP, Sega System 16B
     CPU: FD1094 (317-0143)
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
 */
 ROM_START( mvp )
 	ROM_REGION( 0x100000, "maincpu", 0 ) /* 68000 code */
@@ -5438,7 +5426,7 @@ ROM_END
  **************************************************************************************************************************
     Riot City, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( riotcity )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -5481,7 +5469,7 @@ ROM_END
  **************************************************************************************************************************
     Ryukyu, Sega System 16B
     CPU: FD1094 8J2 (317-5023)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
 ROM_START( ryukyu )
 	ROM_REGION( 0x100000, "maincpu", 0 ) /* 68000 code */
@@ -5512,7 +5500,7 @@ ROM_END
  **************************************************************************************************************************
     Defense, Sega System 16B
     CPU: FD1089A 317-0028
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 
 ROM_START( defense )
@@ -5549,7 +5537,7 @@ ROM_END
  **************************************************************************************************************************
     SDI, Sega System 16B
     CPU: FD1089A 317-0028
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 
 ROM_START( sdib )
@@ -5587,7 +5575,7 @@ ROM_END
  **************************************************************************************************************************
     SDI, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
     Note: decrypted bootleg
 */
 ROM_START( sdibl )
@@ -5623,7 +5611,7 @@ ROM_END
 
     Shinobi, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
 */
 ROM_START( shinobi5 )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -5651,7 +5639,7 @@ ROM_END
 
     Shinobi, Sega System 16B
     CPU: 68000 + MC8123B (317-0054)
-    ROM Board: 171-5521
+    ROM Board type: 171-5521
  Game Nunmber: 834-6496-04
     ROM board: 834-6499-03
 */
@@ -5682,7 +5670,7 @@ ROM_END
 /**************************************************************************************************************************
     Shinobi, Sega System 16B
     CPU: 68000 + MC8123B (317-0054)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
  Game Nunmber: 834-6496-04
     ROM board: 834-6499-02
 */
@@ -5720,7 +5708,8 @@ ROM_END
 /**************************************************************************************************************************
     Shinobi, Sega System 16B
     CPU: FD1094 (317-0049)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
+    ROM board: 834-6499
 */
 ROM_START( shinobi2 )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -5759,7 +5748,7 @@ ROM_END
  **************************************************************************************************************************
     Sonic Boom, Sega System 16B
     CPU: FD1094 (317-0053)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 
     Pos.   Silk        Type        Part                Pos.   Silk        Type        Part
 
@@ -5812,7 +5801,7 @@ ROM_END
  **************************************************************************************************************************
     Sukeban Jansi Ryuko (JPN Ver.)
     CPU: FD1089B 317-5021 (16A/16B) (version uses i8751(317-5019) known to be exist)
-    ROM Board: 171-???
+    ROM Board type: 171-???
 
     (c)1988 White Board
 
@@ -5862,7 +5851,7 @@ ROM_END
  **************************************************************************************************************************
     Super League, Sega System 16B
     CPU: FD1094 (317-0045)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 */
 ROM_START( suprleag )
 	ROM_REGION( 0x060000, "maincpu", 0 ) /* 68000 code */
@@ -5905,7 +5894,7 @@ ROM_END
  **************************************************************************************************************************
     Tetris, Sega System 16B
     CPU: FD1094 (317-0092)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( tetris2 )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -5931,7 +5920,7 @@ ROM_END
 /**************************************************************************************************************************
     Tetris, Sega System 16B
     CPU: FD1094 (317-0091)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 
     Pos.   Silk        Type        Part                Pos.   Silk        Type        Part
     A1     EPR-12163   27C256      68000 program       B1     EPR-12169   27C256      Sprite data
@@ -5973,7 +5962,7 @@ ROM_END
  **************************************************************************************************************************
     Time Scanner, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
  */
 ROM_START( timescan )
 	ROM_REGION( 0x040000, "maincpu", 0 ) /* 68000 code */
@@ -6010,7 +5999,7 @@ ROM_END
  **************************************************************************************************************************
     Toryumon, Sega System 16B
     CPU: 68000
-    ROM Board: 171-5797
+    ROM Board type: 171-5797
  */
 ROM_START( toryumon )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -6043,7 +6032,7 @@ ROM_END
  **************************************************************************************************************************
     Tough Turf, Sega System 16B
     CPU: 68000 + i8751 (317-0104, 317-0100 also known to be exist)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
  */
 ROM_START( tturf )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -6077,7 +6066,7 @@ ROM_END
 /**************************************************************************************************************************
     Tough Turf, Sega System 16B
     CPU: 68000 + i8751 (317-0099)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
     Sega ID# for ROM board: 834-6949
  */
 ROM_START( tturfu )
@@ -6119,7 +6108,7 @@ ROM_END
  **************************************************************************************************************************
     Wonder Boy III, Sega System 16B
     CPU: 68000 + i8751 (317-0098)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
  */
 ROM_START( wb3 )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -6152,7 +6141,7 @@ ROM_END
 /**************************************************************************************************************************
     Wonder Boy III, Sega System 16B
     CPU: FD1094 (317-0087)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
  */
 ROM_START( wb34 )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -6184,7 +6173,7 @@ ROM_END
 /**************************************************************************************************************************
     Wonder Boy III, Sega System 16B
     CPU: FD1094 (317-0089)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
  */
 ROM_START( wb33 )
 	ROM_REGION( 0x40000, "maincpu", 0 ) /* 68000 code */
@@ -6216,7 +6205,7 @@ ROM_END
 /**************************************************************************************************************************
     Wonder Boy III, Sega System 16B
     CPU: FD1094 (317-0085)
-    ROM Board: 171-5358
+    ROM Board type: 171-5358
 
     Pos.   Silk        Type        Part                Pos.   Silk        Type        Part
     A1     EPR-12198   27C512      68000 program       B1     EPR-12190   27C512      Sprite data
@@ -6266,7 +6255,7 @@ ROM_END
  **************************************************************************************************************************
     Wrestle War, Sega System 16B
     CPU: 68000 + i8751 (317-0103)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
     GAME NUMBER: 837-6889-02 (MB:833-6887-07, ROM:834-6888-07)
 
     LOC   NAME         LOC   NAME
@@ -6326,7 +6315,7 @@ ROM_END
 /**************************************************************************************************************************
     Wrestle War, Sega System 16B
     CPU: FD1094 (317-0102)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( wrestwar2 )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -6367,7 +6356,7 @@ ROM_END
 /**************************************************************************************************************************
     Wrestle War, Sega System 16B
     CPU: FD1094 (317-0090)
-    ROM Board: 171-5704
+    ROM Board type: 171-5704
 */
 ROM_START( wrestwar1 )
 	ROM_REGION( 0xc0000, "maincpu", 0 ) /* 68000 code */
@@ -6682,12 +6671,12 @@ GAME( 1987, aliensynj,  aliensyn, system16b,           aliensynj,aliensy3_5358, 
 
 GAME( 1988, altbeast,   0,        system16b_8751,      altbeast, altbeast_5521,      ROT0,   "Sega", "Altered Beast (set 8, 8751 317-0078)", 0 )
 GAME( 1988, altbeastj,  altbeast, system16b_8751,      altbeast, altbeasj_5521,      ROT0,   "Sega", "Juuouki (set 7, Japan, 8751 317-0077)", 0 )
-GAME( 1988, altbeast5,  altbeast, system16b_8751,      altbeast, altbeas5_5521,      ROT0,   "Sega", "Altered Beast (set 6, 8751 317-0076)", 0 )
+GAME( 1988, altbeast6,  altbeast, system16b_8751,      altbeast, altbeas5_5521,      ROT0,   "Sega", "Altered Beast (set 6, 8751 317-0076)", 0 )
+GAME( 1988, altbeast5,  altbeast, system16b,           altbeast, generic_5521,       ROT0,   "Sega", "Altered Beast (set 5, FD1094 317-0069)", 0 )
 GAME( 1988, altbeast4,  altbeast, system16b,           altbeast, altbeas4_5521,      ROT0,   "Sega", "Altered Beast (set 4, MC-8123B 317-0066)", 0 )
 GAME( 1988, altbeastj3, altbeast, system16b,           altbeast, generic_5521,       ROT0,   "Sega", "Juuouki (set 3, Japan, FD1094 317-0068)", 0 )
 GAME( 1988, altbeast2,  altbeast, system16b,           altbeast, altbeas4_5521,      ROT0,   "Sega", "Altered Beast (set 2, MC-8123B 317-0066)", 0 )
 GAME( 1988, altbeastj1, altbeast, system16b,           altbeast, generic_5521,       ROT0,   "Sega", "Juuouki (set 1, Japan, FD1094 317-0065)", GAME_NOT_WORKING ) /* No CPU decrypt key */
-GAME( 1988, altbeastj2, altbeast, system16b,           altbeast, generic_5521,       ROT0,   "Sega", "Juuouki (set 5, Japan, FD1094 317-0069)", GAME_NOT_WORKING ) /* No CPU decrypt key */
 
 GAME( 1990, aurail,     0,        system16b,           aurail,   generic_5704,       ROT0,   "Sega / Westone", "Aurail (set 3, US, unprotected)", 0 )
 GAME( 1990, aurail1,    aurail,   system16b,           aurail,   aurail1_5704,       ROT0,   "Sega / Westone", "Aurail (set 2, World, FD1089B 317-0168)", 0 )
@@ -6838,8 +6827,8 @@ static WRITE16_HANDLER( isgsm_cart_addr_low_w )
 // when reading from this port the data is xored by a fixed value depending on the cart
 static READ16_HANDLER( isgsm_cart_data_r )
 {
-	int size = space->machine().region("gamecart_rgn")->bytes();
-	UINT8* rgn = space->machine().region("gamecart_rgn")->base();
+	int size = space->machine().root_device().memregion("gamecart_rgn")->bytes();
+	UINT8* rgn = space->machine().root_device().memregion("gamecart_rgn")->base();
 
 	isgsm_cart_addr++;
 
@@ -6863,16 +6852,16 @@ static WRITE16_HANDLER( isgsm_data_w )
 
 	switch (isgsm_type&0x0f)
 	{
-		case 0x0: dest = space->machine().region("gfx2")->base();
+		case 0x0: dest = space->machine().root_device().memregion("gfx2")->base();
 			break;
 
-		case 0x1: dest = space->machine().region("gfx1")->base();
+		case 0x1: dest = space->machine().root_device().memregion("gfx1")->base();
 			break;
 
-		case 0x2: dest = space->machine().region("soundcpu")->base();
+		case 0x2: dest = space->machine().root_device().memregion("soundcpu")->base();
 			break;
 
-		case 0x3: dest = space->machine().region("maincpu")->base();
+		case 0x3: dest = space->machine().root_device().memregion("maincpu")->base();
 			break;
 
 		default: // no other cases?
@@ -6983,7 +6972,7 @@ static WRITE16_HANDLER( isgsm_data_w )
 
 			dest[isgsm_addr] = byte;
 
-			if (dest == space->machine().region("gfx1")->base())
+			if (dest == space->machine().root_device().memregion("gfx1")->base())
 			{
 
 				// we need to re-decode the tiles if writing to this area to keep MAME happy
@@ -7077,45 +7066,45 @@ static WRITE16_HANDLER( isgsm_main_bank_change_w )
 	// other values on real hw have strange results, change memory mapping etc??
 	if (data==1)
 	{
-		memory_set_bankptr(space->machine(),ISGSM_MAIN_BANK, space->machine().region("maincpu")->base());
+		space->machine().root_device().membank(ISGSM_MAIN_BANK)->set_base(space->machine().root_device().memregion("maincpu")->base());
 	}
 }
 
 static MACHINE_START( isgsm )
 {
-	memory_set_bankptr(machine,ISGSM_CART_BANK, machine.region("gamecart_rgn")->base());
-	memory_set_bankptr(machine,ISGSM_MAIN_BANK, machine.region("bios")->base());
+	machine.root_device().membank(ISGSM_CART_BANK)->set_base(machine.root_device().memregion("gamecart_rgn")->base());
+	machine.root_device().membank(ISGSM_MAIN_BANK)->set_base(machine.root_device().memregion("bios")->base());
 }
 
-static ADDRESS_MAP_START( isgsm_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( isgsm_map, AS_PROGRAM, 16, segas1x_state )
 
 	AM_RANGE(0x000000, 0x0fffff) AM_ROMBANK(ISGSM_MAIN_BANK) // this area is ALWAYS read-only, even when the game is banked in
 	AM_RANGE(0x200000, 0x23ffff) AM_RAM // used during startup for decompression
-	AM_RANGE(0x3f0000, 0x3fffff) AM_WRITE( rom_5704_bank_w )
-	AM_RANGE(0x400000, 0x40ffff) AM_RAM_WRITE(segaic16_tileram_0_w) AM_BASE(&segaic16_tileram_0)
-	AM_RANGE(0x410000, 0x410fff) AM_RAM_WRITE(segaic16_textram_0_w) AM_BASE(&segaic16_textram_0)
-	AM_RANGE(0x440000, 0x4407ff) AM_RAM AM_BASE(&segaic16_spriteram_0)
-	AM_RANGE(0x840000, 0x840fff) AM_RAM_WRITE(segaic16_paletteram_w) AM_BASE(&segaic16_paletteram)
-	AM_RANGE(0xC40000, 0xC43fff) AM_READWRITE(misc_io_r, misc_io_w)
+	AM_RANGE(0x3f0000, 0x3fffff) AM_WRITE_LEGACY(rom_5704_bank_w )
+	AM_RANGE(0x400000, 0x40ffff) AM_RAM_WRITE_LEGACY(segaic16_tileram_0_w) AM_BASE_LEGACY(&segaic16_tileram_0)
+	AM_RANGE(0x410000, 0x410fff) AM_RAM_WRITE_LEGACY(segaic16_textram_0_w) AM_BASE_LEGACY(&segaic16_textram_0)
+	AM_RANGE(0x440000, 0x4407ff) AM_RAM AM_BASE_LEGACY(&segaic16_spriteram_0)
+	AM_RANGE(0x840000, 0x840fff) AM_RAM_WRITE_LEGACY(segaic16_paletteram_w) AM_BASE_LEGACY(&segaic16_paletteram)
+	AM_RANGE(0xC40000, 0xC43fff) AM_READWRITE_LEGACY(misc_io_r, misc_io_w)
 
-	AM_RANGE(0xe00000, 0xe00001) AM_WRITE( isgsm_data_w ) // writes decompressed data here (copied from RAM..)
-	AM_RANGE(0xe00002, 0xe00003) AM_WRITE( isgsm_type_w ) // selects which 'type' of data we're writing
-	AM_RANGE(0xe00004, 0xe00005) AM_WRITE( isgsm_addr_high_w ) // high address, and some mode bits
-	AM_RANGE(0xe00006, 0xe00007) AM_WRITE( isgsm_addr_low_w )  // low address
+	AM_RANGE(0xe00000, 0xe00001) AM_WRITE_LEGACY(isgsm_data_w ) // writes decompressed data here (copied from RAM..)
+	AM_RANGE(0xe00002, 0xe00003) AM_WRITE_LEGACY(isgsm_type_w ) // selects which 'type' of data we're writing
+	AM_RANGE(0xe00004, 0xe00005) AM_WRITE_LEGACY(isgsm_addr_high_w ) // high address, and some mode bits
+	AM_RANGE(0xe00006, 0xe00007) AM_WRITE_LEGACY(isgsm_addr_low_w )  // low address
 
-	AM_RANGE(0xe80000, 0xe80001) AM_READ( isgsm_cart_data_r ) // 8-bit port that the entire cart can be read from
+	AM_RANGE(0xe80000, 0xe80001) AM_READ_LEGACY(isgsm_cart_data_r ) // 8-bit port that the entire cart can be read from
 	AM_RANGE(0xe80002, 0xe80003) AM_READ_PORT("CARDDSW")
-	AM_RANGE(0xe80004, 0xe80005) AM_WRITE( isgsm_cart_addr_high_w )
-	AM_RANGE(0xe80006, 0xe80007) AM_WRITE( isgsm_cart_addr_low_w )
-	AM_RANGE(0xe80008, 0xe80009) AM_READWRITE( isgsm_cart_security_high_r, isgsm_cart_security_high_w ) // 32-bit bitswap device..
-	AM_RANGE(0xe8000a, 0xe8000b) AM_READWRITE( isgsm_cart_security_low_r,  isgsm_cart_security_low_w )
+	AM_RANGE(0xe80004, 0xe80005) AM_WRITE_LEGACY(isgsm_cart_addr_high_w )
+	AM_RANGE(0xe80006, 0xe80007) AM_WRITE_LEGACY(isgsm_cart_addr_low_w )
+	AM_RANGE(0xe80008, 0xe80009) AM_READWRITE_LEGACY(isgsm_cart_security_high_r, isgsm_cart_security_high_w ) // 32-bit bitswap device..
+	AM_RANGE(0xe8000a, 0xe8000b) AM_READWRITE_LEGACY(isgsm_cart_security_low_r,  isgsm_cart_security_low_w )
 
 	AM_RANGE(0xee0000, 0xefffff) AM_ROMBANK(ISGSM_CART_BANK) // only the first 0x20000 bytes of the cart are visible here..
 
-	AM_RANGE(0xfe0006, 0xfe0007) AM_WRITE( isgsm_sound_w16 )
-	AM_RANGE(0xfe0008, 0xfe0009) AM_WRITE( isgsm_sound_reset_w )
-	AM_RANGE(0xfe000a, 0xfe000b) AM_WRITE( isgsm_main_bank_change_w )
-	AM_RANGE(0xffc000, 0xffffff) AM_RAM AM_BASE(&workram)
+	AM_RANGE(0xfe0006, 0xfe0007) AM_WRITE_LEGACY(isgsm_sound_w16 )
+	AM_RANGE(0xfe0008, 0xfe0009) AM_WRITE_LEGACY(isgsm_sound_reset_w )
+	AM_RANGE(0xfe000a, 0xfe000b) AM_WRITE_LEGACY(isgsm_main_bank_change_w )
+	AM_RANGE(0xffc000, 0xffffff) AM_RAM AM_BASE_LEGACY(&workram)
 ADDRESS_MAP_END
 
 
@@ -7235,8 +7224,8 @@ static MACHINE_RESET( isgsm )
 	for (int i = 0; i < 16; i++)
 		segaic16_sprites_set_bank(machine, 0, i, i);
 
-	memory_set_bankptr(machine,ISGSM_CART_BANK, machine.region("gamecart_rgn")->base());
-	memory_set_bankptr(machine,ISGSM_MAIN_BANK, machine.region("bios")->base());
+	machine.root_device().membank(ISGSM_CART_BANK)->set_base(machine.root_device().memregion("gamecart_rgn")->base());
+	machine.root_device().membank(ISGSM_MAIN_BANK)->set_base(machine.root_device().memregion("bios")->base());
 	devtag_reset( machine, "maincpu" );
 }
 
@@ -7264,7 +7253,7 @@ DRIVER_INIT( isgsm )
 
 	// decrypt the bios...
 	UINT16* temp = (UINT16*)malloc(0x20000);
-	UINT16* rom = (UINT16*)machine.region("bios")->base();
+	UINT16* rom = (UINT16*)machine.root_device().memregion("bios")->base();
 	int i;
 
 	for (i=0;i<0x10000;i++)
@@ -7281,7 +7270,7 @@ DRIVER_INIT( shinfz )
 	DRIVER_INIT_CALL( isgsm );
 
 	UINT16* temp = (UINT16*)malloc(0x200000);
-	UINT16* rom = (UINT16*)machine.region("gamecart_rgn")->base();
+	UINT16* rom = (UINT16*)machine.root_device().memregion("gamecart_rgn")->base();
 	int i;
 
 	for (i=0;i<0x100000;i++)
@@ -7301,7 +7290,7 @@ DRIVER_INIT( tetrbx )
 	DRIVER_INIT_CALL( isgsm );
 
 	UINT16* temp = (UINT16*)malloc(0x80000);
-	UINT16* rom = (UINT16*)machine.region("gamecart_rgn")->base();
+	UINT16* rom = (UINT16*)machine.root_device().memregion("gamecart_rgn")->base();
 	int i;
 
 	for (i=0;i<0x80000/2;i++)

@@ -101,6 +101,7 @@ void i8251_device::device_start()
 	// resolve callbacks
 	m_in_rxd_func.resolve(m_in_rxd_cb,*this);
 	m_out_txd_func.resolve(m_out_txd_cb,*this);
+	m_in_dsr_func.resolve(m_in_dsr_cb,*this);
 	m_out_rxrdy_func.resolve(m_out_rxrdy_cb, *this);
 	m_out_txrdy_func.resolve(m_out_txrdy_cb, *this);
 	m_out_txempty_func.resolve(m_out_txempty_cb, *this);
@@ -624,7 +625,10 @@ WRITE8_MEMBER(i8251_device::control_w)
 
 		if (data & (1<<6))
 		{
-			reset();
+            // datasheet says "returns to mode format", not
+            // completely resets the chip.  behavior of DEC Rainbow
+            // backs this up.
+			m_flags |= I8251_EXPECTING_MODE;
 		}
 
 		update_rx_ready();
@@ -641,8 +645,11 @@ WRITE8_MEMBER(i8251_device::control_w)
 
 READ8_MEMBER(i8251_device::status_r)
 {
-	LOG(("status: %02x\n", m_status));
-	return m_status;
+	UINT8 dsr = !(m_in_dsr_func.isnull() ? 0 : m_in_dsr_func() != 0);
+	UINT8 status = (dsr << 7) | m_status;
+
+	LOG(("status: %02x\n", status));
+	return status;
 }
 
 

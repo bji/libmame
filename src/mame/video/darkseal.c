@@ -29,25 +29,26 @@
 
 static void update_24bitcol(running_machine &machine, int offset)
 {
+	darkseal_state *state = machine.driver_data<darkseal_state>();
 	int r,g,b;
 
-	r = (machine.generic.paletteram.u16[offset] >> 0) & 0xff;
-	g = (machine.generic.paletteram.u16[offset] >> 8) & 0xff;
-	b = (machine.generic.paletteram2.u16[offset] >> 0) & 0xff;
+	r = (state->m_generic_paletteram_16[offset] >> 0) & 0xff;
+	g = (state->m_generic_paletteram_16[offset] >> 8) & 0xff;
+	b = (state->m_generic_paletteram2_16[offset] >> 0) & 0xff;
 
 	palette_set_color(machine,offset,MAKE_RGB(r,g,b));
 }
 
-WRITE16_HANDLER( darkseal_palette_24bit_rg_w )
+WRITE16_MEMBER(darkseal_state::darkseal_palette_24bit_rg_w)
 {
-	COMBINE_DATA(&space->machine().generic.paletteram.u16[offset]);
-	update_24bitcol(space->machine(), offset);
+	COMBINE_DATA(&m_generic_paletteram_16[offset]);
+	update_24bitcol(machine(), offset);
 }
 
-WRITE16_HANDLER( darkseal_palette_24bit_b_w )
+WRITE16_MEMBER(darkseal_state::darkseal_palette_24bit_b_w)
 {
-	COMBINE_DATA(&space->machine().generic.paletteram2.u16[offset]);
-	update_24bitcol(space->machine(), offset);
+	COMBINE_DATA(&m_generic_paletteram2_16[offset]);
+	update_24bitcol(machine(), offset);
 }
 
 /******************************************************************************/
@@ -73,7 +74,7 @@ SCREEN_UPDATE_IND16( darkseal )
 	deco16ic_tilemap_2_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 0);
 
 	deco16ic_tilemap_1_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 0);
-	screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, screen.machine().generic.buffered_spriteram.u16, 0x400);
+	screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram->buffer(), 0x400);
 	deco16ic_tilemap_2_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 0);
 
 	return 0;

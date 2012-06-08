@@ -181,156 +181,144 @@ void twincobr_flipscreen(running_machine &machine, int flip)
 }
 
 
-WRITE16_HANDLER( twincobr_txoffs_w )
+WRITE16_MEMBER(twincobr_state::twincobr_txoffs_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	COMBINE_DATA(&state->m_txoffs);
-	state->m_txoffs %= state->m_txvideoram_size;
+	COMBINE_DATA(&m_txoffs);
+	m_txoffs %= m_txvideoram_size;
 }
-READ16_HANDLER( twincobr_txram_r )
+READ16_MEMBER(twincobr_state::twincobr_txram_r)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	return state->m_txvideoram16[state->m_txoffs];
+	return m_txvideoram16[m_txoffs];
 }
-WRITE16_HANDLER( twincobr_txram_w )
+WRITE16_MEMBER(twincobr_state::twincobr_txram_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	COMBINE_DATA(&state->m_txvideoram16[state->m_txoffs]);
-	state->m_tx_tilemap->mark_tile_dirty(state->m_txoffs);
+	COMBINE_DATA(&m_txvideoram16[m_txoffs]);
+	m_tx_tilemap->mark_tile_dirty(m_txoffs);
 }
 
-WRITE16_HANDLER( twincobr_bgoffs_w )
+WRITE16_MEMBER(twincobr_state::twincobr_bgoffs_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	COMBINE_DATA(&state->m_bgoffs);
-	state->m_bgoffs %= (state->m_bgvideoram_size >> 1);
+	COMBINE_DATA(&m_bgoffs);
+	m_bgoffs %= (m_bgvideoram_size >> 1);
 }
-READ16_HANDLER( twincobr_bgram_r )
+READ16_MEMBER(twincobr_state::twincobr_bgram_r)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	return state->m_bgvideoram16[state->m_bgoffs+state->m_bg_ram_bank];
+	return m_bgvideoram16[m_bgoffs+m_bg_ram_bank];
 }
-WRITE16_HANDLER( twincobr_bgram_w )
+WRITE16_MEMBER(twincobr_state::twincobr_bgram_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	COMBINE_DATA(&state->m_bgvideoram16[state->m_bgoffs+state->m_bg_ram_bank]);
-	state->m_bg_tilemap->mark_tile_dirty((state->m_bgoffs+state->m_bg_ram_bank));
+	COMBINE_DATA(&m_bgvideoram16[m_bgoffs+m_bg_ram_bank]);
+	m_bg_tilemap->mark_tile_dirty((m_bgoffs+m_bg_ram_bank));
 }
 
-WRITE16_HANDLER( twincobr_fgoffs_w )
+WRITE16_MEMBER(twincobr_state::twincobr_fgoffs_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	COMBINE_DATA(&state->m_fgoffs);
-	state->m_fgoffs %= state->m_fgvideoram_size;
+	COMBINE_DATA(&m_fgoffs);
+	m_fgoffs %= m_fgvideoram_size;
 }
-READ16_HANDLER( twincobr_fgram_r )
+READ16_MEMBER(twincobr_state::twincobr_fgram_r)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	return state->m_fgvideoram16[state->m_fgoffs];
+	return m_fgvideoram16[m_fgoffs];
 }
-WRITE16_HANDLER( twincobr_fgram_w )
+WRITE16_MEMBER(twincobr_state::twincobr_fgram_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
-	COMBINE_DATA(&state->m_fgvideoram16[state->m_fgoffs]);
-	state->m_fg_tilemap->mark_tile_dirty(state->m_fgoffs);
+	COMBINE_DATA(&m_fgvideoram16[m_fgoffs]);
+	m_fg_tilemap->mark_tile_dirty(m_fgoffs);
 }
 
 
-WRITE16_HANDLER( twincobr_txscroll_w )
+WRITE16_MEMBER(twincobr_state::twincobr_txscroll_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
 	if (offset == 0) {
-		COMBINE_DATA(&state->m_txscrollx);
-		state->m_tx_tilemap->set_scrollx(0,(state->m_txscrollx+state->m_scroll_x) & 0x1ff);
+		COMBINE_DATA(&m_txscrollx);
+		m_tx_tilemap->set_scrollx(0,(m_txscrollx+m_scroll_x) & 0x1ff);
 	}
 	else {
-		COMBINE_DATA(&state->m_txscrolly);
-		state->m_tx_tilemap->set_scrolly(0,(state->m_txscrolly+state->m_scroll_y) & 0x1ff);
+		COMBINE_DATA(&m_txscrolly);
+		m_tx_tilemap->set_scrolly(0,(m_txscrolly+m_scroll_y) & 0x1ff);
 	}
 }
 
-WRITE16_HANDLER( twincobr_bgscroll_w )
+WRITE16_MEMBER(twincobr_state::twincobr_bgscroll_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
 	if (offset == 0) {
-		COMBINE_DATA(&state->m_bgscrollx);
-		state->m_bg_tilemap->set_scrollx(0,(state->m_bgscrollx+state->m_scroll_x) & 0x1ff);
+		COMBINE_DATA(&m_bgscrollx);
+		m_bg_tilemap->set_scrollx(0,(m_bgscrollx+m_scroll_x) & 0x1ff);
 	}
 	else {
-		COMBINE_DATA(&state->m_bgscrolly);
-		state->m_bg_tilemap->set_scrolly(0,(state->m_bgscrolly+state->m_scroll_y) & 0x1ff);
+		COMBINE_DATA(&m_bgscrolly);
+		m_bg_tilemap->set_scrolly(0,(m_bgscrolly+m_scroll_y) & 0x1ff);
 	}
 }
 
-WRITE16_HANDLER( twincobr_fgscroll_w )
+WRITE16_MEMBER(twincobr_state::twincobr_fgscroll_w)
 {
-	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
 	if (offset == 0) {
-		COMBINE_DATA(&state->m_fgscrollx);
-		state->m_fg_tilemap->set_scrollx(0,(state->m_fgscrollx+state->m_scroll_x) & 0x1ff);
+		COMBINE_DATA(&m_fgscrollx);
+		m_fg_tilemap->set_scrollx(0,(m_fgscrollx+m_scroll_x) & 0x1ff);
 	}
 	else {
-		COMBINE_DATA(&state->m_fgscrolly);
-		state->m_fg_tilemap->set_scrolly(0,(state->m_fgscrolly+state->m_scroll_y) & 0x1ff);
+		COMBINE_DATA(&m_fgscrolly);
+		m_fg_tilemap->set_scrolly(0,(m_fgscrolly+m_scroll_y) & 0x1ff);
 	}
 }
 
-WRITE16_HANDLER( twincobr_exscroll_w )	/* Extra unused video layer */
+WRITE16_MEMBER(twincobr_state::twincobr_exscroll_w)/* Extra unused video layer */
 {
 	if (offset == 0) logerror("PC - write %04x to unknown video scroll Y register\n",data);
 	else logerror("PC - write %04x to unknown video scroll X register\n",data);
 }
 
 /******************** Wardner interface to this hardware ********************/
-WRITE8_HANDLER( wardner_txlayer_w )
+WRITE8_MEMBER(twincobr_state::wardner_txlayer_w)
 {
 	int shift = 8 * (offset & 1);
 	twincobr_txoffs_w(space, offset / 2, data << shift, 0xff << shift);
 }
 
-WRITE8_HANDLER( wardner_bglayer_w )
+WRITE8_MEMBER(twincobr_state::wardner_bglayer_w)
 {
 	int shift = 8 * (offset & 1);
 	twincobr_bgoffs_w(space, offset / 2, data << shift, 0xff << shift);
 }
 
-WRITE8_HANDLER( wardner_fglayer_w )
+WRITE8_MEMBER(twincobr_state::wardner_fglayer_w)
 {
 	int shift = 8 * (offset & 1);
 	twincobr_fgoffs_w(space, offset / 2, data << shift, 0xff << shift);
 }
 
-WRITE8_HANDLER( wardner_txscroll_w )
+WRITE8_MEMBER(twincobr_state::wardner_txscroll_w)
 {
 	int shift = 8 * (offset & 1);
 	twincobr_txscroll_w(space, offset / 2, data << shift, 0xff << shift);
 }
 
-WRITE8_HANDLER( wardner_bgscroll_w )
+WRITE8_MEMBER(twincobr_state::wardner_bgscroll_w)
 {
 	int shift = 8 * (offset & 1);
 	twincobr_bgscroll_w(space, offset / 2, data << shift, 0xff << shift);
 }
 
-WRITE8_HANDLER( wardner_fgscroll_w )
+WRITE8_MEMBER(twincobr_state::wardner_fgscroll_w)
 {
 	int shift = 8 * (offset & 1);
 	twincobr_fgscroll_w(space, offset / 2, data << shift, 0xff << shift);
 }
 
-WRITE8_HANDLER( wardner_exscroll_w )	/* Extra unused video layer */
+WRITE8_MEMBER(twincobr_state::wardner_exscroll_w)/* Extra unused video layer */
 {
 	switch (offset)
 	{
@@ -341,7 +329,7 @@ WRITE8_HANDLER( wardner_exscroll_w )	/* Extra unused video layer */
 	}
 }
 
-READ8_HANDLER( wardner_videoram_r )
+READ8_MEMBER(twincobr_state::wardner_videoram_r)
 {
 	int shift = 8 * (offset & 1);
 	switch (offset/2) {
@@ -352,7 +340,7 @@ READ8_HANDLER( wardner_videoram_r )
 	return 0;
 }
 
-WRITE8_HANDLER( wardner_videoram_w )
+WRITE8_MEMBER(twincobr_state::wardner_videoram_w)
 {
 	int shift = 8 * (offset & 1);
 	switch (offset/2) {
@@ -362,15 +350,16 @@ WRITE8_HANDLER( wardner_videoram_w )
 	}
 }
 
-READ8_HANDLER( wardner_sprite_r )
+READ8_MEMBER(twincobr_state::wardner_sprite_r)
 {
+	UINT16 *spriteram16 = reinterpret_cast<UINT16 *>(m_spriteram8->live());
 	int shift = (offset & 1) * 8;
-	return space->machine().generic.spriteram.u16[offset/2] >> shift;
+	return spriteram16[offset/2] >> shift;
 }
 
-WRITE8_HANDLER( wardner_sprite_w )
+WRITE8_MEMBER(twincobr_state::wardner_sprite_w)
 {
-	UINT16 *spriteram16 = space->machine().generic.spriteram.u16;
+	UINT16 *spriteram16 = reinterpret_cast<UINT16 *>(m_spriteram8->live());
 	if (offset & 1)
 		spriteram16[offset/2] = (spriteram16[offset/2] & 0x00ff) | (data << 8);
 	else
@@ -388,7 +377,7 @@ static void wardner_sprite_priority_hack(running_machine &machine)
 	twincobr_state *state = machine.driver_data<twincobr_state>();
 
 	if (state->m_fgscrollx != state->m_bgscrollx) {
-		UINT16 *buffered_spriteram16 = machine.generic.buffered_spriteram.u16;
+		UINT16 *buffered_spriteram16 = reinterpret_cast<UINT16 *>(state->m_spriteram8->buffer());
 		if ((state->m_fgscrollx==0x1c9) || (state->m_flip_screen && (state->m_fgscrollx==0x17a))) {	/* in the shop ? */
 			int wardner_hack = buffered_spriteram16[0x0b04/2];
 		/* sprite position 0x6300 to 0x8700 -- hero on shop keeper (normal) */
@@ -465,8 +454,19 @@ static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const r
 
 	if (state->m_display_on)
 	{
-		UINT16 *buffered_spriteram16 = machine.generic.buffered_spriteram.u16;
-		for (offs = 0;offs < machine.generic.spriteram_size/2;offs += 4)
+		UINT16 *buffered_spriteram16;
+		UINT32 bytes;
+		if (state->m_spriteram16 != NULL)
+		{
+			buffered_spriteram16 = state->m_spriteram16->buffer();
+			bytes = state->m_spriteram16->bytes();
+		}
+		else
+		{
+			buffered_spriteram16 = reinterpret_cast<UINT16 *>(state->m_spriteram8->buffer());
+			bytes = state->m_spriteram8->bytes();
+		}
+		for (offs = 0;offs < bytes/2;offs += 4)
 		{
 			int attribute,sx,sy,flipx,flipy;
 			int sprite, color;
@@ -515,17 +515,6 @@ SCREEN_UPDATE_IND16( toaplan0 )
 	return 0;
 }
 
-
-SCREEN_VBLANK( toaplan0 )
-{
-	// rising edge
-	if (vblank_on)
-	{
-		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
-
-		/* Spriteram is always 1 frame ahead, suggesting spriteram buffering.
-            There are no CPU output registers that control this so we
-            assume it happens automatically every frame, at the end of vblank */
-		buffer_spriteram16_w(space,0,0,0xffff);
-	}
-}
+/* Spriteram is always 1 frame ahead, suggesting spriteram buffering.
+  There are no CPU output registers that control this so we
+  assume it happens automatically every frame, at the end of vblank */

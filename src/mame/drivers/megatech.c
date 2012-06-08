@@ -222,9 +222,9 @@ static TIMER_CALLBACK( megatech_z80_run_state )
 	UINT8* game_region;
 
 	sprintf(tempname, "game%d", param);
-	game_region = machine.region(tempname)->base();
+	game_region = state->memregion(tempname)->base();
 
-	memcpy(machine.region("maincpu")->base(), game_region, 0x400000);
+	memcpy(state->memregion("maincpu")->base(), game_region, 0x400000);
 
 	if (!state->m_cart_is_genesis[param])
 	{
@@ -252,7 +252,7 @@ static TIMER_CALLBACK( megatech_z80_stop_state )
 	printf("megatech_select_game %d\n", param+1);
 
 	sprintf(tempname, "game%d", param);
-	game_region = machine.region(tempname)->base();
+	game_region = machine.root_device().memregion(tempname)->base();
 
 	cputag_set_input_line(machine, "maincpu", INPUT_LINE_RESET, ASSERT_LINE);
 	cputag_set_input_line(machine, "genesis_snd_z80", INPUT_LINE_RESET, ASSERT_LINE);
@@ -274,8 +274,8 @@ static TIMER_CALLBACK( megatech_z80_stop_state )
 	else
 	{
 		/* no cart.. */
-		memset(machine.region("mtbios")->base() + 0x8000, 0x00, 0x8000);
-		memset(machine.region("maincpu")->base(), 0x00, 0x400000);
+		memset(machine.root_device().memregion("mtbios")->base() + 0x8000, 0x00, 0x8000);
+		memset(machine.root_device().memregion("maincpu")->base(), 0x00, 0x400000);
 	}
 
 	return;
@@ -314,10 +314,17 @@ static READ8_HANDLER( bios_ctrl_r )
 static WRITE8_HANDLER( bios_ctrl_w )
 {
 	mtech_state *state = space->machine().driver_data<mtech_state>();
+
 	if (offset == 1)
 	{
+		output_set_value("Alarm_sound", data>>7 & 0x01);
 		state->m_bios_ctrl_inputs = data & 0x04;  // Genesis/SMS input ports disable bit
 	}
+	else if (offset == 2)
+	{
+		output_set_value("Flash_screen", data>>1 & 0x01);
+	}
+
 	state->m_bios_ctrl[offset] = data;
 }
 
@@ -364,21 +371,21 @@ static WRITE8_HANDLER( megatech_banked_ram_w )
 
 
 
-static ADDRESS_MAP_START( megatech_bios_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( megatech_bios_map, AS_PROGRAM, 8, mtech_state )
 	AM_RANGE(0x0000, 0x2fff) AM_ROM // from bios rom (0x0000-0x2fff populated in ROM)
-	AM_RANGE(0x3000, 0x3fff) AM_READWRITE(megatech_banked_ram_r, megatech_banked_ram_w) // copies instruction data here at startup, must be banked
+	AM_RANGE(0x3000, 0x3fff) AM_READWRITE_LEGACY(megatech_banked_ram_r, megatech_banked_ram_w) // copies instruction data here at startup, must be banked
 	AM_RANGE(0x4000, 0x5fff) AM_RAM // plain ram?
-	AM_RANGE(0x6000, 0x6000) AM_WRITE( mt_z80_bank_w )
+	AM_RANGE(0x6000, 0x6000) AM_WRITE_LEGACY(mt_z80_bank_w )
 	AM_RANGE(0x6400, 0x6400) AM_READ_PORT("BIOS_DSW0")
 	AM_RANGE(0x6401, 0x6401) AM_READ_PORT("BIOS_DSW1")
-	AM_RANGE(0x6404, 0x6404) AM_READWRITE(megatech_cart_select_r, megatech_cart_select_w) // cart select & ram bank
+	AM_RANGE(0x6404, 0x6404) AM_READWRITE_LEGACY(megatech_cart_select_r, megatech_cart_select_w) // cart select & ram bank
 	AM_RANGE(0x6800, 0x6800) AM_READ_PORT("BIOS_IN0")
 	AM_RANGE(0x6801, 0x6801) AM_READ_PORT("BIOS_IN1")
-	AM_RANGE(0x6802, 0x6807) AM_READWRITE(bios_ctrl_r, bios_ctrl_w)
+	AM_RANGE(0x6802, 0x6807) AM_READWRITE_LEGACY(bios_ctrl_r, bios_ctrl_w)
 //  AM_RANGE(0x6805, 0x6805) AM_READ_PORT("???")
 	AM_RANGE(0x7000, 0x77ff) AM_ROM // from bios rom (0x7000-0x77ff populated in ROM)
 	//AM_RANGE(0x7800, 0x7fff) AM_RAM // ?
-	AM_RANGE(0x8000, 0x9fff) AM_READWRITE(megatech_z80_read_68k_banked_data, megatech_z80_write_68k_banked_data) // window into 68k address space, reads instr rom and writes to reset banks on z80 carts?
+	AM_RANGE(0x8000, 0x9fff) AM_READWRITE_LEGACY(megatech_z80_read_68k_banked_data, megatech_z80_write_68k_banked_data) // window into 68k address space, reads instr rom and writes to reset banks on z80 carts?
 ADDRESS_MAP_END
 
 
@@ -401,15 +408,15 @@ static WRITE8_HANDLER (megatech_bios_port_7f_w)
 
 
 
-static ADDRESS_MAP_START( megatech_bios_portmap, AS_IO, 8 )
+static ADDRESS_MAP_START( megatech_bios_portmap, AS_IO, 8, mtech_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x3f, 0x3f) AM_WRITE(megatech_bios_port_ctrl_w)
+	AM_RANGE(0x3f, 0x3f) AM_WRITE_LEGACY(megatech_bios_port_ctrl_w)
 
-	AM_RANGE(0x7f, 0x7f) AM_READWRITE(sms_vcounter_r, megatech_bios_port_7f_w)
-	AM_RANGE(0xbe, 0xbe) AM_READWRITE(sms_vdp_data_r, sms_vdp_data_w)
-	AM_RANGE(0xbf, 0xbf) AM_READWRITE(sms_vdp_ctrl_r, sms_vdp_ctrl_w)
+	AM_RANGE(0x7f, 0x7f) AM_READWRITE_LEGACY(sms_vcounter_r, megatech_bios_port_7f_w)
+	AM_RANGE(0xbe, 0xbe) AM_READWRITE_LEGACY(sms_vdp_data_r, sms_vdp_data_w)
+	AM_RANGE(0xbf, 0xbf) AM_READWRITE_LEGACY(sms_vdp_ctrl_r, sms_vdp_ctrl_w)
 
-	AM_RANGE(0xdc, 0xdd) AM_READ(megatech_bios_joypad_r)  // player inputs
+	AM_RANGE(0xdc, 0xdd) AM_READ_LEGACY(megatech_bios_joypad_r)  // player inputs
 ADDRESS_MAP_END
 
 
@@ -429,7 +436,7 @@ static DRIVER_INIT(mt_slot)
 static DRIVER_INIT(mt_crt)
 {
 	mtech_state *state = machine.driver_data<mtech_state>();
-	UINT8* pin = machine.region("sms_pin")->base();
+	UINT8* pin = state->memregion("sms_pin")->base();
 	DRIVER_INIT_CALL(mt_slot);
 
 	state->m_cart_is_genesis[0] = !pin[0] ? 1 : 0;;
@@ -517,14 +524,14 @@ struct megatech_cart_region
 // we keep old region tags for compatibility with older macros... this might be changed at a later stage
 static const struct megatech_cart_region megatech_cart_table[] =
 {
-	{ "cart1", 0, "game0" },
-	{ "cart2", 1, "game1" },
-	{ "cart3", 2, "game2" },
-	{ "cart4", 3, "game3" },
-	{ "cart5", 4, "game4" },
-	{ "cart6", 5, "game5" },
-	{ "cart7", 6, "game6" },
-	{ "cart8", 7, "game7" },
+	{ ":cart1", 0, "game0" },
+	{ ":cart2", 1, "game1" },
+	{ ":cart3", 2, "game2" },
+	{ ":cart4", 3, "game3" },
+	{ ":cart5", 4, "game4" },
+	{ ":cart6", 5, "game5" },
+	{ ":cart7", 6, "game6" },
+	{ ":cart8", 7, "game7" },
 	{ 0 }
 };
 
@@ -549,7 +556,7 @@ static DEVICE_IMAGE_LOAD( megatech_cart )
 		return IMAGE_INIT_FAIL;
 
 	//printf("load list\n");
-	UINT8 *ROM = image.device().machine().region(this_cart->region)->base();
+	UINT8 *ROM = image.device().machine().root_device().memregion(this_cart->region)->base();
 	//printf("load list2\n");
 	UINT32 length = image.get_software_region_length("rom");
 	memcpy(ROM, image.get_software_region("rom"), length);
@@ -604,11 +611,15 @@ MACHINE_CONFIG_END
 
 
 /* MegaTech Games - Genesis & sms! Games with a timer */
+/* epr-12253b.20 is known to exist (Version 0 - Revision B) */
 
 #define MEGATECH_BIOS \
 	ROM_REGION( 0x400000, "maincpu", ROMREGION_ERASEFF ) \
 	ROM_REGION( 0x10000, "mtbios", 0 ) \
-	ROM_LOAD( "epr12664.20", 0x000000, 0x8000, CRC(f71e9526) SHA1(1c7887541d02c41426992d17f8e3db9e03975953) ) \
+	ROM_SYSTEM_BIOS( 0, "ver1", "Ver 1" ) \
+	ROMX_LOAD( "epr-12664.20",  0x000000, 0x8000, CRC(f71e9526) SHA1(1c7887541d02c41426992d17f8e3db9e03975953), ROM_BIOS(1)) \
+	ROM_SYSTEM_BIOS( 1, "ver0", "Ver 0" ) \
+	ROMX_LOAD( "epr-12263a.20", 0x000000, 0x8000, CRC(07c3f423) SHA1(50c28bbc2d4349c820d988ae3f20aae3f808545f), ROM_BIOS(2)) \
 
 /* no games */
 ROM_START( megatech )

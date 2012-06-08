@@ -21,7 +21,7 @@ OBJDIRS += \
 	$(LIBOBJ)/softfloat \
 	$(LIBOBJ)/libjpeg \
 	$(LIBOBJ)/libflac \
-	$(LIBOBJ)/libflacpp \
+	$(LIBOBJ)/lib7z \
 
 
 
@@ -31,16 +31,19 @@ OBJDIRS += \
 
 UTILOBJS = \
 	$(LIBOBJ)/util/astring.o \
-	$(LIBOBJ)/util/avcomp.o \
+	$(LIBOBJ)/util/avhuff.o \
 	$(LIBOBJ)/util/aviio.o \
 	$(LIBOBJ)/util/bitmap.o \
 	$(LIBOBJ)/util/cdrom.o \
 	$(LIBOBJ)/util/chd.o \
 	$(LIBOBJ)/util/chdcd.o \
+	$(LIBOBJ)/util/chdcodec.o \
 	$(LIBOBJ)/util/corefile.o \
 	$(LIBOBJ)/util/corestr.o \
 	$(LIBOBJ)/util/coreutil.o \
+	$(LIBOBJ)/util/flac.o \
 	$(LIBOBJ)/util/harddisk.o \
+	$(LIBOBJ)/util/hashing.o \
 	$(LIBOBJ)/util/huffman.o \
 	$(LIBOBJ)/util/jedparse.o \
 	$(LIBOBJ)/util/md5.o \
@@ -52,6 +55,7 @@ UTILOBJS = \
 	$(LIBOBJ)/util/sha1.o \
 	$(LIBOBJ)/util/unicode.o \
 	$(LIBOBJ)/util/unzip.o \
+	$(LIBOBJ)/util/un7z.o \
 	$(LIBOBJ)/util/vbiparse.o \
 	$(LIBOBJ)/util/xmlfile.o \
 	$(LIBOBJ)/util/zippath.o \
@@ -71,7 +75,7 @@ EXPATOBJS = \
 
 $(OBJ)/libexpat.a: $(EXPATOBJS)
 
-$(LIBOBJ)/expat/%.o: $(LIBSRC)/explat/%.c | $(OSPREBUILD)
+$(LIBOBJ)/expat/%.o: $(LIBSRC)/expat/%.c | $(OSPREBUILD)
 	$(ECHO) Compiling $<...
 	$(CC) $(CDEFS) $(CCOMFLAGS) $(CONLYFLAGS) -c $< -o $@
 
@@ -89,6 +93,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/basicdsk.o	\
 	$(LIBOBJ)/formats/a26_cas.o		\
 	$(LIBOBJ)/formats/ace_tap.o		\
+	$(LIBOBJ)/formats/adam_cas.o	\
 	$(LIBOBJ)/formats/ami_dsk.o		\
 	$(LIBOBJ)/formats/ap2_dsk.o		\
 	$(LIBOBJ)/formats/apf_apt.o		\
@@ -134,7 +139,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/p6001_cas.o	\
 	$(LIBOBJ)/formats/pasti_dsk.o	\
 	$(LIBOBJ)/formats/pc_dsk.o		\
-	$(LIBOBJ)/formats/pmd_pmd.o		\
+	$(LIBOBJ)/formats/pmd_cas.o		\
 	$(LIBOBJ)/formats/primoptp.o	\
 	$(LIBOBJ)/formats/rk_cas.o		\
 	$(LIBOBJ)/formats/smx_dsk.o		\
@@ -157,6 +162,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/vt_dsk.o		\
 	$(LIBOBJ)/formats/vtech1_dsk.o	\
 	$(LIBOBJ)/formats/wavfile.o		\
+	$(LIBOBJ)/formats/x07_cas.o		\
 	$(LIBOBJ)/formats/x1_tap.o		\
 	$(LIBOBJ)/formats/z80ne_dsk.o	\
 	$(LIBOBJ)/formats/zx81_p.o		\
@@ -184,6 +190,8 @@ ZLIBOBJS = \
 	$(LIBOBJ)/zlib/uncompr.o \
 	$(LIBOBJ)/zlib/zutil.o
 
+
+
 $(OBJ)/libz.a: $(ZLIBOBJS)
 
 $(LIBOBJ)/zlib/%.o: $(LIBSRC)/zlib/%.c | $(OSPREBUILD)
@@ -201,7 +209,8 @@ SOFTFLOAT_MACROS = $(LIBSRC)/softfloat/softfloat/bits64/softfloat-macros
 
 SOFTFLOATOBJS = \
 	$(LIBOBJ)/softfloat/softfloat.o \
-    $(LIBOBJ)/softfloat/fsincos.o
+    $(LIBOBJ)/softfloat/fsincos.o \
+    $(LIBOBJ)/softfloat/fyl2x.o
 
 $(OBJ)/libsoftfloat.a: $(SOFTFLOATOBJS)
 
@@ -269,11 +278,30 @@ $(LIBOBJ)/libjpeg/%.o: $(LIBSRC)/libjpeg/%.c | $(OSPREBUILD)
 	$(CC) $(CDEFS) $(CCOMFLAGS) $(CONLYFLAGS) -I$(LIBSRC)/libjpeg -c $< -o $@
 
 
+
 #-------------------------------------------------
 # libflac library objects
 #-------------------------------------------------
 
-FLACOPTS=-DFLAC__NO_ASM -DHAVE_INTTYPES_H -DHAVE_ICONV -DHAVE_LANGINFO_CODESET -DHAVE_SOCKLEN_T -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+ifeq ($(TARGETOS),macosx)
+ifdef BIGENDIAN
+ifeq ($(PTR64),1)
+ARCHFLAGS = -arch ppc64 -DWORDS_BIGENDIAN=1
+else
+ARCHFLAGS = -arch ppc -DWORDS_BIGENDIAN=1
+endif
+else	# BIGENDIAN
+ifeq ($(PTR64),1)
+ARCHFLAGS = -arch x86_64 -DWORDS_BIGENDIAN=0
+else
+ARCHFLAGS = -m32 -arch i386 -DWORDS_BIGENDIAN=0
+endif
+endif	# BIGENDIAN
+else    # ifeq ($(TARGETOS),macosx)
+ARCHFLAGS = -DWORDS_BIGENDIAN=0
+endif   # ifeq ($(TARGETOS),macosx)
+
+FLACOPTS=-DFLAC__NO_ASM -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DHAVE_CONFIG_H=0 -DFLAC__HAS_OGG=0 -Wno-unused-function $(ARCHFLAGS)
 
 ifdef BUILD_LIBMAME
 FLACOPTS := $(FLACOPTS) -fPIC
@@ -300,16 +328,38 @@ $(OBJ)/libflac.a: $(LIBFLACOBJS)
 
 $(LIBOBJ)/libflac/%.o: $(LIBSRC)/libflac/libflac/%.c | $(OSPREBUILD)
 	@echo Compiling $<...
-	$(CC) $(CDEFS) $(FLACOPTS) $(CONLYFLAGS) -I$(LIBSRC)/libflac/include -c $< -o $@
+	$(CC) $(CDEFS) $(CONLYFLAGS) $(CCOMFLAGS) $(FLACOPTS) -I$(LIBSRC)/libflac/include -c $< -o $@
 
 
-# LIBFLACPPOBJS = \
-#	$(LIBOBJ)/libflacpp/metadata.o \
-#	$(LIBOBJ)/libflacpp/stream_decoder.o \
-#	$(LIBOBJ)/libflacpp/stream_encoder.o
 
-# $(OBJ)/libflac++.a: $(LIBFLACPPOBJS)
+#-------------------------------------------------
+# lib7z library objects
+#-------------------------------------------------
 
-# $(LIBOBJ)/libflacpp/%.o: $(LIBSRC)/libflac/libflac++/%.cpp | $(OSPREBUILD)
-# 	@echo Compiling $<...
-#	$(CC) $(CDEFS) $(FLACOPTS) $(CPPONLYFLAGS) -I$(LIBSRC)/libflac/include -c $< -o $@
+7ZOPTS=-D_7ZIP_PPMD_SUPPPORT -D_7ZIP_ST
+
+LIB7ZOBJS = \
+	$(LIBOBJ)/lib7z/7zBuf.o \
+	$(LIBOBJ)/lib7z/7zBuf2.o \
+	$(LIBOBJ)/lib7z/7zCrc.o \
+	$(LIBOBJ)/lib7z/7zCrcOpt.o \
+	$(LIBOBJ)/lib7z/7zDec.o \
+	$(LIBOBJ)/lib7z/7zIn.o \
+	$(LIBOBJ)/lib7z/CpuArch.o \
+	$(LIBOBJ)/lib7z/LzmaDec.o \
+	$(LIBOBJ)/lib7z/Lzma2Dec.o \
+	$(LIBOBJ)/lib7z/LzmaEnc.o \
+	$(LIBOBJ)/lib7z/Lzma2Enc.o \
+	$(LIBOBJ)/lib7z/LzFind.o \
+	$(LIBOBJ)/lib7z/Bra.o \
+	$(LIBOBJ)/lib7z/Bra86.o \
+	$(LIBOBJ)/lib7z/Bcj2.o \
+	$(LIBOBJ)/lib7z/Ppmd7.o \
+	$(LIBOBJ)/lib7z/Ppmd7Dec.o \
+	$(LIBOBJ)/lib7z/7zStream.o \
+
+$(OBJ)/lib7z.a: $(LIB7ZOBJS)
+
+$(LIBOBJ)/lib7z/%.o: $(LIBSRC)/lib7z/%.c | $(OSPREBUILD)
+	@echo Compiling $<...
+	$(CC) $(CDEFS) $(7ZOPTS) $(CCOMFLAGS) $(CONLYFLAGS) -I$(LIBSRC)/lib7z/ -c $< -o $@

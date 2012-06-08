@@ -52,6 +52,7 @@ enum
 	XTAL_2MHz   		= 2000000,
 	XTAL_2_01216MHz		= 2012160,		/* Cidelsa Draco sound board */
 	XTAL_2_4576MHz		= 2457600,		/* Atari ST MFP */
+	XTAL_2_5MHz			= 2500000,		/* Janken Man units */
 	XTAL_3MHz   		= 3000000,		/* Probably only used to drive 68705 or similar MCUs on 80's Taito PCBs */
 	XTAL_3_12MHz		= 3120000,		/* SP0250 clock on Gottlieb games */
 	XTAL_3_52128MHz		= 3521280,		/* RCA COSMAC VIP */
@@ -105,6 +106,7 @@ enum
 	XTAL_11_2MHz		= 11200000,		/* New York, New York */
 	XTAL_11_289MHz  	= 11289000,		/* Vanguard */
 	XTAL_11_6688MHz 	= 11668800,		/* Gameplan pixel clock */
+	XTAL_11_8MHz		= 11800000,		/* IBM PC Music Feature Card */
 	XTAL_12MHz  		= 12000000,		/* Extremely common, used on 100's of PCBs */
 	XTAL_12_096MHz		= 12096000,		/* Some early 80's Atari games */
 	XTAL_12_288MHz  	= 12288000,		/* Sega Model 3 digital audio board */
@@ -128,6 +130,7 @@ enum
 	XTAL_16_9344MHz 	= 16934400,		/* Usually used to drive 90's Yamaha OPL/FM chips */
 	XTAL_17_36MHz		= 17360000,		/* OMTI Series 10 SCSI controller */
 	XTAL_17_73447MHz	= 17734470,		/* 4 times the PAL subcarrier */
+	XTAL_17_734472MHz	= 17734472,		/* actually 4 times the PAL subcarrier */
 	XTAL_18MHz  		= 18000000,		/* S.A.R, Ikari Warriors 3 */
 	XTAL_18_432MHz  	= 18432000,		/* Extremely common, used on 100's of PCBs */
 	XTAL_18_720MHz  	= 18720000,		/* Nokia MikroMikko 1 */
@@ -176,7 +179,7 @@ enum
 	XTAL_36MHz  		= 36000000,		/* Sega Model 1 video board */
 	XTAL_38_76922MHz	= 38769220,		/* Namco System 21 video board */
 	XTAL_40MHz  		= 40000000,
-        XTAL_42MHz  		= 42000000,		/* BMC A-00211 - Popo Bear */
+	XTAL_42MHz			= 42000000,		/* BMC A-00211 - Popo Bear */
 	XTAL_42_9545MHz 	= 42954545,		/* CPS3 */
 	XTAL_44_1MHz		= 44100000,		/* Subsino's Bishou Jan */
 	XTAL_45MHz  		= 45000000,		/* Eolith with Hyperstone CPUs */
@@ -197,17 +200,18 @@ enum
 	XTAL_67_7376MHz 	= 67737600,		/* PSX-based h/w, Sony ZN1-2-based */
 	XTAL_72_576MHz  	= 72576000,		/* Centipede, Millipede, Missile Command, Let's Go Bowling "Multipede" */
 	XTAL_73_728MHz  	= 73728000,		/* Ms. Pac-Man/Galaga 20th Anniversary */
-	XTAL_100MHz 		= 100000000,		/* PSX-based Namco System 12, Vegas, Sony ZN1-2-based */
-	XTAL_101_4912MHz	= 101491200,		/* PSX-based Namco System 10 */
-	XTAL_200MHz			= 200000000,		/* Base SH4 CPU (Naomi, Hikaru etc.) */
+	XTAL_100MHz 		= 100000000,	/* PSX-based Namco System 12, Vegas, Sony ZN1-2-based */
+	XTAL_101_4912MHz	= 101491200,	/* PSX-based Namco System 10 */
+	XTAL_200MHz			= 200000000,	/* Base SH4 CPU (Naomi, Hikaru etc.) */
 
-/* Resonators (There are probably more. Almost always used for driving OKI sound chips) */
+/* Resonators (There are probably more) */
 
-	XTAL_384kHz			= 384000,
-	XTAL_400kHz			= 400000,		/* Used on Great Swordman h/w */
-	XTAL_455kHz			= 455000,		/* Used on Gladiator h/w */
-	XTAL_640kHz			= 640000,
-	XTAL_1_056MHz		= 1056000		/* used on Trio The Punch */
+	XTAL_384kHz			= 384000,		/* Commonly used for driving OKI MSM5205 */
+	XTAL_400kHz			= 400000,		/* OKI MSM5205 on Great Swordman h/w */
+	XTAL_455kHz			= 455000,		/* OKI MSM5205 on Gladiator h/w */
+	XTAL_512kHz			= 512000,		/* Toshiba TC8830F */
+	XTAL_640kHz			= 640000,		/* NEC UPD7759, Texas Instruments Speech Chips */
+	XTAL_1_056MHz		= 1056000		/* OKI M6295 on Trio The Punch h/w */
 };
 
 

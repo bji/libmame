@@ -46,7 +46,7 @@ public:
 	virtual bool call_create(int format_type, option_resolution *format_options);
 	virtual void call_display_info() {}
 	virtual bool call_softlist_load(char *swlist, char *swname, rom_entry *start_entry) { return load_software(swlist, swname, start_entry); }
-
+	virtual const char *image_interface() const = 0;
 	virtual iodevice_t image_type() const { return IO_FLOPPY; }
 
 	virtual bool is_readable()  const { return true; }
@@ -165,7 +165,8 @@ public:
 	floppy_35_dd(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 	virtual ~floppy_35_dd();
 	virtual void handled_variants(UINT32 *variants, int &var_count) const;
-
+	virtual void device_config_complete() { m_shortname = "floppy_35_dd"; }
+	virtual const char *image_interface() const { return "floppy_3_5"; }
 protected:
 	virtual void setup_characteristics();
 };
@@ -175,7 +176,8 @@ public:
 	floppy_35_dd_nosd(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 	virtual ~floppy_35_dd_nosd();
 	virtual void handled_variants(UINT32 *variants, int &var_count) const;
-
+	virtual void device_config_complete() { m_shortname = "floppy_35_dd_nosd"; }
+	virtual const char *image_interface() const { return "floppy_3_5"; }
 protected:
 	virtual void setup_characteristics();
 };
@@ -185,7 +187,8 @@ public:
 	floppy_35_hd(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 	virtual ~floppy_35_hd();
 	virtual void handled_variants(UINT32 *variants, int &var_count) const;
-
+	virtual void device_config_complete() { m_shortname = "floppy_35_hd"; }
+	virtual const char *image_interface() const { return "floppy_3_5"; }
 protected:
 	virtual void setup_characteristics();
 };
@@ -195,7 +198,8 @@ public:
 	floppy_35_ed(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 	virtual ~floppy_35_ed();
 	virtual void handled_variants(UINT32 *variants, int &var_count) const;
-
+	virtual void device_config_complete() { m_shortname = "floppy_35_ed"; }
+	virtual const char *image_interface() const { return "floppy_3_5"; }
 protected:
 	virtual void setup_characteristics();
 };
@@ -205,7 +209,8 @@ public:
 	floppy_525_dd(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 	virtual ~floppy_525_dd();
 	virtual void handled_variants(UINT32 *variants, int &var_count) const;
-
+	virtual void device_config_complete() { m_shortname = "floppy_525_dd"; }
+	virtual const char *image_interface() const { return "floppy_5_25"; }
 protected:
 	virtual void setup_characteristics();
 };

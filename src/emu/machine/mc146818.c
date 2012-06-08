@@ -147,12 +147,7 @@ void mc146818_device::device_start()
 
 	memset(m_data, 0, sizeof(m_data));
 
-	if (m_type == MC146818_UTC) {
-		// hack: for apollo we increase the update frequency to stay in sync with real time
-		m_clock_timer->adjust(attotime::from_hz(2), 0, attotime::from_hz(2));
-	} else {
-		m_clock_timer->adjust(attotime::from_hz(1), 0, attotime::from_hz(1));
-	}
+	m_clock_timer->adjust(attotime::from_hz(1), 0, attotime::from_hz(1));
 
 	m_periodic_timer->adjust(attotime::never);
 	m_period = attotime::never;
@@ -305,11 +300,10 @@ void mc146818_device::device_timer(emu_timer &timer, device_timer_id id, int par
 
 
 //-------------------------------------------------
-//  rtc_set_time - called to initialize the RTC to
-//  a known state
+//  rtc_clock_updated -
 //-------------------------------------------------
 
-void mc146818_device::rtc_set_time(int year, int month, int day, int day_of_week, int hour, int minute, int second)
+void mc146818_device::rtc_clock_updated(int year, int month, int day, int day_of_week, int hour, int minute, int second)
 {
 	YEAR = year;
 	MONTH = month;
@@ -422,7 +416,8 @@ READ8_MEMBER( mc146818_device::read )
 		switch (m_index % MC146818_DATA_SIZE) {
 		case 0xa:
 			data = m_data[m_index  % MC146818_DATA_SIZE];
-			if ((space.machine().time() - m_last_refresh) < attotime::from_hz(32768))
+			// Update In Progress (UIP) time for 32768 Hz is 244+1984usec
+			if ((space.machine().time() - m_last_refresh) < attotime::from_usec(244+1984))
 				data |= 0x80;
 #if 0
 			/* for pc1512 bios realtime clock test */
@@ -480,14 +475,16 @@ WRITE8_MEMBER( mc146818_device::write )
 		case 0x0a:
 			// fixme: allow different time base
 			data &= 0x0f;
-			if (m_data[0x0b] & 0x40) {
-				if (data > 2)
-					m_period = attotime::from_hz(32768 >> (data - 1));
-				else if (data > 0)
-					m_period = attotime::from_hz(32768 >> (data + 6));
-				else m_period = attotime::never;
-				rate = attotime::zero;
-			} else rate = attotime::never;
+			if (data > 2)
+				m_period = attotime::from_hz(32768 >> (data - 1));
+			else if (data > 0)
+				m_period = attotime::from_hz(32768 >> (data + 6));
+			else m_period = attotime::never;
+
+			if(m_data[0x0b] & 0x40)
+				 rate = attotime::zero;
+			else rate = attotime::never;
+
 			m_periodic_timer->adjust(rate, 0, m_period);
 			data |= m_data[m_index % MC146818_DATA_SIZE] & 0xf0;
 			m_data[m_index % MC146818_DATA_SIZE] = data;

@@ -46,53 +46,51 @@ offsets:
     0x001f PORT-AD
 */
 
-static READ8_HANDLER( stv_ioga_r )
+READ8_MEMBER(saturn_state::stv_ioga_r)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 	UINT8 res;
 
 	res = 0xff;
 	offset &= 0x1f; // mirror?
 
-	if(offset & 0x20 && !space->debugger_access())
+	if(offset & 0x20 && !space.debugger_access())
 		printf("Reading from mirror %08x?\n",offset);
 
 	switch(offset)
 	{
-		case 0x01: res = input_port_read(space->machine(), "PORTA"); break; // P1
-		case 0x03: res = input_port_read(space->machine(), "PORTB"); break; // P2
-		case 0x05: res = input_port_read(space->machine(), "PORTC"); break; // SYSTEM
-		case 0x07: res = state->m_system_output | 0xf0; break; // port D, read-backs value written
-		case 0x09: res = input_port_read(space->machine(), "PORTE"); break; // P3
-		case 0x0b: res = input_port_read(space->machine(), "PORTF"); break; // P4
+		case 0x01: res = ioport("PORTA")->read(); break; // P1
+		case 0x03: res = ioport("PORTB")->read(); break; // P2
+		case 0x05: res = ioport("PORTC")->read(); break; // SYSTEM
+		case 0x07: res = m_system_output | 0xf0; break; // port D, read-backs value written
+		case 0x09: res = ioport("PORTE")->read(); break; // P3
+		case 0x0b: res = ioport("PORTF")->read(); break; // P4
 		case 0x1b: res = 0; break; // Serial COM READ status
 	}
 
 	return res;
 }
 
-static WRITE8_HANDLER( stv_ioga_w )
+WRITE8_MEMBER(saturn_state::stv_ioga_w)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 	offset &= 0x1f; // mirror?
 
-	if(offset & 0x20 && !space->debugger_access())
+	if(offset & 0x20 && !space.debugger_access())
 		printf("Reading from mirror %08x?\n",offset);
 
 	switch(offset)
 	{
 		case 0x07:
-			state->m_system_output = data & 0xf;
+			m_system_output = data & 0xf;
 			/*Why does the BIOS tests these as ACTIVE HIGH? A program bug?*/
-			coin_counter_w(space->machine(), 0,~data & 0x01);
-			coin_counter_w(space->machine(), 1,~data & 0x02);
-			coin_lockout_w(space->machine(), 0,~data & 0x04);
-			coin_lockout_w(space->machine(), 1,~data & 0x08);
+			coin_counter_w(machine(), 0,~data & 0x01);
+			coin_counter_w(machine(), 1,~data & 0x02);
+			coin_lockout_w(machine(), 0,~data & 0x04);
+			coin_lockout_w(machine(), 1,~data & 0x08);
 			break;
 	}
 }
 
-static READ8_HANDLER( critcrsh_ioga_r )
+READ8_MEMBER(saturn_state::critcrsh_ioga_r)
 {
 	UINT8 res;
 	const char *const lgnames[] = { "LIGHTX", "LIGHTY" };
@@ -103,9 +101,9 @@ static READ8_HANDLER( critcrsh_ioga_r )
 	{
 		case 0x01:
 		case 0x03:
-			res = input_port_read(space->machine(), lgnames[offset >> 1]);
+			res = ioport(lgnames[offset >> 1])->read();
 			res = BITSWAP8(res, 2, 3, 0, 1, 6, 7, 5, 4) & 0xf3;
-			res |= (input_port_read(space->machine(), "PORTC") & 0x10) ? 0x0 : 0x4; // x/y hit latch actually
+			res |= (ioport("PORTC")->read() & 0x10) ? 0x0 : 0x4; // x/y hit latch actually
 			break;
 		default: res = stv_ioga_r(space,offset); break;
 	}
@@ -113,9 +111,8 @@ static READ8_HANDLER( critcrsh_ioga_r )
 	return res;
 }
 
-static READ8_HANDLER( magzun_ioga_r )
+READ8_MEMBER(saturn_state::magzun_ioga_r)
 {
-	//saturn_state *state = space->machine().driver_data<saturn_state>();
 	UINT8 res;
 
 	res = 0xff;
@@ -139,21 +136,19 @@ static READ8_HANDLER( magzun_ioga_r )
 	return res;
 }
 
-static WRITE8_HANDLER( magzun_ioga_w )
+WRITE8_MEMBER(saturn_state::magzun_ioga_w)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 
 	switch(offset)
 	{
-		case 0x13: state->m_serial_tx = (data << 8) | (state->m_serial_tx & 0xff); break;
-		case 0x15: state->m_serial_tx = (data & 0xff) | (state->m_serial_tx & 0xff00); break;
+		case 0x13: m_serial_tx = (data << 8) | (m_serial_tx & 0xff); break;
+		case 0x15: m_serial_tx = (data & 0xff) | (m_serial_tx & 0xff00); break;
 		default: stv_ioga_w(space,offset,data); break;
 	}
 }
 
-static READ8_HANDLER( stvmp_ioga_r )
+READ8_MEMBER(saturn_state::stvmp_ioga_r)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 	const char *const mpnames[2][5] = {
 		{"P1_KEY0", "P1_KEY1", "P1_KEY2", "P1_KEY3", "P1_KEY4"},
 		{"P2_KEY0", "P2_KEY1", "P2_KEY2", "P2_KEY3", "P2_KEY4"} };
@@ -165,7 +160,7 @@ static READ8_HANDLER( stvmp_ioga_r )
 	{
 		case 0x01:
 		case 0x03:
-			if(state->m_port_sel & 0x10) // joystick select
+			if(m_port_sel & 0x10) // joystick select
 				res = stv_ioga_r(space,offset);
 			else // mahjong panel select
 			{
@@ -173,8 +168,8 @@ static READ8_HANDLER( stvmp_ioga_r )
 
 				for(i=0;i<5;i++)
 				{
-					if(state->m_mux_data & 1 << i)
-						res = input_port_read(space->machine(), mpnames[offset >> 1][i]);
+					if(m_mux_data & 1 << i)
+						res = ioport(mpnames[offset >> 1][i])->read();
 				}
 			}
 			break;
@@ -184,22 +179,20 @@ static READ8_HANDLER( stvmp_ioga_r )
 	return res;
 }
 
-static WRITE8_HANDLER( stvmp_ioga_w )
+WRITE8_MEMBER(saturn_state::stvmp_ioga_w)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 
 	switch(offset)
 	{
-		case 0x09: state->m_mux_data = data ^ 0xff; break;
-		case 0x11: state->m_port_sel = data; break;
+		case 0x09: m_mux_data = data ^ 0xff; break;
+		case 0x11: m_port_sel = data; break;
 		default:   stv_ioga_w(space,offset,data); break;
 	}
 }
 
 /* remaps with a 8-bit handler because MAME can't install r/w handlers with a different bus parallelism than the CPU native one, shrug ... */
-static READ32_HANDLER( stv_ioga_r32 )
+READ32_MEMBER(saturn_state::stv_ioga_r32)
 {
-	//saturn_state *state = space->machine().driver_data<saturn_state>();
 	UINT32 res;
 
 	res = 0;
@@ -213,9 +206,8 @@ static READ32_HANDLER( stv_ioga_r32 )
 	return res;
 }
 
-static WRITE32_HANDLER ( stv_ioga_w32 )
+WRITE32_MEMBER(saturn_state::stv_ioga_w32)
 {
-	//saturn_state *state = space->machine().driver_data<saturn_state>();
 
 	if(ACCESSING_BITS_16_23)
 		stv_ioga_w(space,offset*4+1,data >> 16);
@@ -227,7 +219,7 @@ static WRITE32_HANDLER ( stv_ioga_w32 )
 	return;
 }
 
-static READ32_HANDLER( critcrsh_ioga_r32 )
+READ32_MEMBER(saturn_state::critcrsh_ioga_r32)
 {
 	UINT32 res;
 
@@ -237,13 +229,13 @@ static READ32_HANDLER( critcrsh_ioga_r32 )
 	if(ACCESSING_BITS_0_7)
 		res |= critcrsh_ioga_r(space,offset*4+3);
 	if(ACCESSING_BITS_8_15 || ACCESSING_BITS_24_31)
-		if(!space->debugger_access())
+		if(!space.debugger_access())
 			printf("Warning: IOGA reads from odd offset %02x %08x!\n",offset*4,mem_mask);
 
 	return res;
 }
 
-static READ32_HANDLER( stvmp_ioga_r32 )
+READ32_MEMBER(saturn_state::stvmp_ioga_r32)
 {
 	UINT32 res;
 
@@ -253,24 +245,24 @@ static READ32_HANDLER( stvmp_ioga_r32 )
 	if(ACCESSING_BITS_0_7)
 		res |= stvmp_ioga_r(space,offset*4+3);
 	if(ACCESSING_BITS_8_15 || ACCESSING_BITS_24_31)
-		if(!space->debugger_access())
+		if(!space.debugger_access())
 			printf("Warning: IOGA reads from odd offset %02x %08x!\n",offset*4,mem_mask);
 
 	return res;
 }
 
-static WRITE32_HANDLER( stvmp_ioga_w32 )
+WRITE32_MEMBER(saturn_state::stvmp_ioga_w32)
 {
 	if(ACCESSING_BITS_16_23)
 		stvmp_ioga_w(space,offset*4+1,data >> 16);
 	if(ACCESSING_BITS_0_7)
 		stvmp_ioga_w(space,offset*4+3,data);
 	if(ACCESSING_BITS_8_15 || ACCESSING_BITS_24_31)
-		if(!space->debugger_access())
+		if(!space.debugger_access())
 			printf("Warning: IOGA writes to odd offset %02x (%08x) -> %08x!",offset*4,mem_mask,data);
 }
 
-static READ32_HANDLER( magzun_ioga_r32 )
+READ32_MEMBER(saturn_state::magzun_ioga_r32)
 {
 	UINT32 res;
 
@@ -280,20 +272,20 @@ static READ32_HANDLER( magzun_ioga_r32 )
 	if(ACCESSING_BITS_0_7)
 		res |= magzun_ioga_r(space,offset*4+3);
 	if(ACCESSING_BITS_8_15 || ACCESSING_BITS_24_31)
-		if(!space->debugger_access())
+		if(!space.debugger_access())
 			printf("Warning: IOGA reads from odd offset %02x %08x!\n",offset*4,mem_mask);
 
 	return res;
 }
 
-static WRITE32_HANDLER( magzun_ioga_w32 )
+WRITE32_MEMBER(saturn_state::magzun_ioga_w32)
 {
 	if(ACCESSING_BITS_16_23)
 		magzun_ioga_w(space,offset*4+1,data >> 16);
 	if(ACCESSING_BITS_0_7)
 		magzun_ioga_w(space,offset*4+3,data);
 	if(ACCESSING_BITS_8_15 || ACCESSING_BITS_24_31)
-		if(!space->debugger_access())
+		if(!space.debugger_access())
 			printf("Warning: IOGA writes to odd offset %02x (%08x) -> %08x!",offset*4,mem_mask,data);
 }
 
@@ -352,8 +344,8 @@ DRIVER_INIT( stv )
 	sh2drc_set_options(machine.device("maincpu"), SH2DRC_STRICT_VERIFY|SH2DRC_STRICT_PCREL);
 	sh2drc_set_options(machine.device("slave"), SH2DRC_STRICT_VERIFY|SH2DRC_STRICT_PCREL);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(stv_ioga_r32), FUNC(stv_ioga_w32));
-	machine.device("slave")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(stv_ioga_r32), FUNC(stv_ioga_w32));
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::stv_ioga_r32),state), write32_delegate(FUNC(saturn_state::stv_ioga_w32),state));
+	machine.device("slave")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::stv_ioga_r32),state), write32_delegate(FUNC(saturn_state::stv_ioga_w32),state));
 
 	state->m_vdp2.pal = 0;
 }
@@ -361,9 +353,9 @@ DRIVER_INIT( stv )
 DRIVER_INIT(critcrsh)
 {
 	DRIVER_INIT_CALL(stv);
-
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(critcrsh_ioga_r32), FUNC(stv_ioga_w32));
-	machine.device("slave")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(critcrsh_ioga_r32), FUNC(stv_ioga_w32));
+	saturn_state *state = machine.driver_data<saturn_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::critcrsh_ioga_r32),state), write32_delegate(FUNC(saturn_state::stv_ioga_w32),state));
+	machine.device("slave")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::critcrsh_ioga_r32),state), write32_delegate(FUNC(saturn_state::stv_ioga_w32),state));
 }
 
 /*
@@ -374,43 +366,42 @@ DRIVER_INIT(critcrsh)
     TODO: game doesn't work if not in debugger?
 */
 
-static READ32_HANDLER( magzun_hef_hack_r )
+READ32_MEMBER(saturn_state::magzun_hef_hack_r)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 
-	if(cpu_get_pc(&space->device())==0x604bf20) return 0x00000001; //HWEF
+	if(cpu_get_pc(&space.device())==0x604bf20) return 0x00000001; //HWEF
 
-	if(cpu_get_pc(&space->device())==0x604bfbe) return 0x00000002; //HREF
+	if(cpu_get_pc(&space.device())==0x604bfbe) return 0x00000002; //HREF
 
-	return state->m_workram_h[0x08e830/4];
+	return m_workram_h[0x08e830/4];
 }
 
-static READ32_HANDLER( magzun_rx_hack_r )
+READ32_MEMBER(saturn_state::magzun_rx_hack_r)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 
-	if(cpu_get_pc(&space->device())==0x604c006) return 0x40;
+	if(cpu_get_pc(&space.device())==0x604c006) return 0x40;
 
-	return state->m_workram_h[0x0ff3b4/4];
+	return m_workram_h[0x0ff3b4/4];
 }
 
 DRIVER_INIT(magzun)
 {
+	saturn_state *state = machine.driver_data<saturn_state>();
 	sh2drc_add_pcflush(machine.device("maincpu"), 0x604bf20);
 	sh2drc_add_pcflush(machine.device("maincpu"), 0x604bfbe);
 	sh2drc_add_pcflush(machine.device("maincpu"), 0x604c006);
 
 	DRIVER_INIT_CALL(stv);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(magzun_ioga_r32), FUNC(magzun_ioga_w32));
-	machine.device("slave")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(magzun_ioga_r32), FUNC(magzun_ioga_w32));
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::magzun_ioga_r32),state), write32_delegate(FUNC(saturn_state::magzun_ioga_w32),state));
+	machine.device("slave")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::magzun_ioga_r32),state), write32_delegate(FUNC(saturn_state::magzun_ioga_w32),state));
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x608e830, 0x608e833, FUNC(magzun_hef_hack_r) );
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x60ff3b4, 0x60ff3b7, FUNC(magzun_rx_hack_r) );
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x608e830, 0x608e833, read32_delegate(FUNC(saturn_state::magzun_hef_hack_r),state));
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x60ff3b4, 0x60ff3b7, read32_delegate(FUNC(saturn_state::magzun_rx_hack_r),state));
 
 	/* Program ROM patches, don't understand how to avoid these two checks ... */
 	{
-		UINT32 *ROM = (UINT32 *)machine.region("game0")->base();
+		UINT32 *ROM = (UINT32 *)state->memregion("game0")->base();
 
 		ROM[0x90054/4] = 0x00e00001; // END error
 
@@ -422,9 +413,9 @@ DRIVER_INIT(magzun)
 DRIVER_INIT(stvmp)
 {
 	DRIVER_INIT_CALL(stv);
-
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(stvmp_ioga_r32), FUNC(stvmp_ioga_w32));
-	machine.device("slave")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x00400000, 0x0040003f, FUNC(stvmp_ioga_r32), FUNC(stvmp_ioga_w32));
+	saturn_state *state = machine.driver_data<saturn_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::stvmp_ioga_r32),state), write32_delegate(FUNC(saturn_state::stvmp_ioga_w32),state));
+	machine.device("slave")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x00400000, 0x0040003f, read32_delegate(FUNC(saturn_state::stvmp_ioga_r32),state), write32_delegate(FUNC(saturn_state::stvmp_ioga_w32),state));
 }
 
 
@@ -672,21 +663,21 @@ bp 6001d22 (60ffef0)
 
 */
 
-static READ32_HANDLER( astrass_hack_r )
+READ32_MEMBER(saturn_state::astrass_hack_r)
 {
-	saturn_state *state = space->machine().driver_data<saturn_state>();
 
-	if(cpu_get_pc(&space->device()) == 0x60011ba) return 0x00000000;
+	if(cpu_get_pc(&space.device()) == 0x60011ba) return 0x00000000;
 
-	return state->m_workram_h[0x000770/4];
+	return m_workram_h[0x000770/4];
 }
 
 DRIVER_INIT( astrass )
 {
+	saturn_state *state = machine.driver_data<saturn_state>();
 	sh2drc_add_pcflush(machine.device("maincpu"), 0x60011ba);
 	sh2drc_add_pcflush(machine.device("maincpu"), 0x605b9da);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x06000770, 0x06000773, FUNC(astrass_hack_r) );
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x06000770, 0x06000773, read32_delegate(FUNC(saturn_state::astrass_hack_r),state));
 
 	install_astrass_protection(machine);
 
@@ -1107,7 +1098,7 @@ by Sega titles,and this is a Sunsoft game)It's likely to be a left-over...
 
 static DRIVER_INIT( sanjeon )
 {
-	UINT8 *src    = machine.region       ( "game0" )->base();
+	UINT8 *src    = machine.root_device().memregion       ( "game0" )->base();
 	int x;
 
 	for (x=0;x<0x3000000;x++)
@@ -2002,7 +1993,7 @@ ROM_START( sfish2 )
 	ROM_LOAD16_WORD_SWAP( "mpr-18275.ic4",    0x0c00000, 0x0200000, CRC(7691deca) SHA1(aabb6b098963caf51f66aefa0a97aed7eb86c308) ) // good
 
 	DISK_REGION( "cdrom" )
-	DISK_IMAGE( "sfish2", 0, SHA1(a10073d83bbbe16e16f69ad48565821576557d61) )
+	DISK_IMAGE( "sfish2", 0, BAD_DUMP SHA1(a10073d83bbbe16e16f69ad48565821576557d61) )
 
 	ROM_REGION32_BE( 0x3000000, "abus", ROMREGION_ERASE00 ) /* SH2 code */ \
 ROM_END
@@ -2023,7 +2014,7 @@ ROM_START( sfish2j )
 	ROM_LOAD16_WORD_SWAP( "mpr-18274.ic3",    0x0800000, 0x0400000, CRC(a6d76d23) SHA1(eee8c824eff4485d1b3af93a4fd5b21262eec803) ) // good
 
 	DISK_REGION( "cdrom" )
-	DISK_IMAGE( "sfish2", 0, SHA1(a10073d83bbbe16e16f69ad48565821576557d61) )
+	DISK_IMAGE( "sfish2", 0, BAD_DUMP SHA1(a10073d83bbbe16e16f69ad48565821576557d61) )
 
 	ROM_REGION32_BE( 0x3000000, "abus", ROMREGION_ERASE00 ) /* SH2 code */
 ROM_END
@@ -2276,7 +2267,20 @@ ROM_START( pclub2kc ) // set to 1p
 	ROM_LOAD( "pclub2kc.nv", 0x0000, 0x0080, CRC(064366fe) SHA1(b85489ae19ddc0fbd67b441a6967f10a6cd22d45) )
 ROM_END
 
+ROM_START( pclb2elk ) // set to 1p
+	STV_BIOS
 
+	ROM_REGION32_BE( 0x3000000, "game0", ROMREGION_ERASE00 ) /* SH2 code */
+
+	ROM_LOAD16_WORD_SWAP( "pclb2elk_ic22",    0x0200000, 0x0200000, CRC(2faed82a) SHA1(035ef25dd974679e46a79e408ee284eca0310557) ) // OK (tested as IC7)
+	ROM_LOAD16_WORD_SWAP( "pclb2elk_ic24",    0x0400000, 0x0200000, CRC(9cacfb7b) SHA1(1c68e1ba077e02ded0f388b4e9ad24998a5d8a48) ) // OK (tested as IC2)
+	ROM_LOAD16_WORD_SWAP( "pclb2elk_ic26",    0x0600000, 0x0200000, CRC(533a189e) SHA1(23a08a9ab02b21d6c75c770f4adc33c6dfe98a4e) ) // OK (tested as IC2)
+	ROM_LOAD16_WORD_SWAP( "pclb2elk_ic28",    0x0800000, 0x0200000, CRC(1f0c9113) SHA1(b65fc9012cb159c374674cde1fd2fb2cf192e7c5) ) // OK (tested as IC3)
+	ROM_LOAD16_WORD_SWAP( "pclb2elk_ic30",    0x0a00000, 0x0200000, CRC(0e188b8c) SHA1(8574f884fbeb2f428913c24e147ee8753305ce86) ) // OK (tested as IC3)
+
+	ROM_REGION16_BE( 0x80, "eeprom", 0 ) // preconfigured to 1 player
+	ROM_LOAD( "pclb2elk.nv", 0x0000, 0x0080, CRC(54c7564f) SHA1(574dcc5e8fe4aac091fee1476347485ed660eddd) )
+ROM_END
 
 
 GAME( 1996, stvbios,   0,       stv_slot, stv,      stv,        ROT0,   "Sega",                         "ST-V Bios", GAME_IS_BIOS_ROOT )
@@ -2344,8 +2348,7 @@ GAME( 1999, pclubol,   stvbios, stv,      stv,      stv,        ROT0,   "Atlus",
 GAME( 1999, pclub2v3,  pclub2,  stv,      stv,		stv,    	ROT0,   "Atlus",	    				"Print Club 2 Vol. 3 (U 990310 V1.000)", GAME_NOT_WORKING )
 GAME( 1999, pclubpok,  stvbios, stv,      stv,      stv,        ROT0,   "Atlus",                        "Print Club Pokemon B (U 991126 V1.000)", GAME_NOT_WORKING )
 GAME( 1997, pclub2kc,  stvbios, stv,      stv,      stv,        ROT0,   "Atlus",                        "Print Club Kome Kome Club (J 970203 V1.000)", GAME_NOT_WORKING )
-
-
+GAME( 1997, pclb2elk,  stvbios, stv,      stv,      stv,        ROT0,   "Atlus",                        "Print Club 2 Earth Limited Kobe (Print Club Custom) (J 970808 V1.000)", GAME_NOT_WORKING )
 
 
 /* Doing something.. but not enough yet */

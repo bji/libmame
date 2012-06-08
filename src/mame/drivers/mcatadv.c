@@ -144,50 +144,49 @@ Stephh's notes (based on the games M68000 code and some tests) :
 
 /*** Main CPU ***/
 
-static WRITE16_HANDLER( mcat_soundlatch_w )
+WRITE16_MEMBER(mcatadv_state::mcat_soundlatch_w)
 {
-	mcatadv_state *state = space->machine().driver_data<mcatadv_state>();
 
-	soundlatch_w(space, 0, data);
-	device_set_input_line(state->m_soundcpu, INPUT_LINE_NMI, PULSE_LINE);
+	soundlatch_byte_w(space, 0, data);
+	device_set_input_line(m_soundcpu, INPUT_LINE_NMI, PULSE_LINE);
 }
 
 #if 0 // mcat only.. install read handler?
-static WRITE16_HANDLER( mcat_coin_w )
+WRITE16_MEMBER(mcatadv_state::mcat_coin_w)
 {
 	if(ACCESSING_BITS_8_15)
 	{
-		coin_counter_w(space->machine(), 0, data & 0x1000);
-		coin_counter_w(space->machine(), 1, data & 0x2000);
-		coin_lockout_w(space->machine(), 0, ~data & 0x4000);
-		coin_lockout_w(space->machine(), 1, ~data & 0x8000);
+		coin_counter_w(machine(), 0, data & 0x1000);
+		coin_counter_w(machine(), 1, data & 0x2000);
+		coin_lockout_w(machine(), 0, ~data & 0x4000);
+		coin_lockout_w(machine(), 1, ~data & 0x8000);
 	}
 }
 #endif
 
-static READ16_HANDLER( mcat_wd_r )
+READ16_MEMBER(mcatadv_state::mcat_wd_r)
 {
 	watchdog_reset_r(space, 0);
 	return 0xc00;
 }
 
 
-static ADDRESS_MAP_START( mcatadv_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( mcatadv_map, AS_PROGRAM, 16, mcatadv_state )
 	AM_RANGE(0x000000, 0x0fffff) AM_ROM
 	AM_RANGE(0x100000, 0x10ffff) AM_RAM
 
 //  AM_RANGE(0x180018, 0x18001f) AM_READNOP // ?
 
-	AM_RANGE(0x200000, 0x200005) AM_RAM AM_BASE_MEMBER(mcatadv_state, m_scroll1)
-	AM_RANGE(0x300000, 0x300005) AM_RAM AM_BASE_MEMBER(mcatadv_state, m_scroll2)
+	AM_RANGE(0x200000, 0x200005) AM_RAM AM_SHARE("scroll1")
+	AM_RANGE(0x300000, 0x300005) AM_RAM AM_SHARE("scroll2")
 
-	AM_RANGE(0x400000, 0x401fff) AM_RAM_WRITE(mcatadv_videoram1_w) AM_BASE_MEMBER(mcatadv_state, m_videoram1) // Tilemap 0
-	AM_RANGE(0x500000, 0x501fff) AM_RAM_WRITE(mcatadv_videoram2_w) AM_BASE_MEMBER(mcatadv_state, m_videoram2) // Tilemap 1
+	AM_RANGE(0x400000, 0x401fff) AM_RAM_WRITE(mcatadv_videoram1_w) AM_SHARE("videoram1") // Tilemap 0
+	AM_RANGE(0x500000, 0x501fff) AM_RAM_WRITE(mcatadv_videoram2_w) AM_SHARE("videoram2") // Tilemap 1
 
-	AM_RANGE(0x600000, 0x601fff) AM_RAM_WRITE(paletteram16_xGGGGGRRRRRBBBBB_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0x600000, 0x601fff) AM_RAM_WRITE(paletteram_xGGGGGRRRRRBBBBB_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0x602000, 0x602fff) AM_RAM // Bigger than needs to be?
 
-	AM_RANGE(0x700000, 0x707fff) AM_RAM AM_BASE_SIZE_MEMBER(mcatadv_state, m_spriteram, m_spriteram_size) // Sprites, two halves for double buffering
+	AM_RANGE(0x700000, 0x707fff) AM_RAM AM_SHARE("spriteram") // Sprites, two halves for double buffering
 	AM_RANGE(0x708000, 0x70ffff) AM_RAM // Tests more than is needed?
 
 	AM_RANGE(0x800000, 0x800001) AM_READ_PORT("P1")
@@ -196,47 +195,47 @@ static ADDRESS_MAP_START( mcatadv_map, AS_PROGRAM, 16 )
 	AM_RANGE(0xa00000, 0xa00001) AM_READ_PORT("DSW1")
 	AM_RANGE(0xa00002, 0xa00003) AM_READ_PORT("DSW2")
 
-	AM_RANGE(0xb00000, 0xb0000f) AM_RAM AM_BASE_MEMBER(mcatadv_state, m_vidregs)
+	AM_RANGE(0xb00000, 0xb0000f) AM_RAM AM_SHARE("vidregs")
 
 	AM_RANGE(0xb00018, 0xb00019) AM_WRITE(watchdog_reset16_w) // NOST Only
 	AM_RANGE(0xb0001e, 0xb0001f) AM_READ(mcat_wd_r) // MCAT Only
-	AM_RANGE(0xc00000, 0xc00001) AM_READWRITE(soundlatch2_word_r, mcat_soundlatch_w)
+	AM_RANGE(0xc00000, 0xc00001) AM_READ(soundlatch2_word_r) AM_WRITE(mcat_soundlatch_w)
 ADDRESS_MAP_END
 
 /*** Sound ***/
 
-static WRITE8_HANDLER ( mcatadv_sound_bw_w )
+WRITE8_MEMBER(mcatadv_state::mcatadv_sound_bw_w)
 {
-	memory_set_bank(space->machine(), "bank1", data);
+	membank("bank1")->set_entry(data);
 }
 
 
-static ADDRESS_MAP_START( mcatadv_sound_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( mcatadv_sound_map, AS_PROGRAM, 8, mcatadv_state )
 	AM_RANGE(0x0000, 0x3fff) AM_ROM						// ROM
 	AM_RANGE(0x4000, 0xbfff) AM_ROMBANK("bank1")				// ROM
 	AM_RANGE(0xc000, 0xdfff) AM_RAM						// RAM
-	AM_RANGE(0xe000, 0xe003) AM_DEVREADWRITE("ymsnd", ym2610_r,ym2610_w)
+	AM_RANGE(0xe000, 0xe003) AM_DEVREADWRITE_LEGACY("ymsnd", ym2610_r,ym2610_w)
 	AM_RANGE(0xf000, 0xf000) AM_WRITE(mcatadv_sound_bw_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( mcatadv_sound_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( mcatadv_sound_io_map, AS_IO, 8, mcatadv_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x80, 0x80) AM_READWRITE(soundlatch_r, soundlatch2_w)
+	AM_RANGE(0x80, 0x80) AM_READWRITE(soundlatch_byte_r, soundlatch2_byte_w)
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( nost_sound_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( nost_sound_map, AS_PROGRAM, 8, mcatadv_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM						// ROM
 	AM_RANGE(0x8000, 0xbfff) AM_ROMBANK("bank1")				// ROM
 	AM_RANGE(0xc000, 0xdfff) AM_RAM						// RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( nost_sound_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( nost_sound_io_map, AS_IO, 8, mcatadv_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x03) AM_DEVWRITE("ymsnd", ym2610_w)
-	AM_RANGE(0x04, 0x07) AM_DEVREAD("ymsnd", ym2610_r)
+	AM_RANGE(0x00, 0x03) AM_DEVWRITE_LEGACY("ymsnd", ym2610_w)
+	AM_RANGE(0x04, 0x07) AM_DEVREAD_LEGACY("ymsnd", ym2610_r)
 	AM_RANGE(0x40, 0x40) AM_WRITE(mcatadv_sound_bw_w)
-	AM_RANGE(0x80, 0x80) AM_READWRITE(soundlatch_r, soundlatch2_w)
+	AM_RANGE(0x80, 0x80) AM_READWRITE(soundlatch_byte_r, soundlatch2_byte_w)
 ADDRESS_MAP_END
 
 /*** Inputs ***/
@@ -280,21 +279,21 @@ static INPUT_PORTS_START( mcatadv )
 	PORT_DIPSETTING(      0x0800, "Mode 1" )
 	PORT_DIPSETTING(      0x0000, "Mode 2" )
 	PORT_DIPNAME( 0x3000, 0x3000, DEF_STR( Coin_A ) )		PORT_DIPLOCATION("SW1:5,6")
-	PORT_DIPSETTING(      0x0000, DEF_STR( 4C_1C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0000)
-	PORT_DIPSETTING(      0x1000, DEF_STR( 3C_1C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0000)
-	PORT_DIPSETTING(      0x1000, DEF_STR( 2C_1C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0800)
+	PORT_DIPSETTING(      0x0000, DEF_STR( 4C_1C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0000)
+	PORT_DIPSETTING(      0x1000, DEF_STR( 3C_1C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0000)
+	PORT_DIPSETTING(      0x1000, DEF_STR( 2C_1C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0800)
 	PORT_DIPSETTING(      0x3000, DEF_STR( 1C_1C ) )
-	PORT_DIPSETTING(      0x0000, DEF_STR( 2C_3C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0800)
-	PORT_DIPSETTING(      0x2000, DEF_STR( 1C_2C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0800)
-	PORT_DIPSETTING(      0x2000, DEF_STR( 1C_4C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0000)
+	PORT_DIPSETTING(      0x0000, DEF_STR( 2C_3C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0800)
+	PORT_DIPSETTING(      0x2000, DEF_STR( 1C_2C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0800)
+	PORT_DIPSETTING(      0x2000, DEF_STR( 1C_4C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0000)
 	PORT_DIPNAME( 0xc000, 0xc000, DEF_STR( Coin_B ) )		PORT_DIPLOCATION("SW1:7,8")
-	PORT_DIPSETTING(      0x0000, DEF_STR( 4C_1C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0000)
-	PORT_DIPSETTING(      0x4000, DEF_STR( 3C_1C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0000)
-	PORT_DIPSETTING(      0x4000, DEF_STR( 2C_1C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0800)
+	PORT_DIPSETTING(      0x0000, DEF_STR( 4C_1C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0000)
+	PORT_DIPSETTING(      0x4000, DEF_STR( 3C_1C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0000)
+	PORT_DIPSETTING(      0x4000, DEF_STR( 2C_1C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0800)
 	PORT_DIPSETTING(      0xc000, DEF_STR( 1C_1C ) )
-	PORT_DIPSETTING(      0x0000, DEF_STR( 2C_3C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0800)
-	PORT_DIPSETTING(      0x8000, DEF_STR( 1C_2C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0800)
-	PORT_DIPSETTING(      0x8000, DEF_STR( 1C_4C ) )	PORT_CONDITION("DSW1", 0x0800, PORTCOND_EQUALS, 0x0000)
+	PORT_DIPSETTING(      0x0000, DEF_STR( 2C_3C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0800)
+	PORT_DIPSETTING(      0x8000, DEF_STR( 1C_2C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0800)
+	PORT_DIPSETTING(      0x8000, DEF_STR( 1C_4C ) )	PORT_CONDITION("DSW1", 0x0800, EQUALS, 0x0000)
 
 	PORT_START("DSW2")
 	PORT_BIT( 0x00ff, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -429,10 +428,10 @@ static const ym2610_interface mcatadv_ym2610_interface =
 static MACHINE_START( mcatadv )
 {
 	mcatadv_state *state = machine.driver_data<mcatadv_state>();
-	UINT8 *ROM = machine.region("soundcpu")->base();
+	UINT8 *ROM = state->memregion("soundcpu")->base();
 
-	memory_configure_bank(machine, "bank1", 0, 8, &ROM[0x10000], 0x4000);
-	memory_set_bank(machine, "bank1", 1);
+	state->membank("bank1")->configure_entries(0, 8, &ROM[0x10000], 0x4000);
+	state->membank("bank1")->set_entry(1);
 
 	state->m_maincpu = machine.device("maincpu");
 	state->m_soundcpu = machine.device("soundcpu");
@@ -498,7 +497,7 @@ ROM_START( mcatadv )
 	ROM_LOAD( "u9.bin", 0x00000, 0x20000, CRC(fda05171) SHA1(2c69292573ec35034572fa824c0cae2839d23919) )
 	ROM_RELOAD( 0x10000, 0x20000 )
 
-	ROM_REGION( 0x500000, "gfx1", 0 ) /* Sprites */
+	ROM_REGION( 0x800000, "gfx1", ROMREGION_ERASEFF ) /* Sprites */
 	ROM_LOAD16_BYTE( "mca-u82.bin", 0x000000, 0x100000, CRC(5f01d746) SHA1(11b241456e15299912ee365eedb8f9d5e5ca875d) )
 	ROM_LOAD16_BYTE( "mca-u83.bin", 0x000001, 0x100000, CRC(4e1be5a6) SHA1(cb19aad42dba54d6a4a33859f27254c2a3271e8c) )
 	ROM_LOAD16_BYTE( "mca-u84.bin", 0x200000, 0x080000, CRC(df202790) SHA1(f6ae54e799af195860ed0ab3c85138cf2f10efa6) )
@@ -527,7 +526,7 @@ ROM_START( mcatadvj )
 	ROM_LOAD( "u9.bin", 0x00000, 0x20000, CRC(fda05171) SHA1(2c69292573ec35034572fa824c0cae2839d23919) )
 	ROM_RELOAD( 0x10000, 0x20000 )
 
-	ROM_REGION( 0x500000, "gfx1", 0 ) /* Sprites */
+	ROM_REGION( 0x800000, "gfx1", ROMREGION_ERASEFF ) /* Sprites */
 	ROM_LOAD16_BYTE( "mca-u82.bin", 0x000000, 0x100000, CRC(5f01d746) SHA1(11b241456e15299912ee365eedb8f9d5e5ca875d) )
 	ROM_LOAD16_BYTE( "mca-u83.bin", 0x000001, 0x100000, CRC(4e1be5a6) SHA1(cb19aad42dba54d6a4a33859f27254c2a3271e8c) )
 	ROM_LOAD16_BYTE( "mca-u84.bin", 0x200000, 0x080000, CRC(df202790) SHA1(f6ae54e799af195860ed0ab3c85138cf2f10efa6) )
@@ -556,7 +555,7 @@ ROM_START( catt )
 	ROM_LOAD( "u9.bin", 0x00000, 0x20000, CRC(fda05171) SHA1(2c69292573ec35034572fa824c0cae2839d23919) )
 	ROM_RELOAD( 0x10000, 0x20000 )
 
-	ROM_REGION( 0x500000, "gfx1", 0 ) /* Sprites */
+	ROM_REGION( 0x800000, "gfx1", ROMREGION_ERASEFF ) /* Sprites */
 	ROM_LOAD16_BYTE( "mca-u82.bin", 0x000000, 0x100000, CRC(5f01d746) SHA1(11b241456e15299912ee365eedb8f9d5e5ca875d) )
 	ROM_LOAD16_BYTE( "mca-u83.bin", 0x000001, 0x100000, CRC(4e1be5a6) SHA1(cb19aad42dba54d6a4a33859f27254c2a3271e8c) )
 	ROM_LOAD16_BYTE( "u84.bin",     0x200000, 0x100000, CRC(843fd624) SHA1(2e16d8a909fe9447da37a87428bff0734af59a00) )
@@ -589,7 +588,7 @@ ROM_START( nost )
 	ROM_LOAD( "nos-ps.u9", 0x00000, 0x40000, CRC(832551e9) SHA1(86fc481b1849f378c88593594129197c69ea1359) )
 	ROM_RELOAD( 0x10000, 0x40000 )
 
-	ROM_REGION( 0x500000, "gfx1", 0 ) /* Sprites */
+	ROM_REGION( 0x800000, "gfx1", ROMREGION_ERASEFF ) /* Sprites */
 	ROM_LOAD16_BYTE( "nos-se-0.u82", 0x000000, 0x100000, CRC(9d99108d) SHA1(466540989d7b1b7f6dc7acbae74f6a8201973d45) )
 	ROM_LOAD16_BYTE( "nos-so-0.u83", 0x000001, 0x100000, CRC(7df0fc7e) SHA1(2e064cb5367b2839d736d339c4f1a44785b4eedf) )
 	ROM_LOAD16_BYTE( "nos-se-1.u84", 0x200000, 0x100000, CRC(aad07607) SHA1(89c51a9cb6b8d8ed3a357f5d8ac8399ff1c7ad46) )
@@ -618,7 +617,7 @@ ROM_START( nostj )
 	ROM_LOAD( "nos-ps.u9", 0x00000, 0x40000, CRC(832551e9) SHA1(86fc481b1849f378c88593594129197c69ea1359) )
 	ROM_RELOAD( 0x10000, 0x40000 )
 
-	ROM_REGION( 0x500000, "gfx1", 0 ) /* Sprites */
+	ROM_REGION( 0x800000, "gfx1", ROMREGION_ERASEFF ) /* Sprites */
 	ROM_LOAD16_BYTE( "nos-se-0.u82", 0x000000, 0x100000, CRC(9d99108d) SHA1(466540989d7b1b7f6dc7acbae74f6a8201973d45) )
 	ROM_LOAD16_BYTE( "nos-so-0.u83", 0x000001, 0x100000, CRC(7df0fc7e) SHA1(2e064cb5367b2839d736d339c4f1a44785b4eedf) )
 	ROM_LOAD16_BYTE( "nos-se-1.u84", 0x200000, 0x100000, CRC(aad07607) SHA1(89c51a9cb6b8d8ed3a357f5d8ac8399ff1c7ad46) )
@@ -647,7 +646,7 @@ ROM_START( nostk )
 	ROM_LOAD( "nos-ps.u9", 0x00000, 0x40000, CRC(832551e9) SHA1(86fc481b1849f378c88593594129197c69ea1359) )
 	ROM_RELOAD( 0x10000, 0x40000 )
 
-	ROM_REGION( 0x500000, "gfx1", 0 ) /* Sprites */
+	ROM_REGION( 0x800000, "gfx1", ROMREGION_ERASEFF ) /* Sprites */
 	ROM_LOAD16_BYTE( "nos-se-0.u82", 0x000000, 0x100000, CRC(9d99108d) SHA1(466540989d7b1b7f6dc7acbae74f6a8201973d45) )
 	ROM_LOAD16_BYTE( "nos-so-0.u83", 0x000001, 0x100000, CRC(7df0fc7e) SHA1(2e064cb5367b2839d736d339c4f1a44785b4eedf) )
 	ROM_LOAD16_BYTE( "nos-se-1.u84", 0x200000, 0x100000, CRC(aad07607) SHA1(89c51a9cb6b8d8ed3a357f5d8ac8399ff1c7ad46) )

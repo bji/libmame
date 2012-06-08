@@ -104,7 +104,7 @@ Not all regional versions are available for each Megatouch series
 #include "cpu/z80/z80daisy.h"
 #include "sound/ay8910.h"
 #include "video/v9938.h"
-#include "machine/8255ppi.h"
+#include "machine/i8255.h"
 #include "machine/z80pio.h"
 #include "machine/pc16552d.h"
 #include "machine/microtch.h"
@@ -129,8 +129,10 @@ public:
 	meritm_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag),
 		  m_v9938_0(*this, "v9938_0"),
-		  m_v9938_1(*this, "v9938_1") { }
+		  m_v9938_1(*this, "v9938_1"),
+		  m_microtouch(*this, "microtouch") { }
 
+	DECLARE_WRITE8_MEMBER(microtouch_tx);
 	UINT8* m_ram;
 	device_t *m_z80pio[2];
 	int m_vint;
@@ -144,6 +146,15 @@ public:
 	ds1204_t m_ds1204;
 	required_device<v9938_device> m_v9938_0;
 	required_device<v9938_device> m_v9938_1;
+	required_device<microtouch_device> m_microtouch;
+	DECLARE_WRITE8_MEMBER(meritm_crt250_bank_w);
+	DECLARE_WRITE8_MEMBER(meritm_psd_a15_w);
+	DECLARE_WRITE8_MEMBER(meritm_bank_w);
+	DECLARE_WRITE8_MEMBER(meritm_crt250_questions_lo_w);
+	DECLARE_WRITE8_MEMBER(meritm_crt250_questions_hi_w);
+	DECLARE_WRITE8_MEMBER(meritm_crt250_questions_bank_w);
+	DECLARE_WRITE8_MEMBER(meritm_ds1644_w);
+	DECLARE_READ8_MEMBER(meritm_ds1644_r);
 };
 
 
@@ -271,22 +282,24 @@ static void ds1204_init(running_machine &machine, const UINT8* key, const UINT8*
  *
  *************************************/
 
-static void pc16650d_tx_callback(int channel, int count, UINT8* data)
+static void pc16650d_tx_callback(running_machine &machine, int channel, int count, UINT8* data)
 {
-	microtouch_rx(count, data);
-};
+	meritm_state *state = machine.driver_data<meritm_state>();
+	for(int i = 0; i < count; i++)
+		state->m_microtouch->rx(*machine.memory().first_space(), 0, data[i]);
+}
 
-static void meritm_microtouch_tx_callback(running_machine &machine, UINT8 data)
+WRITE8_MEMBER(meritm_state::microtouch_tx)
 {
-	pc16552d_rx_data(machine, 0, 0, data);
-};
+	pc16552d_rx_data(space.machine(), 0, 0, data);
+}
 
 /*************************************
  *
  *  Microtouch touch coordinate transformation
  *
  *************************************/
-static int meritm_touch_coord_transform(running_machine &machine, int *touch_x, int *touch_y)
+MICROTOUCH_TOUCH(meritm_touch_coord_transform)
 {
 	int xscr = (int)((double)(*touch_x)/0x4000*544);
 	int yscr = (int)((double)(*touch_y)/0x4000*480);
@@ -310,6 +323,12 @@ static int meritm_touch_coord_transform(running_machine &machine, int *touch_x, 
 
 	return 1;
 }
+
+static const microtouch_interface meritm_microtouch_config =
+{
+	DEVCB_DRIVER_MEMBER(meritm_state, microtouch_tx),
+	meritm_touch_coord_transform
+};
 
 /*************************************
  *
@@ -400,12 +419,12 @@ static void meritm_crt250_switch_banks( running_machine &machine )
 	int rombank = (state->m_bank & 0x07) ^ 0x07;
 
 	//logerror( "CRT250: Switching banks: rom = %0x (bank = %x)\n", rombank, state->m_bank );
-	memory_set_bank(machine, "bank1", rombank );
+	state->membank("bank1")->set_entry(rombank );
 };
 
-static WRITE8_HANDLER(meritm_crt250_bank_w)
+WRITE8_MEMBER(meritm_state::meritm_crt250_bank_w)
 {
-	meritm_crt250_switch_banks(space->machine());
+	meritm_crt250_switch_banks(machine());
 };
 
 static void meritm_switch_banks( running_machine &machine )
@@ -418,22 +437,21 @@ static void meritm_switch_banks( running_machine &machine )
 			  (state->m_psd_a15 & 0x1);
 
 	//logerror( "Switching banks: rom = %0x (bank = %x), ram = %0x\n", rombank, state->m_bank, rambank);
-	memory_set_bank(machine, "bank1", rombank );
-	memory_set_bank(machine, "bank2", rombank | 0x01);
-	memory_set_bank(machine, "bank3", rambank);
+	state->membank("bank1")->set_entry(rombank );
+	state->membank("bank2")->set_entry(rombank | 0x01);
+	state->membank("bank3")->set_entry(rambank);
 };
 
-static WRITE8_HANDLER(meritm_psd_a15_w)
+WRITE8_MEMBER(meritm_state::meritm_psd_a15_w)
 {
-	meritm_state *state = space->machine().driver_data<meritm_state>();
-	state->m_psd_a15 = data;
-	//logerror( "Writing PSD_A15 with %02x at PC=%04X\n", data, cpu_get_pc(&space->device()) );
-	meritm_switch_banks(space->machine());
+	m_psd_a15 = data;
+	//logerror( "Writing PSD_A15 with %02x at PC=%04X\n", data, cpu_get_pc(&space.device()) );
+	meritm_switch_banks(machine());
 };
 
-static WRITE8_HANDLER(meritm_bank_w)
+WRITE8_MEMBER(meritm_state::meritm_bank_w)
 {
-	meritm_switch_banks(space->machine());
+	meritm_switch_banks(machine());
 };
 
 /*************************************
@@ -443,33 +461,30 @@ static WRITE8_HANDLER(meritm_bank_w)
  *************************************/
 
 
-static WRITE8_HANDLER(meritm_crt250_questions_lo_w)
+WRITE8_MEMBER(meritm_state::meritm_crt250_questions_lo_w)
 {
-	meritm_state *state = space->machine().driver_data<meritm_state>();
-	state->m_questions_loword_address &= 0xff00;
-	state->m_questions_loword_address |= data;
+	m_questions_loword_address &= 0xff00;
+	m_questions_loword_address |= data;
 };
 
-static WRITE8_HANDLER(meritm_crt250_questions_hi_w)
+WRITE8_MEMBER(meritm_state::meritm_crt250_questions_hi_w)
 {
-	meritm_state *state = space->machine().driver_data<meritm_state>();
-	state->m_questions_loword_address &= 0x00ff;
-	state->m_questions_loword_address |= (data << 8);
+	m_questions_loword_address &= 0x00ff;
+	m_questions_loword_address |= (data << 8);
 };
 
-static WRITE8_HANDLER(meritm_crt250_questions_bank_w)
+WRITE8_MEMBER(meritm_state::meritm_crt250_questions_bank_w)
 {
-	meritm_state *state = space->machine().driver_data<meritm_state>();
 	UINT32 questions_address;
 	UINT8 *dst;
 
-	if ((state->m_bank & 0x07) != 0)
+	if ((m_bank & 0x07) != 0)
 	{
-		logerror("meritm_crt250_questions_bank_w: bank is %d\n", state->m_bank);
+		logerror("meritm_crt250_questions_bank_w: bank is %d\n", m_bank);
 		return;
 	}
 
-	dst = space->machine().region("maincpu")->base() + 0x70000 + 2;
+	dst = memregion("maincpu")->base() + 0x70000 + 2;
 
 	if (data == 0)
 	{
@@ -497,8 +512,8 @@ static WRITE8_HANDLER(meritm_crt250_questions_bank_w)
 			case 0x3f: questions_address = 0xb0000; break;
 			default: logerror( "meritm_crt250_questions_bank_w: unknown data = %02x\n", data ); return;
 		}
-		logerror( "Reading question byte at %06X\n", questions_address | state->m_questions_loword_address);
-		*dst = space->machine().region("extra")->base()[questions_address | state->m_questions_loword_address];
+		logerror( "Reading question byte at %06X\n", questions_address | m_questions_loword_address);
+		*dst = memregion("extra")->base()[questions_address | m_questions_loword_address];
 	}
 };
 
@@ -509,19 +524,18 @@ static WRITE8_HANDLER(meritm_crt250_questions_bank_w)
  *
  *************************************/
 
-static WRITE8_HANDLER(meritm_ds1644_w)
+WRITE8_MEMBER(meritm_state::meritm_ds1644_w)
 {
-	meritm_state *state = space->machine().driver_data<meritm_state>();
-	int rambank = (state->m_psd_a15 >> 2) & 0x3;
+	int rambank = (m_psd_a15 >> 2) & 0x3;
 	if (rambank < 3)
 	{
-		state->m_ram[rambank*0x2000 + 0x1ff8 + offset] = data;
+		m_ram[rambank*0x2000 + 0x1ff8 + offset] = data;
 	}
 	else
 	{
 		if (offset == 0)
 		{
-			state->m_ram[0x7ff8] = data;
+			m_ram[0x7ff8] = data;
 		}
 		//logerror( "Writing RTC, reg = %d, data = %x\n", offset, data);
 	}
@@ -534,25 +548,24 @@ static UINT8 binary_to_BCD(UINT8 data)
 	return ((data / 10) << 4) | (data %10);
 }
 
-static READ8_HANDLER(meritm_ds1644_r)
+READ8_MEMBER(meritm_state::meritm_ds1644_r)
 {
-	meritm_state *state = space->machine().driver_data<meritm_state>();
 	system_time systime;
-	int rambank = (state->m_psd_a15 >> 2) & 0x3;
+	int rambank = (m_psd_a15 >> 2) & 0x3;
 	if (rambank == 3)
 	{
 		//logerror( "Reading RTC, reg = %x\n", offset);
 
-		space->machine().current_datetime(systime);
-		state->m_ram[0x7ff9] = binary_to_BCD(systime.local_time.second);
-		state->m_ram[0x7ffa] = binary_to_BCD(systime.local_time.minute);
-		state->m_ram[0x7ffb] = binary_to_BCD(systime.local_time.hour);
-		state->m_ram[0x7ffc] = binary_to_BCD(systime.local_time.weekday+1);
-		state->m_ram[0x7ffd] = binary_to_BCD(systime.local_time.mday);
-		state->m_ram[0x7ffe] = binary_to_BCD(systime.local_time.month+1);
-		state->m_ram[0x7fff] = binary_to_BCD(systime.local_time.year % 100);
+		machine().current_datetime(systime);
+		m_ram[0x7ff9] = binary_to_BCD(systime.local_time.second);
+		m_ram[0x7ffa] = binary_to_BCD(systime.local_time.minute);
+		m_ram[0x7ffb] = binary_to_BCD(systime.local_time.hour);
+		m_ram[0x7ffc] = binary_to_BCD(systime.local_time.weekday+1);
+		m_ram[0x7ffd] = binary_to_BCD(systime.local_time.mday);
+		m_ram[0x7ffe] = binary_to_BCD(systime.local_time.month+1);
+		m_ram[0x7fff] = binary_to_BCD(systime.local_time.year % 100);
 	}
-	return state->m_ram[rambank*0x2000 + 0x1ff8 + offset];
+	return m_ram[rambank*0x2000 + 0x1ff8 + offset];
 };
 
 /*************************************
@@ -561,12 +574,12 @@ static READ8_HANDLER(meritm_ds1644_r)
  *
  *************************************/
 
-static ADDRESS_MAP_START( meritm_crt250_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( meritm_crt250_map, AS_PROGRAM, 8, meritm_state )
 	AM_RANGE(0x0000, 0xdfff) AM_ROMBANK("bank1")
 	AM_RANGE(0xe000, 0xffff) AM_RAM AM_SHARE("nvram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( meritm_crt250_questions_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( meritm_crt250_questions_map, AS_PROGRAM, 8, meritm_state )
 	AM_RANGE(0x0000, 0xdfff) AM_ROMBANK("bank1")
 	AM_RANGE(0x0000, 0x0000) AM_WRITE(meritm_crt250_questions_lo_w)
 	AM_RANGE(0x0001, 0x0001) AM_WRITE(meritm_crt250_questions_hi_w)
@@ -574,49 +587,49 @@ static ADDRESS_MAP_START( meritm_crt250_questions_map, AS_PROGRAM, 8 )
 	AM_RANGE(0xe000, 0xffff) AM_RAM AM_SHARE("nvram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( meritm_crt250_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( meritm_crt250_io_map, AS_IO, 8, meritm_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE_MODERN("v9938_0", v9938_device, read, write)
-	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE_MODERN("v9938_1", v9938_device, read, write)
-	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
-	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
-	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
-	AM_RANGE(0x80, 0x80) AM_DEVREAD("aysnd", ay8910_r)
-	AM_RANGE(0x80, 0x81) AM_DEVWRITE("aysnd", ay8910_address_data_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("v9938_0", v9938_device, read, write)
+	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE("v9938_1", v9938_device, read, write)
+	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", i8255_device, read, write)
+	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE_LEGACY("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
+	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE_LEGACY("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
+	AM_RANGE(0x80, 0x80) AM_DEVREAD_LEGACY("aysnd", ay8910_r)
+	AM_RANGE(0x80, 0x81) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_data_w)
 	AM_RANGE(0xff, 0xff) AM_WRITE(meritm_crt250_bank_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( meritm_crt250_crt258_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( meritm_crt250_crt258_io_map, AS_IO, 8, meritm_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE_MODERN("v9938_0", v9938_device, read, write)
-	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE_MODERN("v9938_1", v9938_device, read, write)
-	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
-	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
-	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
-	AM_RANGE(0x60, 0x67) AM_READWRITE(pc16552d_0_r,pc16552d_0_w)
-	AM_RANGE(0x80, 0x80) AM_DEVREAD("aysnd", ay8910_r)
-	AM_RANGE(0x80, 0x81) AM_DEVWRITE("aysnd", ay8910_address_data_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("v9938_0", v9938_device, read, write)
+	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE("v9938_1", v9938_device, read, write)
+	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", i8255_device, read, write)
+	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE_LEGACY("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
+	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE_LEGACY("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
+	AM_RANGE(0x60, 0x67) AM_READWRITE_LEGACY(pc16552d_0_r,pc16552d_0_w)
+	AM_RANGE(0x80, 0x80) AM_DEVREAD_LEGACY("aysnd", ay8910_r)
+	AM_RANGE(0x80, 0x81) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_data_w)
 	AM_RANGE(0xff, 0xff) AM_WRITE(meritm_crt250_bank_w)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( meritm_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( meritm_map, AS_PROGRAM, 8, meritm_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROMBANK("bank1")
 	AM_RANGE(0x8000, 0xdfff) AM_ROMBANK("bank2")
 	AM_RANGE(0xe000, 0xffff) AM_RAMBANK("bank3") AM_SHARE("nvram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( meritm_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( meritm_io_map, AS_IO, 8, meritm_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE(0x00, 0x00) AM_WRITE(meritm_psd_a15_w)
 	AM_RANGE(0x01, 0x01) AM_WRITE(watchdog_reset_w)
-	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE_MODERN("v9938_0", v9938_device, read, write)
-	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE_MODERN("v9938_1", v9938_device, read, write)
-	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
-	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
-	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
-	AM_RANGE(0x60, 0x67) AM_READWRITE(pc16552d_0_r,pc16552d_0_w)
-	AM_RANGE(0x80, 0x80) AM_DEVREAD("aysnd", ay8910_r)
-	AM_RANGE(0x80, 0x81) AM_DEVWRITE("aysnd", ay8910_address_data_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE("v9938_0", v9938_device, read, write)
+	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE("v9938_1", v9938_device, read, write)
+	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", i8255_device, read, write)
+	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE_LEGACY("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
+	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE_LEGACY("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
+	AM_RANGE(0x60, 0x67) AM_READWRITE_LEGACY(pc16552d_0_r,pc16552d_0_w)
+	AM_RANGE(0x80, 0x80) AM_DEVREAD_LEGACY("aysnd", ay8910_r)
+	AM_RANGE(0x80, 0x81) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_data_w)
 	AM_RANGE(0xff, 0xff) AM_WRITE(meritm_bank_w)
 ADDRESS_MAP_END
 
@@ -627,8 +640,6 @@ ADDRESS_MAP_END
  *************************************/
 
 static INPUT_PORTS_START(meritm_crt260)
-	PORT_INCLUDE(microtouch)
-
 	PORT_START("PIO1_PORTA")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -761,24 +772,24 @@ static WRITE8_DEVICE_HANDLER(meritm_crt250_port_b_w)
 	output_set_value("P1 CANCEL LAMP", !BIT(data,6));
 }
 
-static const ppi8255_interface crt260_ppi8255_intf =
+static I8255A_INTERFACE( crt260_ppi8255_intf )
 {
-	DEVCB_NULL,								/* Port A read */
-	DEVCB_NULL,								/* Port B read */
-	DEVCB_HANDLER(meritm_8255_port_c_r),	/* Port C read */
-	DEVCB_NULL,								/* Port A write (used) */
-	DEVCB_NULL,								/* Port B write (used LMP x DRIVE) */
-	DEVCB_NULL								/* Port C write */
+	DEVCB_NULL,							/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_NULL,							/* Port B read */
+	DEVCB_NULL,							/* Port B write */
+	DEVCB_HANDLER(meritm_8255_port_c_r),/* Port C read */
+	DEVCB_NULL							/* Port C write */
 };
 
-static const ppi8255_interface crt250_ppi8255_intf =
+static I8255A_INTERFACE( crt250_ppi8255_intf )
 {
-	DEVCB_NULL,								/* Port A read */
-	DEVCB_NULL,								/* Port B read */
-	DEVCB_HANDLER(meritm_8255_port_c_r),	/* Port C read */
-	DEVCB_NULL,								/* Port A write (used) */
-	DEVCB_HANDLER(meritm_crt250_port_b_w),	/* Port B write (used LMP x DRIVE) */
-	DEVCB_NULL								/* Port C write */
+	DEVCB_NULL,							/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_NULL,							/* Port B read */
+	DEVCB_HANDLER(meritm_crt250_port_b_w),/* Port B write (used LMP x DRIVE) */
+	DEVCB_HANDLER(meritm_8255_port_c_r),/* Port C read */
+	DEVCB_NULL							/* Port C write */
 };
 
 /*************************************
@@ -978,7 +989,7 @@ static MACHINE_START(merit_common)
 static MACHINE_START(meritm_crt250)
 {
 	meritm_state *state = machine.driver_data<meritm_state>();
-	memory_configure_bank(machine, "bank1", 0, 8, machine.region("maincpu")->base(), 0x10000);
+	state->membank("bank1")->configure_entries(0, 8, state->memregion("maincpu")->base(), 0x10000);
 	state->m_bank = 0xff;
 	meritm_crt250_switch_banks(machine);
 	MACHINE_START_CALL(merit_common);
@@ -997,7 +1008,6 @@ static MACHINE_START(meritm_crt250_crt252_crt258)
 {
 	MACHINE_START_CALL(meritm_crt250_questions);
 	pc16552d_init(machine, 0, UART_CLK, NULL, pc16650d_tx_callback);
-	microtouch_init(machine, meritm_microtouch_tx_callback, meritm_touch_coord_transform);
 }
 
 static MACHINE_START(meritm_crt260)
@@ -1006,15 +1016,14 @@ static MACHINE_START(meritm_crt260)
 	state->m_ram = auto_alloc_array(machine, UINT8,  0x8000 );
 	machine.device<nvram_device>("nvram")->set_base(state->m_ram, 0x8000);
 	memset(state->m_ram, 0x00, 0x8000);
-	memory_configure_bank(machine, "bank1", 0, 128, machine.region("maincpu")->base(), 0x8000);
-	memory_configure_bank(machine, "bank2", 0, 128, machine.region("maincpu")->base(), 0x8000);
-	memory_configure_bank(machine, "bank3", 0, 4, state->m_ram, 0x2000);
+	state->membank("bank1")->configure_entries(0, 128, state->memregion("maincpu")->base(), 0x8000);
+	state->membank("bank2")->configure_entries(0, 128, state->memregion("maincpu")->base(), 0x8000);
+	state->membank("bank3")->configure_entries(0, 4, state->m_ram, 0x2000);
 	state->m_bank = 0xff;
 	state->m_psd_a15 = 0;
 	meritm_switch_banks(machine);
 	MACHINE_START_CALL(merit_common);
 	pc16552d_init(machine, 0, UART_CLK, NULL, pc16650d_tx_callback);
-	microtouch_init(machine, meritm_microtouch_tx_callback, meritm_touch_coord_transform);
 	state_save_register_global(machine, state->m_bank);
 	state_save_register_global(machine, state->m_psd_a15);
 	state_save_register_global_pointer(machine, state->m_ram, 0x8000);
@@ -1053,7 +1062,7 @@ static MACHINE_CONFIG_START( meritm_crt250, meritm_state )
 
 	MCFG_MACHINE_START(meritm_crt250)
 
-	MCFG_PPI8255_ADD( "ppi8255", crt250_ppi8255_intf )
+	MCFG_I8255A_ADD( "ppi8255", crt250_ppi8255_intf )
 
 	MCFG_Z80PIO_ADD( "z80pio_0", SYSTEM_CLK/6, meritm_audio_pio_intf )
 	MCFG_Z80PIO_ADD( "z80pio_1", SYSTEM_CLK/6, meritm_io_pio_intf )
@@ -1089,6 +1098,8 @@ static MACHINE_CONFIG_START( meritm_crt250, meritm_state )
 	MCFG_SOUND_ADD("aysnd", AY8910, SYSTEM_CLK/12)
 	MCFG_SOUND_CONFIG(ay8910_config)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
+
+	MCFG_MICROTOUCH_ADD("microtouch", meritm_microtouch_config)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( meritm_crt250_questions, meritm_crt250 )
@@ -1108,7 +1119,8 @@ static MACHINE_CONFIG_DERIVED( meritm_crt260, meritm_crt250 )
 	MCFG_CPU_PROGRAM_MAP(meritm_map)
 	MCFG_CPU_IO_MAP(meritm_io_map)
 
-	MCFG_PPI8255_RECONFIG( "ppi8255", crt260_ppi8255_intf )
+	MCFG_DEVICE_REMOVE("ppi8255")
+	MCFG_I8255A_ADD( "ppi8255", crt260_ppi8255_intf )
 
 	MCFG_WATCHDOG_TIME_INIT(attotime::from_msec(1200))	// DS1232, TD connected to VCC
 	MCFG_MACHINE_START(meritm_crt260)
@@ -1415,6 +1427,18 @@ ROM_START( megat2ca ) /* Dallas DS1204U-3 security key labeled 9255-10-01-U5-R0 
 	ROM_RELOAD(                        0x380000, 0x080000)
 ROM_END
 
+ROM_START( megat2caa ) /* Dallas DS1204U-3 security key labeled 9255-10-01-U5-R0 */
+	ROM_REGION( 0x400000, "maincpu", 0 )
+	ROM_LOAD( "qs9235-01_u5oru32-r0b", 0x000000, 0x080000, CRC(f7ecd49b) SHA1(34c1293da7304e8a46a96f1dbd7add3291afe3fc) ) /* Location U32 */
+	ROM_RELOAD(                        0x080000, 0x080000)
+	ROM_LOAD( "qs9235-01_u6oru36-r0",  0x100000, 0x080000, CRC(0a358743) SHA1(cc7c1b75e391204a7bdae2e1cecd9b55b572f8d5) ) /* Location U36 */
+	ROM_RELOAD(                        0x180000, 0x080000)
+	ROM_LOAD( "qs9235-01_u7oru37-r0",  0x200000, 0x080000, CRC(16643f83) SHA1(347af99f535a8b473c8780067d5132add7fa0d8c) ) /* Location U37 */
+	ROM_RELOAD(                        0x280000, 0x080000)
+	ROM_LOAD( "9255-10-06_u38-r0e",    0x300000, 0x080000, CRC(b3c0e60a) SHA1(a633fec476f44ec7964329bd80257b9070043209) ) /* Location U38, 11/29/1994 11:23:00 - California version */
+	ROM_RELOAD(                        0x380000, 0x080000)
+ROM_END
+
 ROM_START( megat3 ) /* Dallas DS1204V security key at U5 labeled 9255-20-01 U5-RO1 C1995 MII */
 	ROM_REGION( 0x400000, "maincpu", 0 )
 	ROM_LOAD( "9255-20-01_u32-r0d", 0x000000, 0x080000, CRC(ac969296) SHA1(7e09e9141637339b83c21f2488560cdf8a460069) ) /* Location U32 */
@@ -1557,7 +1581,24 @@ ROM_START( megat4b ) /* Dallas DS1204V security key at U5 labeled 9255-40-01 U5-
 	ROM_RELOAD(                     0x180000, 0x80000)
 	ROM_LOAD( "qs9255-02_u37-r0",   0x200000, 0x80000,  CRC(f2e8bb4e) SHA1(5c5475b3c176a6aca9b2c6aa4aee422675d20bd1) ) /* Location U37 */
 	ROM_RELOAD(                     0x280000, 0x80000)
-	ROM_LOAD( "9255-40-01_u38-rob", 0x300000, 0x80000,  CRC(0a16c846) SHA1(f0dcddb155f5e23a8dcf6bd8018cf6dc20c6bd34) ) /* Location U38, 05/03/1996 15:12 - Standard Version */
+	ROM_LOAD( "9255-40-01_u38-r0b", 0x300000, 0x80000,  CRC(0a16c846) SHA1(f0dcddb155f5e23a8dcf6bd8018cf6dc20c6bd34) ) /* Location U38, 05/03/1996 15:12 - Standard Version */
+	ROM_RELOAD(                     0x380000, 0x80000)
+
+	ROM_REGION( 0x1000, "user2", 0 ) // PALs
+	ROM_LOAD( "sc3943.u20",     0x000, 0x117, CRC(5a72fe78) SHA1(4b1a36904eb7048518507fe14bdade5c2589dbd7) )
+	ROM_LOAD( "sc3944-0a.u19",  0x000, 0x2dd, CRC(4cc46c5e) SHA1(0bab970df1539ce905f43603ad13171b05449a01) )
+	ROM_LOAD( "sc3980.u40",     0x000, 0x117, CRC(ee0cdab5) SHA1(216fef50a8a0f6a33b704d3501a4c5c3cbac2bad) )
+	ROM_LOAD( "sc3981-0a.u51",  0x000, 0x117, CRC(4fc750d0) SHA1(d09ff7a8c66aeb5c49e9fec84bd1521e3f5d8d0a) )
+ROM_END
+
+ROM_START( megat4c ) /* Dallas DS1204V security key at U5 labeled 9255-40-01 U5-B-RO1 C1996 MII */
+	ROM_REGION( 0x400000, "maincpu", 0 )
+	ROM_LOAD( "9255-40-01_u32-r0",  0x000000, 0x100000, CRC(08b1b8fe) SHA1(c562f2e065d6d7f753f6fd1d0b8355b01cb089ec) ) /* Location U32 */
+	ROM_LOAD( "qs9255-02_u36-r0",   0x100000, 0x80000,  CRC(57322328) SHA1(12bc604c9d34cde431ef7cd2aa33c7b12ac01833) ) /* Location U36 */
+	ROM_RELOAD(                     0x180000, 0x80000)
+	ROM_LOAD( "qs9255-02_u37-r0",   0x200000, 0x80000,  CRC(f2e8bb4e) SHA1(5c5475b3c176a6aca9b2c6aa4aee422675d20bd1) ) /* Location U37 */
+	ROM_RELOAD(                     0x280000, 0x80000)
+	ROM_LOAD( "9255-40-01_u38-r0",  0x300000, 0x80000,  CRC(ec96813d) SHA1(f93bb08ae89ab5ec1c6b33d5b1040c50d3db9ef5) ) /* Location U38, 04/03/1996 14:01 - Standard Version */
 	ROM_RELOAD(                     0x380000, 0x80000)
 
 	ROM_REGION( 0x1000, "user2", 0 ) // PALs
@@ -1578,8 +1619,8 @@ ROM_START( megat4s ) /* Dallas DS1204V security key at U5 labeled 9255-40-01 U5-
 	ROM_RELOAD(                     0x380000, 0x80000)
 
 	ROM_REGION( 0x1000, "user2", 0 ) // PALs
-	ROM_LOAD( "sc3943.u20",     0x000, 0x117, CRC(f31864ff) SHA1(ff44820379a350e7bd788ffb6926612b3483e114) )
-	ROM_LOAD( "sc3944-0a.u19",  0x000, 0x2dd, CRC(ad4fddaa) SHA1(10c1575dcaa5ca4af5dc630d84f43a9ed1cb3ace) )
+	ROM_LOAD( "sc3943(__megat4s).u20",     0x000, 0x117, CRC(f31864ff) SHA1(ff44820379a350e7bd788ffb6926612b3483e114) )
+	ROM_LOAD( "sc3944-0a(__megat4s).u19",  0x000, 0x2dd, CRC(ad4fddaa) SHA1(10c1575dcaa5ca4af5dc630d84f43a9ed1cb3ace) )
 	ROM_LOAD( "sc3980.u40",     0x000, 0x117, CRC(ee0cdab5) SHA1(216fef50a8a0f6a33b704d3501a4c5c3cbac2bad) )
 	ROM_LOAD( "sc3981-0a.u51",  0x000, 0x117, CRC(4fc750d0) SHA1(d09ff7a8c66aeb5c49e9fec84bd1521e3f5d8d0a) )
 ROM_END
@@ -1839,7 +1880,8 @@ static DRIVER_INIT(megat3te)
 
 	ds1204_init(machine, megat3_ds1204_key, megat3_ds1204_nvram);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0xfff8, 0xffff, FUNC(meritm_ds1644_r), FUNC(meritm_ds1644_w) );
+	meritm_state *state = machine.driver_data<meritm_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0xfff8, 0xffff, read8_delegate(FUNC(meritm_state::meritm_ds1644_r), state), write8_delegate(FUNC(meritm_state::meritm_ds1644_w), state));
 
 };
 
@@ -1851,6 +1893,17 @@ static DRIVER_INIT(megat4)
 	ds1204_init(machine, 0, megat4_ds1204_nvram);
 }
 
+static DRIVER_INIT(megat4c) /* First version of MegaTouch IV requires "key" like previous MegaTouch versions */
+{
+	static const UINT8 megat4c_ds1204_key[8] =
+		{ 0xf0, 0xaa, 0x0f, 0x0f, 0x55, 0x55, 0xff, 0xab };
+
+	static const UINT8 megat4_ds1204_nvram[16] =
+		{ 0xe3, 0x08, 0x39, 0xd8, 0x4c, 0xbb, 0xc4, 0xf8, 0xf0, 0xe2, 0xd8, 0x77, 0xa8, 0x3d, 0x95, 0x02 };
+
+	ds1204_init(machine, megat4c_ds1204_key, megat4_ds1204_nvram);
+}
+
 static DRIVER_INIT(megat4te)
 {
 	static const UINT8 megat4te_ds1204_nvram[16] =
@@ -1858,7 +1911,8 @@ static DRIVER_INIT(megat4te)
 
 	ds1204_init(machine, 0, megat4te_ds1204_nvram);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0xfff8, 0xffff, FUNC(meritm_ds1644_r), FUNC(meritm_ds1644_w) );
+	meritm_state *state = machine.driver_data<meritm_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0xfff8, 0xffff, read8_delegate(FUNC(meritm_state::meritm_ds1644_r), state), write8_delegate(FUNC(meritm_state::meritm_ds1644_w), state));
 
 };
 
@@ -1869,7 +1923,8 @@ static DRIVER_INIT(megat4st)
 
 	ds1204_init(machine, 0, megat4te_ds1204_nvram);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0xfff8, 0xffff, FUNC(meritm_ds1644_r), FUNC(meritm_ds1644_w) );
+	meritm_state *state = machine.driver_data<meritm_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0xfff8, 0xffff, read8_delegate(FUNC(meritm_state::meritm_ds1644_r), state), write8_delegate(FUNC(meritm_state::meritm_ds1644_w), state));
 
 };
 
@@ -1889,7 +1944,8 @@ static DRIVER_INIT(megat5t)
 
 	ds1204_init(machine, 0, megat5_ds1204_nvram);
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0xfff8, 0xffff, FUNC(meritm_ds1644_r), FUNC(meritm_ds1644_w) );
+	meritm_state *state = machine.driver_data<meritm_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0xfff8, 0xffff, read8_delegate(FUNC(meritm_state::meritm_ds1644_r), state), write8_delegate(FUNC(meritm_state::meritm_ds1644_w), state));
 
 }
 
@@ -1920,6 +1976,7 @@ GAME( 1994, pitbossma, pitbossm,  meritm_crt250_questions, pitbossa, 0,        R
 GAME( 1994, megat2,    0,      meritm_crt260, meritm_crt260, megat2,   ROT0, "Merit", "Pit Boss Megatouch II (9255-10-01 ROE, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1994, megat2a ,  megat2, meritm_crt260, meritm_crt260, megat2,   ROT0, "Merit", "Pit Boss Megatouch II (9255-10-01 ROD, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1994, megat2ca,  megat2, meritm_crt260, meritm_crt260, megat2,   ROT0, "Merit", "Pit Boss Megatouch II (9255-10-06 ROG, California version)", GAME_IMPERFECT_GRAPHICS )
+GAME( 1994, megat2caa, megat2, meritm_crt260, meritm_crt260, megat2,   ROT0, "Merit", "Pit Boss Megatouch II (9255-10-06 ROE, California version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat3,    0,      meritm_crt260, meritm_crt260, megat3,   ROT0, "Merit", "Megatouch III (9255-20-01 RON, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1995, megat3a,   megat3, meritm_crt260, meritm_crt260, megat3,   ROT0, "Merit", "Megatouch III (9255-20-01 ROF, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat3ca,  megat3, meritm_crt260, meritm_crt260, megat3,   ROT0, "Merit", "Megatouch III (9255-20-06 RON, California version)", GAME_IMPERFECT_GRAPHICS )
@@ -1929,6 +1986,7 @@ GAME( 1996, megat3te,  megat3, meritm_crt260, meritm_crt260, megat3te, ROT0, "Me
 GAME( 1996, megat4,    0,      meritm_crt260, meritm_crt260, megat4,   ROT0, "Merit", "Megatouch IV (9255-40-01 ROE, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat4a,   megat4, meritm_crt260, meritm_crt260, megat4,   ROT0, "Merit", "Megatouch IV (9255-40-01 ROD, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat4b,   megat4, meritm_crt260, meritm_crt260, megat4,   ROT0, "Merit", "Megatouch IV (9255-40-01 ROB, Standard version)", GAME_IMPERFECT_GRAPHICS )
+GAME( 1996, megat4c,   megat4, meritm_crt260, meritm_crt260, megat4c,  ROT0, "Merit", "Megatouch IV (9255-40-01 RO, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat4s,   megat4, meritm_crt260, meritm_crt260, megat4,   ROT0, "Merit", "Super Megatouch IV (9255-41-01 ROG, Standard version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat4sn,  megat4, meritm_crt260, meritm_crt260, megat4,   ROT0, "Merit", "Super Megatouch IV (9255-41-07 ROG, New Jersey version)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, megat4te,  megat4, meritm_crt260, meritm_crt260, megat4te, ROT0, "Merit", "Megatouch IV Tournament Edition (9255-50-01 ROD, Standard version)", GAME_IMPERFECT_GRAPHICS )

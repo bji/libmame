@@ -54,7 +54,6 @@
 
 #include "emu.h"
 #include "debugger.h"
-#include "profiler.h"
 #include "mips3com.h"
 #include "mips3fe.h"
 #include "cpu/drcfe.h"
@@ -387,7 +386,7 @@ INLINE void save_fast_iregs(mips3_state *mips3, drcuml_block *block)
     mips3_init - initialize the processor
 -------------------------------------------------*/
 
-static void mips3_init(mips3_flavor flavor, int bigendian, legacy_cpu_device *device, device_irq_callback irqcallback)
+static void mips3_init(mips3_flavor flavor, int bigendian, legacy_cpu_device *device, device_irq_acknowledge_callback irqcallback)
 {
 	mips3_state *mips3;
 	drc_cache *cache;
@@ -1525,9 +1524,20 @@ static void generate_checksum_block(mips3_state *mips3, drcuml_block *block, com
 	{
 		if (!(seqhead->flags & OPFLAG_VIRTUAL_NOOP))
 		{
+			UINT32 sum = seqhead->opptr.l[0];
 			void *base = mips3->direct->read_decrypted_ptr(seqhead->physpc);
 			UML_LOAD(block, I0, base, 0, SIZE_DWORD, SCALE_x4);			// load    i0,base,0,dword
-			UML_CMP(block, I0, seqhead->opptr.l[0]);						// cmp     i0,opptr[0]
+
+			if (seqhead->delay.first() != NULL && seqhead->physpc != seqhead->delay.first()->physpc)
+			{
+				base = mips3->direct->read_decrypted_ptr(seqhead->delay.first()->physpc);
+				UML_LOAD(block, I1, base, 0, SIZE_DWORD, SCALE_x4);					// load    i1,base,dword
+				UML_ADD(block, I0, I0, I1);						// add     i0,i0,i1
+
+				sum += seqhead->delay.first()->opptr.l[0];
+			}
+
+			UML_CMP(block, I0, sum);									// cmp     i0,opptr[0]
 			UML_EXHc(block, COND_NE, *mips3->impstate->nocode, epc(seqhead));		// exne    nocode,seqhead->pc
 		}
 	}
@@ -1703,11 +1713,16 @@ static void generate_delay_slot_and_branch(mips3_state *mips3, drcuml_block *blo
 
 	/* fetch the target register if dynamic, in case it is modified by the delay slot */
 	if (desc->targetpc == BRANCH_TARGET_DYNAMIC)
+	{
 		UML_MOV(block, mem(&mips3->impstate->jmpdest), R32(RSREG));					// mov     [jmpdest],<rsreg>
+
+	}
 
 	/* set the link if needed -- before the delay slot */
 	if (linkreg != 0)
+	{
 		UML_DMOV(block, R64(linkreg), (INT32)(desc->pc + 8));					// dmov    <linkreg>,desc->pc + 8
+	}
 
 	/* compile the delay slot using temporary compiler state */
 	assert(desc->delay.first() != NULL);

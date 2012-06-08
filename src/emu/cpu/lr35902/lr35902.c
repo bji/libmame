@@ -41,158 +41,144 @@
 #include "debugger.h"
 #include "lr35902.h"
 
-#define FLAG_Z	0x80
-#define FLAG_N  0x40
-#define FLAG_H  0x20
-#define FLAG_C  0x10
-
-#define CYCLES_PASSED(X)		cpustate->w.icount -= ((X) / (cpustate->w.gb_speed));	\
-					if ( cpustate->w.timer_expired_func ) {			\
-						cpustate->w.timer_expired_func( cpustate->w.device, X );		\
-					}
-
-typedef struct {
-	UINT16 AF;
-	UINT16 BC;
-	UINT16 DE;
-	UINT16 HL;
-
-	UINT16 SP;
-	UINT16 PC;
-	/* Interrupt related */
-	UINT8	IE;
-	UINT8	IF;
-	int	irq_state;
-	int	ei_delay;
-	device_irq_callback irq_callback;
-	legacy_cpu_device *device;
-	address_space *program;
-	int icount;
-	/* Timer stuff */
-	lr35902_timer_fired_func timer_expired_func;
-	/* Fetch & execute related */
-	int		execution_state;
-	UINT8	op;
-	/* Others */
-	int gb_speed;
-	int gb_speed_change_pending;
-	int enable;
-	int doHALTbug;
-	UINT8	features;
-	const lr35902_cpu_core *config;
-} lr35902_16BitRegs;
-
-#ifdef LSB_FIRST
-typedef struct {
-	UINT8 F;
-	UINT8 A;
-	UINT8 C;
-	UINT8 B;
-	UINT8 E;
-	UINT8 D;
-	UINT8 L;
-	UINT8 H;
-} lr35902_8BitRegs;
-#else
-typedef struct {
-	UINT8 A;
-	UINT8 F;
-	UINT8 B;
-	UINT8 C;
-	UINT8 D;
-	UINT8 E;
-	UINT8 H;
-	UINT8 L;
-} lr35902_8BitRegs;
-#endif
-
-
-typedef union _lr35902_state lr35902_state;
-union _lr35902_state {
-	lr35902_16BitRegs w;
-	lr35902_8BitRegs b;
-};
-
-INLINE lr35902_state *get_safe_token(device_t *device)
-{
-	assert(device != NULL);
-	assert(device->type() == LR35902);
-	return (lr35902_state *)downcast<legacy_cpu_device *>(device)->token();
-}
-
-typedef int (*OpcodeEmulator) (lr35902_state *cpustate);
 
 #define IME     0x01
-#define HALTED	0x02
+#define HALTED  0x02
+
+
+//**************************************************************************
+//  LR35902 DEVICE
+//**************************************************************************
+
+const device_type LR35902 = &device_creator<lr35902_cpu_device>;
+
+
+lr35902_cpu_device::lr35902_cpu_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock)
+	: cpu_device(mconfig, LR35902, "LR35902", tag, owner, clock),
+	 m_program_config("program", ENDIANNESS_LITTLE, 8, 16, 0)
+{
+	c_regs = NULL;
+	c_features = 0;
+	c_timer_expired_func = NULL;
+}
+
+
+void lr35902_cpu_device::static_set_config(device_t &device, const lr35902_config &config)
+{
+	lr35902_cpu_device &conf = downcast<lr35902_cpu_device &>(device);
+	static_cast<lr35902_config &>(conf) = config;
+}
+
 
 /****************************************************************************/
 /* Memory functions                                                         */
 /****************************************************************************/
 
-#define mem_ReadByte(cs,A)		((UINT8)(cs)->w.program->read_byte(A))
-#define mem_WriteByte(cs,A,V)	((cs)->w.program->write_byte(A,V))
-
-INLINE UINT16 mem_ReadWord (lr35902_state *cpustate, UINT32 address)
+inline void lr35902_cpu_device::cycles_passed(UINT8 cycles)
 {
-	UINT16 value = (UINT16) mem_ReadByte (cpustate, (address + 1) & 0xffff) << 8;
-	value |= mem_ReadByte (cpustate, address);
-	return value;
+	m_icount -= cycles / m_gb_speed;
+	if ( m_timer_expired_func )
+	{
+		m_timer_expired_func( this, cycles );
+	}
 }
 
-INLINE void mem_WriteWord (lr35902_state *cpustate, UINT32 address, UINT16 value)
+
+inline UINT8 lr35902_cpu_device::mem_read_byte( UINT16 addr )
 {
-	mem_WriteByte (cpustate, address, value & 0xFF);
-	mem_WriteByte (cpustate, (address + 1) & 0xffff, value >> 8);
+	UINT8 data = m_program->read_byte( addr );
+	cycles_passed( 4 );
+	return data;
 }
 
-static const int Cycles[256] =
-{
-	 4,12, 8, 8, 4, 4, 8, 4,20, 8, 8, 8, 4, 4, 8, 4,
-	 4,12, 8, 8, 4, 4, 8, 4,12, 8, 8, 8, 4, 4, 8, 4,
-	 8,12, 8, 8, 4, 4, 8, 4, 8, 8, 8, 8, 4, 4, 8, 4,
-	 8,12, 8, 8,12,12,12, 4, 8, 8, 8, 8, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 8, 8, 8, 8, 8, 8, 4, 8, 4, 4, 4, 4, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 4, 4, 4, 4, 4, 4, 8, 4, 4, 4, 4, 4, 4, 4, 8, 4,
-	 8,12,12,16,12,16, 8,16, 8,16,12, 0,12,24, 8,16,
-	 8,12,12, 4,12,16, 8,16, 8,16,12, 4,12, 4, 8,16,
-	12,12, 8, 4, 4,16, 8,16,16, 4,16, 4, 4, 4, 8,16,
-	12,12, 8, 4, 4,16, 8,16,12, 8,16, 4, 4, 4, 8,16
-};
 
-static const int CyclesCB[256] =
+inline void lr35902_cpu_device::mem_write_byte( UINT16 addr, UINT8 data )
 {
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,
-	 8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,
-	 8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,
-	 8, 8, 8, 8, 8, 8,12, 8, 8, 8, 8, 8, 8, 8,12, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8,
-	 8, 8, 8, 8, 8, 8,16, 8, 8, 8, 8, 8, 8, 8,16, 8
-};
+	m_program->write_byte( addr, data );
+	cycles_passed( 4 );
+}
 
-static CPU_INIT( lr35902 )
+
+inline UINT16 lr35902_cpu_device::mem_read_word( UINT16 addr )
 {
-	lr35902_state *cpustate = get_safe_token(device);
+	UINT16 data = mem_read_byte( addr );
+	data |= ( mem_read_byte( addr + 1 ) << 8 );
+	return data;
+}
 
-	cpustate->w.config = (const lr35902_cpu_core *) device->static_config();
-	cpustate->w.irq_callback = irqcallback;
-	cpustate->w.device = device;
-	cpustate->w.program = device->space(AS_PROGRAM);
+
+inline void lr35902_cpu_device::mem_write_word( UINT16 addr, UINT16 data )
+{
+	mem_write_byte( addr, data & 0xFF );
+	mem_write_byte( addr + 1, data >> 8 );
+}
+
+
+void lr35902_cpu_device::device_start()
+{
+	m_device = this;
+	m_program = this->space(AS_PROGRAM);
+
+	save_item(NAME(m_A));
+	save_item(NAME(m_F));
+	save_item(NAME(m_B));
+	save_item(NAME(m_C));
+	save_item(NAME(m_D));
+	save_item(NAME(m_E));
+	save_item(NAME(m_H));
+	save_item(NAME(m_L));
+	save_item(NAME(m_PC));
+	save_item(NAME(m_SP));
+	save_item(NAME(m_IE));
+	save_item(NAME(m_IF));
+	save_item(NAME(m_irq_state));
+	save_item(NAME(m_ei_delay));
+	save_item(NAME(m_execution_state));
+	save_item(NAME(m_op));
+	save_item(NAME(m_gb_speed));
+	save_item(NAME(m_gb_speed_change_pending));
+	save_item(NAME(m_enable));
+	save_item(NAME(m_doHALTbug));
+
+	// Register state for debugger
+	state_add( LR35902_PC, "PC", m_PC ).callimport().callexport().formatstr("%04X");
+	state_add( LR35902_SP, "SP", m_SP ).callimport().callexport().formatstr("%04X");
+	state_add( LR35902_A,  "A",  m_A  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_F,  "F",  m_F  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_B,  "B",  m_B  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_C,  "C",  m_C  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_D,  "D",  m_D  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_E,  "E",  m_E  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_H,  "H",  m_H  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_L,  "L",  m_L  ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_IRQ_STATE, "IRQ", m_enable ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_IE, "IE", m_IE ).callimport().callexport().formatstr("%02X");
+	state_add( LR35902_IF, "IF", m_IF ).callimport().callexport().formatstr("%02X");
+
+	state_add(STATE_GENPC, "curpc", m_PC).callimport().callexport().formatstr("%8s").noshow();
+	state_add(STATE_GENFLAGS, "GENFLAGS",  m_F).mask(0xf0).formatstr("%8s").noshow();
+
+	m_icountptr = &m_icount;
+}
+
+
+void lr35902_cpu_device::state_string_export(const device_state_entry &entry, astring &string)
+{
+	switch (entry.index())
+	{
+		case LR35902_SPEED:
+			string.printf("%02X", 0x7E | ( ( m_gb_speed - 1 ) << 7 ) | m_gb_speed_change_pending );
+			break;
+
+		case STATE_GENFLAGS:
+			string.printf("%c%c%c%c",
+				m_F & FLAG_Z   ? 'Z' : '.',
+				m_F & FLAG_N   ? 'N' : '.',
+				m_F & FLAG_H   ? 'H' : '.',
+				m_F & FLAG_C   ? 'C' : '.'
+			);
+			break;
+	}
 }
 
 /*** Reset lr353902 registers: ******************************/
@@ -200,56 +186,68 @@ static CPU_INIT( lr35902 )
 /*** file before starting execution with lr35902_execute(cpustate)***/
 /*** It sets the registers to their initial values.       ***/
 /************************************************************/
-static CPU_RESET( lr35902 )
+void lr35902_cpu_device::device_reset()
 {
-	lr35902_state *cpustate = get_safe_token(device);
-
-	cpustate->w.AF = 0x0000;
-	cpustate->w.BC = 0x0000;
-	cpustate->w.DE = 0x0000;
-	cpustate->w.HL = 0x0000;
-	cpustate->w.SP = 0x0000;
-	cpustate->w.PC = 0x0000;
-	cpustate->w.timer_expired_func = NULL;
-	cpustate->w.features = LR35902_FEATURE_HALT_BUG;
-	if (cpustate->w.config)
-	{
-		if ( cpustate->w.config->regs ) {
-			cpustate->w.AF = cpustate->w.config->regs[0];
-			cpustate->w.BC = cpustate->w.config->regs[1];
-			cpustate->w.DE = cpustate->w.config->regs[2];
-			cpustate->w.HL = cpustate->w.config->regs[3];
-			cpustate->w.SP = cpustate->w.config->regs[4];
-			cpustate->w.PC = cpustate->w.config->regs[5];
-		}
-		cpustate->w.timer_expired_func = cpustate->w.config->timer_expired_func;
-		cpustate->w.features = cpustate->w.config->features;
+	m_A = 0x00;
+	m_F = 0x00;
+	m_B = 0x00;
+	m_C = 0x00;
+	m_D = 0x00;
+	m_E = 0x00;
+	m_H = 0x00;
+	m_L = 0x00;
+	m_SP = 0x0000;
+	m_PC = 0x0000;
+	m_timer_expired_func = NULL;
+	m_features = LR35902_FEATURE_HALT_BUG;
+	if ( c_regs ) {
+		m_A = c_regs[0] >> 8;
+		m_F = c_regs[0] & 0xFF;
+		m_B = c_regs[1] >> 8;
+		m_C = c_regs[1] & 0xFF;
+		m_D = c_regs[2] >> 8;
+		m_E = c_regs[2] & 0xFF;
+		m_H = c_regs[3] >> 8;
+		m_L = c_regs[3] & 0xFF;
+		m_SP = c_regs[4];
+		m_PC = c_regs[5];
 	}
-	cpustate->w.enable = 0;
-	cpustate->w.IE = 0;
-	cpustate->w.IF = 0;
+	m_timer_expired_func = c_timer_expired_func;
+	m_features = c_features;
 
-	cpustate->w.execution_state = 0;
-	cpustate->w.doHALTbug = 0;
-	cpustate->w.ei_delay = 0;
-	cpustate->w.gb_speed_change_pending = 0;
-	cpustate->w.gb_speed = 1;
+	m_enable = 0;
+	m_IE = 0;
+	m_IF = 0;
+
+	m_execution_state = 0;
+	m_doHALTbug = 0;
+	m_ei_delay = 0;
+	m_gb_speed_change_pending = 0;
+	m_gb_speed = 1;
 }
 
-INLINE void lr35902_ProcessInterrupts (lr35902_state *cpustate)
+
+offs_t lr35902_cpu_device::disasm_disassemble(char *buffer, offs_t pc, const UINT8 *oprom, const UINT8 *opram, UINT32 options)
 {
-	UINT8 irq = cpustate->w.IE & cpustate->w.IF;
+	extern CPU_DISASSEMBLE( lr35902 );
+	return CPU_DISASSEMBLE_NAME( lr35902 )(NULL, buffer, pc, oprom, opram, 0);
+}
+
+
+void lr35902_cpu_device::check_interrupts()
+{
+	UINT8 irq = m_IE & m_IF;
 
 	/* Interrupts should be taken after the first instruction after an EI instruction */
-	if (cpustate->w.ei_delay) {
-		cpustate->w.ei_delay = 0;
+	if (m_ei_delay) {
+		m_ei_delay = 0;
 		return;
 	}
 
 	/*
        logerror("Attempting to process LR35902 Interrupt IRQ $%02X\n", irq);
-       logerror("Attempting to process LR35902 Interrupt IE $%02X\n", cpustate->w.IE);
-       logerror("Attempting to process LR35902 Interrupt IF $%02X\n", cpustate->w.IF);
+       logerror("Attempting to process LR35902 Interrupt IE $%02X\n", m_IE);
+       logerror("Attempting to process LR35902 Interrupt IF $%02X\n", m_IF);
     */
 	if (irq)
 	{
@@ -262,34 +260,32 @@ INLINE void lr35902_ProcessInterrupts (lr35902_state *cpustate)
 		{
 			if( irq & (1<<irqline) )
 			{
-				if (cpustate->w.enable & HALTED)
+				if (m_enable & HALTED)
 				{
-					cpustate->w.enable &= ~HALTED;
-					cpustate->w.PC++;
-					if ( cpustate->w.features & LR35902_FEATURE_HALT_BUG ) {
-						if ( ! ( cpustate->w.enable & IME ) ) {
+					m_enable &= ~HALTED;
+					m_PC++;
+					if ( m_features & LR35902_FEATURE_HALT_BUG ) {
+						if ( ! ( m_enable & IME ) ) {
 							/* Old cpu core (dmg/mgb/sgb) */
-							cpustate->w.doHALTbug = 1;
+							m_doHALTbug = 1;
 						}
 					} else {
 						/* New cpu core (cgb/agb/ags) */
 						/* Adjust for internal syncing with video core */
 						/* This feature needs more investigation */
 						if ( irqline < 2 ) {
-							CYCLES_PASSED( 4 );
+							cycles_passed( 4 );
 						}
 					}
 				}
-				if ( cpustate->w.enable & IME ) {
-					if ( cpustate->w.irq_callback )
-						(*cpustate->w.irq_callback)(cpustate->w.device, irqline);
-					cpustate->w.enable &= ~IME;
-					cpustate->w.IF &= ~(1 << irqline);
-					CYCLES_PASSED( 20 );
-					cpustate->w.SP -= 2;
-					mem_WriteWord (cpustate, cpustate->w.SP, cpustate->w.PC);
-					cpustate->w.PC = 0x40 + irqline * 8;
-					/*logerror("LR35902 Interrupt PC $%04X\n", cpustate->w.PC );*/
+				if ( m_enable & IME ) {
+					m_enable &= ~IME;
+					m_IF &= ~(1 << irqline);
+					cycles_passed( 12 );
+					m_SP -= 2;
+					mem_write_word( m_SP, m_PC );
+					m_PC = 0x40 + irqline * 8;
+					/*logerror("LR35902 Interrupt PC $%04X\n", m_PC );*/
 					return;
 				}
 			}
@@ -297,199 +293,63 @@ INLINE void lr35902_ProcessInterrupts (lr35902_state *cpustate)
 	}
 }
 
+
 /************************************************************/
 /*** Execute lr35902 code for cycles cycles, return nr of ***/
 /*** cycles actually executed.                            ***/
 /************************************************************/
-static CPU_EXECUTE( lr35902 )
+void lr35902_cpu_device::execute_run()
 {
-	lr35902_state *cpustate = get_safe_token(device);
-
 	do
 	{
-		if ( cpustate->w.execution_state ) {
+		if ( m_execution_state ) {
 			UINT8	x;
 			/* Execute instruction */
-			switch( cpustate->w.op ) {
+			switch( m_op ) {
 #include "opc_main.h"
 			}
 		} else {
 			/* Fetch and count cycles */
-			lr35902_ProcessInterrupts (cpustate);
-			debugger_instruction_hook(device, cpustate->w.PC);
-			if ( cpustate->w.enable & HALTED ) {
-				CYCLES_PASSED( Cycles[0x76] );
-				cpustate->w.execution_state = 1;
+			check_interrupts();
+			debugger_instruction_hook(this, m_PC);
+			if ( m_enable & HALTED ) {
+				cycles_passed( 4 );
+				m_execution_state = 1;
 			} else {
-				cpustate->w.op = mem_ReadByte (cpustate, cpustate->w.PC++);
-				if ( cpustate->w.doHALTbug ) {
-					cpustate->w.PC--;
-					cpustate->w.doHALTbug = 0;
+				m_op = mem_read_byte( m_PC++ );
+				if ( m_doHALTbug ) {
+					m_PC--;
+					m_doHALTbug = 0;
 				}
-				CYCLES_PASSED( Cycles[cpustate->w.op] );
 			}
 		}
-		cpustate->w.execution_state ^= 1;
-	} while (cpustate->w.icount > 0);
+		m_execution_state ^= 1;
+	} while (m_icount > 0);
 }
 
-static CPU_BURN( lr35902 )
+
+void lr35902_cpu_device::execute_set_input( int inptnum, int state )
 {
-	lr35902_state *cpustate = get_safe_token(device);
-
-    if( cycles > 0 )
-    {
-        /* NOP takes 4 cycles per instruction */
-        int n = (cycles + 3) / 4;
-        cpustate->w.icount -= 4 * n;
-    }
-}
-
-static void lr35902_set_irq_line (lr35902_state *cpustate, int irqline, int state)
-{
-	/*logerror("setting irq line 0x%02x state 0x%08x\n", irqline, state);*/
-	//if( cpustate->w.irq_state == state )
-	//  return;
-
-	cpustate->w.irq_state = state;
+	m_irq_state = state;
 	if( state == ASSERT_LINE )
 	{
-
-		cpustate->w.IF |= (0x01 << irqline);
-		/*logerror("LR35902 assert irq line %d ($%02X)\n", irqline, cpustate->w.IF);*/
-
+		m_IF |= (0x01 << inptnum);
 	}
 	else
 	{
-
-		cpustate->w.IF &= ~(0x01 << irqline);
-		/*logerror("LR35902 clear irq line %d ($%02X)\n", irqline, cpustate->w.IF);*/
-
+		m_IF &= ~(0x01 << inptnum);
 	}
 }
 
-#ifdef UNUSED_FUNCTION
-static void lr35902_clear_pending_interrupts (lr35902_state *cpustate)
+
+UINT8 lr35902_cpu_device::get_speed()
 {
-    cpustate->w.IF = 0;
-}
-#endif
-
-static CPU_SET_INFO( lr35902 )
-{
-	lr35902_state *cpustate = get_safe_token(device);
-
-	switch (state)
-	{
-	/* --- the following bits of info are set as 64-bit signed integers --- */
-	case CPUINFO_INT_INPUT_STATE + 0:
-	case CPUINFO_INT_INPUT_STATE + 1:
-	case CPUINFO_INT_INPUT_STATE + 2:
-	case CPUINFO_INT_INPUT_STATE + 3:
-	case CPUINFO_INT_INPUT_STATE + 4:			lr35902_set_irq_line(cpustate, state-CPUINFO_INT_INPUT_STATE, info->i); break;
-
-	case CPUINFO_INT_SP:						cpustate->w.SP = info->i;						break;
-	case CPUINFO_INT_PC:						cpustate->w.PC = info->i;						break;
-
-	case CPUINFO_INT_REGISTER + LR35902_PC:		cpustate->w.PC = info->i;						break;
-	case CPUINFO_INT_REGISTER + LR35902_SP:		cpustate->w.SP = info->i;						break;
-	case CPUINFO_INT_REGISTER + LR35902_AF:		cpustate->w.AF = info->i;						break;
-	case CPUINFO_INT_REGISTER + LR35902_BC:		cpustate->w.BC = info->i;						break;
-	case CPUINFO_INT_REGISTER + LR35902_DE:		cpustate->w.DE = info->i;						break;
-	case CPUINFO_INT_REGISTER + LR35902_HL:		cpustate->w.HL = info->i;						break;
-	case CPUINFO_INT_REGISTER + LR35902_IE:		cpustate->w.IE = info->i; break;
-	case CPUINFO_INT_REGISTER + LR35902_IF:		cpustate->w.IF = info->i; break;
-	case CPUINFO_INT_REGISTER + LR35902_SPEED:	cpustate->w.gb_speed_change_pending = info->i & 0x01; break;
-	}
+	return 0x7E | ( ( m_gb_speed - 1 ) << 7 ) | m_gb_speed_change_pending;
 }
 
-CPU_GET_INFO( lr35902 )
+
+void lr35902_cpu_device::set_speed( UINT8 speed_request )
 {
-	lr35902_state *cpustate = (device != NULL && device->token() != NULL) ? get_safe_token(device) : NULL;
-
-	switch (state)
-	{
-	/* --- the following bits of info are returned as 64-bit signed integers --- */
-	case CPUINFO_INT_CONTEXT_SIZE:					info->i = sizeof(lr35902_state);					break;
-	case CPUINFO_INT_INPUT_LINES:						info->i = 5;							break;
-	case CPUINFO_INT_DEFAULT_IRQ_VECTOR:			info->i = 0xff;							break;
-	case DEVINFO_INT_ENDIANNESS:					info->i = ENDIANNESS_LITTLE;					break;
-	case CPUINFO_INT_CLOCK_MULTIPLIER:				info->i = 1;							break;
-	case CPUINFO_INT_CLOCK_DIVIDER:					info->i = 1;							break;
-	case CPUINFO_INT_MIN_INSTRUCTION_BYTES:			info->i = 1;							break;
-	case CPUINFO_INT_MAX_INSTRUCTION_BYTES:			info->i = 4;							break;
-	case CPUINFO_INT_MIN_CYCLES:					info->i = 1;	/* right? */			break;
-	case CPUINFO_INT_MAX_CYCLES:					info->i = 16;	/* right? */			break;
-
-	case DEVINFO_INT_DATABUS_WIDTH + AS_PROGRAM:	info->i = 8;					break;
-	case DEVINFO_INT_ADDRBUS_WIDTH + AS_PROGRAM: info->i = 16;					break;
-	case DEVINFO_INT_ADDRBUS_SHIFT + AS_PROGRAM: info->i = 0;					break;
-	case DEVINFO_INT_DATABUS_WIDTH + AS_DATA:	info->i = 0;					break;
-	case DEVINFO_INT_ADDRBUS_WIDTH + AS_DATA:	info->i = 0;					break;
-	case DEVINFO_INT_ADDRBUS_SHIFT + AS_DATA:	info->i = 0;					break;
-	case DEVINFO_INT_DATABUS_WIDTH + AS_IO:		info->i = 8;					break;
-	case DEVINFO_INT_ADDRBUS_WIDTH + AS_IO:		info->i = 16;					break;
-	case DEVINFO_INT_ADDRBUS_SHIFT + AS_IO:		info->i = 0;					break;
-
-	case CPUINFO_INT_SP:							info->i = cpustate->w.SP;					break;
-	case CPUINFO_INT_PC:							info->i = cpustate->w.PC;					break;
-	case CPUINFO_INT_PREVIOUSPC:					info->i = 0;	/* TODO??? */			break;
-
-	case CPUINFO_INT_INPUT_STATE + 0:
-	case CPUINFO_INT_INPUT_STATE + 1:
-	case CPUINFO_INT_INPUT_STATE + 2:
-	case CPUINFO_INT_INPUT_STATE + 3:
-	case CPUINFO_INT_INPUT_STATE + 4:					info->i = cpustate->w.IF & (1 << (state-CPUINFO_INT_INPUT_STATE)); break;
-
-	case CPUINFO_INT_REGISTER + LR35902_PC:			info->i = cpustate->w.PC;					break;
-	case CPUINFO_INT_REGISTER + LR35902_SP:			info->i = cpustate->w.SP;					break;
-	case CPUINFO_INT_REGISTER + LR35902_AF:			info->i = cpustate->w.AF;					break;
-	case CPUINFO_INT_REGISTER + LR35902_BC:			info->i = cpustate->w.BC;					break;
-	case CPUINFO_INT_REGISTER + LR35902_DE:			info->i = cpustate->w.DE;					break;
-	case CPUINFO_INT_REGISTER + LR35902_HL:			info->i = cpustate->w.HL;					break;
-	case CPUINFO_INT_REGISTER + LR35902_IE:			info->i = cpustate->w.IE;					break;
-	case CPUINFO_INT_REGISTER + LR35902_IF:			info->i = cpustate->w.IF;					break;
-	case CPUINFO_INT_REGISTER + LR35902_SPEED:		info->i = 0x7E | ( ( cpustate->w.gb_speed - 1 ) << 7 ) | cpustate->w.gb_speed_change_pending; break;
-
-	/* --- the following bits of info are returned as pointers to data or functions --- */
-	case CPUINFO_FCT_SET_INFO:						info->setinfo = CPU_SET_INFO_NAME(lr35902);		break;
-	case CPUINFO_FCT_INIT:							info->init = CPU_INIT_NAME(lr35902);				break;
-	case CPUINFO_FCT_RESET:							info->reset = CPU_RESET_NAME(lr35902);			break;
-	case CPUINFO_FCT_EXECUTE:						info->execute = CPU_EXECUTE_NAME(lr35902);		break;
-	case CPUINFO_FCT_BURN:							info->burn = CPU_BURN_NAME(lr35902);				break;
-	case CPUINFO_FCT_DISASSEMBLE:					info->disassemble = CPU_DISASSEMBLE_NAME(lr35902);		break;
-	case CPUINFO_PTR_INSTRUCTION_COUNTER:			info->icount = &cpustate->w.icount;			break;
-
-	/* --- the following bits of info are returned as NULL-terminated strings --- */
-	case DEVINFO_STR_NAME:							strcpy(info->s, "LR35902"); break;
-	case DEVINFO_STR_FAMILY:					strcpy(info->s, "Sharp LR35902"); break;
-	case DEVINFO_STR_VERSION:					strcpy(info->s, "1.4"); break;
-	case DEVINFO_STR_SOURCE_FILE:					strcpy(info->s, __FILE__); break;
-	case DEVINFO_STR_CREDITS:					strcpy(info->s, "Copyright The MESS Team."); break;
-
-	case CPUINFO_STR_FLAGS:
-		sprintf(info->s, "%c%c%c%c%c%c%c%c",
-			cpustate->b.F & 0x80 ? 'Z':'.',
-			cpustate->b.F & 0x40 ? 'N':'.',
-			cpustate->b.F & 0x20 ? 'H':'.',
-			cpustate->b.F & 0x10 ? 'C':'.',
-			cpustate->b.F & 0x08 ? '3':'.',
-			cpustate->b.F & 0x04 ? '2':'.',
-			cpustate->b.F & 0x02 ? '1':'.',
-			cpustate->b.F & 0x01 ? '0':'.');
-		break;
-
-	case CPUINFO_STR_REGISTER + LR35902_PC: sprintf(info->s, "PC:%04X", cpustate->w.PC); break;
-	case CPUINFO_STR_REGISTER + LR35902_SP: sprintf(info->s, "SP:%04X", cpustate->w.SP); break;
-	case CPUINFO_STR_REGISTER + LR35902_AF: sprintf(info->s, "AF:%04X", cpustate->w.AF); break;
-	case CPUINFO_STR_REGISTER + LR35902_BC: sprintf(info->s, "BC:%04X", cpustate->w.BC); break;
-	case CPUINFO_STR_REGISTER + LR35902_DE: sprintf(info->s, "DE:%04X", cpustate->w.DE); break;
-	case CPUINFO_STR_REGISTER + LR35902_HL: sprintf(info->s, "HL:%04X", cpustate->w.HL); break;
-	case CPUINFO_STR_REGISTER + LR35902_IRQ_STATE: sprintf(info->s, "IRQ:%X", cpustate->w.enable & IME ); break;
-	case CPUINFO_STR_REGISTER + LR35902_IE: sprintf(info->s, "IE:%02X", cpustate->w.IE); break;
-	case CPUINFO_STR_REGISTER + LR35902_IF: sprintf(info->s, "IF:%02X", cpustate->w.IF); break;
-	case CPUINFO_STR_REGISTER + LR35902_SPEED: sprintf(info->s, "SPD:%02x", 0x7E | ( ( cpustate->w.gb_speed - 1 ) << 7 ) | cpustate->w.gb_speed_change_pending ); break;
-	}
+	m_gb_speed_change_pending = speed_request & 0x01;
 }
 
-DEFINE_LEGACY_CPU_DEVICE(LR35902, lr35902);

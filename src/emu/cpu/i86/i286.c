@@ -46,6 +46,7 @@ struct _i80286_state
 	UINT16	sregs[4];
 	UINT16	limit[4];
 	UINT8 rights[4];
+	bool valid[4];
 	struct {
 		UINT32 base;
 		UINT16 limit;
@@ -56,7 +57,7 @@ struct _i80286_state
 		UINT16 limit;
 		UINT8 rights;
 	} ldtr, tr;
-	device_irq_callback irq_callback;
+	device_irq_acknowledge_callback irq_callback;
 	legacy_cpu_device *device;
 	address_space *program;
 	direct_read_data *direct;
@@ -162,6 +163,7 @@ static CPU_RESET( i80286 )
 	cpustate->base[DS]=cpustate->base[SS]=cpustate->base[ES]=0;
 	cpustate->rights[DS]=cpustate->rights[SS]=cpustate->rights[ES]=0x93;
 	cpustate->rights[CS]=0x9a;
+	cpustate->valid[CS]=cpustate->valid[SS]=cpustate->valid[DS]=cpustate->valid[ES]=1;
 	cpustate->msw=0xfff0;
 	cpustate->flags=2;
 	ExpandFlags(cpustate->flags);

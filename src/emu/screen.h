@@ -61,6 +61,10 @@ enum screen_type_enum
 };
 
 
+// screen_update callback flags
+const UINT32 UPDATE_HAS_NOT_CHANGED = 0x0001;	// the video has not changed
+
+
 
 //**************************************************************************
 //  TYPE DEFINITIONS
@@ -223,6 +227,7 @@ public:
 	// additional helpers
 	void register_vblank_callback(vblank_state_delegate vblank_callback);
 	void register_screen_bitmap(bitmap_t &bitmap);
+	int vblank_port_read();
 
 	// internal to the video system
 	bool update_quads();
@@ -396,10 +401,10 @@ typedef device_type_iterator<&device_creator<screen_device>, screen_device> scre
 	screen_device::static_set_screen_vblank(*device, screen_vblank_delegate(&screen_vblank_##_func, "screen_vblank_" #_func)); \
 
 #define MCFG_SCREEN_VBLANK_DRIVER(_class, _method) \
-	screen_device::static_set_screen_vblank(*device, screen_vblank_delegate(&_class::_method, #_class "::" #_method, NULL)); \
+	screen_device::static_set_screen_vblank(*device, screen_vblank_delegate(&_class::_method, #_class "::" #_method, NULL, (_class *)0)); \
 
 #define MCFG_SCREEN_VBLANK_DEVICE(_device, _class, _method) \
-	screen_device::static_set_screen_vblank(*device, screen_vblank_delegate(&_class::_method, #_class "::" #_method, _device)); \
+	screen_device::static_set_screen_vblank(*device, screen_vblank_delegate(&_class::_method, #_class "::" #_method, _device, (_class *)0)); \
 
 
 

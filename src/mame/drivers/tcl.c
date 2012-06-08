@@ -42,7 +42,7 @@ Notes:
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "machine/8255ppi.h"
+#include "machine/i8255.h"
 #include "sound/ay8910.h"
 
 
@@ -63,7 +63,7 @@ static SCREEN_UPDATE_IND16( tcl )
 	return 0;
 }
 
-static ADDRESS_MAP_START( tcl_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( tcl_map, AS_PROGRAM, 8, tcl_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM  /* bfff ? */
 ADDRESS_MAP_END
 
@@ -100,24 +100,24 @@ static GFXDECODE_START( tcl )
 	GFXDECODE_ENTRY( "gfx2", 0, charlayout2,     0, 16 ) /* wrong */
 GFXDECODE_END
 
-static const ppi8255_interface ppi8255_intf[2] =
+static I8255A_INTERFACE( ppi8255_0_intf )
 {
-	{
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL
-	},
-	{
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL,
-		DEVCB_NULL
-	}
+	DEVCB_NULL,							/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_NULL,							/* Port B read */
+	DEVCB_NULL,							/* Port B write */
+	DEVCB_NULL,							/* Port C read */
+	DEVCB_NULL,							/* Port C write */
+};
+
+static I8255A_INTERFACE( ppi8255_1_intf )
+{
+	DEVCB_NULL,							/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_NULL,							/* Port B read */
+	DEVCB_NULL,							/* Port B write */
+	DEVCB_NULL,							/* Port C read */
+	DEVCB_NULL,							/* Port C write */
 };
 
 
@@ -140,8 +140,8 @@ static MACHINE_CONFIG_START( tcl, tcl_state )
 
 	MCFG_VIDEO_START(tcl)
 
-	MCFG_PPI8255_ADD( "ppi8255_0", ppi8255_intf[0] )
-	MCFG_PPI8255_ADD( "ppi8255_1", ppi8255_intf[1] )
+	MCFG_I8255A_ADD( "ppi8255_0", ppi8255_0_intf )
+	MCFG_I8255A_ADD( "ppi8255_1", ppi8255_1_intf )
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -189,8 +189,8 @@ static DRIVER_INIT(tcl)
 	/* only the first part is decrypted (and verified)*/
 
 	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
-	UINT8 *dest = machine.region("maincpu")->base();
-	int len = machine.region("maincpu")->bytes();
+	UINT8 *dest = machine.root_device().memregion("maincpu")->base();
+	int len = machine.root_device().memregion("maincpu")->bytes();
 	UINT8 *src = auto_alloc_array(machine, UINT8, len);
 
 	int i,idx=0;

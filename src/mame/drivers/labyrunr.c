@@ -16,47 +16,51 @@
 #include "includes/labyrunr.h"
 
 
-static TIMER_DEVICE_CALLBACK( labyrunr_scanline )
+static INTERRUPT_GEN( labyrunr_vblank_interrupt )
 {
-	labyrunr_state *state = timer.machine().driver_data<labyrunr_state>();
-	int scanline = param;
-
-	if(scanline == 240 && k007121_ctrlram_r(state->m_k007121, 7) & 0x02) // vblank irq
-		device_set_input_line(state->m_maincpu, HD6309_IRQ_LINE, HOLD_LINE);
-	else if(((scanline % 32) == 0) && k007121_ctrlram_r(state->m_k007121, 7) & 0x01) // timer irq
-		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
+	labyrunr_state *state = device->machine().driver_data<labyrunr_state>();
+	if (k007121_ctrlram_r(state->m_k007121, 7) & 0x02)
+		device_set_input_line(device, HD6309_IRQ_LINE, HOLD_LINE);
 }
 
-static WRITE8_HANDLER( labyrunr_bankswitch_w )
+static INTERRUPT_GEN( labyrunr_timer_interrupt )
+{
+	labyrunr_state *state = device->machine().driver_data<labyrunr_state>();
+	if (k007121_ctrlram_r(state->m_k007121, 7) & 0x01)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
+
+WRITE8_MEMBER(labyrunr_state::labyrunr_bankswitch_w)
 {
 	if (data & 0xe0) popmessage("bankswitch %02x", data);
 
 	/* bits 0-2 = bank number */
-	memory_set_bank(space->machine(), "bank1", data & 0x07);	// shall we check if data&7 > #banks?
+	membank("bank1")->set_entry(data & 0x07);	// shall we check if data&7 > #banks?
 
 	/* bits 3 and 4 are coin counters */
-	coin_counter_w(space->machine(), 0, data & 0x08);
-	coin_counter_w(space->machine(), 1, data & 0x10);
+	coin_counter_w(machine(), 0, data & 0x08);
+	coin_counter_w(machine(), 1, data & 0x10);
 }
 
-static ADDRESS_MAP_START( labyrunr_map, AS_PROGRAM, 8 )
-	AM_RANGE(0x0000, 0x0007) AM_DEVWRITE("k007121", k007121_ctrl_w)
-	AM_RANGE(0x0020, 0x005f) AM_RAM AM_BASE_MEMBER(labyrunr_state, m_scrollram)
-	AM_RANGE(0x0800, 0x0800) AM_DEVREADWRITE("ym1", ym2203_read_port_r, ym2203_write_port_w)
-	AM_RANGE(0x0801, 0x0801) AM_DEVREADWRITE("ym1", ym2203_status_port_r, ym2203_control_port_w)
-	AM_RANGE(0x0900, 0x0900) AM_DEVREADWRITE("ym2", ym2203_read_port_r, ym2203_write_port_w)
-	AM_RANGE(0x0901, 0x0901) AM_DEVREADWRITE("ym2", ym2203_status_port_r, ym2203_control_port_w)
+static ADDRESS_MAP_START( labyrunr_map, AS_PROGRAM, 8, labyrunr_state )
+	AM_RANGE(0x0000, 0x0007) AM_DEVWRITE_LEGACY("k007121", k007121_ctrl_w)
+	AM_RANGE(0x0020, 0x005f) AM_RAM AM_SHARE("scrollram")
+	AM_RANGE(0x0800, 0x0800) AM_DEVREADWRITE_LEGACY("ym1", ym2203_read_port_r, ym2203_write_port_w)
+	AM_RANGE(0x0801, 0x0801) AM_DEVREADWRITE_LEGACY("ym1", ym2203_status_port_r, ym2203_control_port_w)
+	AM_RANGE(0x0900, 0x0900) AM_DEVREADWRITE_LEGACY("ym2", ym2203_read_port_r, ym2203_write_port_w)
+	AM_RANGE(0x0901, 0x0901) AM_DEVREADWRITE_LEGACY("ym2", ym2203_status_port_r, ym2203_control_port_w)
 	AM_RANGE(0x0a00, 0x0a00) AM_READ_PORT("P2")
 	AM_RANGE(0x0a01, 0x0a01) AM_READ_PORT("P1")
 	AM_RANGE(0x0b00, 0x0b00) AM_READ_PORT("SYSTEM")
 	AM_RANGE(0x0c00, 0x0c00) AM_WRITE(labyrunr_bankswitch_w)
-	AM_RANGE(0x0d00, 0x0d1f) AM_DEVREADWRITE("k051733", k051733_r, k051733_w)
+	AM_RANGE(0x0d00, 0x0d1f) AM_DEVREADWRITE_LEGACY("k051733", k051733_r, k051733_w)
 	AM_RANGE(0x0e00, 0x0e00) AM_WRITE(watchdog_reset_w)
-	AM_RANGE(0x1000, 0x10ff) AM_RAM AM_BASE_MEMBER(labyrunr_state, m_paletteram)
+	AM_RANGE(0x1000, 0x10ff) AM_RAM AM_SHARE("paletteram")
 	AM_RANGE(0x1800, 0x1fff) AM_RAM
-	AM_RANGE(0x2000, 0x2fff) AM_RAM AM_BASE_MEMBER(labyrunr_state, m_spriteram)
-	AM_RANGE(0x3000, 0x37ff) AM_RAM_WRITE(labyrunr_vram1_w) AM_BASE_MEMBER(labyrunr_state, m_videoram1)
-	AM_RANGE(0x3800, 0x3fff) AM_RAM_WRITE(labyrunr_vram2_w) AM_BASE_MEMBER(labyrunr_state, m_videoram2)
+	AM_RANGE(0x2000, 0x2fff) AM_RAM AM_SHARE("spriteram")
+	AM_RANGE(0x3000, 0x37ff) AM_RAM_WRITE(labyrunr_vram1_w) AM_SHARE("videoram1")
+	AM_RANGE(0x3800, 0x3fff) AM_RAM_WRITE(labyrunr_vram2_w) AM_SHARE("videoram2")
 	AM_RANGE(0x4000, 0x7fff) AM_ROMBANK("bank1")
 	AM_RANGE(0x8000, 0xffff) AM_ROM
 ADDRESS_MAP_END
@@ -180,9 +184,9 @@ static const ym2203_interface ym2203_interface_2 =
 static MACHINE_START( labyrunr )
 {
 	labyrunr_state *state = machine.driver_data<labyrunr_state>();
-	UINT8 *ROM = machine.region("maincpu")->base();
+	UINT8 *ROM = state->memregion("maincpu")->base();
 
-	memory_configure_bank(machine, "bank1", 0, 6, &ROM[0x10000], 0x4000);
+	state->membank("bank1")->configure_entries(0, 6, &ROM[0x10000], 0x4000);
 
 	state->m_k007121 = machine.device("k007121");
 }
@@ -192,7 +196,8 @@ static MACHINE_CONFIG_START( labyrunr, labyrunr_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", HD6309, 3000000*4)		/* 24MHz/8? */
 	MCFG_CPU_PROGRAM_MAP(labyrunr_map)
-	MCFG_TIMER_ADD_SCANLINE("scantimer", labyrunr_scanline, "screen", 0, 1)
+	MCFG_CPU_VBLANK_INT("screen", labyrunr_vblank_interrupt)
+	MCFG_CPU_PERIODIC_INT(labyrunr_timer_interrupt, 4*60)
 
 	MCFG_MACHINE_START(labyrunr)
 

@@ -157,37 +157,35 @@ MACHINE_CONFIG_FRAGMENT( seawolf_audio )
 	MCFG_SOUND_START(samples)
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(seawolf_samples_interface)
+	MCFG_SAMPLES_ADD("samples", seawolf_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.6)
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( seawolf_audio_w )
+WRITE8_MEMBER(mw8080bw_state::seawolf_audio_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	UINT8 rising_bits = data & ~state->m_port_1_last;
+	UINT8 rising_bits = data & ~m_port_1_last;
 
 	/* if (data & 0x01)  enable SHIP HIT sound */
-	if (rising_bits & 0x01) sample_start(state->m_samples, 0, 0, 0);
+	if (rising_bits & 0x01) m_samples->start(0, 0);
 
 	/* if (data & 0x02)  enable TORPEDO sound */
-	if (rising_bits & 0x02) sample_start(state->m_samples, 1, 1, 0);
+	if (rising_bits & 0x02) m_samples->start(1, 1);
 
 	/* if (data & 0x04)  enable DIVE sound */
-	if (rising_bits & 0x04) sample_start(state->m_samples, 2, 2, 0);
+	if (rising_bits & 0x04) m_samples->start(2, 2);
 
 	/* if (data & 0x08)  enable SONAR sound */
-	if (rising_bits & 0x08) sample_start(state->m_samples, 3, 3, 0);
+	if (rising_bits & 0x08) m_samples->start(3, 3);
 
 	/* if (data & 0x10)  enable MINE HIT sound */
-	if (rising_bits & 0x10) sample_start(state->m_samples, 4, 4, 0);
+	if (rising_bits & 0x10) m_samples->start(4, 4);
 
-	coin_counter_w(space->machine(), 0, (data >> 5) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 5) & 0x01);
 
 	/* D6 and D7 are not connected */
 
-	state->m_port_1_last = data;
+	m_port_1_last = data;
 }
 
 
@@ -219,23 +217,20 @@ MACHINE_CONFIG_FRAGMENT( gunfight_audio )
 
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
 
-	MCFG_SOUND_ADD("samples1", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(gunfight_samples_interface)
+	MCFG_SAMPLES_ADD("samples1", gunfight_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "lspeaker", 0.50)
 
-	MCFG_SOUND_ADD("samples2", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(gunfight_samples_interface)
+	MCFG_SAMPLES_ADD("samples2", gunfight_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "rspeaker", 0.50)
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( gunfight_audio_w )
+WRITE8_MEMBER(mw8080bw_state::gunfight_audio_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
 
 	/* D0 and D1 are just tied to 1k resistors */
 
-	coin_counter_w(space->machine(), 0, (data >> 2) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 2) & 0x01);
 
 	/* the 74175 latches and inverts the top 4 bits */
 	switch ((~data >> 4) & 0x0f)
@@ -245,26 +240,26 @@ WRITE8_HANDLER( gunfight_audio_w )
 
 	case 0x01:
 		/* enable LEFT SHOOT sound (left speaker) */
-		sample_start(state->m_samples1, 0, 0, 0);
+		m_samples1->start(0, 0);
 		break;
 
 	case 0x02:
 		/* enable RIGHT SHOOT sound (right speaker) */
-		sample_start(state->m_samples2, 0, 0, 0);
+		m_samples2->start(0, 0);
 		break;
 
 	case 0x03:
 		/* enable LEFT HIT sound (left speaker) */
-		sample_start(state->m_samples1, 0, 1, 0);
+		m_samples1->start(0, 1);
 		break;
 
 	case 0x04:
 		/* enable RIGHT HIT sound (right speaker) */
-		sample_start(state->m_samples2, 0, 1, 0);
+		m_samples2->start(0, 1);
 		break;
 
 	default:
-		logerror("%04x:  Unknown sh port write %02x\n", cpu_get_pc(&space->device()), data);
+		logerror("%04x:  Unknown sh port write %02x\n", cpu_get_pc(&space.device()), data);
 		break;
 	}
 }
@@ -372,7 +367,7 @@ MACHINE_CONFIG_FRAGMENT( zzzap_audio )
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( zzzap_audio_1_w )
+WRITE8_MEMBER(mw8080bw_state::zzzap_audio_1_w)
 {
 	/* set ENGINE SOUND FREQ(data & 0x0f)  the value written is
                                            the gas pedal position */
@@ -385,7 +380,7 @@ WRITE8_HANDLER( zzzap_audio_1_w )
 }
 
 
-WRITE8_HANDLER( zzzap_audio_2_w )
+WRITE8_MEMBER(mw8080bw_state::zzzap_audio_2_w)
 {
 	/* if (data & 0x01)  enable BOOM sound */
 
@@ -397,7 +392,7 @@ WRITE8_HANDLER( zzzap_audio_2_w )
                                             before it appears again, not sure what
                                             it is supposed to sound like) */
 
-	coin_counter_w(space->machine(), 0, (data >> 5) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 5) & 0x01);
 
 	/* D4, D6 and D7 are not connected */
 }
@@ -580,7 +575,7 @@ MACHINE_CONFIG_END
 void maze_write_discrete(device_t *device, UINT8 maze_tone_timing_state)
 {
 	/* controls need to be active low */
-	int controls = ~input_port_read(device->machine(), "IN0") & 0xff;
+	int controls = ~device->machine().root_device().ioport("IN0")->read() & 0xff;
 
 	discrete_sound_w(device, MAZE_TONE_TIMING, maze_tone_timing_state);
 	discrete_sound_w(device, MAZE_P1_DATA, controls & 0x0f);
@@ -592,7 +587,7 @@ void maze_write_discrete(device_t *device, UINT8 maze_tone_timing_state)
 	/* A better option might be to update it at vblank or set a timer to do it. */
 	/* The only noticeable difference doing it here, is that the controls don't */
 	/* immediately start making tones if pressed right after the coin is inserted. */
-	discrete_sound_w(device, MAZE_COIN, (~input_port_read(device->machine(), "IN1") >> 3) & 0x01);
+	discrete_sound_w(device, MAZE_COIN, (~device->machine().root_device().ioport("IN1")->read() >> 3) & 0x01);
 }
 
 
@@ -1577,50 +1572,47 @@ MACHINE_CONFIG_FRAGMENT( gmissile_audio )
 
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
 
-	MCFG_SOUND_ADD("samples1", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(gmissile_samples_interface)
+	MCFG_SAMPLES_ADD("samples1", gmissile_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "lspeaker", 1.9)
 
-	MCFG_SOUND_ADD("samples2", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(gmissile_samples_interface)
+	MCFG_SAMPLES_ADD("samples2", gmissile_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "rspeaker", 1.9)
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( gmissile_audio_1_w )
+WRITE8_MEMBER(mw8080bw_state::gmissile_audio_1_w)
 {
 	/* note that the schematics shows the left and right explosions
        reversed (D5=R, D7=L), but the software confirms that
        ours is right */
 
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	UINT8 rising_bits = data & ~state->m_port_1_last;
+	UINT8 rising_bits = data & ~m_port_1_last;
 
 	/* D0 and D1 are not connected */
 
-	coin_counter_w(space->machine(), 0, (data >> 2) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 2) & 0x01);
 
-	space->machine().sound().system_enable((data >> 3) & 0x01);
+	machine().sound().system_enable((data >> 3) & 0x01);
 
 	/* if (data & 0x10)  enable RIGHT MISSILE sound (goes to right speaker) */
-	if (rising_bits & 0x10) sample_start(state->m_samples2, 0, 0, 0);
+	if (rising_bits & 0x10) m_samples2->start(0, 0);
 
 	/* if (data & 0x20)  enable LEFT EXPLOSION sound (goes to left speaker) */
 	output_set_value("L_EXP_LIGHT", (data >> 5) & 0x01);
-	if (rising_bits & 0x20) sample_start(state->m_samples1, 0, 1, 0);
+	if (rising_bits & 0x20) m_samples1->start(0, 1);
 
 	/* if (data & 0x40)  enable LEFT MISSILE sound (goes to left speaker) */
-	if (rising_bits & 0x40) sample_start(state->m_samples1, 0, 0, 0);
+	if (rising_bits & 0x40) m_samples1->start(0, 0);
 
 	/* if (data & 0x80)  enable RIGHT EXPLOSION sound (goes to right speaker) */
 	output_set_value("R_EXP_LIGHT", (data >> 7) & 0x01);
-	if (rising_bits & 0x80) sample_start(state->m_samples2, 0, 1, 0);
+	if (rising_bits & 0x80) m_samples2->start(0, 1);
 
-	state->m_port_1_last = data;
+	m_port_1_last = data;
 }
 
 
-WRITE8_HANDLER( gmissile_audio_2_w )
+WRITE8_MEMBER(mw8080bw_state::gmissile_audio_2_w)
 {
 	/* set AIRPLANE/COPTER/JET PAN(data & 0x07) */
 
@@ -1630,7 +1622,7 @@ WRITE8_HANDLER( gmissile_audio_2_w )
 }
 
 
-WRITE8_HANDLER( gmissile_audio_3_w )
+WRITE8_MEMBER(mw8080bw_state::gmissile_audio_3_w)
 {
 	/* if (data & 0x01)  enable AIRPLANE (bi-plane) sound (goes to AIRPLANE/COPTER/JET panning circuit) */
 
@@ -1676,53 +1668,49 @@ MACHINE_CONFIG_FRAGMENT( m4_audio )
 
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
 
-	MCFG_SOUND_ADD("samples1", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(m4_samples_interface)
+	MCFG_SAMPLES_ADD("samples1", m4_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "lspeaker", 1)
 
-	MCFG_SOUND_ADD("samples2", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(m4_samples_interface)
+	MCFG_SAMPLES_ADD("samples2", m4_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "rspeaker", 1)
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( m4_audio_1_w )
+WRITE8_MEMBER(mw8080bw_state::m4_audio_1_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	UINT8 rising_bits = data & ~state->m_port_1_last;
+	UINT8 rising_bits = data & ~m_port_1_last;
 
 	/* D0 and D1 are not connected */
 
-	coin_counter_w(space->machine(), 0, (data >> 2) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 2) & 0x01);
 
-	space->machine().sound().system_enable((data >> 3) & 0x01);
+	machine().sound().system_enable((data >> 3) & 0x01);
 
 	/* if (data & 0x10)  enable LEFT PLAYER SHOT sound (goes to left speaker) */
-	if (rising_bits & 0x10) sample_start(state->m_samples1, 0, 0, 0);
+	if (rising_bits & 0x10) m_samples1->start(0, 0);
 
 	/* if (data & 0x20)  enable RIGHT PLAYER SHOT sound (goes to right speaker) */
-	if (rising_bits & 0x20) sample_start(state->m_samples2, 0, 0, 0);
+	if (rising_bits & 0x20) m_samples2->start(0, 0);
 
 	/* if (data & 0x40)  enable LEFT PLAYER EXPLOSION sound via 300K res (goes to left speaker) */
-	if (rising_bits & 0x40) sample_start(state->m_samples1, 1, 1, 0);
+	if (rising_bits & 0x40) m_samples1->start(1, 1);
 
 	/* if (data & 0x80)  enable RIGHT PLAYER EXPLOSION sound via 300K res (goes to right speaker) */
-	if (rising_bits & 0x80) sample_start(state->m_samples2, 1, 1, 0);
+	if (rising_bits & 0x80) m_samples2->start(1, 1);
 
-	state->m_port_1_last = data;
+	m_port_1_last = data;
 }
 
 
-WRITE8_HANDLER( m4_audio_2_w )
+WRITE8_MEMBER(mw8080bw_state::m4_audio_2_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	UINT8 rising_bits = data & ~state->m_port_2_last;
+	UINT8 rising_bits = data & ~m_port_2_last;
 
 	/* if (data & 0x01)  enable LEFT PLAYER EXPLOSION sound via 510K res (goes to left speaker) */
-	if (rising_bits & 0x01) sample_start(state->m_samples1, 1, 1, 0);
+	if (rising_bits & 0x01) m_samples1->start(1, 1);
 
 	/* if (data & 0x02)  enable RIGHT PLAYER EXPLOSION sound via 510K res (goes to right speaker) */
-	if (rising_bits & 0x02) sample_start(state->m_samples2, 1, 1, 0);
+	if (rising_bits & 0x02) m_samples2->start(1, 1);
 
 	/* if (data & 0x04)  enable LEFT TANK MOTOR sound (goes to left speaker) */
 
@@ -1736,7 +1724,7 @@ WRITE8_HANDLER( m4_audio_2_w )
 
 	/* D6 and D7 are not connected */
 
-	state->m_port_2_last = data;
+	m_port_2_last = data;
 }
 
 
@@ -1938,8 +1926,7 @@ MACHINE_CONFIG_FRAGMENT( clowns_audio )
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(clowns_samples_interface)
+	MCFG_SAMPLES_ADD("samples", clowns_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.70)
 
 	MCFG_SOUND_ADD("discrete", DISCRETE, 0)
@@ -1948,12 +1935,11 @@ MACHINE_CONFIG_FRAGMENT( clowns_audio )
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( clowns_audio_1_w )
+WRITE8_MEMBER(mw8080bw_state::clowns_audio_1_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	coin_counter_w(space->machine(), 0, (data >> 0) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 0) & 0x01);
 
-	state->m_clowns_controller_select = (data >> 1) & 0x01;
+	m_clowns_controller_select = (data >> 1) & 0x01;
 
 	/* D2-D7 are not connected */
 }
@@ -1974,7 +1960,7 @@ WRITE8_DEVICE_HANDLER( clowns_audio_2_w )
 
 	discrete_sound_w(device, CLOWNS_SPRINGBOARD_HIT_EN, (data >> 4) & 0x01);
 
-	if (rising_bits & 0x20) sample_start(state->m_samples, 0, 0, 0);  /* springboard miss */
+	if (rising_bits & 0x20) state->m_samples->start(0, 0);  /* springboard miss */
 
 	/* D6 and D7 are not connected */
 
@@ -3341,50 +3327,47 @@ MACHINE_CONFIG_FRAGMENT( phantom2_audio )
 	MCFG_SOUND_START(samples)
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(phantom2_samples_interface)
+	MCFG_SAMPLES_ADD("samples", phantom2_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1)
 MACHINE_CONFIG_END
 
 
-WRITE8_HANDLER( phantom2_audio_1_w )
+WRITE8_MEMBER(mw8080bw_state::phantom2_audio_1_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	UINT8 rising_bits = data & ~state->m_port_1_last;
+	UINT8 rising_bits = data & ~m_port_1_last;
 
 	/* if (data & 0x01)  enable PLAYER SHOT sound */
-	if (rising_bits & 0x01) sample_start(state->m_samples, 0, 0, 0);
+	if (rising_bits & 0x01) m_samples->start(0, 0);
 
 	/* if (data & 0x02)  enable ENEMY SHOT sound */
 
-	space->machine().sound().system_mute(!(data & 0x20));
-	space->machine().sound().system_enable((data >> 2) & 0x01);
+	machine().sound().system_mute(!(data & 0x20));
+	machine().sound().system_enable((data >> 2) & 0x01);
 
-	coin_counter_w(space->machine(), 0, (data >> 3) & 0x01);
+	coin_counter_w(machine(), 0, (data >> 3) & 0x01);
 
 	/* if (data & 0x10)  enable RADAR sound */
 
 	/* D5-D7 are not connected */
 
-	state->m_port_1_last = data;
+	m_port_1_last = data;
 }
 
 
-WRITE8_HANDLER( phantom2_audio_2_w )
+WRITE8_MEMBER(mw8080bw_state::phantom2_audio_2_w)
 {
-	mw8080bw_state *state = space->machine().driver_data<mw8080bw_state>();
-	UINT8 rising_bits = data & ~state->m_port_2_last;
+	UINT8 rising_bits = data & ~m_port_2_last;
 
 	/* D0-D2 are not connected */
 
 	/* if (data & 0x08)  enable EXPLOSION sound */
-	if (rising_bits & 0x08) sample_start(state->m_samples, 1, 1, 0);
+	if (rising_bits & 0x08) m_samples->start(1, 1);
 
 	output_set_value("EXPLAMP", (data >> 4) & 0x01);
 
 	/* set JET SOUND FREQ((data >> 5) & 0x07)  0, if no jet sound */
 
-	state->m_port_2_last = data;
+	m_port_2_last = data;
 }
 
 
@@ -3497,7 +3480,7 @@ WRITE8_DEVICE_HANDLER( bowler_audio_1_w )
 }
 
 
-WRITE8_HANDLER( bowler_audio_2_w )
+WRITE8_MEMBER(mw8080bw_state::bowler_audio_2_w)
 {
 	/* set BALL ROLLING SOUND FREQ(data & 0x0f)
        0, if no rolling, 0x08 used during ball return */
@@ -3511,28 +3494,28 @@ WRITE8_HANDLER( bowler_audio_2_w )
 }
 
 
-WRITE8_HANDLER( bowler_audio_3_w )
+WRITE8_MEMBER(mw8080bw_state::bowler_audio_3_w)
 {
 	/* regardless of the data, enable BALL HITS PIN 1 sound
        (top circuit on the schematics) */
 }
 
 
-WRITE8_HANDLER( bowler_audio_4_w )
+WRITE8_MEMBER(mw8080bw_state::bowler_audio_4_w)
 {
 	/* regardless of the data, enable BALL HITS PIN 2 sound
        (bottom circuit on the schematics) */
 }
 
 
-WRITE8_HANDLER( bowler_audio_5_w )
+WRITE8_MEMBER(mw8080bw_state::bowler_audio_5_w)
 {
 	/* not sure, appears to me trigerred alongside the two
        BALL HITS PIN sounds */
 }
 
 
-WRITE8_HANDLER( bowler_audio_6_w )
+WRITE8_MEMBER(mw8080bw_state::bowler_audio_6_w)
 {
 	/* D0 is not connected */
 
@@ -3628,8 +3611,7 @@ MACHINE_CONFIG_FRAGMENT( invaders_samples_audio )
 	MCFG_SOUND_CONFIG(invaders_sn76477_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.5)
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(invaders_samples_interface)
+	MCFG_SAMPLES_ADD("samples", invaders_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 MACHINE_CONFIG_END
 

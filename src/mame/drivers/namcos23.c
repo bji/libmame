@@ -968,6 +968,256 @@ Notes:
       J105            - 110VAC power input
       J106            - DC variable power output to feed-back motor
 
+
+Namco Gorgon-based games
+------------------------
+
+Rapid River, Final Furlong (both Namco, 1997)
+
+These games run on hardware called "GORGON". It appears to have similar
+capabilities to System 23 but like Super System 22 has sprites also.
+(System 23 doesn't have sprites). The PCBs are about two times larger
+than System 23.
+
+The system comprises Main PCB, ROM PCB and I/O PCB all located inside
+a metal box with 3 separate power supplies for 5V, 12V and 3.3V. Main
+input power is 115V.
+Rapid River is controlled by rotating a paddle (for thrust) and turning it
+sideways (moves left/right).
+The rotation action is done with a 5K potentiometer whereby the thrust
+is achieved by moving the pot from full left to full right continuously.
+The left/right turning movement is just another 5K potentiometer connected
+to the column of the paddle center shaft.
+There are also some buttons just for test mode, including SELECT, UP & DOWN
+The player's seat has movement controlled by a compressor and several
+potentiometers. On bootup, the system tests the seat movement and displays
+a warning if it's not working. Pressing START allows the game to continue
+and function normally without the seat movement.
+
+The other game on this system (Final Furlong) and is a horse racing game.
+To control the horse you rock it forwards and backwards continually (it's very tiring
+to play this game).
+This would activate possibly one or two 5K potentiometers inside the horse body.
+Just like a real horse you need to control the speed so your horse lasts the entire race.
+If you rock too much, a message on screen says 'Too Fast'. To steer the horse turn the
+head sideways using the reins. There would be another 5K potentiometer in the head
+to activate the turning direction.
+
+
+Main PCB
+--------
+
+8664960102 (8664970102) GORGON MAIN PCB
+|------------------------------------------------------------------------------------------------------|
+|                                   J4                       J5                         J6             |
+|                              |---------|           |---------| |------| |---------|                  |
+|         |---------| |------| |         |           |         | |C401  | |         |HM534251 HM534251 |
+| CXD1178Q|         | |C381  | |  C374   |  |------| |  C417   | |      | |  304    |HM534251 HM534251 |
+|         |  C404   | |      | |         |  |C435  | |         | |------| |         |HM534251 HM534251 |
+|         |         | |------| |         |  |      | |         | |------| |         |                  |
+|         |         |          |---------|  |------| |---------| |C400  | |---------|                  |
+|         |---------|     |---------|       |------|             |      | |---------|                  |
+|                         |         |       |C435  |    341256   |------| |         |HM534251 HM534251 |
+|                         |  C397   |       |      |             |------| |  304    |HM534251 HM534251 |
+|  341256 341256  341256  |         |       |------|    341256   |C401  | |         |HM534251 HM534251 |
+|  M5M51008       341256  |         |     |---------|            |      | |         |                  |
+|                         |---------|     |         | |------|   |------| |---------|                  |
+|  M5M51008       341256         |------| |  C403   | |C406  |   |------| |---------|                  |
+|ADM485              |---------| |C379  | |         | |      |   |C400  | |         |HM534251 HM534251 |
+|                    |         | |      | |         | |------|   |      | |  304    |HM534251 HM534251 |
+|    M5M51008        |  C300   | |------| |---------|            |------| |         |HM534251 HM534251 |
+|                    |         | LH540204  LH540204              |------| |         |                  |
+|    M5M51008        |         |341256                 |------|  |C401  | |---------|                  |
+|J1   HCPL0611       |---------|341256                 |C407  |  |      | |---------|                  |
+|         DS8921                  PST575  PST575       |      |  |------| |         |                  |
+|  DS8921                                              |------|  |------| |  304    |HM534251 HM534251 |
+|                 M5M51008                                       |C400  | |         |HM534251 HM534251 |
+|       CY7C128             CY2291S                              |      | |         |                  |
+|         |------|M5M51008  14.31818MHz                          |------| |---------|                  |
+|         |C422  |          J9           M5M5256                 |------| |---------|         3V_BATT  |
+|         |      |341256                                         |C400  | |         |                  |
+|         |------|341256                                         |      | |  C399   |341256  LEDS(8)   |
+|                                   |------|      |--------|     |------| |         |341256            |
+|                                   |C352  |      |ALTERA  |     |------| |         |                  |
+|  ADM485        DSW1(2)   |------| |      |      |EPM7128 |     |C401  | |---------| DSW3(2)   DSW5(8)|
+|    2061ASC               |C416  | |------|      |        |     |      |     |---------| |---------|  |
+|      14.7456MHz          |      |               |--------|     |------|     |         | |NKK      |  |
+|PAL             |-----|   |------|    |------|                   D4516161    |  C413   | |NR4650   |  |
+|                |H8/  |               |C361  |                   D4516161    |         | |LQF-13B  |  |
+|                |3002 |               |      |LC321664                       |         | |         |  |
+|  J10           |-----|               |------|    J8                         |---------| |---------|  |
+|------------------------------------------------------------------------------------------------------|
+Notes:
+     NKK NR4650 - R4600-based 64bit RISC CPU (Main CPU, QFP208, clock input source = CY2291S)
+     H8/3002  - Hitachi H8/3002 HD6413002F17 (Sound CPU, QFP100, running at 14.7456MHz)
+     EPM7128  - Altera EPM7128 FPGA labelled 'GOR-M1' (PLCC84)
+     PAL      - PALCE16V8H stamped 'GOR-M3' (PLCC20)
+     HM534251 - Hitachi HM534251 256k x4 Dynamic Video RAM (SOJ28)
+     N341256  - NKK 32k x8 SRAM (SOJ28)
+     M5M5256  - Mitsubishi 32k x8 SRAM (SOP28)
+     D4516161 - NEC uPD4516161AG5-A80 1M x16 (16MBit) SDRAM (SSOP50)
+     LC321664 - Sanyo 64k x16 EDO DRAM (SOJ40)
+     M5M51008 - Mitsubishi 128k x8 SRAM (SOP32)
+     CY7C128  - Cypress 2k x8 SRAM (SOJ28)
+     LH540204 - Sharp CMOS 4096 x 9 Asynchronous FIFO (PLCC32)
+     2061ASC-1- IC Designs 2061ASC-1 programmable clock generator (SOIC16)
+     DS8921   - Dallas Semiconductor DS8921 RS-422/423 Differential Line Driver and Receiver Pair (SOIC8)
+     HCPL0611 - Fairchild HCPL0611 High Speed 10MBits/sec Logic Gate Optocoupler (SOIC8)
+     ADM485   - Analog Devices ADM485 5V Low Power EIA RS-485 Transceiver (SOIC8)
+     PST575   - System Reset IC (SOIC8)
+     CXD1178Q - Sony CXD1178Q 8-bit RGB 3-channel D/A converter (QFP48)
+     J1       - 64 pin connector for connection of I/O board
+     J4/J5/J6 \
+     J8/J9    / Custom NAMCO connectors for connection of MEM(M1) PCB
+     J10      - Custom NAMCO connector for MSPM(FR) PCB
+
+
+     Namco Custom ICs
+     ----------------
+     C300 (QFP160)
+     304  (x4, QFP120)
+     C352 (QFP100)
+     C361 (QFP120)
+     C374 (QFP160)
+     C379 (QFP64)
+     C381 (QFP144)
+     C397 (QFP160)
+     C399 (QFP160)
+     C400 (QFP100)
+     C401 (x4, QFP64)
+     C403 (QFP136)
+     C404 (QFP208)
+     C406 (QFP120)
+     C407 (QFP64)
+     C413 (QFP208)
+     C416 (QFP176)
+     C417 (QFP208)
+     C422 (QFP64)
+     C435 (x2, TQFP144)
+
+
+Program ROM PCB
+---------------
+
+MSPM(FR) PCB 8699015200 (8699015100)
+|--------------------------|
+|            J1            |
+|                          |
+|  IC3               IC1   |
+|                          |
+|                          |
+|                    IC2   |
+|--------------------------|
+Notes:
+     J1 -  Connector to plug into Main PCB
+     IC1 \
+     IC2 / Main Program  (Fujitsu 29F016 16MBit FlashROM, TSOP48)
+     IC3 - Sound Program (Fujitsu 29F400T 4MBit FlashROM, TSOP48)
+
+     Games that use this PCB include...
+
+     Game           Code and revision
+     --------------------------------
+     Rapid River    RD2 Ver.C
+     Rapid River    RD3 Ver.C
+     Final Furlong  FF2 Ver.A
+
+ROM PCB
+-------
+
+MEM(M1) PCB
+8664960202 (8664970202)
+|--------------------------------------------------------|
+|    J2(TEXTURE)        J3(POINT)           J5(SPRITE)   |
+| PAL1                                                   |
+|                                                        |
+|                                                        |
+|                                                        |
+| CCRL.11A                                               |
+|      CCRL.11E  PT3L.12J PT3H.12L  SPRLL.12P SPRLL.12T  |
+| CCRH.11B                                               |
+|      CCRH.11F                                          |
+|                PT2L.11J PT2H.11L  SPRLM.11P SPRLM.11T  |
+|                                                        |
+|                                                        |
+|                PT1L.10J PT1H.10L  SPRUM.10P SPRUM.10T  |
+|   PAL2        PAL3                                     |
+|                                                        |
+|                PT0L.9J  PT0H.9L   SPRUU.9P  SPRUU.9T   |
+|                                   JP7       JP9        |
+|                                   JP6       JP8        |
+| CGLL.8B     CGLL.8F                                    |
+|                                                        |
+|                                                        |
+| CGLM.7B     CGLM.7F                                    |
+|      JP2    JP4                                        |
+|      JP1    JP3                                        |
+| CGUM.6B     CGUM.6F                                    |
+|                                          J1(WAVE)      |
+|                                                        |
+| CGUU.5B     CGUU.5F                      WAVEH.3S      |
+|                                                        |
+|                    MTBH.5J               WAVEL.2S      |
+|                    MTAH.3J                      JP5    |
+|                    MTBL.2J                             |
+|                    MTAL.1J    KEYCUS                   |
+|                                                        |
+|                    J4(MOTION)                          |
+|--------------------------------------------------------|
+Notes:
+     PAL1 - PALCE16V8H stamped 'SS22M1' (PLCC20)
+     PAL2 - PALCE20V8H stamped 'SS22M2' (PLCC32)
+     PAL3 - PALCE20V8H stamped 'SS22M2' (PLCC32)
+     KEYCUS - for Rapid River: MACH211 CPLD stamped 'KC012' (PLCC44)
+     KEYCUS - for Final Furlong: MACH211 CPLD stamped 'KC011' (PLCC44)
+     J1->J5 - Custom NAMCO connectors for joining ROM PCB to Main PCB
+     JP1/JP2 \
+     JP3/JP4 |
+     JP5     | Jumpers to set ROM sizes (32M/64M)
+     JP6/JP7 |
+     JP8/JP9 /
+
+     ROMs
+     ----
+          PT*  - Point ROMs, sizes configurable to either 16M or 32M (SOP44)
+          MT*  - Motion ROMs, sizes configurable to either 32M or 64M (SOP44)
+          CG*  - Texture ROMs, sizes configurable to either 32M or 64M (SOP44)
+          CCR* - Texture Tilemap ROMs, sizes fixed at 16M (SOP44)
+          SPR* - Sprite ROMs, sizes configurable to either 32M or 64M (SOP44)
+          WAVE*- Wave ROMs, sizes configurable to either 32M or 64M (SOP44)
+
+I/O PCB
+-------
+
+V187 ASCA-2A PCB
+2477960102 (2477970102)
+|--------------------------------------------------------|
+|                   J105                                 |
+|                           |-------|        14.7456MHz  |
+|   J104                    |ALTERA |    ADM485   PST592 |
+|                           |EPM7064|     |-------|      |
+|                           |       |     |       |      |
+|                           |-------|     | C78   |      |
+|     LC78815                             |       |      |
+|                                         |-------|      |
+|     MB87078                              |---|         |
+| LA4705                                   |IC1| 62256   |
+|                                          |---|         |
+|         J101                J102                       |
+|--------------------------------------------------------|
+Notes:
+     IC1  - Atmel AT29C020 2MBit EEPROM labelled 'ASCA1 I/O-A' (PLCC32)
+     C78  - Namco Custom MCU, positively identified as a Hitachi H8/3334 (PLCC84)
+     EPM7064 - Altera EPM7064LC68-15 PLD, labelled 'ASCA DR0' (PLCC68)
+     PST592 - System Reset IC (SOIC4)
+     ADM485 - Analog Devices +ADM485 5V Low Power EIA RS-485 Transceiver (SOIC8)
+     MB87078 - Fujitsu MB87078 Electronic Volume Control IC (SOIC24)
+     LC78815 - Sanyo LM78815 2-Channel 16-Bit D/A Converter (SOIC20)
+     J101 - 34 pin flat cable connector for filter board
+     J102 - 50 pin flat cable connector for filter board
+     J104 - 8 pin power connector (+5V, +12V, +3.3V)
+     J105 - 64 pin connector for connection of Main PCB
+
 */
 
 #include "emu.h"
@@ -1069,7 +1319,11 @@ class namcos23_state : public driver_device
 {
 public:
 	namcos23_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag) ,
+		m_shared_ram(*this, "shared_ram"),
+		m_charram(*this, "charram"),
+		m_textram(*this, "textram"),
+		m_gmen_sh2_shared(*this, "gmen_sh2_shared"){ }
 
 	c361_t m_c361;
 	c417_t m_c417;
@@ -1079,10 +1333,10 @@ public:
 	render_t m_render;
 
 	tilemap_t *m_bgtilemap;
-	UINT32 *m_textram;
-	UINT32 *m_shared_ram;
-	UINT32 *m_gmen_sh2_shared;
-	UINT32 *m_charram;
+	required_shared_ptr<UINT32> m_shared_ram;
+	required_shared_ptr<UINT32> m_charram;
+	required_shared_ptr<UINT32> m_textram;
+	optional_shared_ptr<UINT32> m_gmen_sh2_shared;
 	UINT8 m_jvssense;
 	INT32 m_has_jvsio;
 	bool m_ctl_vbl_active;
@@ -1127,6 +1381,54 @@ public:
 	UINT8 m_im_rd;
 	UINT8 m_im_wr;
 	UINT8 m_s23_tssio_port_4;
+	DECLARE_WRITE32_MEMBER(namcos23_textram_w);
+	DECLARE_WRITE32_MEMBER(s23_txtchar_w);
+	DECLARE_WRITE32_MEMBER(namcos23_paletteram_w);
+	DECLARE_READ16_MEMBER(s23_c417_r);
+	DECLARE_WRITE16_MEMBER(s23_c417_w);
+	DECLARE_READ16_MEMBER(s23_c412_ram_r);
+	DECLARE_WRITE16_MEMBER(s23_c412_ram_w);
+	DECLARE_READ16_MEMBER(s23_c412_r);
+	DECLARE_WRITE16_MEMBER(s23_c412_w);
+	DECLARE_READ16_MEMBER(s23_c421_ram_r);
+	DECLARE_WRITE16_MEMBER(s23_c421_ram_w);
+	DECLARE_READ16_MEMBER(s23_c421_r);
+	DECLARE_WRITE16_MEMBER(s23_c421_w);
+	DECLARE_WRITE16_MEMBER(s23_ctl_w);
+	DECLARE_READ16_MEMBER(s23_ctl_r);
+	DECLARE_WRITE16_MEMBER(s23_c361_w);
+	DECLARE_READ16_MEMBER(s23_c361_r);
+	DECLARE_READ16_MEMBER(s23_c422_r);
+	DECLARE_WRITE16_MEMBER(s23_c422_w);
+	DECLARE_WRITE32_MEMBER(s23_mcuen_w);
+	DECLARE_READ32_MEMBER(gorgon_sharedram_r);
+	DECLARE_WRITE32_MEMBER(gorgon_sharedram_w);
+	DECLARE_READ32_MEMBER(s23_unk_status_r);
+	DECLARE_READ32_MEMBER(p3d_r);
+	DECLARE_WRITE32_MEMBER(p3d_w);
+	DECLARE_READ32_MEMBER(gmen_trigger_sh2);
+	DECLARE_READ32_MEMBER(sh2_shared_r);
+	DECLARE_WRITE32_MEMBER(sh2_shared_w);
+	DECLARE_WRITE16_MEMBER(sharedram_sub_w);
+	DECLARE_READ16_MEMBER(sharedram_sub_r);
+	DECLARE_WRITE16_MEMBER(sub_interrupt_main_w);
+	DECLARE_READ8_MEMBER(s23_mcu_p8_r);
+	DECLARE_READ8_MEMBER(s23_mcu_pa_r);
+	DECLARE_WRITE8_MEMBER(s23_mcu_pa_w);
+	DECLARE_READ8_MEMBER(s23_mcu_rtc_r);
+	DECLARE_READ8_MEMBER(s23_mcu_portB_r);
+	DECLARE_WRITE8_MEMBER(s23_mcu_portB_w);
+	DECLARE_WRITE8_MEMBER(s23_mcu_settings_w);
+	DECLARE_READ8_MEMBER(s23_mcu_iob_r);
+	DECLARE_WRITE8_MEMBER(s23_mcu_iob_w);
+	DECLARE_READ8_MEMBER(s23_mcu_p6_r);
+	DECLARE_WRITE8_MEMBER(s23_mcu_p6_w);
+	DECLARE_READ8_MEMBER(s23_iob_mcu_r);
+	DECLARE_WRITE8_MEMBER(s23_iob_mcu_w);
+	DECLARE_READ8_MEMBER(s23_iob_p4_r);
+	DECLARE_WRITE8_MEMBER(s23_iob_p4_w);
+	DECLARE_READ8_MEMBER(s23_gun_r);
+	DECLARE_READ8_MEMBER(iob_r);
 };
 
 
@@ -1150,19 +1452,17 @@ static TILE_GET_INFO( TextTilemapGetInfo )
 	SET_TILE_INFO( 0, data&0x03ff, data>>12, TILE_FLIPYX((data&0x0c00)>>10) );
 } /* TextTilemapGetInfo */
 
-static WRITE32_HANDLER( namcos23_textram_w )
+WRITE32_MEMBER(namcos23_state::namcos23_textram_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	COMBINE_DATA( &state->m_textram[offset] );
-	state->m_bgtilemap->mark_tile_dirty(offset*2);
-	state->m_bgtilemap->mark_tile_dirty((offset*2)+1);
+	COMBINE_DATA( &m_textram[offset] );
+	m_bgtilemap->mark_tile_dirty(offset*2);
+	m_bgtilemap->mark_tile_dirty((offset*2)+1);
 }
 
-static WRITE32_HANDLER( s23_txtchar_w )
+WRITE32_MEMBER(namcos23_state::s23_txtchar_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	COMBINE_DATA(&state->m_charram[offset]);
-	gfx_element_mark_dirty(space->machine().gfx[0], offset/32);
+	COMBINE_DATA(&m_charram[offset]);
+	gfx_element_mark_dirty(machine().gfx[0], offset/32);
 }
 
 static UINT8 nthbyte( const UINT32 *pSource, int offs )
@@ -1173,31 +1473,31 @@ static UINT8 nthbyte( const UINT32 *pSource, int offs )
 
 INLINE void UpdatePalette( running_machine &machine, int entry )
 {
+	namcos23_state *state = machine.driver_data<namcos23_state>();
 	int j;
 
 	for( j=0; j<2; j++ )
 	{
 		int which = (entry*2)+(j*2);
-		int r = nthbyte(machine.generic.paletteram.u32, which+0x00001);
-		int g = nthbyte(machine.generic.paletteram.u32, which+0x10001);
-		int b = nthbyte(machine.generic.paletteram.u32, which+0x20001);
+		int r = nthbyte(state->m_generic_paletteram_32, which+0x00001);
+		int g = nthbyte(state->m_generic_paletteram_32, which+0x10001);
+		int b = nthbyte(state->m_generic_paletteram_32, which+0x20001);
 		palette_set_color( machine, which/2, MAKE_RGB(r,g,b) );
 	}
 }
 
 /* each LONGWORD is 2 colors.  each OFFSET is 2 colors */
 
-static WRITE32_HANDLER( namcos23_paletteram_w )
+WRITE32_MEMBER(namcos23_state::namcos23_paletteram_w)
 {
-	COMBINE_DATA( &space->machine().generic.paletteram.u32[offset] );
+	COMBINE_DATA( &m_generic_paletteram_32[offset] );
 
-	UpdatePalette(space->machine(), (offset % (0x10000/4))*2);
+	UpdatePalette(machine(), (offset % (0x10000/4))*2);
 }
 
-static READ16_HANDLER(s23_c417_r)
+READ16_MEMBER(namcos23_state::s23_c417_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c417_t &c417 = state->m_c417;
+	c417_t &c417 = m_c417;
 
 	switch(offset) {
 		/* According to timecrs2c, +0 is the status word with bits being:
@@ -1214,30 +1514,29 @@ static READ16_HANDLER(s23_c417_r)
            1:  1st c435 busy (inverted)
            0:  xcpreq
          */
-	case 0: return 0x8e | (space->machine().primary_screen->vblank() ? 0x0000 : 0x8000);
+	case 0: return 0x8e | (machine().primary_screen->vblank() ? 0x0000 : 0x8000);
 	case 1: return c417.adr;
 	case 4:
-		//      logerror("c417_r %04x = %04x (%08x, %08x)\n", c417.adr, c417.ram[c417.adr], cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		//      logerror("c417_r %04x = %04x (%08x, %08x)\n", c417.adr, c417.ram[c417.adr], cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 		return c417.ram[c417.adr];
 	case 5:
-		if(c417.pointrom_adr >= state->m_ptrom_limit)
+		if(c417.pointrom_adr >= m_ptrom_limit)
 			return 0xffff;
-		return state->m_ptrom[c417.pointrom_adr] >> 16;
+		return m_ptrom[c417.pointrom_adr] >> 16;
 	case 6:
-		if(c417.pointrom_adr >= state->m_ptrom_limit)
+		if(c417.pointrom_adr >= m_ptrom_limit)
 			return 0xffff;
-		return state->m_ptrom[c417.pointrom_adr];
+		return m_ptrom[c417.pointrom_adr];
 
 	}
 
-	logerror("c417_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("c417_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	return 0;
 }
 
-static WRITE16_HANDLER(s23_c417_w)
+WRITE16_MEMBER(namcos23_state::s23_c417_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c417_t &c417 = state->m_c417;
+	c417_t &c417 = m_c417;
 
 	switch(offset) {
 	case 0:
@@ -1253,25 +1552,24 @@ static WRITE16_HANDLER(s23_c417_w)
 		c417.pointrom_adr = 0;
 		break;
 	case 4:
-		//        logerror("c417_w %04x = %04x (%08x, %08x)\n", c417.adr, data, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		//        logerror("c417_w %04x = %04x (%08x, %08x)\n", c417.adr, data, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 		COMBINE_DATA(c417.ram + c417.adr);
 		break;
 	case 7:
 		logerror("c417_w: ack IRQ 2 (%x)\n", data);
-		cputag_set_input_line(space->machine(), "maincpu", MIPS3_IRQ2, CLEAR_LINE);
+		cputag_set_input_line(machine(), "maincpu", MIPS3_IRQ2, CLEAR_LINE);
 		break;
 	default:
-		logerror("c417_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		logerror("c417_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 		break;
 	}
 }
 
-static READ16_HANDLER(s23_c412_ram_r)
+READ16_MEMBER(namcos23_state::s23_c412_ram_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c412_t &c412 = state->m_c412;
+	c412_t &c412 = m_c412;
 
-	//  logerror("c412_ram_r %06x (%08x, %08x)\n", offset, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	//  logerror("c412_ram_r %06x (%08x, %08x)\n", offset, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	if(offset < 0x100000)
 		return c412.sdram_a[offset & 0xfffff];
 	else if(offset < 0x200000)
@@ -1284,12 +1582,11 @@ static READ16_HANDLER(s23_c412_ram_r)
 	return 0xffff;
 }
 
-static WRITE16_HANDLER(s23_c412_ram_w)
+WRITE16_MEMBER(namcos23_state::s23_c412_ram_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c412_t &c412 = state->m_c412;
+	c412_t &c412 = m_c412;
 
-	//  logerror("c412_ram_w %06x = %04x (%08x, %08x)\n", offset, data, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	//  logerror("c412_ram_w %06x = %04x (%08x, %08x)\n", offset, data, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	if(offset < 0x100000)
 		COMBINE_DATA(c412.sdram_a + (offset & 0xfffff));
 	else if(offset < 0x200000)
@@ -1300,10 +1597,9 @@ static WRITE16_HANDLER(s23_c412_ram_w)
 		COMBINE_DATA(c412.pczram  + (offset & 0x001ff));
 }
 
-static READ16_HANDLER(s23_c412_r)
+READ16_MEMBER(namcos23_state::s23_c412_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c412_t &c412 = state->m_c412;
+	c412_t &c412 = m_c412;
 
 	switch(offset) {
 	case 3:
@@ -1314,31 +1610,29 @@ static READ16_HANDLER(s23_c412_r)
 	case 10: return s23_c412_ram_r(space, c412.adr, mem_mask);
 	}
 
-	logerror("c412_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("c412_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	return 0;
 }
 
-static WRITE16_HANDLER(s23_c412_w)
+WRITE16_MEMBER(namcos23_state::s23_c412_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c412_t &c412 = state->m_c412;
+	c412_t &c412 = m_c412;
 
 	switch(offset) {
 	case 8: c412.adr = (data & mem_mask) | (c412.adr & (0xffffffff ^ mem_mask)); break;
 	case 9: c412.adr = ((data & mem_mask) << 16) | (c412.adr & (0xffffffff ^ (mem_mask << 16))); break;
 	case 10: s23_c412_ram_w(space, c412.adr, data, mem_mask); c412.adr += 2; break;
 	default:
-		logerror("c412_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		logerror("c412_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 		break;
 	}
 }
 
-static READ16_HANDLER(s23_c421_ram_r)
+READ16_MEMBER(namcos23_state::s23_c421_ram_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c421_t &c421 = state->m_c421;
+	c421_t &c421 = m_c421;
 
-	//  logerror("c421_ram_r %06x (%08x, %08x)\n", offset, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	//  logerror("c421_ram_r %06x (%08x, %08x)\n", offset, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	if(offset < 0x40000)
 		return c421.dram_a[offset & 0x3ffff];
 	else if(offset < 0x80000)
@@ -1349,12 +1643,11 @@ static READ16_HANDLER(s23_c421_ram_r)
 	return 0xffff;
 }
 
-static WRITE16_HANDLER(s23_c421_ram_w)
+WRITE16_MEMBER(namcos23_state::s23_c421_ram_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c421_t &c421 = state->m_c421;
+	c421_t &c421 = m_c421;
 
-	//  logerror("c421_ram_w %06x = %04x (%08x, %08x)\n", offset, data, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	//  logerror("c421_ram_w %06x = %04x (%08x, %08x)\n", offset, data, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	if(offset < 0x40000)
 		COMBINE_DATA(c421.dram_a + (offset & 0x3ffff));
 	else if(offset < 0x80000)
@@ -1363,10 +1656,9 @@ static WRITE16_HANDLER(s23_c421_ram_w)
 		COMBINE_DATA(c421.sram   + (offset & 0x07fff));
 }
 
-static READ16_HANDLER(s23_c421_r)
+READ16_MEMBER(namcos23_state::s23_c421_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c421_t &c421 = state->m_c421;
+	c421_t &c421 = m_c421;
 
 	switch(offset) {
 	case 0: return s23_c421_ram_r(space, c421.adr & 0xfffff, mem_mask);
@@ -1374,79 +1666,76 @@ static READ16_HANDLER(s23_c421_r)
 	case 3: return c421.adr;
 	}
 
-	logerror("c421_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("c421_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	return 0;
 }
 
-static WRITE16_HANDLER(s23_c421_w)
+WRITE16_MEMBER(namcos23_state::s23_c421_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c421_t &c421 = state->m_c421;
+	c421_t &c421 = m_c421;
 
 	switch(offset) {
 	case 0: s23_c421_ram_w(space, c421.adr & 0xfffff, data, mem_mask); c421.adr += 2; break;
 	case 2: c421.adr = ((data & mem_mask) << 16) | (c421.adr & (0xffffffff ^ (mem_mask << 16))); break;
 	case 3: c421.adr = (data & mem_mask) | (c421.adr & (0xffffffff ^ mem_mask)); break;
 	default:
-		logerror("c421_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		logerror("c421_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 		break;
 	}
 }
 
-static WRITE16_HANDLER(s23_ctl_w)
+WRITE16_MEMBER(namcos23_state::s23_ctl_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	switch(offset) {
 	case 0: {
-		if(state->m_ctl_led != (data & 0xff)) {
-			state->m_ctl_led = data;
+		if(m_ctl_led != (data & 0xff)) {
+			m_ctl_led = data;
 /*          logerror("LEDS %c%c%c%c%c%c%c%c\n",
-                     state->m_ctl_led & 0x80 ? '.' : '#',
-                     state->m_ctl_led & 0x40 ? '.' : '#',
-                     state->m_ctl_led & 0x20 ? '.' : '#',
-                     state->m_ctl_led & 0x10 ? '.' : '#',
-                     state->m_ctl_led & 0x08 ? '.' : '#',
-                     state->m_ctl_led & 0x04 ? '.' : '#',
-                     state->m_ctl_led & 0x02 ? '.' : '#',
-                     state->m_ctl_led & 0x01 ? '.' : '#');*/
+                     m_ctl_led & 0x80 ? '.' : '#',
+                     m_ctl_led & 0x40 ? '.' : '#',
+                     m_ctl_led & 0x20 ? '.' : '#',
+                     m_ctl_led & 0x10 ? '.' : '#',
+                     m_ctl_led & 0x08 ? '.' : '#',
+                     m_ctl_led & 0x04 ? '.' : '#',
+                     m_ctl_led & 0x02 ? '.' : '#',
+                     m_ctl_led & 0x01 ? '.' : '#');*/
 		}
 		break;
 	}
 
 	case 2: case 3:
 		// These may be coming from another CPU, in particular the I/O one
-		state->m_ctl_inp_buffer[offset-2] = input_port_read(space->machine(), offset == 2 ? "P1" : "P2");
+		m_ctl_inp_buffer[offset-2] = ioport(offset == 2 ? "P1" : "P2")->read();
 		break;
 	case 5:
-		if(state->m_ctl_vbl_active) {
-			state->m_ctl_vbl_active = false;
-			device_set_input_line(&space->device(), MIPS3_IRQ0, CLEAR_LINE);
+		if(m_ctl_vbl_active) {
+			m_ctl_vbl_active = false;
+			device_set_input_line(&space.device(), MIPS3_IRQ0, CLEAR_LINE);
 		}
 		break;
 
 	case 6:	// gmen wars spams this heavily with 0 prior to starting the GMEN board test
 		if (data != 0)
-			logerror("ctl_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+			logerror("ctl_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 		break;
 
 	default:
-		logerror("ctl_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		logerror("ctl_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	}
 }
 
-static READ16_HANDLER(s23_ctl_r)
+READ16_MEMBER(namcos23_state::s23_ctl_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	switch(offset) {
 		// 0100 set freezes gorgon (polygon fifo flag)
-	case 1: return 0x0000 | input_port_read(space->machine(), "DSW");
+	case 1: return 0x0000 | ioport("DSW")->read();
 	case 2: case 3: {
-		UINT16 res = state->m_ctl_inp_buffer[offset-2] & 0x800 ? 0xffff : 0x0000;
-		state->m_ctl_inp_buffer[offset-2] = (state->m_ctl_inp_buffer[offset-2] << 1) | 1;
+		UINT16 res = m_ctl_inp_buffer[offset-2] & 0x800 ? 0xffff : 0x0000;
+		m_ctl_inp_buffer[offset-2] = (m_ctl_inp_buffer[offset-2] << 1) | 1;
 		return res;
 	}
 	}
-	logerror("ctl_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("ctl_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	return 0xffff;
 }
 
@@ -1463,71 +1752,68 @@ static TIMER_CALLBACK( c361_timer_cb )
 	}
 }
 
-static WRITE16_HANDLER(s23_c361_w)
+WRITE16_MEMBER(namcos23_state::s23_c361_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c361_t &c361 = state->m_c361;
+	c361_t &c361 = m_c361;
 
 	switch(offset) {
 	case 0:
-		state->m_bgtilemap->set_scrollx(0, data&0xfff);
+		m_bgtilemap->set_scrollx(0, data&0xfff);
 		break;
 
 	case 1:
-		state->m_bgtilemap->set_scrolly(0, data&0xfff);
+		m_bgtilemap->set_scrolly(0, data&0xfff);
 		break;
 
 	case 4:	// interrupt control
 		c361.scanline = data;
 		if (data == 0x1ff)
 		{
-			cputag_set_input_line(space->machine(), "maincpu", MIPS3_IRQ1, CLEAR_LINE);
+			cputag_set_input_line(machine(), "maincpu", MIPS3_IRQ1, CLEAR_LINE);
 			c361.timer->adjust(attotime::never);
 		}
 		else
 		{
-			c361.timer->adjust(space->machine().primary_screen->time_until_pos(c361.scanline));
+			c361.timer->adjust(machine().primary_screen->time_until_pos(c361.scanline));
 		}
 		break;
 
 	default:
-		logerror("c361_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+		logerror("c361_w %x, %04x @ %04x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	}
 }
 
-static READ16_HANDLER(s23_c361_r)
+READ16_MEMBER(namcos23_state::s23_c361_r)
 {
 	switch(offset) {
-	case 5: return space->machine().primary_screen->vpos()*2 | (space->machine().primary_screen->vblank() ? 1 : 0);
-	case 6: return space->machine().primary_screen->vblank();
+	case 5: return machine().primary_screen->vpos()*2 | (machine().primary_screen->vblank() ? 1 : 0);
+	case 6: return machine().primary_screen->vblank();
 	}
-	logerror("c361_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("c361_r %x @ %04x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	return 0xffff;
 }
 
-static READ16_HANDLER(s23_c422_r)
+READ16_MEMBER(namcos23_state::s23_c422_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c422_t &c422 = state->m_c422;
+	c422_t &c422 = m_c422;
 	return c422.regs[offset];
 }
 
-static WRITE16_HANDLER(s23_c422_w)
+WRITE16_MEMBER(namcos23_state::s23_c422_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	c422_t &c422 = state->m_c422;
+	c422_t &c422 = m_c422;
 	switch (offset)
 	{
 		case 1:
 			if (data == 0xfffb)
 			{
 				logerror("c422_w: raise IRQ 3\n");
-				cputag_set_input_line(space->machine(), "maincpu", MIPS3_IRQ3, ASSERT_LINE);
+				cputag_set_input_line(machine(), "maincpu", MIPS3_IRQ3, ASSERT_LINE);
 			}
 			else if (data == 0x000f)
 			{
 				logerror("c422_w: ack IRQ 3\n");
-				cputag_set_input_line(space->machine(), "maincpu", MIPS3_IRQ3, CLEAR_LINE);
+				cputag_set_input_line(machine(), "maincpu", MIPS3_IRQ3, CLEAR_LINE);
 			}
 			break;
 
@@ -1541,9 +1827,8 @@ static WRITE16_HANDLER(s23_c422_w)
 }
 
 // as with System 22, we need to halt the MCU while checking shared RAM
-static WRITE32_HANDLER( s23_mcuen_w )
+WRITE32_MEMBER(namcos23_state::s23_mcuen_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	logerror("mcuen_w: mask %08x, data %08x\n", mem_mask, data);
 	if (mem_mask == 0x0000ffff)
 	{
@@ -1552,19 +1837,19 @@ static WRITE32_HANDLER( s23_mcuen_w )
 			logerror("S23: booting H8/3002\n");
 
 			// Panic Park: writing 1 when it's already running means reboot?
-			if (state->m_s23_subcpu_running)
+			if (m_s23_subcpu_running)
 			{
-				cputag_set_input_line(space->machine(), "audiocpu", INPUT_LINE_RESET, ASSERT_LINE);
+				cputag_set_input_line(machine(), "audiocpu", INPUT_LINE_RESET, ASSERT_LINE);
 			}
 
-			cputag_set_input_line(space->machine(), "audiocpu", INPUT_LINE_RESET, CLEAR_LINE);
-			state->m_s23_subcpu_running = 1;
+			cputag_set_input_line(machine(), "audiocpu", INPUT_LINE_RESET, CLEAR_LINE);
+			m_s23_subcpu_running = 1;
 		}
 		else
 		{
 			logerror("S23: stopping H8/3002\n");
-			cputag_set_input_line(space->machine(), "audiocpu", INPUT_LINE_RESET, ASSERT_LINE);
-			state->m_s23_subcpu_running = 0;
+			cputag_set_input_line(machine(), "audiocpu", INPUT_LINE_RESET, ASSERT_LINE);
+			m_s23_subcpu_running = 0;
 		}
 	}
 }
@@ -1575,27 +1860,25 @@ static WRITE32_HANDLER( s23_mcuen_w )
     off into the weeds, so we intercept
 */
 
-static READ32_HANDLER( gorgon_sharedram_r )
+READ32_MEMBER(namcos23_state::gorgon_sharedram_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	return state->m_shared_ram[offset];
+	return m_shared_ram[offset];
 }
 
-static WRITE32_HANDLER( gorgon_sharedram_w )
+WRITE32_MEMBER(namcos23_state::gorgon_sharedram_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	COMBINE_DATA(&state->m_shared_ram[offset]);
+	COMBINE_DATA(&m_shared_ram[offset]);
 
 	// hack for final furlong
 	if ((offset == 0x6000/4) && (data == 0) && (mem_mask == 0xff000000))
 	{
 		logerror("S23: Final Furlong hack stopping H8/3002\n");
-		cputag_set_input_line(space->machine(), "audiocpu", INPUT_LINE_RESET, ASSERT_LINE);
+		cputag_set_input_line(machine(), "audiocpu", INPUT_LINE_RESET, ASSERT_LINE);
 	}
 }
 
 // Panic Park sits in a tight loop waiting for this AND 0002 to be non-zero (at PC=BFC02F00)
-static READ32_HANDLER( s23_unk_status_r )
+READ32_MEMBER(namcos23_state::s23_unk_status_r)
 {
 	return 0x00020002;
 }
@@ -1895,32 +2178,31 @@ static void p3d_dma(address_space *space, UINT32 adr, UINT32 size)
 	}
 }
 
-static READ32_HANDLER( p3d_r )
+READ32_MEMBER(namcos23_state::p3d_r)
 {
 	switch(offset) {
 	case 0xa: return 1; // Busy flag
 	}
 
-	logerror("p3d_r %02x @ %08x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("p3d_r %02x @ %08x (%08x, %08x)\n", offset, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 	return 0;
 }
 
-static WRITE32_HANDLER( p3d_w)
+WRITE32_MEMBER(namcos23_state::p3d_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	switch(offset) {
-	case 0x7: COMBINE_DATA(&state->m_p3d_address); return;
-	case 0x8: COMBINE_DATA(&state->m_p3d_size); return;
+	case 0x7: COMBINE_DATA(&m_p3d_address); return;
+	case 0x8: COMBINE_DATA(&m_p3d_size); return;
 	case 0x9:
 		if(data & 1)
-			p3d_dma(space, state->m_p3d_address, state->m_p3d_size);
+			p3d_dma(&space, m_p3d_address, m_p3d_size);
 		return;
 	case 0x17:
-		cputag_set_input_line(space->machine(), "maincpu", MIPS3_IRQ1, CLEAR_LINE);
-		state->m_c361.timer->adjust(attotime::never);
+		cputag_set_input_line(machine(), "maincpu", MIPS3_IRQ1, CLEAR_LINE);
+		m_c361.timer->adjust(attotime::never);
 		return;
 	}
-	logerror("p3d_w %02x, %08x @ %08x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space->device()), (unsigned int)cpu_get_reg(&space->device(), MIPS3_R31));
+	logerror("p3d_w %02x, %08x @ %08x (%08x, %08x)\n", offset, data, mem_mask, cpu_get_pc(&space.device()), (unsigned int)cpu_get_reg(&space.device(), MIPS3_R31));
 }
 
 static void render_apply_transform(INT32 xi, INT32 yi, INT32 zi, const namcos23_render_entry *re, poly_vertex &pv)
@@ -2115,7 +2397,7 @@ static void render_run(running_machine &machine, bitmap_rgb32 &bitmap)
 static VIDEO_START( ss23 )
 {
 	namcos23_state *state = machine.driver_data<namcos23_state>();
-	gfx_element_set_source(machine.gfx[0], (UINT8 *)state->m_charram);
+	gfx_element_set_source(machine.gfx[0], reinterpret_cast<UINT8 *>(state->m_charram.target()));
 	state->m_bgtilemap = tilemap_create(machine, TextTilemapGetInfo, tilemap_scan_rows, 16, 16, 64, 64);
 	state->m_bgtilemap->set_transparent_pen(0xf);
 
@@ -2130,7 +2412,7 @@ static VIDEO_START( ss23 )
 	{
 		state->m_bgtilemap->set_scrolldx(860, 860);
 	}
-	state->m_render.polymgr = poly_alloc(machine, 10000, sizeof(namcos23_render_data), POLYFLAG_NO_WORK_QUEUE);
+	state->m_render.polymgr = poly_alloc(machine, 10000, sizeof(namcos23_render_data), 0);
 }
 
 static SCREEN_UPDATE_RGB32( ss23 )
@@ -2169,92 +2451,90 @@ static MACHINE_START( s23 )
 	c361.timer->adjust(attotime::never);
 }
 
-static ADDRESS_MAP_START( gorgon_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( gorgon_map, AS_PROGRAM, 32, namcos23_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xfffffff)
 	AM_RANGE(0x00000000, 0x003fffff) AM_RAM
-	AM_RANGE(0x01000000, 0x010000ff) AM_READWRITE( p3d_r, p3d_w )
-	AM_RANGE(0x02000000, 0x0200000f) AM_READWRITE16( s23_c417_r, s23_c417_w, 0xffffffff )
-	AM_RANGE(0x04400000, 0x0440ffff) AM_READWRITE( gorgon_sharedram_r, gorgon_sharedram_w ) AM_BASE_MEMBER(namcos23_state, m_shared_ram)
+	AM_RANGE(0x01000000, 0x010000ff) AM_READWRITE(p3d_r, p3d_w )
+	AM_RANGE(0x02000000, 0x0200000f) AM_READWRITE16(s23_c417_r, s23_c417_w, 0xffffffff )
+	AM_RANGE(0x04400000, 0x0440ffff) AM_READWRITE(gorgon_sharedram_r, gorgon_sharedram_w ) AM_SHARE("shared_ram")
 
-	AM_RANGE(0x04c3ff08, 0x04c3ff0b) AM_WRITE( s23_mcuen_w )
+	AM_RANGE(0x04c3ff08, 0x04c3ff0b) AM_WRITE(s23_mcuen_w )
 	AM_RANGE(0x04c3ff0c, 0x04c3ff0f) AM_RAM
 
 	AM_RANGE(0x06080000, 0x06081fff) AM_RAM
 
 	AM_RANGE(0x06108000, 0x061087ff) AM_RAM		// GAMMA (C404-3S)
-	AM_RANGE(0x06110000, 0x0613ffff) AM_RAM_WRITE( namcos23_paletteram_w ) AM_BASE_GENERIC(paletteram)
-	AM_RANGE(0x06400000, 0x06403fff) AM_RAM_WRITE( s23_txtchar_w ) AM_BASE_MEMBER(namcos23_state, m_charram)	// text layer characters
+	AM_RANGE(0x06110000, 0x0613ffff) AM_RAM_WRITE(namcos23_paletteram_w ) AM_SHARE("paletteram")
+	AM_RANGE(0x06400000, 0x06403fff) AM_RAM_WRITE(s23_txtchar_w ) AM_SHARE("charram")	// text layer characters
 	AM_RANGE(0x06404000, 0x0641dfff) AM_RAM
-	AM_RANGE(0x0641e000, 0x0641ffff) AM_RAM_WRITE( namcos23_textram_w ) AM_BASE_MEMBER(namcos23_state, m_textram)
+	AM_RANGE(0x0641e000, 0x0641ffff) AM_RAM_WRITE(namcos23_textram_w ) AM_SHARE("textram")
 
 	AM_RANGE(0x08000000, 0x087fffff) AM_ROM AM_REGION("data", 0)	// data ROMs
 
 	AM_RANGE(0x0c000000, 0x0c00ffff) AM_RAM	AM_SHARE("nvram") // BACKUP
 
-	AM_RANGE(0x0d000000, 0x0d00000f) AM_READWRITE16( s23_ctl_r, s23_ctl_w, 0xffffffff ) // write for LEDs at d000000, watchdog at d000004
+	AM_RANGE(0x0d000000, 0x0d00000f) AM_READWRITE16(s23_ctl_r, s23_ctl_w, 0xffffffff ) // write for LEDs at d000000, watchdog at d000004
 
-	AM_RANGE(0x0f000000, 0x0f000003) AM_READ( s23_unk_status_r )
+	AM_RANGE(0x0f000000, 0x0f000003) AM_READ(s23_unk_status_r )
 
 	AM_RANGE(0x0f200000, 0x0f201fff) AM_RAM
 
 	AM_RANGE(0x0fc00000, 0x0fffffff) AM_WRITENOP AM_ROM AM_REGION("user1", 0)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( ss23_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( ss23_map, AS_PROGRAM, 32, namcos23_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xfffffff)
 	AM_RANGE(0x00000000, 0x00ffffff) AM_RAM
-	AM_RANGE(0x01000000, 0x010000ff) AM_READWRITE( p3d_r, p3d_w )
-	AM_RANGE(0x02000000, 0x0200000f) AM_READWRITE16( s23_c417_r, s23_c417_w, 0xffffffff )
-	AM_RANGE(0x04400000, 0x0440ffff) AM_RAM AM_BASE_MEMBER(namcos23_state, m_shared_ram)
-	AM_RANGE(0x04c3ff08, 0x04c3ff0b) AM_WRITE( s23_mcuen_w )
+	AM_RANGE(0x01000000, 0x010000ff) AM_READWRITE(p3d_r, p3d_w )
+	AM_RANGE(0x02000000, 0x0200000f) AM_READWRITE16(s23_c417_r, s23_c417_w, 0xffffffff )
+	AM_RANGE(0x04400000, 0x0440ffff) AM_RAM AM_SHARE("shared_ram")
+	AM_RANGE(0x04c3ff08, 0x04c3ff0b) AM_WRITE(s23_mcuen_w )
 	AM_RANGE(0x04c3ff0c, 0x04c3ff0f) AM_RAM
 	AM_RANGE(0x06000000, 0x0600ffff) AM_RAM AM_SHARE("nvram") // Backup
 	AM_RANGE(0x06200000, 0x06203fff) AM_RAM                             // C422
-	AM_RANGE(0x06400000, 0x0640000f) AM_READWRITE16( s23_c422_r, s23_c422_w, 0xffffffff ) // C422 registers
-	AM_RANGE(0x06800000, 0x06807fff) AM_RAM_WRITE( s23_txtchar_w ) AM_BASE_MEMBER(namcos23_state, m_charram) // text layer characters (shown as CGRAM in POST)
+	AM_RANGE(0x06400000, 0x0640000f) AM_READWRITE16(s23_c422_r, s23_c422_w, 0xffffffff ) // C422 registers
+	AM_RANGE(0x06800000, 0x06807fff) AM_RAM_WRITE(s23_txtchar_w ) AM_SHARE("charram") // text layer characters (shown as CGRAM in POST)
 	AM_RANGE(0x06804000, 0x0681dfff) AM_RAM
-	AM_RANGE(0x0681e000, 0x0681ffff) AM_RAM_WRITE( namcos23_textram_w ) AM_BASE_MEMBER(namcos23_state, m_textram)
-	AM_RANGE(0x06820000, 0x0682000f) AM_READWRITE16( s23_c361_r, s23_c361_w, 0xffffffff ) // C361
+	AM_RANGE(0x0681e000, 0x0681ffff) AM_RAM_WRITE(namcos23_textram_w ) AM_SHARE("textram")
+	AM_RANGE(0x06820000, 0x0682000f) AM_READWRITE16(s23_c361_r, s23_c361_w, 0xffffffff ) // C361
 	AM_RANGE(0x06a08000, 0x06a087ff) AM_RAM // Blending control & GAMMA (C404)
-	AM_RANGE(0x06a10000, 0x06a3ffff) AM_RAM_WRITE( namcos23_paletteram_w ) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0x06a10000, 0x06a3ffff) AM_RAM_WRITE(namcos23_paletteram_w ) AM_SHARE("paletteram")
 	AM_RANGE(0x08000000, 0x08ffffff) AM_ROM AM_REGION("data", 0x0000000) AM_MIRROR(0x1000000) // data ROMs
 	AM_RANGE(0x0a000000, 0x0affffff) AM_ROM AM_REGION("data", 0x1000000) AM_MIRROR(0x1000000)
-	AM_RANGE(0x0c000000, 0x0c00001f) AM_READWRITE16( s23_c412_r, s23_c412_w, 0xffffffff )
-	AM_RANGE(0x0c400000, 0x0c400007) AM_READWRITE16( s23_c421_r, s23_c421_w, 0xffffffff )
-	AM_RANGE(0x0d000000, 0x0d00000f) AM_READWRITE16( s23_ctl_r, s23_ctl_w, 0xffffffff )
-	AM_RANGE(0x0e800000, 0x0e800003) AM_READ( s23_unk_status_r )
+	AM_RANGE(0x0c000000, 0x0c00001f) AM_READWRITE16(s23_c412_r, s23_c412_w, 0xffffffff )
+	AM_RANGE(0x0c400000, 0x0c400007) AM_READWRITE16(s23_c421_r, s23_c421_w, 0xffffffff )
+	AM_RANGE(0x0d000000, 0x0d00000f) AM_READWRITE16(s23_ctl_r, s23_ctl_w, 0xffffffff )
+	AM_RANGE(0x0e800000, 0x0e800003) AM_READ(s23_unk_status_r )
 	AM_RANGE(0x0fc00000, 0x0fffffff) AM_WRITENOP AM_ROM AM_REGION("user1", 0)
 ADDRESS_MAP_END
 
-static READ32_HANDLER( gmen_trigger_sh2 )
+READ32_MEMBER(namcos23_state::gmen_trigger_sh2)
 {
 	logerror("gmen_trigger_sh2: booting SH-2\n");
-	cputag_set_input_line(space->machine(), "gmen", INPUT_LINE_RESET, CLEAR_LINE);
+	cputag_set_input_line(machine(), "gmen", INPUT_LINE_RESET, CLEAR_LINE);
 
 	return 0;
 }
 
-static READ32_HANDLER( sh2_shared_r )
+READ32_MEMBER(namcos23_state::sh2_shared_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	return state->m_gmen_sh2_shared[offset];
+	return m_gmen_sh2_shared[offset];
 }
 
-static WRITE32_HANDLER( sh2_shared_w )
+WRITE32_MEMBER(namcos23_state::sh2_shared_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	COMBINE_DATA(&state->m_gmen_sh2_shared[offset]);
+	COMBINE_DATA(&m_gmen_sh2_shared[offset]);
 }
 
-static ADDRESS_MAP_START( gmen_mips_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( gmen_mips_map, AS_PROGRAM, 32, namcos23_state )
 	AM_IMPORT_FROM(ss23_map)
-	AM_RANGE(0x0e400000, 0x0e400003) AM_READ( gmen_trigger_sh2 )
-	AM_RANGE(0x0e700000, 0x0e707fff) AM_READWRITE( sh2_shared_r, sh2_shared_w )
+	AM_RANGE(0x0e400000, 0x0e400003) AM_READ(gmen_trigger_sh2 )
+	AM_RANGE(0x0e700000, 0x0e707fff) AM_READWRITE(sh2_shared_r, sh2_shared_w )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( gmen_sh2_map, AS_PROGRAM, 32 )
-	AM_RANGE( 0x00000000, 0x00007fff ) AM_RAM AM_BASE_MEMBER(namcos23_state, m_gmen_sh2_shared)
+static ADDRESS_MAP_START( gmen_sh2_map, AS_PROGRAM, 32, namcos23_state )
+	AM_RANGE( 0x00000000, 0x00007fff ) AM_RAM AM_SHARE("gmen_sh2_shared")
 	AM_RANGE( 0x04000000, 0x043fffff ) AM_RAM	// SH-2 main work RAM
 ADDRESS_MAP_END
 
@@ -2264,13 +2544,12 @@ static MACHINE_RESET(gmen)
 	cputag_set_input_line(machine, "gmen", INPUT_LINE_RESET, ASSERT_LINE);
 }
 
-static WRITE16_HANDLER( sharedram_sub_w )
+WRITE16_MEMBER(namcos23_state::sharedram_sub_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	UINT16 *shared16 = (UINT16 *)state->m_shared_ram;
+	UINT16 *shared16 = reinterpret_cast<UINT16 *>(m_shared_ram.target());
 
 	// fake that an I/O board is connected for games w/o a dump or that aren't properly communicating with it yet
-	if (!state->m_has_jvsio)
+	if (!m_has_jvsio)
 	{
 		if ((offset == 0x4052/2) && (data == 0x78))
 		{
@@ -2281,19 +2560,18 @@ static WRITE16_HANDLER( sharedram_sub_w )
 	COMBINE_DATA(&shared16[BYTE_XOR_BE(offset)]);
 }
 
-static READ16_HANDLER( sharedram_sub_r )
+READ16_MEMBER(namcos23_state::sharedram_sub_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	UINT16 *shared16 = (UINT16 *)state->m_shared_ram;
+	UINT16 *shared16 = reinterpret_cast<UINT16 *>(m_shared_ram.target());
 
 	return shared16[BYTE_XOR_BE(offset)];
 }
 
-static WRITE16_HANDLER( sub_interrupt_main_w )
+WRITE16_MEMBER(namcos23_state::sub_interrupt_main_w)
 {
 	if  ((mem_mask == 0xffff) && (data == 0x3170))
 	{
-		cputag_set_input_line(space->machine(), "maincpu", MIPS3_IRQ1, ASSERT_LINE);
+		cputag_set_input_line(machine(), "maincpu", MIPS3_IRQ1, ASSERT_LINE);
 	}
 	else
 	{
@@ -2302,17 +2580,17 @@ static WRITE16_HANDLER( sub_interrupt_main_w )
 }
 
 /* H8/3002 MCU stuff */
-static ADDRESS_MAP_START( s23h8rwmap, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( s23h8rwmap, AS_PROGRAM, 16, namcos23_state )
 	AM_RANGE(0x000000, 0x07ffff) AM_ROM
-	AM_RANGE(0x080000, 0x08ffff) AM_READWRITE( sharedram_sub_r, sharedram_sub_w )
-	AM_RANGE(0x280000, 0x287fff) AM_DEVREADWRITE_MODERN("c352", c352_device, read, write)
+	AM_RANGE(0x080000, 0x08ffff) AM_READWRITE(sharedram_sub_r, sharedram_sub_w )
+	AM_RANGE(0x280000, 0x287fff) AM_DEVREADWRITE("c352", c352_device, read, write)
 	AM_RANGE(0x300000, 0x300003) AM_NOP	// seems to be more inputs, maybe false leftover code from System 12?
 	AM_RANGE(0x300010, 0x300011) AM_NOP
-	AM_RANGE(0x300020, 0x300021) AM_WRITE( sub_interrupt_main_w )
+	AM_RANGE(0x300020, 0x300021) AM_WRITE(sub_interrupt_main_w )
 	AM_RANGE(0x300030, 0x300031) AM_WRITENOP	// timecrs2 writes this when writing to the sync shared ram location, motoxgo doesn't
 ADDRESS_MAP_END
 
-static READ8_HANDLER( s23_mcu_p8_r )
+READ8_MEMBER(namcos23_state::s23_mcu_p8_r)
 {
 	return 0x02;
 }
@@ -2322,23 +2600,21 @@ static READ8_HANDLER( s23_mcu_p8_r )
 // the actual I/O takes place through the H8/3002's serial port B.
 
 
-static READ8_HANDLER( s23_mcu_pa_r )
+READ8_MEMBER(namcos23_state::s23_mcu_pa_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	return state->m_s23_porta;
+	return m_s23_porta;
 }
 
-static WRITE8_HANDLER( s23_mcu_pa_w )
+WRITE8_MEMBER(namcos23_state::s23_mcu_pa_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	// bit 0 = chip enable for the RTC
 	// reset the state on the rising edge of the bit
-	if ((!(state->m_s23_porta & 1)) && (data & 1))
+	if ((!(m_s23_porta & 1)) && (data & 1))
 	{
-		state->m_s23_rtcstate = 0;
+		m_s23_rtcstate = 0;
 	}
 
-	state->m_s23_porta = data;
+	m_s23_porta = data;
 }
 
 INLINE UINT8 make_bcd(UINT8 data)
@@ -2346,16 +2622,15 @@ INLINE UINT8 make_bcd(UINT8 data)
 	return ((data / 10) << 4) | (data % 10);
 }
 
-static READ8_HANDLER( s23_mcu_rtc_r )
+READ8_MEMBER(namcos23_state::s23_mcu_rtc_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	UINT8 ret = 0;
 	system_time systime;
 	static const int weekday[7] = { 7, 1, 2, 3, 4, 5, 6 };
 
-	space->machine().current_datetime(systime);
+	machine().current_datetime(systime);
 
-	switch (state->m_s23_rtcstate)
+	switch (m_s23_rtcstate)
 	{
 		case 0:
 			ret = make_bcd(systime.local_time.second);	// seconds (BCD, 0-59) in bits 0-6, bit 7 = battery low
@@ -2383,85 +2658,80 @@ static READ8_HANDLER( s23_mcu_rtc_r )
 			break;
 	}
 
-	state->m_s23_rtcstate++;
+	m_s23_rtcstate++;
 
 	return ret;
 }
 
 
-static READ8_HANDLER( s23_mcu_portB_r )
+READ8_MEMBER(namcos23_state::s23_mcu_portB_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	state->m_s23_lastpB ^= 0x80;
-	return state->m_s23_lastpB;
+	m_s23_lastpB ^= 0x80;
+	return m_s23_lastpB;
 }
 
-static WRITE8_HANDLER( s23_mcu_portB_w )
+WRITE8_MEMBER(namcos23_state::s23_mcu_portB_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	// bit 7 = chip enable for the video settings controller
 	if (data & 0x80)
 	{
-		state->m_s23_setstate = 0;
+		m_s23_setstate = 0;
 	}
 
-	state->m_s23_lastpB = data;
+	m_s23_lastpB = data;
 }
 
-static WRITE8_HANDLER( s23_mcu_settings_w )
+WRITE8_MEMBER(namcos23_state::s23_mcu_settings_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	if (state->m_s23_setstate)
+	if (m_s23_setstate)
 	{
 		// data
-		state->m_s23_settings[state->m_s23_setnum] = data;
+		m_s23_settings[m_s23_setnum] = data;
 
-		if (state->m_s23_setnum == 7)
+		if (m_s23_setnum == 7)
 		{
 			logerror("S23 video settings: Contrast: %02x  R: %02x  G: %02x  B: %02x\n",
-				BITSWAP8(state->m_s23_settings[0], 0, 1, 2, 3, 4, 5, 6, 7),
-				BITSWAP8(state->m_s23_settings[1], 0, 1, 2, 3, 4, 5, 6, 7),
-				BITSWAP8(state->m_s23_settings[2], 0, 1, 2, 3, 4, 5, 6, 7),
-				BITSWAP8(state->m_s23_settings[3], 0, 1, 2, 3, 4, 5, 6, 7));
+				BITSWAP8(m_s23_settings[0], 0, 1, 2, 3, 4, 5, 6, 7),
+				BITSWAP8(m_s23_settings[1], 0, 1, 2, 3, 4, 5, 6, 7),
+				BITSWAP8(m_s23_settings[2], 0, 1, 2, 3, 4, 5, 6, 7),
+				BITSWAP8(m_s23_settings[3], 0, 1, 2, 3, 4, 5, 6, 7));
 		}
 	}
 	else
 	{	// setting number
-		state->m_s23_setnum = (data >> 4)-1;
+		m_s23_setnum = (data >> 4)-1;
 	}
 
-	state->m_s23_setstate ^= 1;
+	m_s23_setstate ^= 1;
 }
 
 
-static READ8_HANDLER( s23_mcu_iob_r )
+READ8_MEMBER(namcos23_state::s23_mcu_iob_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	UINT8 ret = state->m_iotomain[state->m_im_rd];
+	UINT8 ret = m_iotomain[m_im_rd];
 
-	state->m_im_rd++;
-	state->m_im_rd &= 0x7f;
+	m_im_rd++;
+	m_im_rd &= 0x7f;
 
-	if (state->m_im_rd == state->m_im_wr)
+	if (m_im_rd == m_im_wr)
 	{
-		cputag_set_input_line(space->machine(), "audiocpu", H8_SCI_0_RX, CLEAR_LINE);
+		cputag_set_input_line(machine(), "audiocpu", H8_SCI_0_RX, CLEAR_LINE);
 	}
 	else
 	{
-		cputag_set_input_line(space->machine(), "audiocpu", H8_SCI_0_RX, CLEAR_LINE);
-		cputag_set_input_line(space->machine(), "audiocpu", H8_SCI_0_RX, ASSERT_LINE);
+		cputag_set_input_line(machine(), "audiocpu", H8_SCI_0_RX, CLEAR_LINE);
+		cputag_set_input_line(machine(), "audiocpu", H8_SCI_0_RX, ASSERT_LINE);
 	}
 
 	return ret;
 }
 
-static WRITE8_HANDLER( s23_mcu_iob_w )
+WRITE8_MEMBER(namcos23_state::s23_mcu_iob_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	state->m_maintoio[state->m_mi_wr++] = data;
-	state->m_mi_wr &= 0x7f;
+	m_maintoio[m_mi_wr++] = data;
+	m_mi_wr &= 0x7f;
 
-	cputag_set_input_line(space->machine(), "ioboard", H8_SCI_0_RX, ASSERT_LINE);
+	cputag_set_input_line(machine(), "ioboard", H8_SCI_0_RX, ASSERT_LINE);
 }
 
 static INPUT_PORTS_START( gorgon )
@@ -2643,27 +2913,26 @@ static INPUT_PORTS_START( ss23 )
 INPUT_PORTS_END
 
 
-static READ8_HANDLER(s23_mcu_p6_r)
+READ8_MEMBER(namcos23_state::s23_mcu_p6_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	// bit 1 = JVS cable present sense (1 = I/O board plugged in)
-		return (state->m_jvssense << 1) | 0xfd;
+		return (m_jvssense << 1) | 0xfd;
 }
 
-static WRITE8_HANDLER(s23_mcu_p6_w)
+WRITE8_MEMBER(namcos23_state::s23_mcu_p6_w)
 {
 //  printf("%02x to port 6\n", data);
 }
 
-static ADDRESS_MAP_START( s23h8iomap, AS_IO, 8 )
-	AM_RANGE(H8_PORT_6, H8_PORT_6) AM_READWRITE( s23_mcu_p6_r, s23_mcu_p6_w )
+static ADDRESS_MAP_START( s23h8iomap, AS_IO, 8, namcos23_state )
+	AM_RANGE(H8_PORT_6, H8_PORT_6) AM_READWRITE(s23_mcu_p6_r, s23_mcu_p6_w )
 	AM_RANGE(H8_PORT_7, H8_PORT_7) AM_READ_PORT( "H8PORT" )
-	AM_RANGE(H8_PORT_8, H8_PORT_8) AM_READ( s23_mcu_p8_r ) AM_WRITENOP
+	AM_RANGE(H8_PORT_8, H8_PORT_8) AM_READ(s23_mcu_p8_r ) AM_WRITENOP
 	AM_RANGE(H8_PORT_9, H8_PORT_9) AM_NOP	// read on Gorgon, purpose unknown
-	AM_RANGE(H8_PORT_A, H8_PORT_A) AM_READWRITE( s23_mcu_pa_r, s23_mcu_pa_w )
-	AM_RANGE(H8_PORT_B, H8_PORT_B) AM_READWRITE( s23_mcu_portB_r, s23_mcu_portB_w )
-	AM_RANGE(H8_SERIAL_0, H8_SERIAL_0) AM_READWRITE( s23_mcu_iob_r, s23_mcu_iob_w )
-	AM_RANGE(H8_SERIAL_1, H8_SERIAL_1) AM_READWRITE( s23_mcu_rtc_r, s23_mcu_settings_w )
+	AM_RANGE(H8_PORT_A, H8_PORT_A) AM_READWRITE(s23_mcu_pa_r, s23_mcu_pa_w )
+	AM_RANGE(H8_PORT_B, H8_PORT_B) AM_READWRITE(s23_mcu_portB_r, s23_mcu_portB_w )
+	AM_RANGE(H8_SERIAL_0, H8_SERIAL_0) AM_READWRITE(s23_mcu_iob_r, s23_mcu_iob_w )
+	AM_RANGE(H8_SERIAL_1, H8_SERIAL_1) AM_READWRITE(s23_mcu_rtc_r, s23_mcu_settings_w )
 	AM_RANGE(H8_ADC_0_H, H8_ADC_0_L) AM_NOP
 	AM_RANGE(H8_ADC_1_H, H8_ADC_1_L) AM_NOP
 	AM_RANGE(H8_ADC_2_H, H8_ADC_2_L) AM_NOP
@@ -2671,13 +2940,13 @@ static ADDRESS_MAP_START( s23h8iomap, AS_IO, 8 )
 ADDRESS_MAP_END
 
 // version without serial hookup to I/O board for games where the PIC isn't dumped
-static ADDRESS_MAP_START( s23h8noiobmap, AS_IO, 8 )
-	AM_RANGE(H8_PORT_6, H8_PORT_6) AM_READWRITE( s23_mcu_p6_r, s23_mcu_p6_w )
+static ADDRESS_MAP_START( s23h8noiobmap, AS_IO, 8, namcos23_state )
+	AM_RANGE(H8_PORT_6, H8_PORT_6) AM_READWRITE(s23_mcu_p6_r, s23_mcu_p6_w )
 	AM_RANGE(H8_PORT_7, H8_PORT_7) AM_READ_PORT( "H8PORT" )
-	AM_RANGE(H8_PORT_8, H8_PORT_8) AM_READ( s23_mcu_p8_r ) AM_WRITENOP
-	AM_RANGE(H8_PORT_A, H8_PORT_A) AM_READWRITE( s23_mcu_pa_r, s23_mcu_pa_w )
-	AM_RANGE(H8_PORT_B, H8_PORT_B) AM_READWRITE( s23_mcu_portB_r, s23_mcu_portB_w )
-	AM_RANGE(H8_SERIAL_1, H8_SERIAL_1) AM_READWRITE( s23_mcu_rtc_r, s23_mcu_settings_w )
+	AM_RANGE(H8_PORT_8, H8_PORT_8) AM_READ(s23_mcu_p8_r ) AM_WRITENOP
+	AM_RANGE(H8_PORT_A, H8_PORT_A) AM_READWRITE(s23_mcu_pa_r, s23_mcu_pa_w )
+	AM_RANGE(H8_PORT_B, H8_PORT_B) AM_READWRITE(s23_mcu_portB_r, s23_mcu_portB_w )
+	AM_RANGE(H8_SERIAL_1, H8_SERIAL_1) AM_READWRITE(s23_mcu_rtc_r, s23_mcu_settings_w )
 	AM_RANGE(H8_ADC_0_H, H8_ADC_0_L) AM_NOP
 	AM_RANGE(H8_ADC_1_H, H8_ADC_1_L) AM_NOP
 	AM_RANGE(H8_ADC_2_H, H8_ADC_2_L) AM_NOP
@@ -2685,50 +2954,46 @@ static ADDRESS_MAP_START( s23h8noiobmap, AS_IO, 8 )
 ADDRESS_MAP_END
 
 
-static READ8_HANDLER( s23_iob_mcu_r )
+READ8_MEMBER(namcos23_state::s23_iob_mcu_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	UINT8 ret = state->m_maintoio[state->m_mi_rd];
+	UINT8 ret = m_maintoio[m_mi_rd];
 
-	state->m_mi_rd++;
-	state->m_mi_rd &= 0x7f;
+	m_mi_rd++;
+	m_mi_rd &= 0x7f;
 
-	if (state->m_mi_rd == state->m_mi_wr)
+	if (m_mi_rd == m_mi_wr)
 	{
-		cputag_set_input_line(space->machine(), "ioboard", H8_SCI_0_RX, CLEAR_LINE);
+		cputag_set_input_line(machine(), "ioboard", H8_SCI_0_RX, CLEAR_LINE);
 	}
 
 	return ret;
 }
 
-static WRITE8_HANDLER( s23_iob_mcu_w )
+WRITE8_MEMBER(namcos23_state::s23_iob_mcu_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	state->m_iotomain[state->m_im_wr++] = data;
-	state->m_im_wr &= 0x7f;
+	m_iotomain[m_im_wr++] = data;
+	m_im_wr &= 0x7f;
 
-	cputag_set_input_line(space->machine(), "audiocpu", H8_SCI_0_RX, ASSERT_LINE);
+	cputag_set_input_line(machine(), "audiocpu", H8_SCI_0_RX, ASSERT_LINE);
 }
 
 
-static READ8_HANDLER( s23_iob_p4_r )
+READ8_MEMBER(namcos23_state::s23_iob_p4_r)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	return state->m_s23_tssio_port_4;
+	return m_s23_tssio_port_4;
 }
 
-static WRITE8_HANDLER( s23_iob_p4_w )
+WRITE8_MEMBER(namcos23_state::s23_iob_p4_w)
 {
-	namcos23_state *state = space->machine().driver_data<namcos23_state>();
-	state->m_s23_tssio_port_4 = data;
+	m_s23_tssio_port_4 = data;
 
-	state->m_jvssense = (data & 0x04) ? 0 : 1;
+	m_jvssense = (data & 0x04) ? 0 : 1;
 }
 
-static READ8_HANDLER( s23_gun_r )
+READ8_MEMBER(namcos23_state::s23_gun_r)
 {
-	UINT16 xpos = input_port_read_safe(space->machine(), "LIGHTX", 0) * 640 / 0xff + 0x80;
-	UINT16 ypos = input_port_read_safe(space->machine(), "LIGHTY", 0) * 240 / 0xff + 0x20;
+	UINT16 xpos = ioport("LIGHTX")->read_safe(0) * 640 / 0xff + 0x80;
+	UINT16 ypos = ioport("LIGHTY")->read_safe(0) * 240 / 0xff + 0x20;
 
 	// note: will need angle adjustments for accurate aiming at screen sides
 	switch(offset)
@@ -2745,36 +3010,36 @@ static READ8_HANDLER( s23_gun_r )
 	return 0;
 }
 
-static READ8_HANDLER(iob_r)
+READ8_MEMBER(namcos23_state::iob_r)
 {
-	return space->machine().rand();
+	return machine().rand();
 }
 
 /* H8/3334 (Namco C78) I/O board MCU */
-static ADDRESS_MAP_START( s23iobrdmap, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( s23iobrdmap, AS_PROGRAM, 8, namcos23_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM AM_REGION("ioboard", 0)
 	AM_RANGE(0x6000, 0x6000) AM_READ_PORT("TC2P0")	  // 0-1 = coin 0-3 = coin connect, 0-5 = test 0-6 = down select, 0-7 = up select, 0-8 = enter
 	AM_RANGE(0x6001, 0x6001) AM_READ_PORT("TC2P1")	  // 1-1 = gun trigger 1-2 = foot pedal
-	AM_RANGE(0x6002, 0x6003) AM_READ( iob_r )
+	AM_RANGE(0x6002, 0x6003) AM_READ(iob_r )
 	AM_RANGE(0x6004, 0x6005) AM_WRITENOP
 	AM_RANGE(0x6006, 0x6007) AM_NOP
-	AM_RANGE(0x7000, 0x700f) AM_READ( iob_r )
+	AM_RANGE(0x7000, 0x700f) AM_READ(iob_r )
 
 	AM_RANGE(0xc000, 0xf7ff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( timecrs2iobrdmap, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( timecrs2iobrdmap, AS_PROGRAM, 8, namcos23_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM AM_REGION("ioboard", 0)
 	AM_RANGE(0x6000, 0x6000) AM_READ_PORT("TC2P0")
 	AM_RANGE(0x6001, 0x6001) AM_READ_PORT("TC2P1")
 	AM_RANGE(0x6002, 0x6005) AM_WRITENOP
 	AM_RANGE(0x6006, 0x6007) AM_NOP
-	AM_RANGE(0x7000, 0x700f) AM_READ( s23_gun_r )
+	AM_RANGE(0x7000, 0x700f) AM_READ(s23_gun_r )
 
 	AM_RANGE(0xc000, 0xf7ff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( gorgoniobrdmap, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( gorgoniobrdmap, AS_PROGRAM, 8, namcos23_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM AM_REGION("ioboard", 0)
 	AM_RANGE(0x6000, 0x6000) AM_READ_PORT("RRP0")	  // 0-5 = start
 	AM_RANGE(0x6001, 0x6001) AM_READ_PORT("RRP1")	  //
@@ -2782,7 +3047,7 @@ static ADDRESS_MAP_START( gorgoniobrdmap, AS_PROGRAM, 8 )
 	AM_RANGE(0x6003, 0x6003) AM_READ_PORT("RRP3")	  // 1-1 = button?  1-4 = start?
 	AM_RANGE(0x6004, 0x6005) AM_WRITENOP
 	AM_RANGE(0x6006, 0x6007) AM_NOP
-	AM_RANGE(0x7000, 0x700f) AM_READ( iob_r )
+	AM_RANGE(0x7000, 0x700f) AM_READ(iob_r )
 
 	AM_RANGE(0xc000, 0xf7ff) AM_RAM
 ADDRESS_MAP_END
@@ -2791,13 +3056,13 @@ ADDRESS_MAP_END
     port 5 bit 2 = LED to indicate transmitting packet to main
     port 4 bit 2 = SENSE line back to main (0 = asserted, 1 = dropped)
 */
-static ADDRESS_MAP_START( s23iobrdiomap, AS_IO, 8 )
-	AM_RANGE(H8_PORT_4, H8_PORT_4) AM_READWRITE( s23_iob_p4_r, s23_iob_p4_w )
+static ADDRESS_MAP_START( s23iobrdiomap, AS_IO, 8, namcos23_state )
+	AM_RANGE(H8_PORT_4, H8_PORT_4) AM_READWRITE(s23_iob_p4_r, s23_iob_p4_w )
 	AM_RANGE(H8_PORT_5, H8_PORT_5) AM_NOP	// status LED in bit 2
 	AM_RANGE(H8_PORT_6, H8_PORT_6) AM_NOP	// unknown
 	AM_RANGE(H8_PORT_8, H8_PORT_8) AM_NOP	// unknown - used on ASCA-5 only
 	AM_RANGE(H8_PORT_9, H8_PORT_9) AM_NOP	// unknown - used on ASCA-5 only
-	AM_RANGE(H8_SERIAL_0, H8_SERIAL_0) AM_READWRITE( s23_iob_mcu_r, s23_iob_mcu_w )
+	AM_RANGE(H8_SERIAL_0, H8_SERIAL_0) AM_READWRITE(s23_iob_mcu_r, s23_iob_mcu_w )
 	AM_RANGE(H8_ADC_0_H, H8_ADC_3_L) AM_NOP
 ADDRESS_MAP_END
 
@@ -2805,14 +3070,14 @@ static DRIVER_INIT(ss23)
 {
 	namcos23_state *state = machine.driver_data<namcos23_state>();
 	render_t &render = state->m_render;
-	state->m_ptrom  = (const UINT32 *)machine.region("pointrom")->base();
-	state->m_tmlrom = (const UINT16 *)machine.region("textilemapl")->base();
-	state->m_tmhrom = machine.region("textilemaph")->base();
-	state->m_texrom = machine.region("textile")->base();
+	state->m_ptrom  = (const UINT32 *)state->memregion("pointrom")->base();
+	state->m_tmlrom = (const UINT16 *)state->memregion("textilemapl")->base();
+	state->m_tmhrom = state->memregion("textilemaph")->base();
+	state->m_texrom = state->memregion("textile")->base();
 
-	state->m_tileid_mask = (machine.region("textilemapl")->bytes()/2 - 1) & ~0xff; // Used for y masking
-	state->m_tile_mask = machine.region("textile")->bytes()/256 - 1;
-	state->m_ptrom_limit = machine.region("pointrom")->bytes()/4;
+	state->m_tileid_mask = (state->memregion("textilemapl")->bytes()/2 - 1) & ~0xff; // Used for y masking
+	state->m_tile_mask = state->memregion("textile")->bytes()/256 - 1;
+	state->m_ptrom_limit = state->memregion("pointrom")->bytes()/4;
 
 	state->m_mi_rd = state->m_mi_wr = state->m_im_rd = state->m_im_wr = 0;
 	state->m_jvssense = 1;

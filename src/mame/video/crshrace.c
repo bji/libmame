@@ -50,45 +50,41 @@ VIDEO_START( crshrace )
 
 ***************************************************************************/
 
-WRITE16_HANDLER( crshrace_videoram1_w )
+WRITE16_MEMBER(crshrace_state::crshrace_videoram1_w)
 {
-	crshrace_state *state = space->machine().driver_data<crshrace_state>();
 
-	COMBINE_DATA(&state->m_videoram1[offset]);
-	state->m_tilemap1->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_videoram1[offset]);
+	m_tilemap1->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( crshrace_videoram2_w )
+WRITE16_MEMBER(crshrace_state::crshrace_videoram2_w)
 {
-	crshrace_state *state = space->machine().driver_data<crshrace_state>();
 
-	COMBINE_DATA(&state->m_videoram2[offset]);
-	state->m_tilemap2->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_videoram2[offset]);
+	m_tilemap2->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( crshrace_roz_bank_w )
+WRITE16_MEMBER(crshrace_state::crshrace_roz_bank_w)
 {
-	crshrace_state *state = space->machine().driver_data<crshrace_state>();
 
 	if (ACCESSING_BITS_0_7)
 	{
-		if (state->m_roz_bank != (data & 0xff))
+		if (m_roz_bank != (data & 0xff))
 		{
-			state->m_roz_bank = data & 0xff;
-			state->m_tilemap1->mark_all_dirty();
+			m_roz_bank = data & 0xff;
+			m_tilemap1->mark_all_dirty();
 		}
 	}
 }
 
 
-WRITE16_HANDLER( crshrace_gfxctrl_w )
+WRITE16_MEMBER(crshrace_state::crshrace_gfxctrl_w)
 {
-	crshrace_state *state = space->machine().driver_data<crshrace_state>();
 
 	if (ACCESSING_BITS_0_7)
 	{
-		state->m_gfxctrl = data & 0xdf;
-		state->m_flipscreen = data & 0x20;
+		m_gfxctrl = data & 0xdf;
+		m_flipscreen = data & 0x20;
 	}
 }
 
@@ -102,8 +98,8 @@ WRITE16_HANDLER( crshrace_gfxctrl_w )
 static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	crshrace_state *state = machine.driver_data<crshrace_state>();
-	UINT16 *buffered_spriteram = machine.generic.buffered_spriteram.u16;
-	UINT16 *buffered_spriteram_2 = machine.generic.buffered_spriteram2.u16;
+	UINT16 *buffered_spriteram = state->m_spriteram->buffer();
+	UINT16 *buffered_spriteram_2 = state->m_spriteram2->buffer();
 	int offs;
 
 	offs = 0;
@@ -219,12 +215,7 @@ SCREEN_UPDATE_IND16( crshrace )
 
 SCREEN_VBLANK( crshrace )
 {
-	// rising edge
-	if (vblank_on)
-	{
-		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
-
-		buffer_spriteram16_w(space, 0, 0, 0xffff);
-		buffer_spriteram16_2_w(space, 0, 0, 0xffff);
-	}
+	crshrace_state *state = screen.machine().driver_data<crshrace_state>();
+	state->m_spriteram->vblank_copy_rising(screen, vblank_on);
+	state->m_spriteram2->vblank_copy_rising(screen, vblank_on);
 }

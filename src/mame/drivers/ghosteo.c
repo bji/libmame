@@ -58,6 +58,7 @@ Hopper, Ticket Counter, Prize System (Option)
 //#include "machine/smartmed.h"
 #include "machine/i2cmem.h"
 
+#define NAND_LOG 0
 
 enum nand_mode_t
 {
@@ -78,12 +79,17 @@ class ghosteo_state : public driver_device
 {
 public:
 	ghosteo_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag) ,
+		m_system_memory(*this, "systememory"){ }
 
-	UINT32 *m_system_memory;
+	required_shared_ptr<UINT32> m_system_memory;
 	int m_security_count;
 	UINT32 m_bballoon_port[20];
 	struct nand_t m_nand;
+	DECLARE_WRITE32_MEMBER(sound_w);
+	DECLARE_READ32_MEMBER(bballoon_speedup_r);
+
+	int m_rom_pagesize;
 };
 
 
@@ -156,7 +162,9 @@ static void s3c2410_gpio_port_w( device_t *device, int port, UINT32 mask, UINT32
 			// 0 -> 1
 			if (((data & 0x10) != 0) && ((old_value & 0x10) == 0))
 			{
+				#if NAND_LOG
 				logerror( "security_count %d -> %d\n", state->m_security_count, state->m_security_count + 1);
+				#endif
 				state->m_security_count++;
 				if (state->m_security_count > 7) state->m_security_count = 0;
 			}
@@ -198,7 +206,9 @@ static WRITE8_DEVICE_HANDLER( s3c2410_nand_command_w )
 	ghosteo_state *state = device->machine().driver_data<ghosteo_state>();
 	struct nand_t &nand = state->m_nand;
 //  device_t *nand = device->machine().device( "nand");
+	#if NAND_LOG
 	logerror( "s3c2410_nand_command_w %02X\n", data);
+	#endif
 	switch (data)
 	{
 		case 0xFF :
@@ -222,7 +232,9 @@ static WRITE8_DEVICE_HANDLER( s3c2410_nand_address_w )
 	ghosteo_state *state = device->machine().driver_data<ghosteo_state>();
 	struct nand_t &nand = state->m_nand;
 //  device_t *nand = device->machine().device( "nand");
+	#if NAND_LOG
 	logerror( "s3c2410_nand_address_w %02X\n", data);
+	#endif
 	switch (nand.mode)
 	{
 		case NAND_M_INIT :
@@ -266,10 +278,10 @@ static READ8_DEVICE_HANDLER( s3c2410_nand_data_r )
 		break;
 		case NAND_M_READ :
 		{
-			UINT8 *flash = (UINT8 *)device->machine().region( "user1")->base();
-			if (nand.byte_addr < 0x200)
+			UINT8 *flash = (UINT8 *)device->machine().root_device().memregion( "user1")->base();
+			if (nand.byte_addr < state->m_rom_pagesize)
 			{
-				data = *(flash + nand.page_addr * 0x200 + nand.byte_addr);
+				data = *(flash + nand.page_addr * state->m_rom_pagesize + nand.byte_addr);
 			}
 			else
 			{
@@ -294,14 +306,18 @@ static READ8_DEVICE_HANDLER( s3c2410_nand_data_r )
 		}
 		break;
 	}
+	#if NAND_LOG
 	logerror( "s3c2410_nand_data_r %02X\n", data);
+	#endif
 	return data;
 }
 
 static WRITE8_DEVICE_HANDLER( s3c2410_nand_data_w )
 {
 //  device_t *nand = device->machine().device( "nand");
+	#if NAND_LOG
 	logerror( "s3c2410_nand_data_w %02X\n", data);
+	#endif
 }
 
 // I2C
@@ -329,7 +345,7 @@ static WRITE_LINE_DEVICE_HANDLER( s3c2410_i2c_sda_w )
 	i2cmem_sda_write( i2cmem, state);
 }
 
-static WRITE32_HANDLER( sound_w )
+WRITE32_MEMBER(ghosteo_state::sound_w)
 {
 	if ((data >= 0x20) && (data <= 0x7F))
 	{
@@ -345,12 +361,12 @@ static WRITE32_HANDLER( sound_w )
 	}
 }
 
-static ADDRESS_MAP_START( bballoon_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( bballoon_map, AS_PROGRAM, 32, ghosteo_state )
 	AM_RANGE(0x10000000, 0x10000003) AM_READ_PORT("10000000")
 	AM_RANGE(0x10100000, 0x10100003) AM_READ_PORT("10100000")
 	AM_RANGE(0x10200000, 0x10200003) AM_READ_PORT("10200000")
 	AM_RANGE(0x10300000, 0x10300003) AM_WRITE(sound_w)
-	AM_RANGE(0x30000000, 0x31ffffff) AM_RAM AM_BASE_MEMBER(ghosteo_state, m_system_memory) AM_MIRROR(0x02000000)
+	AM_RANGE(0x30000000, 0x31ffffff) AM_RAM AM_SHARE("systememory") AM_MIRROR(0x02000000)
 ADDRESS_MAP_END
 
 /*
@@ -435,23 +451,23 @@ static const i2cmem_interface i2cmem_interface =
 
 device_t* s3c2410;
 
-static READ32_HANDLER( bballoon_speedup_r )
+READ32_MEMBER(ghosteo_state::bballoon_speedup_r)
 {
 	UINT32 ret = s3c2410_lcd_r(s3c2410, offset+0x10/4, mem_mask);
 
 
-	int pc = cpu_get_pc(&space->device());
+	int pc = cpu_get_pc(&space.device());
 
 	// these are vblank waits
 	if (pc == 0x3001c0e4 || pc == 0x3001c0d8)
 	{
 		// BnB Arcade
-		device_spin_until_time(&space->device(), attotime::from_usec(20));
+		device_spin_until_time(&space.device(), attotime::from_usec(20));
 	}
 	else if (pc == 0x3002b580 || pc == 0x3002b550)
 	{
 		// Happy Tour
-		device_spin_until_time(&space->device(), attotime::from_usec(20));
+		device_spin_until_time(&space.device(), attotime::from_usec(20));
 	}
 	//else
 	//  printf("speedup %08x %08x\n", pc, ret);
@@ -461,7 +477,8 @@ static READ32_HANDLER( bballoon_speedup_r )
 
 static MACHINE_RESET( bballoon )
 {
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x4d000010, 0x4d000013, FUNC(bballoon_speedup_r));
+	ghosteo_state *state = machine.driver_data<ghosteo_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x4d000010, 0x4d000013,read32_delegate(FUNC(ghosteo_state::bballoon_speedup_r), state));
 	s3c2410 = machine.device("s3c2410");
 }
 
@@ -570,9 +587,34 @@ ROM_START( hapytour ) /* Same hardware: GHOST Ver1.1 2003.03.28 */
 	ROM_LOAD( "qs1001a.u17",  0x000000, 0x80000, CRC(d13c6407) SHA1(57b14f97c7d4f9b5d9745d3571a0b7115fbe3176) )
 ROM_END
 
+
+ROM_START( touryuu )
+	ROM_REGION( 0x4200000, "user1", 0 ) /* ARM 32 bit code */
+	ROM_LOAD( "u1.bin",     0x000000, 0x4200000, CRC(49b6856e) SHA1(639123d2fabac4e79c9315fb87f72b13f9ae8761) )
+
+	// banked every 0x10000 bytes ?
+	ROM_REGION( 0x080000, "user2", 0 )
+	ROM_LOAD( "4m.eeprom_c.s(bad1h).u20",       0x000000, 0x080000, CRC(f81a6530) SHA1(c7fa412102328d06823e73d7d07cadfc25db6d28) )
+
+	ROM_REGION( 0x100000, "sfx", 0 ) /* QDSP samples (SFX) */
+	ROM_LOAD( "8m.eprom_c.s(f8b1h).u16",       0x000000, 0x100000, CRC(238a85ab) SHA1(ddd79429c0c1e67fcbca1e4ebded97ea46229f0b) )
+
+	ROM_REGION( 0x080000, "wavetable", 0 ) /* QDSP wavetable rom */
+	ROM_LOAD( "qs1001a.u17",  0x000000, 0x80000, CRC(d13c6407) SHA1(57b14f97c7d4f9b5d9745d3571a0b7115fbe3176) )
+ROM_END
+
 static DRIVER_INIT( bballoon )
 {
+	ghosteo_state *state = machine.driver_data<ghosteo_state>();
+	state->m_rom_pagesize = 0x200; // extra data is missing from the FLASH dumps and needs to be simulated
+}
+
+static DRIVER_INIT( touryuu )
+{
+	ghosteo_state *state = machine.driver_data<ghosteo_state>();
+	state->m_rom_pagesize = 0x210;
 }
 
 GAME( 2003, bballoon, 0, bballoon, bballoon, bballoon, ROT0, "Eolith", "BnB Arcade", GAME_NO_SOUND )
 GAME( 2005, hapytour, 0, bballoon, bballoon, bballoon, ROT0, "GAV Company", "Happy Tour", GAME_NO_SOUND )
+GAME( 200?, touryuu,  0, bballoon, bballoon, touryuu, ROT0, "Yuki Enterprise", "Touryuumon (V1.1)?", GAME_NOT_WORKING | GAME_NO_SOUND ) // no inputs, boots to test mode first time, endless reboot loop after that

@@ -408,7 +408,15 @@ Notes:
 #include "cpu/powerpc/ppc.h"
 #include "machine/naomigd.h"
 
-static ADDRESS_MAP_START( gc_map, AS_PROGRAM, 32 )
+class triforce_state : public driver_device
+{
+public:
+	triforce_state(const machine_config &mconfig, device_type type, const char *tag)
+		: driver_device(mconfig, type, tag)
+	{ }
+};
+
+static ADDRESS_MAP_START( gc_map, AS_PROGRAM, 32, triforce_state )
 	AM_RANGE(0xffe00000, 0xffffffff) AM_ROM AM_REGION("maincpu", 0) AM_SHARE("share2")	/* Program ROM */
 ADDRESS_MAP_END
 
@@ -426,7 +434,7 @@ static SCREEN_UPDATE_RGB32(triforce)
 static INPUT_PORTS_START( triforce )
 INPUT_PORTS_END
 
-static MACHINE_CONFIG_START( triforce_base, driver_device )
+static MACHINE_CONFIG_START( triforce_base, triforce_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", PPC403GA, 64000000) /* Correct CPU is a PowerPC 750 (what Apple called "G3") with paired-single vector instructions added */
@@ -466,7 +474,7 @@ ROM_START( vs2002j )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0001", 0, SHA1(1b4b16b0715fa5717904f0b3141cc48cca99b7a4) )
+	DISK_IMAGE_READONLY( "gdt-0001", 0, BAD_DUMP SHA1(1b4b16b0715fa5717904f0b3141cc48cca99b7a4) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("gdt-0001.data", 0x00, 0x50, CRC(4a1fca38) SHA1(3bc6dca4f8faba44bf5c5a8012cffc69dbb6aea2) )
@@ -493,7 +501,7 @@ ROM_START( vs2002ex )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0002", 0, SHA1(471e896d43167c93cc229cfc94ff7ac6de7cf9a4) )
+	DISK_IMAGE_READONLY( "gdt-0002", 0, BAD_DUMP SHA1(471e896d43167c93cc229cfc94ff7ac6de7cf9a4) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("317-0337-exp.data", 0x00, 0x50, CRC(aa6be604) SHA1(fabc43ecfb7ddf1d5a87f10884852027d6f4773b) )
@@ -504,7 +512,7 @@ ROM_START( avalons )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0005c", 0, SHA1(9edb3d9ff492d2207d57bfdb6859e796f76c5e0c) )
+	DISK_IMAGE_READONLY( "gdt-0005c", 0, BAD_DUMP SHA1(9edb3d9ff492d2207d57bfdb6859e796f76c5e0c) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("gdt-0005.data", 0x00, 0x50, CRC(6c51e5d6) SHA1(84afef983f1f855fe8722f55baa8ea5121da9369) )
@@ -515,7 +523,7 @@ ROM_START( gekpurya )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0008c", 0, SHA1(2c1bdb8324efc216edd771fe45c680ac726111a0) )
+	DISK_IMAGE_READONLY( "gdt-0008c", 0, BAD_DUMP SHA1(2c1bdb8324efc216edd771fe45c680ac726111a0) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("317-0371-jpn.data", 0x00, 0x50, CRC(08434e5e) SHA1(2121999e851f6f62ab845e6de40849d850ac9d1c) )
@@ -526,7 +534,7 @@ ROM_START( tfupdate )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0011", 0, SHA1(71bfa8f53d211085c020d54f55eeeabf85212a0b) )
+	DISK_IMAGE_READONLY( "gdt-0011", 0, BAD_DUMP SHA1(71bfa8f53d211085c020d54f55eeeabf85212a0b) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("gdt-0011.data", 0x00, 0x50, CRC(08434e5e) SHA1(2121999e851f6f62ab845e6de40849d850ac9d1c) )
@@ -561,7 +569,7 @@ ROM_START( vs4 )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0015", 0, SHA1(1f83712b2b170d6edf4a27c15b6f763cc3cc4b71) )
+	DISK_IMAGE_READONLY( "gdt-0015", 0, BAD_DUMP SHA1(1f83712b2b170d6edf4a27c15b6f763cc3cc4b71) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("317-0393-exp.data", 0x00, 0x50, CRC(2dcfecd7) SHA1(d805168e1564051ae5c47876ade2c9843253c6b4) )
@@ -590,7 +598,7 @@ ROM_START( vs4j )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0013e", 0, SHA1(b69cc5cab889114eda5c6e9ddcca42de9bc235b3) )
+	DISK_IMAGE_READONLY( "gdt-0013e", 0, BAD_DUMP SHA1(b69cc5cab889114eda5c6e9ddcca42de9bc235b3) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("317-0391-jpn.data", 0x00, 0x50, CRC(0f2dbb73) SHA1(7b9d66abe85303b3e26b442a3a63feca1a0edbdb) )
@@ -620,7 +628,7 @@ ROM_START( avalon13 )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0010c", 0, SHA1(716c441d8dc9036a13c66ef0048cd6d32ac63c4e) )
+	DISK_IMAGE_READONLY( "gdt-0010c", 0, BAD_DUMP SHA1(716c441d8dc9036a13c66ef0048cd6d32ac63c4e) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("gdt-0010c.data", 0x00, 0x50, CRC(6c51e5d6) SHA1(84afef983f1f855fe8722f55baa8ea5121da9369) )
@@ -651,7 +659,7 @@ ROM_START( avalon20 )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0017b", 0, SHA1(e2dd32c322ffcaf38b82275d2721b71bb3dfc1f2) )
+	DISK_IMAGE_READONLY( "gdt-0017b", 0, BAD_DUMP SHA1(e2dd32c322ffcaf38b82275d2721b71bb3dfc1f2) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("gdt-0017b.data", 0x00, 0x50, CRC(32cb46d4) SHA1(a58b9e03d57b317133d9b6c29e42852af8e77559) )
@@ -662,7 +670,7 @@ ROM_START( vs42006 )
 	TRIFORCE_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdt-0020d", 0, SHA1(db256d094b9754d452d7a2b8a370699d21141c1f) )
+	DISK_IMAGE_READONLY( "gdt-0020d", 0, BAD_DUMP SHA1(db256d094b9754d452d7a2b8a370699d21141c1f) )
 
 	ROM_REGION( 0x50, "picreturn", ROMREGION_ERASE)
 	ROM_LOAD("gdt-0020.data", 0x00, 0x50, CRC(e3d13191) SHA1(4255c09aad06eb38c16bdec881897404a3a68b37) )

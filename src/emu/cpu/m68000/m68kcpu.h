@@ -27,7 +27,6 @@
 
 typedef class _m68ki_cpu_core m68ki_cpu_core;
 
-
 #include "m68000.h"
 #include "../../../lib/softfloat/milieu.h"
 #include "../../../lib/softfloat/softfloat.h"
@@ -552,6 +551,7 @@ class m68k_memory_interface
 public:
 	void init8(address_space &space);
 	void init16(address_space &space);
+	void init16_m68307(address_space &space);
 	void init32(address_space &space);
 	void init32mmu(address_space &space);
 	void init32hmmu(address_space &space);
@@ -569,6 +569,14 @@ private:
 	UINT16 m68008_read_immediate_16(offs_t address);
 	UINT16 read_immediate_16(offs_t address);
 	UINT16 simple_read_immediate_16(offs_t address);
+
+	UINT16 simple_read_immediate_16_m68307(offs_t address);
+	UINT8 read_byte_m68307(offs_t address);
+	UINT16 read_word_m68307(offs_t address);
+	UINT32 read_dword_m68307(offs_t address);
+	void write_byte_m68307(offs_t address, UINT8 data);
+	void write_word_m68307(offs_t address, UINT16 data);
+	void write_dword_m68307(offs_t address, UINT32 data);
 
 	UINT8 read_byte_32_mmu(offs_t address);
 	void write_byte_32_mmu(offs_t address, UINT8 data);
@@ -669,7 +677,7 @@ public:
 	const UINT8* cyc_exception;
 
 	/* Callbacks to host */
-	device_irq_callback int_ack_callback;			  /* Interrupt Acknowledge */
+	device_irq_acknowledge_callback int_ack_callback;			  /* Interrupt Acknowledge */
 	m68k_bkpt_ack_func bkpt_ack_callback;         /* Breakpoint Acknowledge */
 	m68k_reset_func reset_instr_callback;         /* Called when a RESET instruction is encountered */
 	m68k_cmpild_func cmpild_instr_callback;       /* Called when a CMPI.L #v, Dn instruction is encountered */
@@ -707,9 +715,43 @@ public:
 	UINT16 mmu_tmp_rw;      /* temporary hack: read/write (1/0) for the mmu */
 	UINT32 mmu_tmp_buserror_address;   /* temporary hack: (first) bus error address */
 	UINT16 mmu_tmp_buserror_occurred;  /* temporary hack: flag that bus error has occurred from mmu */
+	UINT16 mmu_tmp_buserror_fc;   /* temporary hack: (first) bus error fc */
+	UINT16 mmu_tmp_buserror_rw;   /* temporary hack: (first) bus error rw */
 
 	UINT32 ic_address[M68K_IC_SIZE];   /* instruction cache address data */
 	UINT16 ic_data[M68K_IC_SIZE];      /* instruction cache content data */
+
+	/* 68307 peripheral modules */
+	m68307_sim*    m68307SIM;
+	m68307_mbus*   m68307MBUS;
+	m68307_serial* m68307SERIAL;
+	m68307_timer*  m68307TIMER;
+
+	UINT16 m68307_base;
+	UINT16 m68307_scrhigh;
+	UINT16 m68307_scrlow;
+
+	int m68307_currentcs;
+
+	/* 68340 peripheral modules */
+	m68340_sim*	   m68340SIM;
+	m68340_dma*	   m68340DMA;
+	m68340_serial* m68340SERIAL;
+	m68340_timer*  m68340TIMER;
+
+	UINT32 m68340_base;
+
+
+	/* 68308 / 68340 internal address map */
+	address_space *internal;
+
+	/* callbacks for internal ports */
+	m68307_porta_read_callback m_m68307_porta_r;
+	m68307_porta_write_callback m_m68307_porta_w;
+	m68307_portb_read_callback m_m68307_portb_r;
+	m68307_portb_write_callback m_m68307_portb_w;
+
+
 
 	/* external instruction hook (does not depend on debug mode) */
 	typedef int (*instruction_hook_t)(device_t *device, offs_t curpc);
@@ -720,6 +762,29 @@ public:
 	#undef OPCODE_PROTOTYPES
 };
 
+
+INLINE m68ki_cpu_core *m68k_get_safe_token(device_t *device)
+{
+	assert(device != NULL);
+	assert(device->type() == M68000 ||
+		   device->type() == M68301 ||
+		   device->type() == M68307 ||
+		   device->type() == M68008 ||
+		   device->type() == M68008PLCC ||
+		   device->type() == M68010 ||
+		   device->type() == M68EC020 ||
+		   device->type() == M68020 ||
+		   device->type() == M68020HMMU ||
+		   device->type() == M68020PMMU ||
+		   device->type() == M68EC030 ||
+		   device->type() == M68030 ||
+		   device->type() == M68EC040 ||
+		   device->type() == M68040 ||
+		   device->type() == SCC68070 ||
+		   device->type() == MCF5206E ||
+		   device->type() == M68340);
+	return (m68ki_cpu_core *)downcast<legacy_cpu_device *>(device)->token();
+}
 
 extern const UINT8    m68ki_shift_8_table[];
 extern const UINT16   m68ki_shift_16_table[];
@@ -828,6 +893,7 @@ INLINE void m68ki_stack_frame_0010(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vecto
 INLINE void m68ki_stack_frame_1000(m68ki_cpu_core *m68k, UINT32 pc, UINT32 sr, UINT32 vector);
 INLINE void m68ki_stack_frame_1010(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address);
 INLINE void m68ki_stack_frame_1011(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address);
+INLINE void m68ki_stack_frame_0111(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address, bool in_mmu);
 
 INLINE void m68ki_exception_trap(m68ki_cpu_core *m68k, UINT32 vector);
 INLINE void m68ki_exception_trapN(m68ki_cpu_core *m68k, UINT32 vector);
@@ -1514,7 +1580,7 @@ INLINE void m68ki_stack_frame_buserr(m68ki_cpu_core *m68k, UINT32 sr)
 /* Format 8 stack frame (68010).
  * 68010 only.  This is the 29 word bus/address error frame.
  */
-void m68ki_stack_frame_1000(m68ki_cpu_core *m68k, UINT32 pc, UINT32 sr, UINT32 vector)
+INLINE void m68ki_stack_frame_1000(m68ki_cpu_core *m68k, UINT32 pc, UINT32 sr, UINT32 vector)
 {
 	/* VERSION
      * NUMBER
@@ -1568,9 +1634,10 @@ void m68ki_stack_frame_1000(m68ki_cpu_core *m68k, UINT32 pc, UINT32 sr, UINT32 v
  * if the error happens at an instruction boundary.
  * PC stacked is address of next instruction.
  */
-void m68ki_stack_frame_1010(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address)
+INLINE void m68ki_stack_frame_1010(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address)
 {
-	int orig_rw = m68k->mmu_tmp_rw;	// this gets splatted by the following pushes, so save it now
+	int orig_rw = m68k->mmu_tmp_buserror_rw;	// this gets splatted by the following pushes, so save it now
+	int orig_fc = m68k->mmu_tmp_buserror_fc;
 
 	/* INTERNAL REGISTER */
 	m68ki_push_16(m68k, 0);
@@ -1599,7 +1666,7 @@ void m68ki_stack_frame_1010(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT
 	/* SPECIAL STATUS REGISTER */
 	// set bit for: Rerun Faulted bus Cycle, or run pending prefetch
 	// set FC
-	m68ki_push_16(m68k, 0x0100 | m68k->mmu_tmp_fc | orig_rw<<6);
+	m68ki_push_16(m68k, 0x0100 | orig_fc | orig_rw<<6);
 
 	/* INTERNAL REGISTER */
 	m68ki_push_16(m68k, 0);
@@ -1619,9 +1686,10 @@ void m68ki_stack_frame_1010(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT
  * if the error happens during instruction execution.
  * PC stacked is address of instruction in progress.
  */
-void m68ki_stack_frame_1011(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address)
+INLINE void m68ki_stack_frame_1011(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address)
 {
-	int orig_rw = m68k->mmu_tmp_rw;	// this gets splatted by the following pushes, so save it now
+	int orig_rw = m68k->mmu_tmp_buserror_rw;	// this gets splatted by the following pushes, so save it now
+	int orig_fc = m68k->mmu_tmp_buserror_fc;
 
 	/* INTERNAL REGISTERS (18 words) */
 	m68ki_push_32(m68k, 0);
@@ -1673,7 +1741,7 @@ void m68ki_stack_frame_1011(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT
 	m68ki_push_16(m68k, 0);
 
 	/* SPECIAL STATUS REGISTER */
-	m68ki_push_16(m68k, 0x0100 | m68k->mmu_tmp_fc | orig_rw<<6);
+	m68ki_push_16(m68k, 0x0100 | orig_fc | orig_rw<<6);
 
 	/* INTERNAL REGISTER */
 	m68ki_push_16(m68k, 0);
@@ -1685,6 +1753,49 @@ void m68ki_stack_frame_1011(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT
 	m68ki_push_32(m68k, pc);
 
 	/* STATUS REGISTER */
+	m68ki_push_16(m68k, sr);
+}
+
+/* Type 7 stack frame (access fault).
+ * This is used by the 68040 for bus fault and mmu trap
+ * 30 words
+ */
+INLINE void m68ki_stack_frame_0111(m68ki_cpu_core *m68k, UINT32 sr, UINT32 vector, UINT32 pc, UINT32 fault_address, bool in_mmu)
+{
+	int orig_rw = m68k->mmu_tmp_buserror_rw;	// this gets splatted by the following pushes, so save it now
+	int orig_fc = m68k->mmu_tmp_buserror_fc;
+
+	/* INTERNAL REGISTERS (18 words) */
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+	m68ki_push_32(m68k, 0);
+
+	/* FAULT ADDRESS (2 words) */
+	m68ki_push_32(m68k, fault_address);
+
+	/* INTERNAL REGISTERS (3 words) */
+	m68ki_push_32(m68k, 0);
+	m68ki_push_16(m68k, 0);
+
+	/* SPECIAL STATUS REGISTER (1 word) */
+	m68ki_push_16(m68k, (in_mmu ? 0x400 : 0) | orig_fc | (orig_rw<<8));
+
+	/* EFFECTIVE ADDRESS (2 words) */
+	m68ki_push_32(m68k, fault_address);
+
+	/* 0111, VECTOR OFFSET (1 word) */
+	m68ki_push_16(m68k, 0x7000 | (vector<<2));
+
+	/* PROGRAM COUNTER (2 words) */
+	m68ki_push_32(m68k, pc);
+
+	/* STATUS REGISTER (1 word) */
 	m68ki_push_16(m68k, sr);
 }
 
@@ -1844,7 +1955,7 @@ INLINE void m68ki_exception_address_error(m68ki_cpu_core *m68k)
 
 
 /* Service an interrupt request and start exception processing */
-void m68ki_exception_interrupt(m68ki_cpu_core *m68k, UINT32 int_level)
+INLINE void m68ki_exception_interrupt(m68ki_cpu_core *m68k, UINT32 int_level)
 {
 	UINT32 vector;
 	UINT32 sr;

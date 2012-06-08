@@ -12,6 +12,17 @@
  as a basis for writing their game on, adding a couple of features such as the
  pixel layer.
 
+The manual defines the controls as 4 push buttons:
+
+   Left Push Buttons       Right Push Buttons
+
+|   o    |      o       |    o    |      o       |
+|--------+--------------+---------+--------------|
+|Flipper | Shot & Shake | Flipper | Shot & Shake |
+| Left   |    Left      |  Right  |    Right     |
+|--------+--------------+---------+--------------|
+
+
 -readme file--------------------------------------------------------------------
 
  Super Pinball Action
@@ -131,22 +142,22 @@ cpu #0 (PC=00001A1A): unmapped memory word write to 00090030 = 00F7 & 00FF
 #include "includes/spbactn.h"
 
 
-static WRITE16_HANDLER( soundcommand_w )
+WRITE16_MEMBER(spbactn_state::soundcommand_w)
 {
 	if (ACCESSING_BITS_0_7)
 	{
-		soundlatch_w(space, offset, data & 0xff);
-		cputag_set_input_line(space->machine(), "audiocpu", INPUT_LINE_NMI, PULSE_LINE);
+		soundlatch_byte_w(space, offset, data & 0xff);
+		cputag_set_input_line(machine(), "audiocpu", INPUT_LINE_NMI, PULSE_LINE);
 	}
 }
 
-static ADDRESS_MAP_START( spbactn_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( spbactn_map, AS_PROGRAM, 16, spbactn_state )
 	AM_RANGE(0x00000, 0x3ffff) AM_ROM
 	AM_RANGE(0x40000, 0x43fff) AM_RAM	// main ram
-	AM_RANGE(0x50000, 0x50fff) AM_RAM AM_BASE_MEMBER(spbactn_state,m_spvideoram)
-	AM_RANGE(0x60000, 0x67fff) AM_RAM AM_BASE_MEMBER(spbactn_state,m_fgvideoram)
-	AM_RANGE(0x70000, 0x77fff) AM_RAM AM_BASE_MEMBER(spbactn_state,m_bgvideoram)
-	AM_RANGE(0x80000, 0x827ff) AM_RAM_WRITE(paletteram16_xxxxBBBBGGGGRRRR_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0x50000, 0x50fff) AM_RAM AM_SHARE("spvideoram")
+	AM_RANGE(0x60000, 0x67fff) AM_RAM AM_SHARE("fgvideoram")
+	AM_RANGE(0x70000, 0x77fff) AM_RAM AM_SHARE("bgvideoram")
+	AM_RANGE(0x80000, 0x827ff) AM_RAM_WRITE(paletteram_xxxxBBBBGGGGRRRR_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0x90000, 0x90001) AM_READ_PORT("IN0")
 	AM_RANGE(0x90010, 0x90011) AM_READ_PORT("IN1")
 	AM_RANGE(0x90020, 0x90021) AM_READ_PORT("SYSTEM")
@@ -186,14 +197,14 @@ static ADDRESS_MAP_START( spbactn_map, AS_PROGRAM, 16 )
 	AM_RANGE(0xa0206, 0xa0207) AM_WRITENOP
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( spbactn_sound_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( spbactn_sound_map, AS_PROGRAM, 8, spbactn_state )
 	AM_RANGE(0x0000, 0xefff) AM_ROM
 	AM_RANGE(0xf000, 0xf7ff) AM_RAM
-	AM_RANGE(0xf800, 0xf800) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
-	AM_RANGE(0xf810, 0xf811) AM_DEVWRITE("ymsnd", ym3812_w)
+	AM_RANGE(0xf800, 0xf800) AM_DEVREADWRITE("oki", okim6295_device, read, write)
+	AM_RANGE(0xf810, 0xf811) AM_DEVWRITE_LEGACY("ymsnd", ym3812_w)
 
 	AM_RANGE(0xfc00, 0xfc00) AM_READNOP	AM_WRITENOP /* irq ack ?? */
-	AM_RANGE(0xfc20, 0xfc20) AM_READ(soundlatch_r)
+	AM_RANGE(0xfc20, 0xfc20) AM_READ(soundlatch_byte_r)
 ADDRESS_MAP_END
 
 
@@ -203,8 +214,8 @@ static INPUT_PORTS_START( spbactn )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNKNOWN )
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON1 )		// Left flipper
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON3 )		// "Shake"
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME( "Left Flippers" )
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_NAME( "Launch Ball / Shake (Left Side)" )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
@@ -213,15 +224,15 @@ static INPUT_PORTS_START( spbactn )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNKNOWN )
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNKNOWN )		// "Shake" (duplicated)
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON2 )		// Right flipper
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON4 ) PORT_NAME( "Launch Ball / Shake (Right Side)" )
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME( "Right Flippers" )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
 	PORT_START("SYSTEM")
 	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_COIN1 )
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_COIN2 )
-	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_START1 )		// Press mulitple times for multiple players
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_START1 ) PORT_NAME( "Start" )  /* needed to avoid confusion with # of players. Press mulitple times for multiple players */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -229,7 +240,7 @@ static INPUT_PORTS_START( spbactn )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x07, 0x07, DEF_STR( Coin_A ) )
+	PORT_DIPNAME( 0x07, 0x07, DEF_STR( Coin_A ) )		PORT_DIPLOCATION("SW1:1,2,3")
 	PORT_DIPSETTING(    0x02, DEF_STR( 4C_1C ) )
 	PORT_DIPSETTING(    0x03, DEF_STR( 3C_1C ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( 2C_1C ) )
@@ -238,7 +249,7 @@ static INPUT_PORTS_START( spbactn )
 	PORT_DIPSETTING(    0x05, "1 Coin/1 Credit 2/3" )
 	PORT_DIPSETTING(    0x06, DEF_STR( 1C_2C ) )
 	PORT_DIPSETTING(    0x00, "1 Coin/1 Credit 5/6" )
-	PORT_DIPNAME( 0x38, 0x38, DEF_STR( Coin_B ) )
+	PORT_DIPNAME( 0x38, 0x38, DEF_STR( Coin_B ) )		PORT_DIPLOCATION("SW1:4,5,6")
 	PORT_DIPSETTING(    0x10, DEF_STR( 4C_1C ) )
 	PORT_DIPSETTING(    0x18, DEF_STR( 3C_1C ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( 2C_1C ) )
@@ -247,33 +258,33 @@ static INPUT_PORTS_START( spbactn )
 	PORT_DIPSETTING(    0x28, "1 Coin/1 Credit 2/3" )
 	PORT_DIPSETTING(    0x30, DEF_STR( 1C_2C ) )
 	PORT_DIPSETTING(    0x00, "1 Coin/1 Credit 5/6" )
-	PORT_DIPNAME( 0xc0, 0xc0, DEF_STR( Lives ) )		// Balls
+	PORT_DIPNAME( 0xc0, 0xc0, "Balls" )			PORT_DIPLOCATION("SW1:7,8")
 	PORT_DIPSETTING(    0x00, "2" )
 	PORT_DIPSETTING(    0xc0, "3" )
 	PORT_DIPSETTING(    0x80, "4" )
 	PORT_DIPSETTING(    0x40, "5" )
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x03, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Hard ) )
-	PORT_DIPNAME( 0x0c, 0x0c, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x0c, 0x0c, "Extra Ball" )		PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(    0x04, "100k and 500k" )
 	PORT_DIPSETTING(    0x0c, "200k and 800k" )
 	PORT_DIPSETTING(    0x08, "200k" )
 	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
-	PORT_DIPNAME( 0x10, 0x10, "Hit Difficulty" )		// From .xls file - WHAT does that mean ?
+	PORT_DIPNAME( 0x10, 0x10, "Hit Difficulty" )		PORT_DIPLOCATION("SW2:5")	// From .xls file - WHAT does that mean ?
 	PORT_DIPSETTING(    0x10, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Difficult ) )
-	PORT_DIPNAME( 0x20, 0x20, "Display Instructions" )	// "Change Software" in .xls file
+	PORT_DIPNAME( 0x20, 0x20, "Display Instructions" )	PORT_DIPLOCATION("SW2:6") /* Listed in manual as "Change Software", but seems to have no effect? */
 	PORT_DIPSETTING(    0x00, DEF_STR( No ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Yes ) )
-	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Demo_Sounds ) )	// To be confirmed
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:7") /* As listed in manual, but seems to have no effect? */
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( On ) )
-	PORT_DIPNAME( 0x80, 0x80, "Match" )				// Check code at 0x00bf8c
+	PORT_DIPNAME( 0x80, 0x80, "Match" )			PORT_DIPLOCATION("SW2:8")	// Check code at 0x00bf8c
 	PORT_DIPSETTING(    0x80, "1/20" )
 	PORT_DIPSETTING(    0x00, "1/40" )
 INPUT_PORTS_END
@@ -336,11 +347,11 @@ static const ym3812_interface ym3812_config =
 static MACHINE_CONFIG_START( spbactn, spbactn_state )
 
 	/* basic machine hardware */
-	MCFG_CPU_ADD("maincpu", M68000, 12000000)
+	MCFG_CPU_ADD("maincpu", M68000, XTAL_12MHz)
 	MCFG_CPU_PROGRAM_MAP(spbactn_map)
 	MCFG_CPU_VBLANK_INT("screen", irq3_line_hold)
 
-	MCFG_CPU_ADD("audiocpu", Z80, 4000000)	/* 4 MHz ??? */
+	MCFG_CPU_ADD("audiocpu", Z80, XTAL_4MHz)
 	MCFG_CPU_PROGRAM_MAP(spbactn_sound_map)
 
 	/* video hardware */
@@ -359,11 +370,11 @@ static MACHINE_CONFIG_START( spbactn, spbactn_state )
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("ymsnd", YM3812, 3579545)
+	MCFG_SOUND_ADD("ymsnd", YM3812, XTAL_4MHz) /* Was 3.579545MHz, a common clock, but no way to generate via on PCB OSCs */
 	MCFG_SOUND_CONFIG(ym3812_config)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 
-	MCFG_OKIM6295_ADD("oki", 1056000, OKIM6295_PIN7_HIGH) // clock frequency & pin 7 not verified
+	MCFG_OKIM6295_ADD("oki", XTAL_4MHz/4, OKIM6295_PIN7_HIGH) /* Was 1.056MHz, a common clock, but no way to generate via on PCB OSCs. clock frequency & pin 7 not verified */
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 MACHINE_CONFIG_END
 

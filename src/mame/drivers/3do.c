@@ -103,9 +103,9 @@ Part list of Goldstar 3DO Interactive Multiplayer
 #define X601_CLOCK		XTAL_16_9344MHz
 
 
-static ADDRESS_MAP_START( 3do_mem, AS_PROGRAM, 32)
-	AM_RANGE(0x00000000, 0x001FFFFF) AM_RAMBANK("bank1") AM_BASE_MEMBER(_3do_state,m_dram)						/* DRAM */
-	AM_RANGE(0x00200000, 0x003FFFFF) AM_RAM	AM_BASE_MEMBER(_3do_state,m_vram)									/* VRAM */
+static ADDRESS_MAP_START( 3do_mem, AS_PROGRAM, 32, _3do_state )
+	AM_RANGE(0x00000000, 0x001FFFFF) AM_RAMBANK("bank1") AM_SHARE("dram")						/* DRAM */
+	AM_RANGE(0x00200000, 0x003FFFFF) AM_RAM	AM_SHARE("vram")									/* VRAM */
 	AM_RANGE(0x03000000, 0x030FFFFF) AM_ROMBANK("bank2")									/* BIOS */
 	AM_RANGE(0x03100000, 0x0313FFFF) AM_RAM													/* Brooktree? */
 	AM_RANGE(0x03140000, 0x0315FFFF) AM_READWRITE(_3do_nvarea_r, _3do_nvarea_w)				/* NVRAM */
@@ -135,14 +135,14 @@ static MACHINE_RESET( 3do )
 
 	state->m_maincpu = downcast<legacy_cpu_device*>( machine.device("maincpu") );
 
-	memory_set_bankptr(machine, "bank2",machine.region("user1")->base());
+	state->membank("bank2")->set_base(state->memregion("user1")->base());
 
 	/* configure overlay */
-	memory_configure_bank(machine, "bank1", 0, 1, state->m_dram, 0);
-	memory_configure_bank(machine, "bank1", 1, 1, machine.region("user1")->base(), 0);
+	state->membank("bank1")->configure_entry(0, state->m_dram);
+	state->membank("bank1")->configure_entry(1, state->memregion("user1")->base());
 
 	/* start with overlay enabled */
-	memory_set_bank(machine, "bank1", 1);
+	state->membank("bank1")->set_entry(1);
 
 	_3do_slow2_init(machine);
 	_3do_madam_init(machine);
@@ -190,24 +190,39 @@ static MACHINE_CONFIG_START( 3do_pal, _3do_state )
 	MCFG_CDROM_ADD( "cdrom", _3do_cdrom)
 MACHINE_CONFIG_END
 
+#if 0
+#define NTSC_BIOS \
+	ROM_REGION32_BE( 0x200000, "user1", 0 ) \
+	ROM_SYSTEM_BIOS( 0, "panafz10", "Panasonic FZ-10 R.E.A.L. 3DO Interactive Multiplayer" ) \
+	ROMX_LOAD( "panafz10.bin", 0x000000, 0x100000, CRC(58242cee) SHA1(3c912300775d1ad730dc35757e279c274c0acaad), ROM_BIOS(1) ) \
+	ROM_SYSTEM_BIOS( 1, "goldstar", "Goldstar 3DO Interactive Multiplayer v1.01m" ) \
+	ROMX_LOAD( "goldstar.bin", 0x000000, 0x100000, CRC(b6f5028b) SHA1(c4a2e5336f77fb5f743de1eea2cda43675ee2de7), ROM_BIOS(2) ) \
+	ROM_SYSTEM_BIOS( 2, "panafz1", "Panasonic FZ-1 R.E.A.L. 3DO Interactive Multiplayer" ) \
+	ROMX_LOAD( "panafz1.bin", 0x000000, 0x100000, CRC(c8c8ff89) SHA1(34bf189111295f74d7b7dfc1f304d98b8d36325a), ROM_BIOS(3) ) \
+	ROM_SYSTEM_BIOS( 3, "gsalive2", "Goldstar 3DO Alive II" ) \
+	ROMX_LOAD( "gsalive2.bin", 0x000000, 0x100000, NO_DUMP, ROM_BIOS(4) ) \
+	ROM_SYSTEM_BIOS( 4, "sanyotry", "Sanyo TRY 3DO Interactive Multiplayer" ) \
+	ROMX_LOAD( "sanyotry.bin", 0x000000, 0x100000, CRC(d5cbc509) SHA1(b01c53da256dde43ffec4ad3fc3adfa8d635e943), ROM_BIOS(5) )
+#else
+#define NTSC_BIOS \
+	ROM_REGION32_BE( 0x200000, "user1", 0 ) \
+	ROM_SYSTEM_BIOS( 0, "panafz10", "Panasonic FZ-10 R.E.A.L. 3DO Interactive Multiplayer" ) \
+	ROMX_LOAD( "panafz10.bin", 0x000000, 0x100000, CRC(58242cee) SHA1(3c912300775d1ad730dc35757e279c274c0acaad), ROM_BIOS(1) ) \
+	ROM_SYSTEM_BIOS( 1, "goldstar", "Goldstar 3DO Interactive Multiplayer v1.01m" ) \
+	ROMX_LOAD( "goldstar.bin", 0x000000, 0x100000, CRC(b6f5028b) SHA1(c4a2e5336f77fb5f743de1eea2cda43675ee2de7), ROM_BIOS(2) ) \
+	ROM_SYSTEM_BIOS( 2, "panafz1", "Panasonic FZ-1 R.E.A.L. 3DO Interactive Multiplayer" ) \
+	ROMX_LOAD( "panafz1.bin", 0x000000, 0x100000, CRC(c8c8ff89) SHA1(34bf189111295f74d7b7dfc1f304d98b8d36325a), ROM_BIOS(3) ) \
+	ROM_SYSTEM_BIOS( 3, "sanyotry", "Sanyo TRY 3DO Interactive Multiplayer" ) \
+	ROMX_LOAD( "sanyotry.bin", 0x000000, 0x100000, CRC(d5cbc509) SHA1(b01c53da256dde43ffec4ad3fc3adfa8d635e943), ROM_BIOS(4) )
+#endif
 
 ROM_START(3do)
-	ROM_REGION32_BE( 0x100000, "user1", 0 )
-	ROM_SYSTEM_BIOS( 0, "panafz10", "Panasonic FZ-10 R.E.A.L. 3DO Interactive Multiplayer" )
-	ROMX_LOAD( "panafz10.bin", 0x000000, 0x100000, CRC(58242cee) SHA1(3c912300775d1ad730dc35757e279c274c0acaad), ROM_BIOS(1) )
-	ROM_SYSTEM_BIOS( 1, "goldstar", "Goldstar 3DO Interactive Multiplayer v1.01m" )
-	ROMX_LOAD( "goldstar.bin", 0x000000, 0x100000, CRC(b6f5028b) SHA1(c4a2e5336f77fb5f743de1eea2cda43675ee2de7), ROM_BIOS(2) )
-	ROM_SYSTEM_BIOS( 2, "panafz1", "Panasonic FZ-1 R.E.A.L. 3DO Interactive Multiplayer" )
-	ROMX_LOAD( "panafz1.bin", 0x000000, 0x100000, CRC(c8c8ff89) SHA1(34bf189111295f74d7b7dfc1f304d98b8d36325a), ROM_BIOS(3) )
-	ROM_SYSTEM_BIOS( 3, "gsalive2", "Goldstar 3DO Alive II" )
-	ROMX_LOAD( "gsalive2.bin", 0x000000, 0x100000, NO_DUMP, ROM_BIOS(4) )
-	ROM_SYSTEM_BIOS( 4, "sanyotry", "Sanyo TRY 3DO Interactive Multiplayer" )
-	ROMX_LOAD( "sanyotry.bin", 0x000000, 0x100000, CRC(d5cbc509) SHA1(b01c53da256dde43ffec4ad3fc3adfa8d635e943), ROM_BIOS(5) )
+	NTSC_BIOS
 ROM_END
 
 
 ROM_START(3do_pal)
-    ROM_REGION32_BE( 0x100000, "user1", 0 )
+    ROM_REGION32_BE( 0x200000, "user1", 0 )
     ROM_SYSTEM_BIOS( 0, "panafz10", "Panasonic FZ-10 R.E.A.L. 3DO Interactive Multiplayer" )
     ROMX_LOAD( "panafz10.bin", 0x000000, 0x100000, CRC(58242cee) SHA1(3c912300775d1ad730dc35757e279c274c0acaad), ROM_BIOS(1) )
     ROM_SYSTEM_BIOS( 1, "goldstar", "Goldstar 3DO Interactive Multiplayer v1.01m" )
@@ -217,17 +232,7 @@ ROM_START(3do_pal)
 ROM_END
 
 ROM_START(orbatak)
-	ROM_REGION32_BE( 0x100000, "user1", 0 )
-	ROM_SYSTEM_BIOS( 0, "panafz10", "Panasonic FZ-10 R.E.A.L. 3DO Interactive Multiplayer" )
-	ROMX_LOAD( "panafz10.bin", 0x000000, 0x100000, CRC(58242cee) SHA1(3c912300775d1ad730dc35757e279c274c0acaad), ROM_BIOS(1) )
-	ROM_SYSTEM_BIOS( 1, "goldstar", "Goldstar 3DO Interactive Multiplayer v1.01m" )
-	ROMX_LOAD( "goldstar.bin", 0x000000, 0x100000, CRC(b6f5028b) SHA1(c4a2e5336f77fb5f743de1eea2cda43675ee2de7), ROM_BIOS(2) )
-	ROM_SYSTEM_BIOS( 2, "panafz1", "Panasonic FZ-1 R.E.A.L. 3DO Interactive Multiplayer" )
-	ROMX_LOAD( "panafz1.bin", 0x000000, 0x100000, CRC(c8c8ff89) SHA1(34bf189111295f74d7b7dfc1f304d98b8d36325a), ROM_BIOS(3) )
-	ROM_SYSTEM_BIOS( 3, "gsalive2", "Goldstar 3DO Alive II" )
-	ROMX_LOAD( "gsalive2.bin", 0x000000, 0x100000, NO_DUMP, ROM_BIOS(4) )
-	ROM_SYSTEM_BIOS( 4, "sanyotry", "Sanyo TRY 3DO Interactive Multiplayer" )
-	ROMX_LOAD( "sanyotry.bin", 0x000000, 0x100000, CRC(d5cbc509) SHA1(b01c53da256dde43ffec4ad3fc3adfa8d635e943), ROM_BIOS(5) )
+	NTSC_BIOS
 
     DISK_REGION( "cdrom" )
     DISK_IMAGE_READONLY( "orbatak", 0, SHA1(25cb3b889cf09dbe5faf2b0ca4aae5e03453da00) )

@@ -36,7 +36,7 @@ Credits:
 static INTERRUPT_GEN( thief_interrupt )
 {
 	/* SLAM switch causes an NMI if it's pressed */
-	if( (input_port_read(device->machine(), "P2") & 0x10) == 0 )
+	if( (device->machine().root_device().ioport("P2")->read() & 0x10) == 0 )
 		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
 	else
 		device_set_input_line(device, 0, HOLD_LINE);
@@ -59,44 +59,43 @@ enum
 	kTalkTrack, kCrashTrack
 };
 
-static void tape_set_audio( device_t *samples, int track, int bOn )
+static void tape_set_audio( samples_device *samples, int track, int bOn )
 {
-	sample_set_volume(samples, track, bOn ? 1.0 : 0.0 );
+	samples->set_volume(track, bOn ? 1.0 : 0.0 );
 }
 
-static void tape_set_motor( device_t *samples, int bOn )
+static void tape_set_motor( samples_device *samples, int bOn )
 {
 	if( bOn )
 	{
 		/* If talk track is not playing, start it. */
-		if (! sample_playing(samples,  kTalkTrack ))
-			sample_start( samples, 0, kTalkTrack, 1 );
+		if (! samples->playing( kTalkTrack ))
+			samples->start( 0, kTalkTrack, true );
 
 		/* Resume playback of talk track. */
-		sample_set_pause( samples, kTalkTrack, 0);
+		samples->pause( kTalkTrack, false);
 
 
 		/* If crash track is not playing, start it. */
-		if (! sample_playing(samples,  kCrashTrack ))
-			sample_start( samples, 1, kCrashTrack, 1 );
+		if (! samples->playing( kCrashTrack ))
+			samples->start( 1, kCrashTrack, true );
 
 		/* Resume playback of crash track. */
-		sample_set_pause( samples, kCrashTrack, 0);
+		samples->pause( kCrashTrack, false);
 	}
 	else
 	{
 		/* Pause both the talk and crash tracks. */
-		sample_set_pause( samples, kTalkTrack, 1 );
-		sample_set_pause( samples, kCrashTrack, 1 );
+		samples->pause( kTalkTrack, true );
+		samples->pause( kCrashTrack, true );
 	}
 }
 
 /***********************************************************/
 
-static WRITE8_HANDLER( thief_input_select_w )
+WRITE8_MEMBER(thief_state::thief_input_select_w)
 {
-	thief_state *state = space->machine().driver_data<thief_state>();
-	state->m_input_select = data;
+	m_input_select = data;
 }
 
 static WRITE8_DEVICE_HANDLER( tape_control_w )
@@ -113,51 +112,50 @@ static WRITE8_DEVICE_HANDLER( tape_control_w )
 		break;
 
 	case 0x08: /* talk track on */
-		tape_set_audio( device, kTalkTrack, 1 );
+		tape_set_audio( downcast<samples_device *>(device), kTalkTrack, 1 );
 		break;
 
 	case 0x09: /* talk track off */
-		tape_set_audio( device, kTalkTrack, 0 );
+		tape_set_audio( downcast<samples_device *>(device), kTalkTrack, 0 );
 		break;
 
 	case 0x0a: /* motor on */
-		tape_set_motor( device, 1 );
+		tape_set_motor( downcast<samples_device *>(device), 1 );
 		break;
 
 	case 0x0b: /* motor off */
-		tape_set_motor( device, 0 );
+		tape_set_motor( downcast<samples_device *>(device), 0 );
 		break;
 
 	case 0x0c: /* crash track on */
-		tape_set_audio( device, kCrashTrack, 1 );
+		tape_set_audio( downcast<samples_device *>(device), kCrashTrack, 1 );
 		break;
 
 	case 0x0d: /* crash track off */
-		tape_set_audio( device, kCrashTrack, 0 );
+		tape_set_audio( downcast<samples_device *>(device), kCrashTrack, 0 );
 		break;
 	}
 }
 
-static READ8_HANDLER( thief_io_r )
+READ8_MEMBER(thief_state::thief_io_r)
 {
-	thief_state *state = space->machine().driver_data<thief_state>();
-	switch( state->m_input_select )
+	switch( m_input_select )
 	{
-		case 0x01: return input_port_read(space->machine(), "DSW1");
-		case 0x02: return input_port_read(space->machine(), "DSW2");
-		case 0x04: return input_port_read(space->machine(), "P1");
-		case 0x08: return input_port_read(space->machine(), "P2");
+		case 0x01: return ioport("DSW1")->read();
+		case 0x02: return ioport("DSW2")->read();
+		case 0x04: return ioport("P1")->read();
+		case 0x08: return ioport("P2")->read();
 	}
 	return 0x00;
 }
 
-static ADDRESS_MAP_START( sharkatt_main_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( sharkatt_main_map, AS_PROGRAM, 8, thief_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 	AM_RANGE(0x8000, 0x8fff) AM_RAM		/* 2114 */
 	AM_RANGE(0xc000, 0xdfff) AM_READWRITE(thief_videoram_r, thief_videoram_w)	/* 4116 */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( thief_main_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( thief_main_map, AS_PROGRAM, 8, thief_state )
 	AM_RANGE(0x0000, 0x0000) AM_WRITE(thief_blit_w)
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 	AM_RANGE(0x8000, 0x8fff) AM_RAM		/* 2114 */
@@ -170,19 +168,19 @@ static ADDRESS_MAP_START( thief_main_map, AS_PROGRAM, 8 )
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( io_map, AS_IO, 8, thief_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE(0x00, 0x00) AM_WRITENOP /* watchdog */
 	AM_RANGE(0x10, 0x10) AM_WRITE(thief_video_control_w)
 	AM_RANGE(0x30, 0x30) AM_WRITE(thief_input_select_w) /* 8255 */
 	AM_RANGE(0x31, 0x31) AM_READ(thief_io_r)	/* 8255 */
-	AM_RANGE(0x33, 0x33) AM_DEVWRITE("samples", tape_control_w)
-	AM_RANGE(0x40, 0x41) AM_DEVWRITE("ay1", ay8910_address_data_w)
-	AM_RANGE(0x41, 0x41) AM_DEVREAD("ay1", ay8910_r)
-	AM_RANGE(0x42, 0x43) AM_DEVWRITE("ay2", ay8910_address_data_w)
-	AM_RANGE(0x43, 0x43) AM_DEVREAD("ay2", ay8910_r)
+	AM_RANGE(0x33, 0x33) AM_DEVWRITE_LEGACY("samples", tape_control_w)
+	AM_RANGE(0x40, 0x41) AM_DEVWRITE_LEGACY("ay1", ay8910_address_data_w)
+	AM_RANGE(0x41, 0x41) AM_DEVREAD_LEGACY("ay1", ay8910_r)
+	AM_RANGE(0x42, 0x43) AM_DEVWRITE_LEGACY("ay2", ay8910_address_data_w)
+	AM_RANGE(0x43, 0x43) AM_DEVREAD_LEGACY("ay2", ay8910_r)
 	AM_RANGE(0x50, 0x50) AM_WRITE(thief_color_plane_w)
-	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE("tms", tms9927_r, tms9927_w)
+	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE_LEGACY("tms", tms9927_r, tms9927_w)
 	AM_RANGE(0x70, 0x7f) AM_WRITE(thief_color_map_w)
 ADDRESS_MAP_END
 
@@ -465,8 +463,7 @@ static MACHINE_CONFIG_START( sharkatt, thief_state )
 	MCFG_SOUND_ADD("ay2", AY8910, 4000000/4)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(sharkatt_samples_interface)
+	MCFG_SAMPLES_ADD("samples", sharkatt_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 MACHINE_CONFIG_END
 
@@ -502,8 +499,7 @@ static MACHINE_CONFIG_START( thief, thief_state )
 	MCFG_SOUND_ADD("ay2", AY8910, 4000000/4)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(thief_samples_interface)
+	MCFG_SAMPLES_ADD("samples", thief_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 MACHINE_CONFIG_END
 
@@ -539,8 +535,7 @@ static MACHINE_CONFIG_START( natodef, thief_state )
 	MCFG_SOUND_ADD("ay2", AY8910, 4000000/4)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(natodef_samples_interface)
+	MCFG_SAMPLES_ADD("samples", natodef_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 MACHINE_CONFIG_END
 
@@ -641,8 +636,8 @@ ROM_END
 
 static DRIVER_INIT( thief )
 {
-	UINT8 *dest = machine.region( "maincpu" )->base();
-	const UINT8 *source = machine.region( "cpu1" )->base();
+	UINT8 *dest = machine.root_device().memregion( "maincpu" )->base();
+	const UINT8 *source = machine.root_device().memregion( "cpu1" )->base();
 
 	/* C8 is mapped (banked) in CPU1's address space; it contains Z80 code */
 	memcpy( &dest[0xe010], &source[0x290], 0x20 );

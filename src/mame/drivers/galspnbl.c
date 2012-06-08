@@ -9,12 +9,29 @@ Notes:
 - to start a 2 or more players game, press the start button multiple times
 - the sprite graphics contain a "(c) Tecmo", and the sprite system is
   indeed similar to other Tecmo games like Ninja Gaiden.
-
+- Clearly based on Temco's Super Pinball Action (see spbactn.c)
+- There seems to be a bug in Hot Pinball's Demo Sounds. If you start the
+  game normally you get no demo sounds. However if you select the "Slide
+  Show" and run all the way through the game will start with demo sounds.
+  Gals Pinball's Demo Sounds works as expected according to DSW setting.
 
 TODO:
 - scrolling is wrong.
 - sprite/tile priority might be wrong. There is an unknown bit in the fg
   tilemap, marking some tiles that I'm not currently drawing.
+
+Manuals for both games define the controls as 4 push buttons:
+
+   Left Push Buttons                     Right Push Buttons
+
+|   o    |      o       |             |    o    |      o       |
+|--------+--------------+-------------+------------------------|
+| Select |     Set      | Select Mode |                        |
+|  Stage |    Stage     |             |                        |
+|--------+--------------+-------------+---------+--------------|
+|Flipper | Shot & Shake |  Game Mode  | Flipper | Shot & Shake |
+| Left   |    Left      |             |  Right  |    Right     |
+|--------+--------------+-------------+---------+--------------|
 
 ***************************************************************************/
 
@@ -26,49 +43,48 @@ TODO:
 #include "includes/galspnbl.h"
 
 
-static WRITE16_HANDLER( soundcommand_w )
+WRITE16_MEMBER(galspnbl_state::soundcommand_w)
 {
-	galspnbl_state *state = space->machine().driver_data<galspnbl_state>();
 
 	if (ACCESSING_BITS_0_7)
 	{
-		soundlatch_w(space,offset,data & 0xff);
-		device_set_input_line(state->m_audiocpu, INPUT_LINE_NMI, PULSE_LINE);
+		soundlatch_byte_w(space,offset,data & 0xff);
+		device_set_input_line(m_audiocpu, INPUT_LINE_NMI, PULSE_LINE);
 	}
 }
 
 
-static ADDRESS_MAP_START( main_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( main_map, AS_PROGRAM, 16, galspnbl_state )
 	AM_RANGE(0x000000, 0x3fffff) AM_ROM
 	AM_RANGE(0x700000, 0x703fff) AM_RAM		/* galspnbl work RAM */
 	AM_RANGE(0x708000, 0x70ffff) AM_RAM		/* galspnbl work RAM, bitmaps are decompressed here */
 	AM_RANGE(0x800000, 0x803fff) AM_RAM		/* hotpinbl work RAM */
 	AM_RANGE(0x808000, 0x80ffff) AM_RAM		/* hotpinbl work RAM, bitmaps are decompressed here */
-	AM_RANGE(0x880000, 0x880fff) AM_RAM AM_BASE_SIZE_MEMBER(galspnbl_state, m_spriteram, m_spriteram_size)
+	AM_RANGE(0x880000, 0x880fff) AM_RAM AM_SHARE("spriteram")
 	AM_RANGE(0x8ff400, 0x8fffff) AM_WRITENOP	/* ??? */
-	AM_RANGE(0x900000, 0x900fff) AM_RAM AM_BASE_MEMBER(galspnbl_state, m_colorram)
+	AM_RANGE(0x900000, 0x900fff) AM_RAM AM_SHARE("colorram")
 	AM_RANGE(0x901000, 0x903fff) AM_WRITENOP	/* ??? */
-	AM_RANGE(0x904000, 0x904fff) AM_RAM AM_BASE_MEMBER(galspnbl_state, m_videoram)
+	AM_RANGE(0x904000, 0x904fff) AM_RAM AM_SHARE("videoram")
 	AM_RANGE(0x905000, 0x907fff) AM_WRITENOP	/* ??? */
-	AM_RANGE(0x980000, 0x9bffff) AM_RAM AM_BASE_MEMBER(galspnbl_state, m_bgvideoram)
+	AM_RANGE(0x980000, 0x9bffff) AM_RAM AM_SHARE("bgvideoram")
 	AM_RANGE(0xa00000, 0xa00fff) AM_WRITENOP	/* more palette ? */
-	AM_RANGE(0xa01000, 0xa017ff) AM_WRITE(paletteram16_xxxxBBBBGGGGRRRR_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0xa01000, 0xa017ff) AM_WRITE(paletteram_xxxxBBBBGGGGRRRR_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0xa01800, 0xa027ff) AM_WRITENOP	/* more palette ? */
 	AM_RANGE(0xa80000, 0xa80001) AM_READ_PORT("IN0")
 	AM_RANGE(0xa80010, 0xa80011) AM_READ_PORT("IN1") AM_WRITE(soundcommand_w)
 	AM_RANGE(0xa80020, 0xa80021) AM_READ_PORT("SYSTEM") AM_WRITENOP		/* w - could be watchdog, but causes resets when picture is shown */
 	AM_RANGE(0xa80030, 0xa80031) AM_READ_PORT("DSW1") AM_WRITENOP		/* w - irq ack? */
 	AM_RANGE(0xa80040, 0xa80041) AM_READ_PORT("DSW2")
-	AM_RANGE(0xa80050, 0xa80051) AM_WRITEONLY AM_BASE_MEMBER(galspnbl_state, m_scroll)	/* ??? */
+	AM_RANGE(0xa80050, 0xa80051) AM_WRITEONLY AM_SHARE("scroll")	/* ??? */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( audio_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( audio_map, AS_PROGRAM, 8, galspnbl_state )
 	AM_RANGE(0x0000, 0xefff) AM_ROM
 	AM_RANGE(0xf000, 0xf7ff) AM_RAM
-	AM_RANGE(0xf800, 0xf800) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
-	AM_RANGE(0xf810, 0xf811) AM_DEVWRITE("ymsnd", ym3812_w)
+	AM_RANGE(0xf800, 0xf800) AM_DEVREADWRITE("oki", okim6295_device, read, write)
+	AM_RANGE(0xf810, 0xf811) AM_DEVWRITE_LEGACY("ymsnd", ym3812_w)
 	AM_RANGE(0xfc00, 0xfc00) AM_NOP	/* irq ack ?? */
-	AM_RANGE(0xfc20, 0xfc20) AM_READ(soundlatch_r)
+	AM_RANGE(0xfc20, 0xfc20) AM_READ(soundlatch_byte_r)
 ADDRESS_MAP_END
 
 
@@ -79,7 +95,7 @@ static INPUT_PORTS_START( galspnbl )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME( "Left Flippers" )
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_NAME( "Launch Ball / Tilt" )
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_NAME( "Launch Ball / Shake (Left Side)" )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN )            /* uncalled (?) code at 0x007ed2 ('hotpinbl') or 0x008106 ('galspnbl') */
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED )
 
@@ -88,7 +104,7 @@ static INPUT_PORTS_START( galspnbl )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_SPECIAL )            /* same as BUTTON3 - leftover from another game ? */
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON4 ) PORT_NAME( "Launch Ball / Shake (Right Side)" )
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME( "Right Flippers" )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN )            /* uncalled (?) code at 0x007e90 ('hotpinbl') or 0x0080c4 ('galspnbl') */
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED )
@@ -96,7 +112,7 @@ static INPUT_PORTS_START( galspnbl )
 	PORT_START("SYSTEM")
 	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_COIN1 )
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_COIN2 )
-	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_START1 ) PORT_NAME( "Start" )  /* needed to avoid confusion with # of players */
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_START1 ) PORT_NAME( "Start" )  /* needed to avoid confusion with # of players. Press mulitple times for multiple players */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_UNUSED )
@@ -117,7 +133,7 @@ static INPUT_PORTS_START( galspnbl )
 	PORT_DIPNAME( 0x10, 0x10, "Hit Difficulty" )		PORT_DIPLOCATION("SW2:5")
 	PORT_DIPSETTING(    0x10, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hard ) )
-	PORT_DIPNAME( 0x20, 0x20, "Slide Show" )		PORT_DIPLOCATION("SW2:6")
+	PORT_DIPNAME( 0x20, 0x20, "Slide Show" )		PORT_DIPLOCATION("SW2:6") /* Listed as unused on manuals for both games */
 	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:7")
@@ -156,7 +172,7 @@ static INPUT_PORTS_START( hotpinbl )
 
 	PORT_MODIFY("IN1")
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME( "Right Flippers" )
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_SPECIAL )            /* same as BUTTON3 - leftover from another game ? */
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON4 ) PORT_NAME( "Launch Ball / Shake (Right Side)" )
 INPUT_PORTS_END
 
 
@@ -212,11 +228,11 @@ static MACHINE_START( galspnbl )
 static MACHINE_CONFIG_START( galspnbl, galspnbl_state )
 
 	/* basic machine hardware */
-	MCFG_CPU_ADD("maincpu", M68000, 10000000)	/* 10 MHz ??? */
+	MCFG_CPU_ADD("maincpu", M68000, XTAL_12MHz)	/* 12 MHz ??? - Use value from Temco's Super Pinball Action - NEEDS VERIFICATION!! */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_VBLANK_INT("screen", irq3_line_hold)/* also has vector for 6, but it does nothing */
 
-	MCFG_CPU_ADD("audiocpu", Z80, 4000000)	/* 4 MHz ??? */
+	MCFG_CPU_ADD("audiocpu", Z80, XTAL_4MHz)	/* 4 MHz ??? - Use value from Temco's Super Pinball Action - NEEDS VERIFICATION!! */
 	MCFG_CPU_PROGRAM_MAP(audio_map)
 								/* NMI is caused by the main CPU */
 
@@ -238,11 +254,11 @@ static MACHINE_CONFIG_START( galspnbl, galspnbl_state )
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("ymsnd", YM3812, 3579545)
+	MCFG_SOUND_ADD("ymsnd", YM3812, XTAL_4MHz) /* Use value from Super Pinball Action - NEEDS VERIFICATION!! */
 	MCFG_SOUND_CONFIG(ym3812_config)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 
-	MCFG_OKIM6295_ADD("oki", 1056000, OKIM6295_PIN7_HIGH) // clock frequency & pin 7 not verified
+	MCFG_OKIM6295_ADD("oki", XTAL_4MHz/4, OKIM6295_PIN7_HIGH) /* Use value from Super Pinball Action - clock frequency & pin 7 not verified */
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 MACHINE_CONFIG_END
 

@@ -10,14 +10,14 @@
 //============================================================
 
 // standard sdl header
-#include <SDL/SDL.h>
-
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 #include <Carbon/Carbon.h>
+
+#include "sdlinc.h"
 
 // MAME headers
 #include "osdcore.h"
@@ -142,7 +142,7 @@ void osd_sleep(osd_ticks_t duration)
 //  osd_num_processors
 //============================================================
 
-int osd_num_processors(void)
+int osd_get_num_processors(void)
 {
 	int processors = 1;
 

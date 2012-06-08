@@ -168,11 +168,11 @@ static void journey_set_color(running_machine &machine, int index, int data)
 }
 
 
-WRITE8_HANDLER( mcr_91490_paletteram_w )
+WRITE8_MEMBER(mcr_state::mcr_91490_paletteram_w)
 {
-	space->machine().generic.paletteram.u8[offset] = data;
+	m_generic_paletteram_8[offset] = data;
 	offset &= 0x7f;
-	mcr_set_color(space->machine(), (offset / 2) & 0x3f, data | ((offset & 1) << 8));
+	mcr_set_color(machine(), (offset / 2) & 0x3f, data | ((offset & 1) << 8));
 }
 
 
@@ -183,19 +183,17 @@ WRITE8_HANDLER( mcr_91490_paletteram_w )
  *
  *************************************/
 
-WRITE8_HANDLER( mcr_90009_videoram_w )
+WRITE8_MEMBER(mcr_state::mcr_90009_videoram_w)
 {
-	mcr_state *state = space->machine().driver_data<mcr_state>();
-	UINT8 *videoram = state->m_videoram;
+	UINT8 *videoram = m_videoram;
 	videoram[offset] = data;
 	bg_tilemap->mark_tile_dirty(offset);
 }
 
 
-WRITE8_HANDLER( mcr_90010_videoram_w )
+WRITE8_MEMBER(mcr_state::mcr_90010_videoram_w)
 {
-	mcr_state *state = space->machine().driver_data<mcr_state>();
-	UINT8 *videoram = state->m_videoram;
+	UINT8 *videoram = m_videoram;
 	videoram[offset] = data;
 	bg_tilemap->mark_tile_dirty(offset / 2);
 
@@ -203,26 +201,24 @@ WRITE8_HANDLER( mcr_90010_videoram_w )
 	if ((offset & 0x780) == 0x780)
 	{
 		if (mcr_cpu_board != 91475)
-			mcr_set_color(space->machine(), (offset / 2) & 0x3f, data | ((offset & 1) << 8));
+			mcr_set_color(machine(), (offset / 2) & 0x3f, data | ((offset & 1) << 8));
 		else
-			journey_set_color(space->machine(), (offset / 2) & 0x3f, data | ((offset & 1) << 8));
+			journey_set_color(machine(), (offset / 2) & 0x3f, data | ((offset & 1) << 8));
 	}
 }
 
 
-READ8_HANDLER( twotiger_videoram_r )
+READ8_MEMBER(mcr_state::twotiger_videoram_r)
 {
-	mcr_state *state = space->machine().driver_data<mcr_state>();
-	UINT8 *videoram = state->m_videoram;
+	UINT8 *videoram = m_videoram;
 	/* Two Tigers swizzles the address bits on videoram */
 	int effoffs = ((offset << 1) & 0x7fe) | ((offset >> 10) & 1);
 	return videoram[effoffs];
 }
 
-WRITE8_HANDLER( twotiger_videoram_w )
+WRITE8_MEMBER(mcr_state::twotiger_videoram_w)
 {
-	mcr_state *state = space->machine().driver_data<mcr_state>();
-	UINT8 *videoram = state->m_videoram;
+	UINT8 *videoram = m_videoram;
 	/* Two Tigers swizzles the address bits on videoram */
 	int effoffs = ((offset << 1) & 0x7fe) | ((offset >> 10) & 1);
 
@@ -231,14 +227,13 @@ WRITE8_HANDLER( twotiger_videoram_w )
 
 	/* palette RAM is mapped into the upper 0x80 bytes here */
 	if ((effoffs & 0x780) == 0x780)
-		mcr_set_color(space->machine(), ((offset & 0x400) >> 5) | ((offset >> 1) & 0x1f), data | ((offset & 1) << 8));
+		mcr_set_color(machine(), ((offset & 0x400) >> 5) | ((offset >> 1) & 0x1f), data | ((offset & 1) << 8));
 }
 
 
-WRITE8_HANDLER( mcr_91490_videoram_w )
+WRITE8_MEMBER(mcr_state::mcr_91490_videoram_w)
 {
-	mcr_state *state = space->machine().driver_data<mcr_state>();
-	UINT8 *videoram = state->m_videoram;
+	UINT8 *videoram = m_videoram;
 	videoram[offset] = data;
 	bg_tilemap->mark_tile_dirty(offset / 2);
 }
@@ -257,12 +252,13 @@ WRITE8_HANDLER( mcr_91490_videoram_w )
 
 static void render_sprites_91399(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
-	UINT8 *spriteram = machine.generic.spriteram.u8;
+	mcr_state *state = machine.driver_data<mcr_state>();
+	UINT8 *spriteram = state->m_spriteram;
 	const gfx_element *gfx = machine.gfx[1];
 	int offs;
 
 	/* render the sprites into the bitmap, ORing together */
-	for (offs = 0; offs < machine.generic.spriteram_size; offs += 4)
+	for (offs = 0; offs < state->m_spriteram.bytes(); offs += 4)
 	{
 		int code, x, y, sx, sy, hflip, vflip;
 
@@ -329,12 +325,13 @@ static void render_sprites_91399(running_machine &machine, bitmap_ind16 &bitmap,
 
 static void render_sprites_91464(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int primask, int sprmask, int colormask)
 {
-	UINT8 *spriteram = machine.generic.spriteram.u8;
+	mcr_state *state = machine.driver_data<mcr_state>();
+	UINT8 *spriteram = state->m_spriteram;
 	const gfx_element *gfx = machine.gfx[1];
 	int offs;
 
 	/* render the sprites into the bitmap, working from topmost to bottommost */
-	for (offs = machine.generic.spriteram_size - 4; offs >= 0; offs -= 4)
+	for (offs = state->m_spriteram.bytes() - 4; offs >= 0; offs -= 4)
 	{
 		int code, color, x, y, sx, sy, hflip, vflip;
 

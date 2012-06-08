@@ -69,7 +69,8 @@ enum iodevice_t
     IO_MEMCARD,     /* 13 - Memory card */
     IO_CDROM,       /* 14 - optical CD-ROM disc */
 	IO_MAGTAPE,     /* 15 - Magentic tape */
-    IO_COUNT        /* 16 - Total Number of IO_devices for searching */
+	IO_ROM,			/* 16 - Individual ROM image - the Amstrad CPC has a few applications that were sold on 16kB ROMs */
+    IO_COUNT        /* 17 - Total Number of IO_devices for searching */
 };
 
 enum image_error_t
@@ -108,12 +109,8 @@ struct software_info;
 
 // device image interface function types
 typedef int (*device_image_load_func)(device_image_interface &image);
-typedef int (*device_image_create_func)(device_image_interface &image, int format_type, option_resolution *format_options);
 typedef void (*device_image_unload_func)(device_image_interface &image);
-typedef void (*device_image_display_func)(device_image_interface &image);
 typedef void (*device_image_partialhash_func)(hash_collection &, const unsigned char *, unsigned long, const char *);
-typedef void (*device_image_get_devices_func)(device_image_interface &device);
-typedef bool (*device_image_softlist_load_func)(device_image_interface &image, char *swlist, char *swname, rom_entry *start_entry);
 typedef void (*device_image_display_info_func)(device_image_interface &image);
 
 //**************************************************************************
@@ -128,25 +125,11 @@ typedef void (*device_image_display_info_func)(device_image_interface &image);
 #define DEVICE_IMAGE_LOAD_NAME(name)        device_load_##name
 #define DEVICE_IMAGE_LOAD(name)             int DEVICE_IMAGE_LOAD_NAME(name)(device_image_interface &image)
 
-#define DEVICE_IMAGE_CREATE_NAME(name)      device_create_##name
-#define DEVICE_IMAGE_CREATE(name)           int DEVICE_IMAGE_CREATE_NAME(name)(device_image_interface &image, int create_format, option_resolution *create_args)
-
 #define DEVICE_IMAGE_UNLOAD_NAME(name)      device_unload_##name
 #define DEVICE_IMAGE_UNLOAD(name)           void DEVICE_IMAGE_UNLOAD_NAME(name)(device_image_interface &image)
 
-#define DEVICE_IMAGE_DISPLAY_NAME(name)     device_image_display_func##name
-#define DEVICE_IMAGE_DISPLAY(name)          void DEVICE_IMAGE_DISPLAY_NAME(name)(device_image_interface &image)
-
 #define DEVICE_IMAGE_DISPLAY_INFO_NAME(name)     device_image_display_info_func##name
 #define DEVICE_IMAGE_DISPLAY_INFO(name)          void DEVICE_IMAGE_DISPLAY_INFO_NAME(name)(device_image_interface &image)
-
-#define DEVICE_IMAGE_GET_DEVICES_NAME(name) device_image_get_devices_##name
-#define DEVICE_IMAGE_GET_DEVICES(name)      void DEVICE_IMAGE_GET_DEVICES_NAME(name)(device_image_interface &image)
-
-#define DEVICE_IMAGE_SOFTLIST_LOAD_NAME(name)        device_softlist_load_##name
-#define DEVICE_IMAGE_SOFTLIST_LOAD(name)             bool DEVICE_IMAGE_SOFTLIST_LOAD_NAME(name)(device_image_interface &image, char *swlist, char *swname, rom_entry *start_entry)
-
-
 
 // ======================> device_image_interface
 
@@ -170,7 +153,6 @@ public:
 	virtual void call_unload() { }
 	virtual void call_display() { }
 	virtual void call_display_info() { }
-	virtual void call_get_devices() { }
 	virtual device_image_partialhash_func get_partial_hash() const { return NULL; }
 	virtual iodevice_t image_type()  const = 0;
 	virtual bool is_readable()  const = 0;
@@ -246,6 +228,7 @@ public:
 	image_device_format *formatlist() const { return m_formatlist; }
 
 	bool load(const char *path);
+	bool open_image_file(emu_options &options);
 	bool finish_load();
 	void unload();
 	bool create(const char *path, const image_device_format *create_format, option_resolution *create_args);
@@ -253,7 +236,7 @@ public:
 	int reopen_for_write(const char *path);
 
 protected:
-	bool load_internal(const char *path, bool is_create, int create_format, option_resolution *create_args);
+	bool load_internal(const char *path, bool is_create, int create_format, option_resolution *create_args, bool just_load);
 	void determine_open_plan(int is_create, UINT32 *open_plan);
 	image_error_t load_image_by_path(UINT32 open_flags, const char *path);
 	void clear();
@@ -271,7 +254,7 @@ protected:
 	int read_hash_config(const char *sysname);
 	void run_hash(void (*partialhash)(hash_collection &, const unsigned char *, unsigned long, const char *), hash_collection &hashes, const char *types);
 	void image_checkhash();
-	void update_names();
+	void update_names(const device_type device_type = NULL, const char *inst = NULL, const char *brief = NULL);
 	// derived class overrides
 
 	// configuration

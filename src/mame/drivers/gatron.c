@@ -229,7 +229,7 @@
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "sound/sn76496.h"
-#include "machine/8255ppi.h"
+#include "machine/i8255.h"
 #include "machine/nvram.h"
 #include "poker41.lh"
 #include "pulltabs.lh"
@@ -240,7 +240,7 @@
 *    Read/Write Handlers    *
 ****************************/
 
-static WRITE8_HANDLER( output_port_0_w )
+WRITE8_MEMBER(gatron_state::output_port_0_w)
 {
 /*  ---------------
     Pull Tabs lamps
@@ -322,14 +322,14 @@ static WRITE8_DEVICE_HANDLER( output_port_1_w )
 *      Machine Init      *
 *************************/
 
-static const ppi8255_interface ppi8255_intf =
+static I8255A_INTERFACE( ppi8255_intf )
 {
 	DEVCB_INPUT_PORT("IN0"),		/* Port A read */
-	DEVCB_INPUT_PORT("IN1"),		/* Port B read */
-	DEVCB_NULL,						/* Port C read */
 	DEVCB_NULL,						/* Port A write */
+	DEVCB_INPUT_PORT("IN1"),		/* Port B read */
 	DEVCB_NULL,						/* Port B write */
-	DEVCB_HANDLER(output_port_1_w),	/* Port C write */
+	DEVCB_NULL,						/* Port C read */
+	DEVCB_HANDLER(output_port_1_w)	/* Port C write */
 };
 
 
@@ -337,17 +337,17 @@ static const ppi8255_interface ppi8255_intf =
 * Memory Map Information *
 *************************/
 
-static ADDRESS_MAP_START( gat_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( gat_map, AS_PROGRAM, 8, gatron_state )
 	AM_RANGE(0x0000, 0x5fff) AM_ROM
-	AM_RANGE(0x6000, 0x63ff) AM_RAM_WRITE(gat_videoram_w) AM_BASE_MEMBER(gatron_state, m_videoram)
+	AM_RANGE(0x6000, 0x63ff) AM_RAM_WRITE(gat_videoram_w) AM_SHARE("videoram")
 	AM_RANGE(0x8000, 0x87ff) AM_RAM AM_SHARE("nvram")	/* battery backed RAM */
-	AM_RANGE(0xa000, 0xa000) AM_DEVWRITE("snsnd", sn76496_w)							/* PSG */
+	AM_RANGE(0xa000, 0xa000) AM_DEVWRITE_LEGACY("snsnd", sn76496_w)							/* PSG */
 	AM_RANGE(0xe000, 0xe000) AM_WRITE(output_port_0_w)										/* lamps */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( gat_portmap, AS_IO, 8 )
+static ADDRESS_MAP_START( gat_portmap, AS_IO, 8, gatron_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x03) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
+	AM_RANGE(0x00, 0x03) AM_DEVREADWRITE("ppi8255", i8255_device, read, write)
 ADDRESS_MAP_END
 
 
@@ -442,7 +442,7 @@ static MACHINE_CONFIG_START( gat, gatron_state )
 
 	MCFG_NVRAM_ADD_0FILL("nvram")
 
-	MCFG_PPI8255_ADD( "ppi8255", ppi8255_intf )
+	MCFG_I8255A_ADD( "ppi8255", ppi8255_intf )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)

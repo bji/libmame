@@ -8,7 +8,6 @@
 #include "cpu/sh4/sh4.h"
 #include "render.h"
 #include "rendutil.h"
-#include "profiler.h"
 #include "video/rgbutil.h"
 
 #define DEBUG_FIFO_POLY (0)
@@ -421,8 +420,8 @@ INLINE UINT32 tex_r_yuv_n(running_machine &machine, texinfo *t, float x, float y
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (t->stride*yt + (xt & ~1))*2;
-	UINT16 c1 = *(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp));
-	UINT16 c2 = *(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp+2));
+	UINT16 c1 = *(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp));
+	UINT16 c2 = *(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp+2));
 	return cv_yuv(c1, c2, xt);
 }
 
@@ -432,7 +431,7 @@ INLINE UINT32 tex_r_1555_n(running_machine &machine, texinfo *t, float x, float 
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (t->stride*yt + xt)*2;
-	return cv_1555z(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_1555z(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_1555_tw(running_machine &machine, texinfo *t, float x, float y)
@@ -441,7 +440,7 @@ INLINE UINT32 tex_r_1555_tw(running_machine &machine, texinfo *t, float x, float
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (dilated1[t->cd][xt] + dilated0[t->cd][yt])*2;
-	return cv_1555(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_1555(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_1555_vq(running_machine &machine, texinfo *t, float x, float y)
@@ -449,9 +448,9 @@ INLINE UINT32 tex_r_1555_vq(running_machine &machine, texinfo *t, float x, float
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + (dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 1])*2;
-	return cv_1555(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_1555(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_565_n(running_machine &machine, texinfo *t, float x, float y)
@@ -460,7 +459,7 @@ INLINE UINT32 tex_r_565_n(running_machine &machine, texinfo *t, float x, float y
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (t->stride*yt + xt)*2;
-	return cv_565z(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_565z(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_565_tw(running_machine &machine, texinfo *t, float x, float y)
@@ -469,7 +468,7 @@ INLINE UINT32 tex_r_565_tw(running_machine &machine, texinfo *t, float x, float 
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (dilated1[t->cd][xt] + dilated0[t->cd][yt])*2;
-	return cv_565(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_565(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_565_vq(running_machine &machine, texinfo *t, float x, float y)
@@ -477,9 +476,9 @@ INLINE UINT32 tex_r_565_vq(running_machine &machine, texinfo *t, float x, float 
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + (dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 1])*2;
-	return cv_565(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_565(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_4444_n(running_machine &machine, texinfo *t, float x, float y)
@@ -488,7 +487,7 @@ INLINE UINT32 tex_r_4444_n(running_machine &machine, texinfo *t, float x, float 
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (t->stride*yt + xt)*2;
-	return cv_4444z(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_4444z(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_4444_tw(running_machine &machine, texinfo *t, float x, float y)
@@ -497,7 +496,7 @@ INLINE UINT32 tex_r_4444_tw(running_machine &machine, texinfo *t, float x, float
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + (dilated1[t->cd][xt] + dilated0[t->cd][yt])*2;
-	return cv_4444(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_4444(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_4444_vq(running_machine &machine, texinfo *t, float x, float y)
@@ -505,9 +504,9 @@ INLINE UINT32 tex_r_4444_vq(running_machine &machine, texinfo *t, float x, float
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + (dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 1])*2;
-	return cv_4444(*(UINT16 *)(((UINT8 *)state->dc_texture_ram) + WORD_XOR_LE(addrp)));
+	return cv_4444(*(UINT16 *)((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target())) + WORD_XOR_LE(addrp)));
 }
 
 INLINE UINT32 tex_r_p4_1555_tw(running_machine &machine, texinfo *t, float x, float y)
@@ -517,7 +516,7 @@ INLINE UINT32 tex_r_p4_1555_tw(running_machine &machine, texinfo *t, float x, fl
 	int yt = ((int)y) & (t->sizey-1);
 	int off = dilated1[t->cd][xt] + dilated0[t->cd][yt];
 	int addrp = t->address + (off >> 1);
-	int c = (((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
+	int c = ((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
 	return cv_1555(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -526,9 +525,9 @@ INLINE UINT32 tex_r_p4_1555_vq(running_machine &machine, texinfo *t, float x, fl
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] & 0xf;
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] & 0xf;
 	return cv_1555(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -539,7 +538,7 @@ INLINE UINT32 tex_r_p4_565_tw(running_machine &machine, texinfo *t, float x, flo
 	int yt = ((int)y) & (t->sizey-1);
 	int off = dilated1[t->cd][xt] + dilated0[t->cd][yt];
 	int addrp = t->address + (off >> 1);
-	int c = (((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
+	int c = ((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
 	return cv_565(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -548,9 +547,9 @@ INLINE UINT32 tex_r_p4_565_vq(running_machine &machine, texinfo *t, float x, flo
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] & 0xf;
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] & 0xf;
 	return cv_565(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -561,7 +560,7 @@ INLINE UINT32 tex_r_p4_4444_tw(running_machine &machine, texinfo *t, float x, fl
 	int yt = ((int)y) & (t->sizey-1);
 	int off = dilated1[t->cd][xt] + dilated0[t->cd][yt];
 	int addrp = t->address + (off >> 1);
-	int c = (((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
+	int c = ((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
 	return cv_4444(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -570,9 +569,9 @@ INLINE UINT32 tex_r_p4_4444_vq(running_machine &machine, texinfo *t, float x, fl
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] & 0xf;
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] & 0xf;
 	return cv_4444(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -583,7 +582,7 @@ INLINE UINT32 tex_r_p4_8888_tw(running_machine &machine, texinfo *t, float x, fl
 	int yt = ((int)y) & (t->sizey-1);
 	int off = dilated1[t->cd][xt] + dilated0[t->cd][yt];
 	int addrp = t->address + (off >> 1);
-	int c = (((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
+	int c = ((reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] >> ((off & 1) << 2)) & 0xf;
 	return state->pvrta_regs[t->palbase + c];
 }
 
@@ -592,9 +591,9 @@ INLINE UINT32 tex_r_p4_8888_vq(running_machine &machine, texinfo *t, float x, fl
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)] & 0xf;
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)] & 0xf;
 	return state->pvrta_regs[t->palbase + c];
 }
 
@@ -604,7 +603,7 @@ INLINE UINT32 tex_r_p8_1555_tw(running_machine &machine, texinfo *t, float x, fl
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + dilated1[t->cd][xt] + dilated0[t->cd][yt];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return cv_1555(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -613,9 +612,9 @@ INLINE UINT32 tex_r_p8_1555_vq(running_machine &machine, texinfo *t, float x, fl
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return cv_1555(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -625,7 +624,7 @@ INLINE UINT32 tex_r_p8_565_tw(running_machine &machine, texinfo *t, float x, flo
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + dilated1[t->cd][xt] + dilated0[t->cd][yt];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return cv_565(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -634,9 +633,9 @@ INLINE UINT32 tex_r_p8_565_vq(running_machine &machine, texinfo *t, float x, flo
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return cv_565(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -646,7 +645,7 @@ INLINE UINT32 tex_r_p8_4444_tw(running_machine &machine, texinfo *t, float x, fl
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + dilated1[t->cd][xt] + dilated0[t->cd][yt];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return cv_4444(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -655,9 +654,9 @@ INLINE UINT32 tex_r_p8_4444_vq(running_machine &machine, texinfo *t, float x, fl
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return cv_4444(state->pvrta_regs[t->palbase + c]);
 }
 
@@ -667,7 +666,7 @@ INLINE UINT32 tex_r_p8_8888_tw(running_machine &machine, texinfo *t, float x, fl
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
 	int addrp = t->address + dilated1[t->cd][xt] + dilated0[t->cd][yt];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return state->pvrta_regs[t->palbase + c];
 }
 
@@ -676,9 +675,9 @@ INLINE UINT32 tex_r_p8_8888_vq(running_machine &machine, texinfo *t, float x, fl
 	dc_state *state = machine.driver_data<dc_state>();
 	int xt = ((int)x) & (t->sizex-1);
 	int yt = ((int)y) & (t->sizey-1);
-	int idx = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
+	int idx = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(t->address + dilated1[t->cd][xt >> 1] + dilated0[t->cd][yt >> 1])];
 	int addrp = t->vqbase + 8*idx + dilated1[t->cd][xt & 1] + dilated0[t->cd][yt & 3];
-	int c = ((UINT8 *)state->dc_texture_ram)[BYTE_XOR_LE(addrp)];
+	int c = (reinterpret_cast<UINT8 *>(state->dc_texture_ram.target()))[BYTE_XOR_LE(addrp)];
 	return state->pvrta_regs[t->palbase + c];
 }
 
@@ -2235,7 +2234,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x*2+0);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x03e0) >> 2;
@@ -2255,7 +2254,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x03e0) >> 2;
@@ -2279,7 +2278,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x*2+0);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x07e0) >> 3;
@@ -2301,7 +2300,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x07e0) >> 3;
@@ -2324,7 +2323,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x*2+0);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x07e0) >> 3;
@@ -2345,7 +2344,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x07e0) >> 3;
@@ -2368,7 +2367,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x*2+0);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x07e0) >> 3;
@@ -2389,7 +2388,7 @@ static void pvr_drawframebuffer(running_machine &machine,bitmap_rgb32 &bitmap,co
 					for (x=0;x < xi;x++)
 					{
 						fbaddr=&bitmap.pix32(y, x);
-						c=*(((UINT16 *)state->dc_framebuffer_ram) + (WORD2_XOR_LE(addrp) >> 1));
+						c=*((reinterpret_cast<UINT16 *>(state->dc_framebuffer_ram.target())) + (WORD2_XOR_LE(addrp) >> 1));
 
 						b = (c & 0x001f) << 3;
 						g = (c & 0x07e0) >> 3;
@@ -2680,7 +2679,7 @@ SCREEN_UPDATE_RGB32(dc)
 		pvr_drawframebuffer(screen.machine(),bitmap,cliprect);
 
 	// update this here so we only do string lookup once per frame
-	state->debug_dip_status = input_port_read(screen.machine(), "MAMEDEBUG");
+	state->debug_dip_status = screen.machine().root_device().ioport("MAMEDEBUG")->read();
 
 	return 0;
 }

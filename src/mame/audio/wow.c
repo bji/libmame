@@ -21,6 +21,7 @@ wow_sh_ update- Null
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "sound/samples.h"
+#include "sound/votrax.h"
 #include "includes/astrocde.h"
 
 
@@ -102,11 +103,12 @@ const char *const wow_sample_names[] =
 
 READ8_HANDLER( wow_speech_r )
 {
+	UINT8 data = offset >> 8;
+#if USE_FAKE_VOTRAX
 	astrocde_state *state = space->machine().driver_data<astrocde_state>();
-	device_t *samples = space->machine().device("samples");
+	samples_device *samples = space->machine().device<samples_device>("samples");
 	int Phoneme/*, Intonation*/;
 	int i = 0;
-	UINT8 data = offset >> 8;
 	offset &= 0xff;
 
 	state->m_totalword_ptr = state->m_totalword;
@@ -117,7 +119,7 @@ READ8_HANDLER( wow_speech_r )
 	//logerror("Data : %d Speech : %s at intonation %d\n",Phoneme, PhonemeTable[Phoneme],Intonation);
 
 	if(Phoneme==63) {
-		sample_stop(samples, 0);
+		samples->stop(0);
 		//logerror("Clearing sample %s\n",state->m_totalword);
 		state->m_totalword[0] = 0;				   /* Clear the total word stack */
 		return data;
@@ -132,8 +134,8 @@ READ8_HANDLER( wow_speech_r )
 		if (state->m_plural != 0) {
 			//logerror("found a possible plural at %d\n",state->m_plural-1);
 			if (!strcmp("S",state->m_totalword)) {		   /* Plural check */
-				sample_start(samples, 0, num_samples-2, 0);	   /* play the sample at position of word */
-				sample_set_freq(samples, 0, 11025);    /* play at correct rate */
+				samples->start(0, num_samples-2);	   /* play the sample at position of word */
+				samples->set_frequency(0, 11025);    /* play at correct rate */
 				state->m_totalword[0] = 0;				   /* Clear the total word stack */
 				state->m_oldword[0] = 0;				   /* Clear the total word stack */
 				return data;
@@ -156,13 +158,18 @@ READ8_HANDLER( wow_speech_r )
 			} else {
 				state->m_plural=0;
 			}
-			sample_start(samples, 0, i, 0);	                   /* play the sample at position of word */
-			sample_set_freq(samples, 0, 11025);         /* play at correct rate */
+			samples->start(0, i);	                   /* play the sample at position of word */
+			samples->set_frequency(0, 11025);         /* play at correct rate */
 			//logerror("Playing sample %d\n",i);
 			state->m_totalword[0] = 0;				   /* Clear the total word stack */
 			return data;
 		}
 	}
+#else
+	votrax_sc01_device *votrax = space->machine().device<votrax_sc01_device>("votrax");
+	votrax->inflection_w(*space, 0, data >> 6);
+	votrax->write(*space, 0, data);
+#endif
 
 	/* Note : We should really also use volume in this as well as frequency */
 	return data;				                   /* Return nicely */
@@ -171,6 +178,11 @@ READ8_HANDLER( wow_speech_r )
 
 CUSTOM_INPUT( wow_speech_status_r )
 {
-	device_t *samples = field.machine().device("samples");
-	return !sample_playing(samples, 0);
+#if USE_FAKE_VOTRAX
+	samples_device *samples = field.machine().device<samples_device>("samples");
+	return !samples->playing(0);
+#else
+	votrax_sc01_device *votrax = field.machine().device<votrax_sc01_device>("votrax");
+	return votrax->request();
+#endif
 }

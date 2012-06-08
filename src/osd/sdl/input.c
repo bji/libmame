@@ -13,7 +13,7 @@
 //============================================================
 
 // standard sdl header
-#include <SDL/SDL.h>
+#include "sdlinc.h"
 #include <ctype.h>
 #include <stddef.h>
 
@@ -95,6 +95,7 @@ struct _joystick_state
 	INT32 axes[MAX_AXES];
 	INT32 buttons[MAX_BUTTONS];
 	INT32 hatsU[MAX_HATS], hatsD[MAX_HATS], hatsL[MAX_HATS], hatsR[MAX_HATS];
+	INT32 balls[MAX_AXES];
 };
 
 // generic device information
@@ -206,7 +207,7 @@ struct _kt_table {
 	char		*	ui_name;
 };
 
-#if (SDL_VERSION_ATLEAST(1,3,0))
+#if (SDLMAME_SDL2)
 
 #define OSD_SDL_INDEX(x) (x)
 #define OSD_SDL_INDEX_KEYSYM(keysym) ((keysym)->scancode)
@@ -470,7 +471,7 @@ struct _key_lookup_table
 	const char *name;
 };
 
-#if (SDL_VERSION_ATLEAST(1,3,0))
+#if (SDLMAME_SDL2)
 #define KE(x) { SDL_SCANCODE_ ## x, "SDL_SCANCODE_" #x },
 #define KE8(A, B, C, D, E, F, G, H) KE(A) KE(B) KE(C) KE(D) KE(E) KE(F) KE(G) KE(H)
 #define KE7(A, B, C, D, E, F, G) KE(A) KE(B) KE(C) KE(D) KE(E) KE(F) KE(G)
@@ -495,8 +496,7 @@ static key_lookup_table sdl_lookup_table[] =
 	KE8(F6,			F7,			F8,				F9,			F10,		F11,		F12,		F13			)
 	KE8(F14,		F15,		NUMLOCKCLEAR,	CAPSLOCK,	SCROLLLOCK,	RSHIFT,		LSHIFT,		RCTRL		)
 	KE5(LCTRL,		RALT,		LALT,			LGUI,		RGUI)
-	KE(PRINTSCREEN)
-	KE(MENU)
+	KE8(GRAVE,		LEFTBRACKET,RIGHTBRACKET,	SEMICOLON,	APOSTROPHE,	BACKSLASH,	PRINTSCREEN,MENU		)
 	KE(UNDO)
 	{-1, ""}
 };
@@ -540,7 +540,6 @@ static key_lookup_table sdl_lookup_table[] =
 	{-1, ""}
 };
 #endif
-
 
 //============================================================
 //  INLINE FUNCTIONS
@@ -681,7 +680,7 @@ static device_info *devmap_class_register(running_machine &machine, device_map_t
 static void sdlinput_register_joysticks(running_machine &machine)
 {
 	device_info *devinfo;
-	int physical_stick, axis, button, hat, stick;
+	int physical_stick, axis, button, hat, stick, ball;
 	char tempname[512];
 	SDL_Joystick *joy;
 
@@ -709,7 +708,7 @@ static void sdlinput_register_joysticks(running_machine &machine)
 		devinfo->joystick.device = joy;
 
 		mame_printf_verbose("Joystick: %s\n", devinfo->name);
-		mame_printf_verbose("Joystick:   ...  %d axes, %d buttons %d hats\n", SDL_JoystickNumAxes(joy), SDL_JoystickNumButtons(joy), SDL_JoystickNumHats(joy));
+		mame_printf_verbose("Joystick:   ...  %d axes, %d buttons %d hats %d balls\n", SDL_JoystickNumAxes(joy), SDL_JoystickNumButtons(joy), SDL_JoystickNumHats(joy), SDL_JoystickNumBalls(joy));
 		mame_printf_verbose("Joystick:   ...  Physical id %d mapped to logical id %d\n", physical_stick, stick);
 
 		// loop over all axes
@@ -764,6 +763,22 @@ static void sdlinput_register_joysticks(running_machine &machine)
 			itemid = (input_item_id) ((hat < INPUT_MAX_HATS) ? ITEM_ID_HAT1RIGHT + 4 * hat : ITEM_ID_OTHER_SWITCH);
 	    	devinfo->device->add_item(tempname, itemid, generic_button_get_state, &devinfo->joystick.hatsR[hat]);
 		}
+
+		// loop over all (track)balls
+		for (ball = 0; ball < SDL_JoystickNumBalls(joy); ball++)
+		{
+			int itemid;
+
+			if (ball * 2 < INPUT_MAX_ADD_RELATIVE)
+				itemid = ITEM_ID_ADD_RELATIVE1 + ball * 2;
+			else
+				itemid = ITEM_ID_OTHER_AXIS_RELATIVE;
+
+			sprintf(tempname, "R%d %s", ball * 2, devinfo->name);
+			devinfo->device->add_item(tempname, (input_item_id) itemid, generic_axis_get_state, &devinfo->joystick.balls[ball * 2]);
+			sprintf(tempname, "R%d %s", ball * 2 + 1, devinfo->name);
+			devinfo->device->add_item(tempname, (input_item_id) (itemid + 1), generic_axis_get_state, &devinfo->joystick.balls[ball * 2 + 1]);
+		}
 	}
 	mame_printf_verbose("Joystick: End initialization\n");
 }
@@ -790,7 +805,7 @@ static void sdlinput_deregister_joysticks(running_machine &machine)
 //  sdlinput_register_mice
 //============================================================
 
-#if (!SDL13_POST_HG4464 && SDL_VERSION_ATLEAST(1,3,0))
+#if defined(SDL2_MULTIAPI) && 0
 static void sdlinput_register_mice(running_machine &machine)
 {
 	int index, physical_mouse;
@@ -938,9 +953,10 @@ static kt_table * sdlinput_read_keymap(running_machine &machine)
 	int line = 1;
 	int index,i, sk, vk, ak;
 	char buf[256];
-	char mks[21];
-	char sks[21];
-	char kns[21];
+	char mks[41];
+	char sks[41];
+	char kns[41];
+	int  sdl2section=0;
 
 	if (!machine.options().bool_value(SDLOPTION_KEYMAP))
 		return sdl_key_trans_table;
@@ -960,34 +976,41 @@ static kt_table * sdlinput_read_keymap(running_machine &machine)
 
 	while (!feof(keymap_file))
 	{
-		fgets(buf, 255, keymap_file);
-		if (*buf && buf[0] && buf[0] != '#')
+		char *ret = fgets(buf, 255, keymap_file);
+		if (ret && buf[0] != '\n' && buf[0] != '#')
 		{
 			buf[255]=0;
 			i=strlen(buf);
 			if (i && buf[i-1] == '\n')
 				buf[i-1] = 0;
-			mks[0]=0;
-			sks[0]=0;
-			memset(kns, 0, ARRAY_LENGTH(kns));
-			sscanf(buf, "%20s %20s %x %x %20c\n",
-					mks, sks, &vk, &ak, kns);
-
-			index=lookup_mame_index(mks);
-			sk = lookup_sdl_code(sks);
-
-			if ( sk >= 0 && index >=0)
+			if (strncmp(buf,"[SDL2]",6) == 0)
 			{
-				key_trans_table[index].sdl_key = sk;
-				// vk and ak are not really needed
-				//key_trans_table[index][VIRTUAL_KEY] = vk;
-				//key_trans_table[index][ASCII_KEY] = ak;
-				key_trans_table[index].ui_name = auto_alloc_array(machine, char, strlen(kns)+1);
-				strcpy(key_trans_table[index].ui_name, kns);
-				mame_printf_verbose("Keymap: Mapped <%s> to <%s> with ui-text <%s>\n", sks, mks, kns);
+				sdl2section = 1;
 			}
-			else
-				mame_printf_warning("Keymap: Error on line %d - %s key not found: %s\n", line, (sk<0) ? "sdl" : "mame", buf);
+			else if (((SDLMAME_SDL2) ^ sdl2section) == 0)
+			{
+				mks[0]=0;
+				sks[0]=0;
+				memset(kns, 0, ARRAY_LENGTH(kns));
+				sscanf(buf, "%40s %40s %x %x %40c\n",
+						mks, sks, &vk, &ak, kns);
+
+				index=lookup_mame_index(mks);
+				sk = lookup_sdl_code(sks);
+
+				if ( sk >= 0 && index >=0)
+				{
+					key_trans_table[index].sdl_key = sk;
+					// vk and ak are not really needed
+					//key_trans_table[index][VIRTUAL_KEY] = vk;
+					//key_trans_table[index][ASCII_KEY] = ak;
+					key_trans_table[index].ui_name = auto_alloc_array(machine, char, strlen(kns)+1);
+					strcpy(key_trans_table[index].ui_name, kns);
+					mame_printf_verbose("Keymap: Mapped <%s> to <%s> with ui-text <%s>\n", sks, mks, kns);
+				}
+				else
+					mame_printf_warning("Keymap: Error on line %d - %s key not found: %s\n", line, (sk<0) ? "sdl" : "mame", buf);
+			}
 		}
 		line++;
 	}
@@ -1002,7 +1025,7 @@ static kt_table * sdlinput_read_keymap(running_machine &machine)
 //  sdlinput_register_keyboards
 //============================================================
 
-#if ((1 ||!SDL13_POST_HG4464) && SDL_VERSION_ATLEAST(1,3,0))
+#ifdef SDL2_MULTIAPI
 static void sdlinput_register_keyboards(running_machine &machine)
 {
 	int physical_keyboard;
@@ -1193,7 +1216,7 @@ sdl_window_info *sdlinput_get_focus_window(running_machine &machine)
 //  sdlinput_poll
 //============================================================
 
-#if (SDL_VERSION_ATLEAST(1,3,0))
+#if (SDLMAME_SDL2)
 INLINE sdl_window_info * window_from_id(Uint32 windowID)
 {
 	sdl_window_info *w;
@@ -1238,7 +1261,7 @@ void sdlinput_process_events_buf(running_machine &machine)
 	if (SDLMAME_EVENTS_IN_WORKER_THREAD)
 	{
 		osd_lock_acquire(input_lock);
-	#if (SDL_VERSION_ATLEAST(1,3,0))
+	#if (SDLMAME_SDL2)
 		/* Make sure we get all pending events */
 		SDL_PumpEvents();
 	#endif
@@ -1306,15 +1329,24 @@ void sdlinput_poll(running_machine &machine)
 		}
 		switch(event.type) {
 		case SDL_KEYDOWN:
+#ifdef SDL2_MULTIAPI
 			devinfo = generic_device_find_index( keyboard_list, keyboard_map.logical[event.key.which]);
 			//printf("Key down %d %d %s => %d %s (scrlock keycode is %d)\n", event.key.which, event.key.keysym.scancode, devinfo->name, OSD_SDL_INDEX_KEYSYM(&event.key.keysym), sdl_key_trans_table[event.key.keysym.scancode].mame_key_name, KEYCODE_SCRLOCK);
+#else
+			devinfo = generic_device_find_index( keyboard_list, keyboard_map.logical[0]);
+#endif
 			devinfo->keyboard.state[OSD_SDL_INDEX_KEYSYM(&event.key.keysym)] = 0x80;
-#if (!SDL_VERSION_ATLEAST(1,3,0))
+#if (!SDLMAME_SDL2)
 			ui_input_push_char_event(machine, sdl_window_list->target, (unicode_char) event.key.keysym.unicode);
 #endif
 			break;
 		case SDL_KEYUP:
+#ifdef SDL2_MULTIAPI
 			devinfo = generic_device_find_index( keyboard_list, keyboard_map.logical[event.key.which]);
+			//printf("Key up: %d %d\n", OSD_SDL_INDEX_KEYSYM(&event.key.keysym), event.key.which);
+#else
+			devinfo = generic_device_find_index( keyboard_list, keyboard_map.logical[0]);
+#endif
 			devinfo->keyboard.state[OSD_SDL_INDEX_KEYSYM(&event.key.keysym)] = 0x00;
 			break;
 		case SDL_JOYAXISMOTION:
@@ -1389,7 +1421,11 @@ void sdlinput_poll(running_machine &machine)
 			}
 			break;
 		case SDL_MOUSEBUTTONDOWN:
+#ifdef SDL2_MULTIAPI
 			devinfo = generic_device_find_index(mouse_list, mouse_map.logical[event.button.which]);
+#else
+			devinfo = generic_device_find_index(mouse_list, mouse_map.logical[0]);
+#endif
 			devinfo->mouse.buttons[event.button.button-1] = 0x80;
 			//printf("But down %d %d %d %d %s\n", event.button.which, event.button.button, event.button.x, event.button.y, devinfo->name);
 			if (event.button.button == 1)
@@ -1422,7 +1458,11 @@ void sdlinput_poll(running_machine &machine)
 			}
 			break;
 		case SDL_MOUSEBUTTONUP:
+#ifdef SDL2_MULTIAPI
 			devinfo = generic_device_find_index(mouse_list, mouse_map.logical[event.button.which]);
+#else
+			devinfo = generic_device_find_index(mouse_list, mouse_map.logical[0]);
+#endif
 			devinfo->mouse.buttons[event.button.button-1] = 0;
 			//printf("But up %d %d %d %d\n", event.button.which, event.button.button, event.button.x, event.button.y);
 
@@ -1438,8 +1478,12 @@ void sdlinput_poll(running_machine &machine)
 			}
 			break;
 		case SDL_MOUSEMOTION:
+#ifdef SDL2_MULTIAPI
 			devinfo = generic_device_find_index(mouse_list, mouse_map.logical[event.motion.which]);
-#if (SDL_VERSION_ATLEAST(1,3,0))
+#else
+			devinfo = generic_device_find_index(mouse_list, mouse_map.logical[0]);
+#endif
+#if (SDLMAME_SDL2)
 			// FIXME: may apply to 1.2 as well ...
 			//printf("Motion %d %d %d %s\n", event.motion.which, event.motion.x, event.motion.y, devinfo->name);
 			devinfo->mouse.lX += event.motion.xrel * INPUT_RELATIVE_PER_PIXEL;
@@ -1456,7 +1500,13 @@ void sdlinput_poll(running_machine &machine)
 					ui_input_push_mouse_move_event(machine, window->target, cx, cy);
 			}
 			break;
-#if (!SDL_VERSION_ATLEAST(1,3,0))
+		case SDL_JOYBALLMOTION:
+			devinfo = generic_device_find_index(joystick_list, joy_map.logical[event.jball.which]);
+			//printf("Ball %d %d\n", event.jball.xrel, event.jball.yrel);
+			devinfo->joystick.balls[event.jball.ball * 2] = event.jball.xrel * INPUT_RELATIVE_PER_PIXEL;
+			devinfo->joystick.balls[event.jball.ball * 2 + 1] = event.jball.yrel * INPUT_RELATIVE_PER_PIXEL;
+			break;
+#if (!SDLMAME_SDL2)
 		case SDL_APPMOUSEFOCUS:
 			app_has_mouse_focus = event.active.gain;
 			if (!event.active.gain)
@@ -1533,7 +1583,7 @@ void sdlinput_poll(running_machine &machine)
 #endif
 		}
 	}
-#if (SDL_VERSION_ATLEAST(1,3,0))
+#if (SDLMAME_SDL2)
 	resize_all_windows();
 #endif
 }
@@ -1549,7 +1599,7 @@ void  sdlinput_release_keys(running_machine &machine)
 	// FIXME: SDL >= 1.3 will nuke the window event buffer when
 	// a window is closed. This will leave keys in a pressed
 	// state when a window is destroyed and recreated.
-#if (SDL_VERSION_ATLEAST(1,3,0))
+#if (SDLMAME_SDL2)
 	device_info *devinfo;
 	int index;
 
@@ -1601,7 +1651,7 @@ void sdl_osd_interface::customize_input_type_list(simple_list<input_type_entry> 
 	// loop over the defaults
 	for (entry = typelist.first(); entry != NULL; entry = entry->next())
 	{
-		switch (entry->type)
+		switch (entry->type())
 		{
 			// configurable UI mode switch
 			case IPT_UI_TOGGLE_UI:
@@ -1620,26 +1670,23 @@ void sdl_osd_interface::customize_input_type_list(simple_list<input_type_entry> 
 					mameid_code = lookup_mame_code(fullmode);
 				}
 				ui_code = input_code(DEVICE_CLASS_KEYBOARD, 0, ITEM_CLASS_SWITCH, ITEM_MODIFIER_NONE, input_item_id(mameid_code));
-				entry->defseq[SEQ_TYPE_STANDARD].set(ui_code);
+				entry->defseq(SEQ_TYPE_STANDARD).set(ui_code);
 				break;
 			// alt-enter for fullscreen
 			case IPT_OSD_1:
-				entry->token = "TOGGLE_FULLSCREEN";
-				entry->name = "Toggle Fullscreen";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_ENTER, KEYCODE_LALT);
+				entry->configure_osd("TOGGLE_FULLSCREEN", "Toggle Fullscreen");
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_ENTER, KEYCODE_LALT);
 				break;
 
 			// disable UI_SELECT when LALT is down, this stops selecting
 			// things in the menu when toggling fullscreen with LALT+ENTER
 /*          case IPT_UI_SELECT:
-                entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_ENTER, input_seq::not_code, KEYCODE_LALT);
+                entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_ENTER, input_seq::not_code, KEYCODE_LALT);
                 break;*/
 
 			// page down for fastforward (must be OSD_3 as per src/emu/ui.c)
 			case IPT_UI_FAST_FORWARD:
-				entry->token = "FAST_FORWARD";
-				entry->name = "Fast Forward";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_PGDN);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_PGDN);
 				break;
 
 			// OSD hotkeys use LCTRL and start at F3, they start at
@@ -1649,68 +1696,67 @@ void sdl_osd_interface::customize_input_type_list(simple_list<input_type_entry> 
 
 			// LCTRL-F3 to toggle fullstretch
 			case IPT_OSD_2:
-				entry->token = "TOGGLE_FULLSTRETCH";
-				entry->name = "Toggle Uneven stretch";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F3, KEYCODE_LCONTROL);
+				entry->configure_osd("TOGGLE_FULLSTRETCH", "Toggle Uneven stretch");
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F3, KEYCODE_LCONTROL);
 				break;
 			// add a Not lcrtl condition to the reset key
 			case IPT_UI_SOFT_RESET:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F3, input_seq::not_code, KEYCODE_LCONTROL, input_seq::not_code, KEYCODE_LSHIFT);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F3, input_seq::not_code, KEYCODE_LCONTROL, input_seq::not_code, KEYCODE_LSHIFT);
 				break;
 
 			// LCTRL-F4 to toggle keep aspect
 			case IPT_OSD_4:
-				entry->token = "TOGGLE_KEEP_ASPECT";
-				entry->name = "Toggle Keepaspect";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F4, KEYCODE_LCONTROL);
+				entry->configure_osd("TOGGLE_KEEP_ASPECT", "Toggle Keepaspect");
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F4, KEYCODE_LCONTROL);
 				break;
 			// add a Not lcrtl condition to the show gfx key
 			case IPT_UI_SHOW_GFX:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F4, input_seq::not_code, KEYCODE_LCONTROL);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F4, input_seq::not_code, KEYCODE_LCONTROL);
 				break;
 
 			// LCTRL-F5 to toggle OpenGL filtering
 			case IPT_OSD_5:
-				entry->token = "TOGGLE_FILTER";
-				entry->name = "Toggle Filter";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F5, KEYCODE_LCONTROL);
+				entry->configure_osd("TOGGLE_FILTER", "Toggle Filter");
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F5, KEYCODE_LCONTROL);
 				break;
 			// add a Not lcrtl condition to the toggle debug key
 			case IPT_UI_TOGGLE_DEBUG:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F5, input_seq::not_code, KEYCODE_LCONTROL);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F5, input_seq::not_code, KEYCODE_LCONTROL);
 				break;
 
 			// LCTRL-F6 to decrease OpenGL prescaling
 			case IPT_OSD_6:
-				entry->token = "DECREASE_PRESCALE";
-				entry->name = "Decrease Prescaling";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F6, KEYCODE_LCONTROL);
+				entry->configure_osd("DECREASE_PRESCALE", "Decrease Prescaling");
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F6, KEYCODE_LCONTROL);
 				break;
 			// add a Not lcrtl condition to the toggle cheat key
 			case IPT_UI_TOGGLE_CHEAT:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F6, input_seq::not_code, KEYCODE_LCONTROL);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F6, input_seq::not_code, KEYCODE_LCONTROL);
 				break;
 
 			// LCTRL-F7 to increase OpenGL prescaling
 			case IPT_OSD_7:
-				entry->token = "INCREASE_PRESCALE";
-				entry->name = "Increase Prescaling";
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F7, KEYCODE_LCONTROL);
+				entry->configure_osd("INCREASE_PRESCALE", "Increase Prescaling");
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F7, KEYCODE_LCONTROL);
 				break;
 			// add a Not lcrtl condition to the load state key
 			case IPT_UI_LOAD_STATE:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F7, input_seq::not_code, KEYCODE_LCONTROL, input_seq::not_code, KEYCODE_LSHIFT);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F7, input_seq::not_code, KEYCODE_LCONTROL, input_seq::not_code, KEYCODE_LSHIFT);
 				break;
 
 			// add a Not lcrtl condition to the throttle key
 			case IPT_UI_THROTTLE:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_F10, input_seq::not_code, KEYCODE_LCONTROL);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_F10, input_seq::not_code, KEYCODE_LCONTROL);
 				break;
 
 			// disable the config menu if the ALT key is down
 			// (allows ALT-TAB to switch between apps)
 			case IPT_UI_CONFIGURE:
-				entry->defseq[SEQ_TYPE_STANDARD].set(KEYCODE_TAB, input_seq::not_code, KEYCODE_LALT, input_seq::not_code, KEYCODE_RALT);
+				entry->defseq(SEQ_TYPE_STANDARD).set(KEYCODE_TAB, input_seq::not_code, KEYCODE_LALT, input_seq::not_code, KEYCODE_RALT);
+				break;
+
+			// leave everything else alone
+			default:
 				break;
 		}
 	}

@@ -17,7 +17,7 @@
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "sound/ay8910.h"
-#include "machine/8255ppi.h"
+#include "machine/i8255.h"
 #include "video/mc6845.h"
 
 #define MASTER_CLOCK			(XTAL_10MHz)
@@ -34,13 +34,18 @@ class slotcarn_state : public driver_device
 {
 public:
 	slotcarn_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag) ,
+		m_backup_ram(*this, "backup_ram"),
+		m_ram_attr(*this, "raattr"),
+		m_ram_video(*this, "ravideo"){ }
 
 	pen_t m_pens[NUM_PENS];
-	UINT8 *m_ram_attr;
-	UINT8 *m_ram_video;
+	required_shared_ptr<UINT8> m_backup_ram;
+	required_shared_ptr<UINT8> m_ram_attr;
+	required_shared_ptr<UINT8> m_ram_video;
 	UINT8 *m_ram_palette;
-	UINT8 *m_backup_ram;
+	DECLARE_READ8_MEMBER(palette_r);
+	DECLARE_WRITE8_MEMBER(palette_w);
 };
 
 
@@ -54,25 +59,23 @@ public:
 
 */
 
-static READ8_HANDLER( palette_r )
+READ8_MEMBER(slotcarn_state::palette_r)
 {
-	slotcarn_state *state = space->machine().driver_data<slotcarn_state>();
 	int co;
 
-	co = ((state->m_ram_attr[offset] & 0x7F) << 3) | (offset & 0x07);
-	return state->m_ram_palette[co];
+	co = ((m_ram_attr[offset] & 0x7F) << 3) | (offset & 0x07);
+	return m_ram_palette[co];
 }
 
-static WRITE8_HANDLER( palette_w )
+WRITE8_MEMBER(slotcarn_state::palette_w)
 {
-	slotcarn_state *state = space->machine().driver_data<slotcarn_state>();
 	int co;
 
-	space->machine().primary_screen->update_now();
+	machine().primary_screen->update_now();
 	data &= 0x0f;
 
-	co = ((state->m_ram_attr[offset] & 0x7F) << 3) | (offset & 0x07);
-	state->m_ram_palette[co] = data;
+	co = ((m_ram_attr[offset] & 0x7F) << 3) | (offset & 0x07);
+	m_ram_palette[co] = data;
 
 }
 
@@ -109,9 +112,9 @@ static MC6845_UPDATE_ROW( update_row )
 	UINT16 x = 0;
 	int rlen;
 
-	gfx[0] = device->machine().region("gfx1")->base();
-	gfx[1] = device->machine().region("gfx2")->base();
-	rlen = device->machine().region("gfx2")->bytes();
+	gfx[0] = state->memregion("gfx1")->base();
+	gfx[1] = state->memregion("gfx2")->base();
+	rlen = state->memregion("gfx2")->bytes();
 
 	//ma = ma ^ 0x7ff;
 	for (cx = 0; cx < x_count; cx++)
@@ -179,37 +182,37 @@ static const mc6845_interface mc6845_intf =
 *          Memory Map          *
 *******************************/
 
-static ADDRESS_MAP_START( slotcarn_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( slotcarn_map, AS_PROGRAM, 8, slotcarn_state )
 	AM_RANGE(0x0000, 0x5fff) AM_ROM
-	AM_RANGE(0x6000, 0x67ff) AM_RAM AM_BASE_MEMBER(slotcarn_state, m_backup_ram)
+	AM_RANGE(0x6000, 0x67ff) AM_RAM AM_SHARE("backup_ram")
 	AM_RANGE(0x6800, 0x6fff) AM_RAM // spielbud
 	AM_RANGE(0x7000, 0xafff) AM_ROM // spielbud
 
 
-	AM_RANGE(0xb000, 0xb000) AM_DEVWRITE("aysnd", ay8910_address_w)
-	AM_RANGE(0xb100, 0xb100) AM_DEVREADWRITE("aysnd", ay8910_r, ay8910_data_w)
+	AM_RANGE(0xb000, 0xb000) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_w)
+	AM_RANGE(0xb100, 0xb100) AM_DEVREADWRITE_LEGACY("aysnd", ay8910_r, ay8910_data_w)
 
-	AM_RANGE(0xb800, 0xb803) AM_DEVREADWRITE("ppi8255_0", ppi8255_r, ppi8255_w)	/* Input Ports */
-	AM_RANGE(0xba00, 0xba03) AM_DEVREADWRITE("ppi8255_1", ppi8255_r, ppi8255_w)	/* Input Ports */
-	AM_RANGE(0xbc00, 0xbc03) AM_DEVREADWRITE("ppi8255_2", ppi8255_r, ppi8255_w)	/* Input/Output Ports */
+	AM_RANGE(0xb800, 0xb803) AM_DEVREADWRITE("ppi8255_0", i8255_device, read, write)	/* Input Ports */
+	AM_RANGE(0xba00, 0xba03) AM_DEVREADWRITE("ppi8255_1", i8255_device, read, write)	/* Input Ports */
+	AM_RANGE(0xbc00, 0xbc03) AM_DEVREADWRITE("ppi8255_2", i8255_device, read, write)	/* Input/Output Ports */
 
 	AM_RANGE(0xc000, 0xc000) AM_READ_PORT("DSW3")
 	AM_RANGE(0xc400, 0xc400) AM_READ_PORT("DSW4")
 
 	AM_RANGE(0xd800, 0xd81f) AM_RAM // column scroll for reels?
 
-	AM_RANGE(0xe000, 0xe000) AM_DEVWRITE_MODERN("crtc", mc6845_device, address_w)
-	AM_RANGE(0xe001, 0xe001) AM_DEVWRITE_MODERN("crtc", mc6845_device, register_w)
+	AM_RANGE(0xe000, 0xe000) AM_DEVWRITE("crtc", mc6845_device, address_w)
+	AM_RANGE(0xe001, 0xe001) AM_DEVWRITE("crtc", mc6845_device, register_w)
 
-	AM_RANGE(0xe800, 0xefff) AM_RAM AM_BASE_MEMBER(slotcarn_state, m_ram_attr)
-	AM_RANGE(0xf000, 0xf7ff) AM_RAM AM_BASE_MEMBER(slotcarn_state, m_ram_video)
+	AM_RANGE(0xe800, 0xefff) AM_RAM AM_SHARE("raattr")
+	AM_RANGE(0xf000, 0xf7ff) AM_RAM AM_SHARE("ravideo")
 	AM_RANGE(0xf800, 0xfbff) AM_READWRITE(palette_r, palette_w)
 ADDRESS_MAP_END
 
 // spielbud - is the ay mirrored, or are there now 2?
-static ADDRESS_MAP_START( spielbud_io_map, AS_IO, 8 )
-	AM_RANGE(0xb000, 0xb000) AM_DEVWRITE("aysnd", ay8910_address_w)
-	AM_RANGE(0xb100, 0xb100) AM_DEVWRITE("aysnd", ay8910_data_w)
+static ADDRESS_MAP_START( spielbud_io_map, AS_IO, 8, slotcarn_state )
+	AM_RANGE(0xb000, 0xb000) AM_DEVWRITE_LEGACY("aysnd", ay8910_address_w)
+	AM_RANGE(0xb100, 0xb100) AM_DEVWRITE_LEGACY("aysnd", ay8910_data_w)
 ADDRESS_MAP_END
 
 /********************************
@@ -547,32 +550,34 @@ static MACHINE_START(merit)
 *       PPI 8255 (x3) Interfaces       *
 ***************************************/
 
-static const ppi8255_interface scarn_ppi8255_intf[3] =
+static I8255A_INTERFACE( ppi8255_0_intf )
 {
-	{	/* A, B & C set as input */
-		DEVCB_INPUT_PORT("IN0"),	/* Port A read */
-		DEVCB_INPUT_PORT("IN1"),	/* Port B read */
-		DEVCB_INPUT_PORT("IN2"),	/* Port C read */
-		DEVCB_NULL,					/* Port A write */
-		DEVCB_NULL,					/* Port B write */
-		DEVCB_NULL					/* Port C write */
-	},
-	{	/* A set as input */
-		DEVCB_INPUT_PORT("DSW1"),	/* Port A read */
-		DEVCB_NULL,					/* Port B read */
-		DEVCB_NULL,					/* Port C read */
-		DEVCB_NULL,					/* Port A write */
-		DEVCB_NULL,					/* Port B write */
-		DEVCB_NULL					/* Port C write */
-	},
-	{	/* A & B set as input */
-		DEVCB_INPUT_PORT("IN3"),	/* Port A read */
-		DEVCB_INPUT_PORT("IN4"),	/* Port B read */
-		DEVCB_NULL,					/* Port C read */
-		DEVCB_NULL,					/* Port A write */
-		DEVCB_NULL,					/* Port B write */
-		DEVCB_NULL					/* Port C write */
-	}
+	DEVCB_INPUT_PORT("IN0"),			/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_INPUT_PORT("IN1"),			/* Port B read */
+	DEVCB_NULL,							/* Port B write */
+	DEVCB_INPUT_PORT("IN2"),			/* Port C read */
+	DEVCB_NULL							/* Port C write */
+};
+
+static I8255A_INTERFACE( ppi8255_1_intf )
+{
+	DEVCB_INPUT_PORT("DSW1"),			/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_NULL,							/* Port B read */
+	DEVCB_NULL,							/* Port B write */
+	DEVCB_NULL,							/* Port C read */
+	DEVCB_NULL							/* Port C write */
+};
+
+static I8255A_INTERFACE( ppi8255_2_intf )
+{
+	DEVCB_INPUT_PORT("IN3"),			/* Port A read */
+	DEVCB_NULL,							/* Port A write */
+	DEVCB_INPUT_PORT("IN4"),			/* Port B read */
+	DEVCB_NULL,							/* Port B write */
+	DEVCB_NULL,							/* Port C read */
+	DEVCB_NULL							/* Port C write */
 };
 
 
@@ -603,9 +608,9 @@ static MACHINE_CONFIG_START( slotcarn, slotcarn_state )
 	MCFG_CPU_IO_MAP(spielbud_io_map)
 
 	/* 3x 8255 */
-	MCFG_PPI8255_ADD( "ppi8255_0", scarn_ppi8255_intf[0] )
-	MCFG_PPI8255_ADD( "ppi8255_1", scarn_ppi8255_intf[1] )
-	MCFG_PPI8255_ADD( "ppi8255_2", scarn_ppi8255_intf[2] )
+	MCFG_I8255A_ADD( "ppi8255_0", ppi8255_0_intf )
+	MCFG_I8255A_ADD( "ppi8255_1", ppi8255_1_intf )
+	MCFG_I8255A_ADD( "ppi8255_2", ppi8255_2_intf )
 
 	MCFG_MACHINE_START(merit)
 

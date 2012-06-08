@@ -226,7 +226,7 @@ static INPUT_PORTS_START( sicv )
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_START2 )
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_START1 )
 	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_UNKNOWN )
-	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(invaders_in1_control_r, NULL)
+	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, mw8080bw_state,invaders_in1_control_r, NULL)
 	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_UNKNOWN )
 
 	PORT_START("IN2")
@@ -241,7 +241,7 @@ static INPUT_PORTS_START( sicv )
 	PORT_DIPSETTING(    0x00, "1500" )
 	/* SW1:5,6,7: In OFF, PL2 can have no control of joystick, going auto left/right and other problems like no laser gun.
     Be sure these are always ON */
-	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(invaders_in2_control_r, NULL) PORT_DIPLOCATION("SW1:5,6,7") /* Labeled as "FACTORY" */
+	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, mw8080bw_state,invaders_in2_control_r, NULL) PORT_DIPLOCATION("SW1:5,6,7") /* Labeled as "FACTORY" */
 	PORT_DIPNAME( 0x80, 0x00, "Coin Info" )				PORT_DIPLOCATION("SW1:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
@@ -342,12 +342,12 @@ INPUT_PORTS_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( invadpt2_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( invadpt2_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(invadpt2_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(invadpt2_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(invadpt2_sh_port_2_w)
 	AM_RANGE(0x06, 0x06) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
@@ -408,12 +408,12 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( spcewars_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( spcewars_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(spcewars_sh_port_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(spcewars_sh_port_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(invadpt2_sh_port_2_w)
 ADDRESS_MAP_END
 
@@ -463,14 +463,14 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( astropal_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( astropal_io_map, AS_IO, 8, _8080bw_state )
 	ADDRESS_MAP_GLOBAL_MASK(0x7)
 	AM_RANGE(0x00, 0x00) AM_MIRROR(0x04) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_MIRROR(0x04) AM_READ_PORT("IN1")
 	AM_RANGE(0x03, 0x03) AM_MIRROR(0x04) AM_READ_PORT("IN3")
 
-	AM_RANGE(0x03, 0x03) AM_DEVWRITE("discrete", invaders_audio_1_w)
-	AM_RANGE(0x05, 0x05) AM_DEVWRITE("discrete", invaders_audio_2_w)
+	AM_RANGE(0x03, 0x03) AM_DEVWRITE_LEGACY("discrete", invaders_audio_1_w)
+	AM_RANGE(0x05, 0x05) AM_DEVWRITE_LEGACY("discrete", invaders_audio_2_w)
 	AM_RANGE(0x06, 0x06) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
 
@@ -512,7 +512,7 @@ static INPUT_PORTS_START( astropal )
 
 INPUT_PORTS_END
 
-static MACHINE_CONFIG_DERIVED( astropal, invaders )
+static MACHINE_CONFIG_DERIVED_CLASS( astropal, invaders, _8080bw_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
@@ -526,15 +526,15 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( cosmo_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( cosmo_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
-	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_SHARE("main_ram")
 	AM_RANGE(0x4000, 0x57ff) AM_ROM
-	AM_RANGE(0x5c00, 0x5fff) AM_RAM AM_BASE_MEMBER(_8080bw_state, m_colorram)
+	AM_RANGE(0x5c00, 0x5fff) AM_RAM AM_SHARE("colorram")
 ADDRESS_MAP_END
 
 /* at least one of these MWA8_NOPs must be sound related */
-static ADDRESS_MAP_START( cosmo_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( cosmo_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0") AM_WRITENOP
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1") AM_WRITENOP
 	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_WRITENOP
@@ -634,12 +634,12 @@ INPUT_PORTS_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( invrvnge_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( invrvnge_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(invrvnge_sh_port_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(invrvnge_sh_port_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 ADDRESS_MAP_END
 
 
@@ -767,12 +767,12 @@ INPUT_PORTS_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( lrescue_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( lrescue_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(lrescue_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(lrescue_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(lrescue_sh_port_2_w)
 ADDRESS_MAP_END
 
@@ -806,8 +806,7 @@ static MACHINE_CONFIG_DERIVED_CLASS( lrescue, mw8080bw_root, _8080bw_state )
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(lrescue_samples_interface)
+	MCFG_SAMPLES_ADD("samples", lrescue_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.75)
 
 	/* extra audio channel */
@@ -901,21 +900,21 @@ INPUT_PORTS_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( rollingc_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( rollingc_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
-	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_SHARE("main_ram")
 	AM_RANGE(0x4000, 0x5fff) AM_ROM
-	AM_RANGE(0xa000, 0xbfff) AM_MIRROR(0x00e0) AM_RAM AM_BASE_MEMBER(_8080bw_state, m_colorram)
+	AM_RANGE(0xa000, 0xbfff) AM_MIRROR(0x00e0) AM_RAM AM_SHARE("colorram")
 	AM_RANGE(0xe400, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( rollingc_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( rollingc_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0") AM_WRITE(rollingc_sh_port_w)
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 ADDRESS_MAP_END
 
 
@@ -965,20 +964,20 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( schaser_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( schaser_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
-	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_SHARE("main_ram")
 	AM_RANGE(0x4000, 0x5fff) AM_ROM
-	AM_RANGE(0xc000, 0xdfff) AM_MIRROR(0x0060) AM_RAM AM_BASE_MEMBER(_8080bw_state, m_colorram)
+	AM_RANGE(0xc000, 0xdfff) AM_MIRROR(0x0060) AM_RAM AM_SHARE("colorram")
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( schaser_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( schaser_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(schaser_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(schaser_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(schaser_sh_port_2_w)
 	AM_RANGE(0x06, 0x06) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
@@ -1090,12 +1089,12 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( schasercv_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( schasercv_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(schasercv_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(schasercv_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(schasercv_sh_port_2_w)
 ADDRESS_MAP_END
 
@@ -1154,24 +1153,24 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static CUSTOM_INPUT( sflush_80_r )
+CUSTOM_INPUT_MEMBER(_8080bw_state::sflush_80_r)
 {
-	return (field.machine().primary_screen->vpos() & 0x80) ? 1 : 0;
+	return (machine().primary_screen->vpos() & 0x80) ? 1 : 0;
 }
 
-static ADDRESS_MAP_START( sflush_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( sflush_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x1fff) AM_RAM
-	AM_RANGE(0x4000, 0x5fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x4000, 0x5fff) AM_RAM AM_SHARE("main_ram")
 	AM_RANGE(0x8008, 0x8008) AM_READ_PORT("PADDLE")
-	AM_RANGE(0x8009, 0x8009) AM_DEVREAD("mb14241", mb14241_shift_result_r)
+	AM_RANGE(0x8009, 0x8009) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r)
 	AM_RANGE(0x800a, 0x800a) AM_READ_PORT("IN2")
 	AM_RANGE(0x800b, 0x800b) AM_READ_PORT("IN0")
-	AM_RANGE(0x8018, 0x8018) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
-	AM_RANGE(0x8019, 0x8019) AM_DEVWRITE("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x8018, 0x8018) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x8019, 0x8019) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
 	AM_RANGE(0x801a, 0x801a) AM_WRITENOP
 	AM_RANGE(0x801c, 0x801c) AM_WRITENOP
 	AM_RANGE(0x801d, 0x801d) AM_WRITENOP
-	AM_RANGE(0xa000, 0xbfff) AM_MIRROR(0x0060) AM_RAM AM_BASE_MEMBER(_8080bw_state, m_colorram)
+	AM_RANGE(0xa000, 0xbfff) AM_MIRROR(0x0060) AM_RAM AM_SHARE("colorram")
 	AM_RANGE(0xd800, 0xffff) AM_ROM
 ADDRESS_MAP_END
 
@@ -1198,7 +1197,7 @@ static INPUT_PORTS_START( sflush )
 	PORT_DIPNAME( 0x40, 0x00, "Coinage Display" )
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( On ) )
-	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(sflush_80_r, NULL) // 128V?
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, _8080bw_state,sflush_80_r, NULL) // 128V?
 
 	PORT_START("PADDLE")
 	PORT_BIT( 0xff, 0x6a, IPT_PADDLE ) PORT_MINMAX(0x16,0xbf) PORT_SENSITIVITY(30) PORT_KEYDELTA(30) PORT_CENTERDELTA(0)
@@ -1229,12 +1228,12 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( lupin3_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( lupin3_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(lupin3_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(lupin3_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(lupin3_sh_port_2_w)
 	AM_RANGE(0x06, 0x06) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
@@ -1386,14 +1385,14 @@ static MACHINE_START( polaris )
 // you will get a nice sound that accurately follows the plane.
 // It sounds better then the actual circuit used.
 // Probably an unfinished feature.
-static ADDRESS_MAP_START( polaris_io_map, AS_IO, 8 )
-	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
+static ADDRESS_MAP_START( polaris_io_map, AS_IO, 8, _8080bw_state )
+	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("discrete", polaris_sh_port_1_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREADWRITE("mb14241", mb14241_shift_result_r, mb14241_shift_data_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("discrete", polaris_sh_port_2_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("discrete", polaris_sh_port_1_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREADWRITE_LEGACY("mb14241", mb14241_shift_result_r, mb14241_shift_data_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("discrete", polaris_sh_port_2_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(watchdog_reset_w)
-	AM_RANGE(0x06, 0x06) AM_DEVWRITE("discrete", polaris_sh_port_3_w)
+	AM_RANGE(0x06, 0x06) AM_DEVWRITE_LEGACY("discrete", polaris_sh_port_3_w)
 ADDRESS_MAP_END
 
 
@@ -1556,12 +1555,12 @@ INPUT_PORTS_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( ballbomb_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( ballbomb_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("IN0")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(ballbomb_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(ballbomb_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(ballbomb_sh_port_2_w)
 ADDRESS_MAP_END
 
@@ -1603,13 +1602,13 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static ADDRESS_MAP_START( yosakdon_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( yosakdon_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
-	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_SHARE("main_ram")
 	AM_RANGE(0x4000, 0x43ff) AM_WRITEONLY /* what's this? */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( yosakdon_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( yosakdon_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN0")
 	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN1")
 	AM_RANGE(0x03, 0x03) AM_WRITE(yosakdon_sh_port_1_w)
@@ -1624,7 +1623,7 @@ static INPUT_PORTS_START( yosakdon )
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_START2 )
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_START1 )
 	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_UNKNOWN )
-	//PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(invaders_in1_control_r, NULL)
+	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, mw8080bw_state,invaders_in1_control_r, NULL)
 	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_UNUSED )
 
 	PORT_START("IN1")
@@ -1639,14 +1638,11 @@ static INPUT_PORTS_START( yosakdon )
 	PORT_DIPNAME( 0x08, 0x00, DEF_STR( Unknown ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(invaders_in2_control_r, NULL)
+	PORT_BIT( 0x70, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, mw8080bw_state,invaders_in2_control_r, NULL)
 	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_UNUSED )
 
 	/* Dummy controls port, P1 */
 	INVADERS_CONTROL_PORT_P1
-
-	/* Dummy controls port, P2 */
-	INVADERS_CONTROL_PORT_P2
 
 	/* Dummy port for cocktail mode (not used) */
 	PORT_START(CABINET_PORT_TAG)
@@ -1728,26 +1724,26 @@ INPUT_PORTS_END
 
 */
 
-static READ8_HANDLER(indianbt_r)
+READ8_MEMBER(_8080bw_state::indianbt_r)
 {
-	switch(cpu_get_pc(&space->device()))
+	switch(cpu_get_pc(&space.device()))
 	{
 		case 0x5fed:	return 0x10;
 		case 0x5ffc:	return 0;
 	}
-	logerror("unknown port 0 read @ %x\n",cpu_get_pc(&space->device()));
-	return space->machine().rand();
+	logerror("unknown port 0 read @ %x\n",cpu_get_pc(&space.device()));
+	return machine().rand();
 }
 
-static ADDRESS_MAP_START( indianbt_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( indianbt_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ(indianbt_r)
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN0")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(indianbt_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(indianbt_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(indianbt_sh_port_2_w)
 	AM_RANGE(0x06, 0x06) AM_WRITENOP /* sound ? */
-	AM_RANGE(0x07, 0x07) AM_DEVWRITE("discrete", indianbt_sh_port_3_w)
+	AM_RANGE(0x07, 0x07) AM_DEVWRITE_LEGACY("discrete", indianbt_sh_port_3_w)
 ADDRESS_MAP_END
 
 
@@ -1780,16 +1776,16 @@ MACHINE_CONFIG_END
 /*                                                     */
 /*******************************************************/
 
-static WRITE8_HANDLER( steelwkr_sh_port_3_w )
+WRITE8_MEMBER(_8080bw_state::steelwkr_sh_port_3_w)
 {
-	coin_lockout_global_w(space->machine(), !(~data & 0x03));		/* possibly */
+	coin_lockout_global_w(machine(), !(~data & 0x03));		/* possibly */
 }
 
-static ADDRESS_MAP_START( steelwkr_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( steelwkr_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("IN1")
-	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r) AM_WRITE(invadpt2_sh_port_1_w)
-	AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x02, 0x02) AM_READ_PORT("IN2") AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r) AM_WRITE(invadpt2_sh_port_1_w)
+	AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(invadpt2_sh_port_2_w)
 	AM_RANGE(0x06, 0x06) AM_WRITE(steelwkr_sh_port_3_w)
 ADDRESS_MAP_END
@@ -1896,7 +1892,7 @@ static INPUT_PORTS_START( shuttlei )
 	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Unknown ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_VBLANK )
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_CUSTOM ) PORT_VBLANK("screen")
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_BUTTON1 )
 	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_COIN1 )
 	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_START1 )
@@ -1936,7 +1932,7 @@ static INPUT_PORTS_START( skylove )
 	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Unknown ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) ) // must be off to boot
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_VBLANK )
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_CUSTOM ) PORT_VBLANK("screen")
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_BUTTON1 )
 	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_COIN1 )
 	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_START1 )
@@ -1945,14 +1941,14 @@ static INPUT_PORTS_START( skylove )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_2WAY PORT_PLAYER(1)
 INPUT_PORTS_END
 
-static ADDRESS_MAP_START( shuttlei_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( shuttlei_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
-	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x2000, 0x3fff) AM_RAM AM_SHARE("main_ram")
 	AM_RANGE(0x4000, 0x43ff) AM_RAM AM_SHARE("share1") // shuttlei
 	AM_RANGE(0x6000, 0x63ff) AM_RAM AM_SHARE("share1") // skylove (is it mirrored, or different PCB hookup?)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( shuttlei_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( shuttlei_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0xfc, 0xfc) AM_WRITENOP /* game writes 0xAA every so often (perhaps when base hit?) */
 	AM_RANGE(0xfd, 0xfd) AM_WRITE(shuttlei_sh_port_1_w)
 	AM_RANGE(0xfe, 0xfe) AM_READ_PORT("DSW") AM_WRITE(shuttlei_sh_port_2_w)
@@ -2018,13 +2014,13 @@ static MACHINE_RESET( darthvdr )
 }
 
 
-static ADDRESS_MAP_START( darthvdr_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( darthvdr_map, AS_PROGRAM, 8, _8080bw_state )
 	AM_RANGE(0x0000, 0x17ff) AM_ROM
 	AM_RANGE(0x1800, 0x1fff) AM_RAM
-	AM_RANGE(0x4000, 0x5fff) AM_RAM AM_BASE_SIZE_MEMBER(_8080bw_state, m_main_ram, m_main_ram_size)
+	AM_RANGE(0x4000, 0x5fff) AM_RAM AM_SHARE("main_ram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( darthvdr_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( darthvdr_io_map, AS_IO, 8, _8080bw_state )
 	AM_RANGE(0x00, 0x00) AM_READ_PORT("P1")
 	AM_RANGE(0x01, 0x01) AM_READ_PORT("P2")
 	AM_RANGE(0x00, 0x0f) AM_WRITENOP
@@ -2093,18 +2089,18 @@ MACHINE_CONFIG_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( vortex_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( vortex_io_map, AS_IO, 8, _8080bw_state )
 	// I/O map is same as invaders but with A9 (used as A1 for I/O) inverted
 	ADDRESS_MAP_GLOBAL_MASK(0xFF)
 	AM_RANGE(0x02, 0x02) AM_MIRROR(0x04) AM_READ_PORT("IN0")
 	AM_RANGE(0x03, 0x03) AM_MIRROR(0x04) AM_READ_PORT("IN1")
 	AM_RANGE(0x00, 0x00) AM_MIRROR(0x04) AM_READ_PORT("IN2")
-	AM_RANGE(0x01, 0x01) AM_MIRROR(0x04) AM_DEVREAD("mb14241", mb14241_shift_result_r)
+	AM_RANGE(0x01, 0x01) AM_MIRROR(0x04) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r)
 
-	AM_RANGE(0x00, 0x00) AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-	AM_RANGE(0x01, 0x01) AM_DEVWRITE("discrete", invaders_audio_1_w)
-	AM_RANGE(0x06, 0x06) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
-	AM_RANGE(0x07, 0x07) AM_DEVWRITE("discrete", invaders_audio_2_w)
+	AM_RANGE(0x00, 0x00) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+	AM_RANGE(0x01, 0x01) AM_DEVWRITE_LEGACY("discrete", invaders_audio_1_w)
+	AM_RANGE(0x06, 0x06) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x07, 0x07) AM_DEVWRITE_LEGACY("discrete", invaders_audio_2_w)
 	AM_RANGE(0x04, 0x04) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
 
@@ -2166,8 +2162,8 @@ MACHINE_CONFIG_END
 /* decrypt function for vortex */
 static DRIVER_INIT( vortex )
 {
-	UINT8 *rom = machine.region("maincpu")->base();
-	int length = machine.region("maincpu")->bytes();
+	UINT8 *rom = machine.root_device().memregion("maincpu")->base();
+	int length = machine.root_device().memregion("maincpu")->bytes();
 	UINT8 *buf1 = auto_alloc_array(machine, UINT8, length);
 	UINT32 x;
 	for (x = 0; x < length; x++)
@@ -2339,12 +2335,12 @@ BOARD 2:
 // the invaders shifter stuff doesn't seem correct for this, if i hook up the count_w the gfx are corrupt, otherwise they're incorrectly offset?
 // might need custom implementation
 
-static ADDRESS_MAP_START( modelr_io_map, AS_IO, 8 )
-//  AM_RANGE(0x00, 0x00) AM_DEVWRITE("mb14241", mb14241_shift_count_w)
-//  AM_RANGE(0x01, 0x01) AM_DEVREAD("mb14241", mb14241_shift_result_r)
-	AM_RANGE(0x02, 0x02) AM_DEVWRITE("mb14241", mb14241_shift_data_w)
-	AM_RANGE(0x03, 0x03) AM_DEVREAD("mb14241", mb14241_shift_result_r)
-//  AM_RANGE(0x04, 0x04) AM_DEVWRITE("mb14241", mb14241_shift_count_w)
+static ADDRESS_MAP_START( modelr_io_map, AS_IO, 8, _8080bw_state )
+//  AM_RANGE(0x00, 0x00) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
+//  AM_RANGE(0x01, 0x01) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r)
+	AM_RANGE(0x02, 0x02) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_data_w)
+	AM_RANGE(0x03, 0x03) AM_DEVREAD_LEGACY("mb14241", mb14241_shift_result_r)
+//  AM_RANGE(0x04, 0x04) AM_DEVWRITE_LEGACY("mb14241", mb14241_shift_count_w)
 	AM_RANGE(0x05, 0x05) AM_WRITE(watchdog_reset_w)
 ADDRESS_MAP_END
 
@@ -2552,8 +2548,8 @@ ROM_START( sisv )
 	ROM_LOAD( "sv06.41",     0x1c00, 0x0400, CRC(2c68e0b4) SHA1(a5e5357120102ad32792bf3ef6362f45b7ba7070) )
 
 	ROM_REGION( 0x0800, "proms", 0 )		/* color maps player 1/player 2 */
-	ROM_LOAD( "cv01.1",      0x0000, 0x0400, CRC(aac24f34) SHA1(ad110e776547fb48baac568bb50d61854537ca34) )
-	ROM_LOAD( "cv02.2",      0x0400, 0x0400, CRC(2bdf83a0) SHA1(01ffbd43964c41987e7d44816271308f9a70802b) )
+	ROM_LOAD( "cv01(__sisv).1",      0x0000, 0x0400, CRC(aac24f34) SHA1(ad110e776547fb48baac568bb50d61854537ca34) )
+	ROM_LOAD( "cv02(__sisv).2",      0x0400, 0x0400, CRC(2bdf83a0) SHA1(01ffbd43964c41987e7d44816271308f9a70802b) )
 ROM_END
 
 ROM_START( sisv2 )
@@ -2566,8 +2562,8 @@ ROM_START( sisv2 )
 	ROM_LOAD( "sv14.41",     0x1c00, 0x0400, CRC(58730370) SHA1(13dc806bcecd2d6089a85dd710ac2869413f7475) )
 
 	ROM_REGION( 0x0800, "proms", 0 )		/* color maps player 1/player 2 */
-	ROM_LOAD( "cv01.1",      0x0000, 0x0400, CRC(aac24f34) SHA1(ad110e776547fb48baac568bb50d61854537ca34) )
-	ROM_LOAD( "cv02.2",      0x0400, 0x0400, CRC(2bdf83a0) SHA1(01ffbd43964c41987e7d44816271308f9a70802b) )
+	ROM_LOAD( "cv01(__sisv).1",      0x0000, 0x0400, CRC(aac24f34) SHA1(ad110e776547fb48baac568bb50d61854537ca34) )
+	ROM_LOAD( "cv02(__sisv).2",      0x0400, 0x0400, CRC(2bdf83a0) SHA1(01ffbd43964c41987e7d44816271308f9a70802b) )
 ROM_END
 
 ROM_START( spceking )
@@ -2639,6 +2635,35 @@ ROM_START( invadpt2 )
 	ROM_LOAD( "pv05",        0x4000, 0x0800, CRC(19b505e9) SHA1(6a31a37586782ce421a7d2cffd8f958c00b7b415) )
 
 	ROM_REGION( 0x0800, "proms", 0 )		/* color maps player 1/player 2 */
+	ROM_LOAD( "pv06.1",   0x0000, 0x0400, CRC(a732810b) SHA1(a5fabffa73ca740909e23b9530936f9274dff356) )
+	ROM_LOAD( "pv07.2",   0x0400, 0x0400, CRC(2c5b91cb) SHA1(7fa4d4aef85473b1b4f18734230c164e72be44e7) )
+ROM_END
+
+ROM_START( invadpt2br )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "pv01",        0x0000, 0x0800, CRC(7288a511) SHA1(ff617872784c28ed03591aefa9f0519e5651701f) )
+	/* pv01 had weird encryption applied to it, very likely to have been done post-dump. */
+//  for (offs = 0x4fc; offs < 0x5fc; offs++)
+//      rom[offs] ^= 0x6c;
+
+	// 0x4fc + 1 * 0x56
+//  for (offs = 0x54e; offs < 0x552; offs++)
+//      rom[offs] ^= 0x03;
+
+	// 0x4fc + 2 * 0x56
+//  for (offs = 0x5a4; offs < 0x5a8; offs++)
+//      rom[offs] ^= 0x01;
+
+	// 0x4fc + 3 * 0x56
+//  for (offs = 0x5fa; offs < 0x5fc; offs++)
+//      rom[offs] ^= 0x02;
+
+	ROM_LOAD( "br_pv02",     0x0800, 0x0800, CRC(420c7c35) SHA1(b51265f4d9e5a8cf9d53099a97cadd25ea0b34ce) )
+	ROM_LOAD( "br_pv03",     0x1000, 0x0800, CRC(dffd04b9) SHA1(d51a0f27e90b0a49cf2d57ec82a863dcae9f3ea4) )
+	ROM_LOAD( "br_pv04",     0x1800, 0x0800, CRC(b0626aff) SHA1(b7de6c21030732bd0479228f057ca4c87b913b0a) )
+	ROM_LOAD( "br_pv05",     0x4000, 0x0800, CRC(84c70bb8) SHA1(75fef3ee6da3e7e01a257629016bc10a23691d62) )
+
+	ROM_REGION( 0x0800, "proms", 0 )		/* color maps player 1/player 2 (taken from parent set) */
 	ROM_LOAD( "pv06.1",   0x0000, 0x0400, CRC(a732810b) SHA1(a5fabffa73ca740909e23b9530936f9274dff356) )
 	ROM_LOAD( "pv07.2",   0x0400, 0x0400, CRC(2c5b91cb) SHA1(7fa4d4aef85473b1b4f18734230c164e72be44e7) )
 ROM_END
@@ -3184,6 +3209,7 @@ ROM_START( polarisa )
 	ROM_LOAD( "ps07.2c", 0x0000, 0x0100, CRC(2953253b) SHA1(2fb851bc9652ca4e51d473b484ede6dab05f1b51) ) /* MB7052 or compatible BPROM (82S129) */
 ROM_END
 
+
 ROM_START( polariso )
 	ROM_REGION( 0x10000, "maincpu", 0 )
 	ROM_LOAD( "ps01.30",     0x0000, 0x0800, CRC(c04ce5a9) SHA1(62cc9b3b682ebecfb7600393862c65e26ff5263f) )
@@ -3192,6 +3218,23 @@ ROM_START( polariso )
 	ROM_LOAD( "ps04.37",     0x1800, 0x0800, CRC(65694948) SHA1(de92a7f3e3ef732b573254baa60df60f8e068a5d) )
 	ROM_LOAD( "ps05.32",     0x4000, 0x0800, CRC(772e31f3) SHA1(fa0b866b6df1a9217e286ca880b3bb3fb0644bf3) )
 	ROM_LOAD( "ps06.38",     0x4800, 0x0800, CRC(f577cb72) SHA1(7a931b5ebaf0d6941191f21afb9ed670d0251e07) )
+
+	ROM_REGION( 0x0400, "proms", 0 )		/* background color map */
+	ROM_LOAD( "ps08.1b", 0x0000, 0x0400, CRC(164aa05d) SHA1(41c699ce45c76a60c71294f25d8df6c6e6c1280a) ) /* NEC B406 or compatible BPROM (82S137) */
+
+	ROM_REGION( 0x0100, "user1", 0 )		/* cloud graphics */
+	ROM_LOAD( "ps07.2c", 0x0000, 0x0100, CRC(2953253b) SHA1(2fb851bc9652ca4e51d473b484ede6dab05f1b51) ) /* MB7052 or compatible BPROM (82S129) */
+ROM_END
+
+ROM_START( polarisbr ) /* aka Polaris II on flyers? */
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "1",   0x0000, 0x0800, CRC(17015f52) SHA1(8beb4d927c08420f9990fac787a81d4bd6dd419c) )
+	ROM_LOAD( "2",   0x0800, 0x0800, CRC(9a5c8cb2) SHA1(7a8c5d74f8b431072d9476d3ef65a3fe1d639813) )
+	ROM_LOAD( "3",   0x1000, 0x0800, CRC(60118368) SHA1(e1189fd88b943fcf77a5c41c519cccdb8196910c) )
+	ROM_LOAD( "4",   0x1800, 0x0800, CRC(65694948) SHA1(de92a7f3e3ef732b573254baa60df60f8e068a5d) )
+	ROM_LOAD( "5",   0x4000, 0x0800, CRC(6cb21b31) SHA1(f9d435a3aa905f124cb87c139b047e1585d0997b) )
+	ROM_LOAD( "6",   0x4800, 0x0800, CRC(3df77bac) SHA1(b3275c34b8d42df83df2c404c5b7d220aae651fa) )
+	ROM_LOAD( "7",   0x5000, 0x0800, CRC(0d811b92) SHA1(09af62997e1e0da0525ab4f6ced775d3673d8f35) )
 
 	ROM_REGION( 0x0400, "proms", 0 )		/* background color map */
 	ROM_LOAD( "ps08.1b", 0x0000, 0x0400, CRC(164aa05d) SHA1(41c699ce45c76a60c71294f25d8df6c6e6c1280a) ) /* NEC B406 or compatible BPROM (82S137) */
@@ -3367,7 +3410,7 @@ ROM_END
 
 ROM_START( galactic )
 	ROM_REGION( 0x10000, "maincpu", 0 )
-	ROM_LOAD( "1",       0x0000, 0x0800, CRC(b5098f1e) SHA1(9d1d045d8abeafd4716d3052fe93e52c6b347049) )
+	ROM_LOAD( "1(__galactic)",   0x0000, 0x0800, CRC(b5098f1e) SHA1(9d1d045d8abeafd4716d3052fe93e52c6b347049) )
 	ROM_LOAD( "2",       0x0800, 0x0800, CRC(f97410ee) SHA1(47f1f296c905fa13f6c521edc12c10f1f0e42400) )
 	ROM_LOAD( "3",       0x1000, 0x0800, CRC(c1175feb) SHA1(83bf955ed3a52e1ce8c688d89725d8dee1bcc866) )
 	ROM_LOAD( "4",       0x1800, 0x0800, CRC(b4451d7c) SHA1(62a18e8e927ef00a7f6cb933cdc5aeae9f074dc0) )
@@ -3378,7 +3421,7 @@ ROM_END
 
 ROM_START( spacmiss )
 	ROM_REGION( 0x10000, "maincpu", 0 )
-	ROM_LOAD( "1",       0x0000, 0x0800, CRC(e212dc88) SHA1(bc56052bf43d18081f777b936b2be792e91ba842) )
+	ROM_LOAD( "1_(__spacmiss)",    0x0000, 0x0800, CRC(e212dc88) SHA1(bc56052bf43d18081f777b936b2be792e91ba842) )
 	ROM_LOAD( "2",       0x0800, 0x0800, CRC(f97410ee) SHA1(47f1f296c905fa13f6c521edc12c10f1f0e42400) )
 	ROM_LOAD( "3",       0x1000, 0x0800, CRC(c1175feb) SHA1(83bf955ed3a52e1ce8c688d89725d8dee1bcc866) )
 	ROM_LOAD( "4",       0x1800, 0x0800, CRC(b4451d7c) SHA1(62a18e8e927ef00a7f6cb933cdc5aeae9f074dc0) )
@@ -3407,9 +3450,10 @@ GAME( 1978, lrescuem, lrescue,  lrescue,  lrescue,  0, ROT270, "bootleg (Model R
 GAME( 1979, grescue,  lrescue,  lrescue,  lrescue,  0, ROT270, "Taito (Universal license?)", "Galaxy Rescue", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
 GAME( 1979, desterth, lrescue,  lrescue,  invrvnge, 0, ROT270, "bootleg", "Destination Earth", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
 GAME( 1979, invadpt2, 0,        invadpt2, invadpt2, 0, ROT270, "Taito", "Space Invaders Part II (Taito)", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
+GAME( 1979, invadpt2br,invadpt2,invadpt2, invadpt2, 0, ROT270, "Taito do Brasil", "Space Invaders Part II (Brazil)", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
 GAME( 1980, invaddlx, invadpt2, invaders, invadpt2, 0, ROT270, "Taito (Midway license)", "Space Invaders Deluxe", GAME_SUPPORTS_SAVE )
 GAME( 1980, vortex,   0,        vortex,   vortex, vortex, ROT270, "Zilec Electronics", "Vortex", GAME_IMPERFECT_COLORS | GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND ) /* Encrypted 8080/IO */
-GAME( 1979, cosmo,    0,        cosmo,    cosmo,    0, ROT90,  "TDS & Mints", "Cosmo", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
+GAME( 1979, cosmo,    0,        cosmo,    cosmo,    0, ROT90,  "TDS & MINTS", "Cosmo", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
 GAME( 1979, schaser,  0,        schaser,  schaser,  0, ROT270, "Taito", "Space Chaser", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_COLORS )
 GAME( 1979, schasercv,schaser,  schasercv,schasercv,0, ROT270, "Taito", "Space Chaser (CV version)", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND | GAME_IMPERFECT_COLORS )
 GAME( 1979, sflush,   0,        sflush,   sflush,   0, ROT270, "Taito", "Straight Flush",GAME_SUPPORTS_SAVE | GAME_NO_SOUND | GAME_IMPERFECT_COLORS | GAME_NO_COCKTAIL)
@@ -3418,6 +3462,7 @@ GAME( 1980, lupin3a,  lupin3,   lupin3a,  lupin3a,  0, ROT270, "Taito", "Lupin I
 GAME( 1980, polaris,  0,        polaris,  polaris,  0, ROT270, "Taito", "Polaris (Latest version)", GAME_SUPPORTS_SAVE )
 GAME( 1980, polarisa, polaris,  polaris,  polaris,  0, ROT270, "Taito", "Polaris (First revision)", GAME_SUPPORTS_SAVE )
 GAME( 1980, polariso, polaris,  polaris,  polaris,  0, ROT270, "Taito", "Polaris (Original version)", GAME_SUPPORTS_SAVE )
+GAME( 1981, polarisbr,polaris,  polaris,  polaris,  0, ROT270, "Taito do Brasil", "Polaris (Brazil)", GAME_SUPPORTS_SAVE )
 GAME( 1980, ballbomb, 0,        ballbomb, ballbomb, 0, ROT270, "Taito", "Balloon Bomber", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND | GAME_IMPERFECT_GRAPHICS )	/* missing clouds */
 GAME( 1980, indianbt, 0,        indianbt, indianbt, 0, ROT270, "Taito", "Indian Battle", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )
 GAME( 1980, steelwkr, 0,        steelwkr, steelwkr, 0, ROT0  , "Taito", "Steel Worker", GAME_SUPPORTS_SAVE | GAME_IMPERFECT_SOUND )

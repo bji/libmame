@@ -63,6 +63,7 @@
 
 PALETTE_INIT( pacman )
 {
+	const UINT8 *color_prom = machine.root_device().memregion("proms")->base();
 	static const int resistances[3] = { 1000, 470, 220 };
 	double rweights[3], gweights[3], bweights[2];
 	int i;
@@ -191,25 +192,22 @@ VIDEO_START( birdiy )
 	state->m_inv_spr = 1; // sprites are mirrored in X-axis compared to normal behaviour
 }
 
-WRITE8_HANDLER( pacman_videoram_w )
+WRITE8_MEMBER(pacman_state::pacman_videoram_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_videoram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset );
+	m_videoram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset );
 }
 
-WRITE8_HANDLER( pacman_colorram_w )
+WRITE8_MEMBER(pacman_state::pacman_colorram_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_colorram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset );
+	m_colorram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset );
 }
 
-WRITE8_HANDLER( pacman_flipscreen_w )
+WRITE8_MEMBER(pacman_state::pacman_flipscreen_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_flipscreen = data & 1;
-	state->m_bg_tilemap->set_flip(state->m_flipscreen * ( TILEMAP_FLIPX + TILEMAP_FLIPY ) );
+	m_flipscreen = data & 1;
+	m_bg_tilemap->set_flip(m_flipscreen * ( TILEMAP_FLIPX + TILEMAP_FLIPY ) );
 }
 
 
@@ -221,10 +219,10 @@ SCREEN_UPDATE_IND16( pacman )
 	else
 		state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE,0);
 
-	if( screen.machine().generic.spriteram_size )
+	if( state->m_spriteram != NULL )
 	{
-		UINT8 *spriteram = screen.machine().generic.spriteram.u8;
-		UINT8 *spriteram_2 = screen.machine().generic.spriteram2.u8;
+		UINT8 *spriteram = state->m_spriteram;
+		UINT8 *spriteram_2 = state->m_spriteram2;
 		int offs;
 
 		rectangle spriteclip(2*8, 34*8-1, 0*8, 28*8-1);
@@ -232,7 +230,7 @@ SCREEN_UPDATE_IND16( pacman )
 
 		/* Draw the sprites. Note that it is important to draw them exactly in this */
 		/* order, to have the correct priorities. */
-		for (offs = screen.machine().generic.spriteram_size - 2;offs > 2*2;offs -= 2)
+		for (offs = state->m_spriteram.bytes() - 2;offs > 2*2;offs -= 2)
 		{
 			int color;
 			int sx,sy;
@@ -341,34 +339,31 @@ VIDEO_START( pengo )
 	state->m_bg_tilemap->set_scrolldy(0, 264 - 224 );
 }
 
-WRITE8_HANDLER( pengo_palettebank_w )
+WRITE8_MEMBER(pacman_state::pengo_palettebank_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	if (state->m_palettebank != data)
+	if (m_palettebank != data)
 	{
-		state->m_palettebank = data;
-		state->m_bg_tilemap ->mark_all_dirty();
+		m_palettebank = data;
+		m_bg_tilemap ->mark_all_dirty();
 	}
 }
 
-WRITE8_HANDLER( pengo_colortablebank_w )
+WRITE8_MEMBER(pacman_state::pengo_colortablebank_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	if (state->m_colortablebank != data)
+	if (m_colortablebank != data)
 	{
-		state->m_colortablebank = data;
-		state->m_bg_tilemap ->mark_all_dirty();
+		m_colortablebank = data;
+		m_bg_tilemap ->mark_all_dirty();
 	}
 }
 
-WRITE8_HANDLER( pengo_gfxbank_w )
+WRITE8_MEMBER(pacman_state::pengo_gfxbank_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	if (state->m_charbank != (data & 1))
+	if (m_charbank != (data & 1))
 	{
-		state->m_spritebank = data & 1;
-		state->m_charbank = data & 1;
-		state->m_bg_tilemap ->mark_all_dirty();
+		m_spritebank = data & 1;
+		m_charbank = data & 1;
+		m_bg_tilemap ->mark_all_dirty();
 	}
 }
 
@@ -414,13 +409,13 @@ VIDEO_START( s2650games )
 SCREEN_UPDATE_IND16( s2650games )
 {
 	pacman_state *state = screen.machine().driver_data<pacman_state>();
-	UINT8 *spriteram = screen.machine().generic.spriteram.u8;
-	UINT8 *spriteram_2 = screen.machine().generic.spriteram2.u8;
+	UINT8 *spriteram = state->m_spriteram;
+	UINT8 *spriteram_2 = state->m_spriteram2;
 	int offs;
 
 	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
 
-	for (offs = screen.machine().generic.spriteram_size - 2;offs > 2*2;offs -= 2)
+	for (offs = state->m_spriteram.bytes() - 2;offs > 2*2;offs -= 2)
 	{
 		int color;
 		int sx,sy;
@@ -432,7 +427,7 @@ SCREEN_UPDATE_IND16( s2650games )
 
 		/* TODO: ?? */
 		drawgfx_transmask(bitmap,cliprect,screen.machine().gfx[1],
-				(spriteram[offs] >> 2) | ((state->m_s2650games_spriteram[offs] & 3) << 6),
+				(spriteram[offs] >> 2) | ((state->m_s2650_spriteram[offs] & 3) << 6),
 				color,
 				spriteram[offs] & 1,spriteram[offs] & 2,
 				sx,sy,
@@ -452,7 +447,7 @@ SCREEN_UPDATE_IND16( s2650games )
 
 		/* TODO: ?? */
 		drawgfx_transmask(bitmap,cliprect,screen.machine().gfx[1],
-				(spriteram[offs] >> 2) | ((state->m_s2650games_spriteram[offs] & 3)<<6),
+				(spriteram[offs] >> 2) | ((state->m_s2650_spriteram[offs] & 3)<<6),
 				color,
 				spriteram[offs] & 1,spriteram[offs] & 2,
 				sx,sy + state->m_xoffsethack,
@@ -461,33 +456,29 @@ SCREEN_UPDATE_IND16( s2650games )
 	return 0;
 }
 
-WRITE8_HANDLER( s2650games_videoram_w )
+WRITE8_MEMBER(pacman_state::s2650games_videoram_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_videoram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset);
+	m_videoram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( s2650games_colorram_w )
+WRITE8_MEMBER(pacman_state::s2650games_colorram_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
 	int i;
-	state->m_colorram[offset & 0x1f] = data;
+	m_colorram[offset & 0x1f] = data;
 	for (i = offset; i < 0x0400; i += 32)
-		state->m_bg_tilemap->mark_tile_dirty(i);
+		m_bg_tilemap->mark_tile_dirty(i);
 }
 
-WRITE8_HANDLER( s2650games_scroll_w )
+WRITE8_MEMBER(pacman_state::s2650games_scroll_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_bg_tilemap->set_scrolly(offset, data);
+	m_bg_tilemap->set_scrolly(offset, data);
 }
 
-WRITE8_HANDLER( s2650games_tilesbank_w )
+WRITE8_MEMBER(pacman_state::s2650games_tilesbank_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_s2650games_tileram[offset] = data;
-	state->m_bg_tilemap->mark_all_dirty();
+	m_s2650games_tileram[offset] = data;
+	m_bg_tilemap->mark_all_dirty();
 }
 
 
@@ -593,41 +584,36 @@ VIDEO_START( jrpacman )
 	state->m_bg_tilemap->set_scroll_cols(36 );
 }
 
-WRITE8_HANDLER( jrpacman_videoram_w )
+WRITE8_MEMBER(pacman_state::jrpacman_videoram_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_videoram[offset] = data;
-	jrpacman_mark_tile_dirty(space->machine(), offset);
+	m_videoram[offset] = data;
+	jrpacman_mark_tile_dirty(machine(), offset);
 }
 
-WRITE8_HANDLER( jrpacman_charbank_w )
+WRITE8_MEMBER(pacman_state::jrpacman_charbank_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	if (state->m_charbank != (data & 1))
+	if (m_charbank != (data & 1))
 	{
-		state->m_charbank = data & 1;
-		state->m_bg_tilemap->mark_all_dirty();
+		m_charbank = data & 1;
+		m_bg_tilemap->mark_all_dirty();
 	}
 }
 
-WRITE8_HANDLER( jrpacman_spritebank_w )
+WRITE8_MEMBER(pacman_state::jrpacman_spritebank_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_spritebank = (data & 1);
+	m_spritebank = (data & 1);
 }
 
-WRITE8_HANDLER( jrpacman_scroll_w )
+WRITE8_MEMBER(pacman_state::jrpacman_scroll_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
 	int i;
 	for( i = 2; i < 34; i++ )
 	{
-		state->m_bg_tilemap->set_scrolly(i, data );
+		m_bg_tilemap->set_scrolly(i, data );
 	}
 }
 
-WRITE8_HANDLER( jrpacman_bgpriority_w )
+WRITE8_MEMBER(pacman_state::jrpacman_bgpriority_w)
 {
-	pacman_state *state = space->machine().driver_data<pacman_state>();
-	state->m_bgpriority = (data & 1);
+	m_bgpriority = (data & 1);
 }

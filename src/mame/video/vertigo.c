@@ -44,7 +44,6 @@
 *************************************************************************/
 
 #include "emu.h"
-#include "profiler.h"
 #include "video/vector.h"
 #include "includes/vertigo.h"
 
@@ -160,8 +159,8 @@ void vertigo_vproc_reset(running_machine &machine)
 	int i;
 	UINT64 *mcode;
 
-	state->m_vectorrom = (UINT16 *)machine.region("user1")->base();
-	mcode = (UINT64 *)machine.region("proms")->base();
+	state->m_vectorrom = (UINT16 *)state->memregion("user1")->base();
+	mcode = (UINT64 *)state->memregion("proms")->base();
 
 	/* Decode microcode */
 	for (i = 0; i < MC_LENGTH; i++)

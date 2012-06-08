@@ -51,28 +51,25 @@ static TILE_GET_INFO( get_pf2_tile_info )
 	SET_TILE_INFO(4,tile&0xfff,tile>>12,0);
 }
 
-WRITE16_HANDLER( bbusters_video_w )
+WRITE16_MEMBER(bbusters_state::bbusters_video_w)
 {
-	bbusters_state *state = space->machine().driver_data<bbusters_state>();
 
-	COMBINE_DATA(&state->m_videoram[offset]);
-	state->m_fix_tilemap->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_videoram[offset]);
+	m_fix_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( bbusters_pf1_w )
+WRITE16_MEMBER(bbusters_state::bbusters_pf1_w)
 {
-	bbusters_state *state = space->machine().driver_data<bbusters_state>();
 
-	COMBINE_DATA(&state->m_pf1_data[offset]);
-	state->m_pf1_tilemap->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_pf1_data[offset]);
+	m_pf1_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( bbusters_pf2_w )
+WRITE16_MEMBER(bbusters_state::bbusters_pf2_w)
 {
-	bbusters_state *state = space->machine().driver_data<bbusters_state>();
 
-	COMBINE_DATA(&state->m_pf2_data[offset]);
-	state->m_pf2_tilemap->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_pf2_data[offset]);
+	m_pf2_tilemap->mark_tile_dirty(offset);
 }
 
 /******************************************************************************/
@@ -206,7 +203,7 @@ static void bbusters_draw_block(running_machine &machine, bitmap_ind16 &dest,int
 static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const UINT16 *source, int bank, int colval, int colmask)
 {
 	bbusters_state *state = machine.driver_data<bbusters_state>();
-	const UINT8 *scale_table=machine.region("user1")->base();
+	const UINT8 *scale_table=state->memregion("user1")->base();
 	int offs;
 
 	for (offs = 0;offs <0x800 ;offs += 4) {
@@ -289,10 +286,10 @@ SCREEN_UPDATE_IND16( bbuster )
 	state->m_pf2_tilemap->set_scrolly(0, state->m_pf2_scroll_data[1]);
 
 	state->m_pf2_tilemap->draw(bitmap, cliprect, 0, 0);
-	//draw_sprites(screen.machine(), bitmap, screen.machine().generic.buffered_spriteram2.u16, 2, 0x8, 0x8);
+	//draw_sprites(screen.machine(), bitmap, state->m_spriteram2->buffer(), 2, 0x8, 0x8);
 	state->m_pf1_tilemap->draw(bitmap, cliprect, 0, 0);
-	draw_sprites(screen.machine(), bitmap, screen.machine().generic.buffered_spriteram2.u16, 2, 0, 0);
-	draw_sprites(screen.machine(), bitmap, screen.machine().generic.buffered_spriteram.u16, 1, 0, 0);
+	draw_sprites(screen.machine(), bitmap, state->m_spriteram2->buffer(), 2, 0, 0);
+	draw_sprites(screen.machine(), bitmap, state->m_spriteram->buffer(), 1, 0, 0);
 	state->m_fix_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
@@ -308,7 +305,7 @@ SCREEN_UPDATE_IND16( mechatt )
 
 	state->m_pf2_tilemap->draw(bitmap, cliprect, 0, 0);
 	state->m_pf1_tilemap->draw(bitmap, cliprect, 0, 0);
-	draw_sprites(screen.machine(), bitmap, screen.machine().generic.buffered_spriteram.u16, 1, 0, 0);
+	draw_sprites(screen.machine(), bitmap, state->m_spriteram->buffer(), 1, 0, 0);
 	state->m_fix_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

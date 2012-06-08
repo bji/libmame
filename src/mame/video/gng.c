@@ -65,39 +65,35 @@ VIDEO_START( gng )
 
 ***************************************************************************/
 
-WRITE8_HANDLER( gng_fgvideoram_w )
+WRITE8_MEMBER(gng_state::gng_fgvideoram_w)
 {
-	gng_state *state = space->machine().driver_data<gng_state>();
-	state->m_fgvideoram[offset] = data;
-	state->m_fg_tilemap->mark_tile_dirty(offset & 0x3ff);
+	m_fgvideoram[offset] = data;
+	m_fg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
-WRITE8_HANDLER( gng_bgvideoram_w )
+WRITE8_MEMBER(gng_state::gng_bgvideoram_w)
 {
-	gng_state *state = space->machine().driver_data<gng_state>();
-	state->m_bgvideoram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset & 0x3ff);
-}
-
-
-WRITE8_HANDLER( gng_bgscrollx_w )
-{
-	gng_state *state = space->machine().driver_data<gng_state>();
-	state->m_scrollx[offset] = data;
-	state->m_bg_tilemap->set_scrollx(0, state->m_scrollx[0] + 256 * state->m_scrollx[1]);
-}
-
-WRITE8_HANDLER( gng_bgscrolly_w )
-{
-	gng_state *state = space->machine().driver_data<gng_state>();
-	state->m_scrolly[offset] = data;
-	state->m_bg_tilemap->set_scrolly(0, state->m_scrolly[0] + 256 * state->m_scrolly[1]);
+	m_bgvideoram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 
-WRITE8_HANDLER( gng_flipscreen_w )
+WRITE8_MEMBER(gng_state::gng_bgscrollx_w)
 {
-	flip_screen_set(space->machine(), ~data & 1);
+	m_scrollx[offset] = data;
+	m_bg_tilemap->set_scrollx(0, m_scrollx[0] + 256 * m_scrollx[1]);
+}
+
+WRITE8_MEMBER(gng_state::gng_bgscrolly_w)
+{
+	m_scrolly[offset] = data;
+	m_bg_tilemap->set_scrolly(0, m_scrolly[0] + 256 * m_scrolly[1]);
+}
+
+
+WRITE8_MEMBER(gng_state::gng_flipscreen_w)
+{
+	flip_screen_set(~data & 1);
 }
 
 
@@ -110,12 +106,13 @@ WRITE8_HANDLER( gng_flipscreen_w )
 
 static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
-	UINT8 *buffered_spriteram = machine.generic.buffered_spriteram.u8;
+	gng_state *state = machine.driver_data<gng_state>();
+	UINT8 *buffered_spriteram = state->m_spriteram->buffer();
 	const gfx_element *gfx = machine.gfx[2];
 	int offs;
 
 
-	for (offs = machine.generic.spriteram_size - 4; offs >= 0; offs -= 4)
+	for (offs = state->m_spriteram->bytes() - 4; offs >= 0; offs -= 4)
 	{
 		UINT8 attributes = buffered_spriteram[offs + 1];
 		int sx = buffered_spriteram[offs + 3] - 0x100 * (attributes & 0x01);
@@ -123,7 +120,7 @@ static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const 
 		int flipx = attributes & 0x04;
 		int flipy = attributes & 0x08;
 
-		if (flip_screen_get(machine))
+		if (state->flip_screen())
 		{
 			sx = 240 - sx;
 			sy = 240 - sy;
@@ -148,15 +145,4 @@ SCREEN_UPDATE_IND16( gng )
 	state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_LAYER0, 0);
 	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
-}
-
-SCREEN_VBLANK( gng )
-{
-	// rising edge
-	if (vblank_on)
-	{
-		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
-
-		buffer_spriteram_w(space, 0, 0);
-	}
 }

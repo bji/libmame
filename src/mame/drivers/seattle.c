@@ -426,11 +426,19 @@ class seattle_state : public driver_device
 public:
 	seattle_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag),
-		  m_nvram(*this, "nvram") { }
+		  m_nvram(*this, "nvram") ,
+		m_rambase(*this, "rambase"),
+		m_interrupt_enable(*this, "int_enable"),
+		m_interrupt_config(*this, "int_config"),
+		m_asic_reset(*this, "asic_reset"),
+		m_rombase(*this, "rombase"){ }
 
 	required_shared_ptr<UINT32>	m_nvram;
-	UINT32 *m_rambase;
-	UINT32 *m_rombase;
+	required_shared_ptr<UINT32> m_rambase;
+	required_shared_ptr<UINT32> m_interrupt_enable;
+	required_shared_ptr<UINT32> m_interrupt_config;
+	required_shared_ptr<UINT32> m_asic_reset;
+	required_shared_ptr<UINT32> m_rombase;
 	galileo_data m_galileo;
 	widget_data m_widget;
 	device_t *m_voodoo;
@@ -445,12 +453,30 @@ public:
 	UINT8 m_vblank_irq_num;
 	UINT8 m_vblank_latch;
 	UINT8 m_vblank_state;
-	UINT32 *m_interrupt_config;
-	UINT32 *m_interrupt_enable;
-	UINT32 *m_asic_reset;
 	UINT8 m_pending_analog_read;
 	UINT8 m_status_leds;
 	UINT32 m_cmos_write_enabled;
+	DECLARE_READ32_MEMBER(interrupt_state_r);
+	DECLARE_READ32_MEMBER(interrupt_state2_r);
+	DECLARE_WRITE32_MEMBER(interrupt_config_w);
+	DECLARE_WRITE32_MEMBER(seattle_interrupt_enable_w);
+	DECLARE_WRITE32_MEMBER(vblank_clear_w);
+	DECLARE_READ32_MEMBER(galileo_r);
+	DECLARE_WRITE32_MEMBER(galileo_w);
+	DECLARE_WRITE32_MEMBER(seattle_voodoo_w);
+	DECLARE_READ32_MEMBER(analog_port_r);
+	DECLARE_WRITE32_MEMBER(analog_port_w);
+	DECLARE_READ32_MEMBER(carnevil_gun_r);
+	DECLARE_WRITE32_MEMBER(carnevil_gun_w);
+	DECLARE_WRITE32_MEMBER(cmos_w);
+	DECLARE_READ32_MEMBER(cmos_r);
+	DECLARE_WRITE32_MEMBER(cmos_protect_w);
+	DECLARE_READ32_MEMBER(cmos_protect_r);
+	DECLARE_WRITE32_MEMBER(seattle_watchdog_w);
+	DECLARE_WRITE32_MEMBER(asic_reset_w);
+	DECLARE_WRITE32_MEMBER(asic_fifo_w);
+	DECLARE_READ32_MEMBER(status_leds_r);
+	DECLARE_WRITE32_MEMBER(status_leds_w);
 };
 
 
@@ -631,80 +657,76 @@ static void ioasic_irq(running_machine &machine, int state)
  *
  *************************************/
 
-static READ32_HANDLER( interrupt_state_r )
+READ32_MEMBER(seattle_state::interrupt_state_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	UINT32 result = 0;
-	result |= state->m_ethernet_irq_state << ETHERNET_IRQ_SHIFT;
-	result |= state->m_vblank_latch << VBLANK_IRQ_SHIFT;
+	result |= m_ethernet_irq_state << ETHERNET_IRQ_SHIFT;
+	result |= m_vblank_latch << VBLANK_IRQ_SHIFT;
 	return result;
 }
 
 
-static READ32_HANDLER( interrupt_state2_r )
+READ32_MEMBER(seattle_state::interrupt_state2_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	UINT32 result = interrupt_state_r(space, offset, mem_mask);
-	result |= state->m_vblank_state << 8;
+	result |= m_vblank_state << 8;
 	return result;
 }
 
 
-static WRITE32_HANDLER( interrupt_config_w )
+WRITE32_MEMBER(seattle_state::interrupt_config_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	int irq;
-	COMBINE_DATA(state->m_interrupt_config);
+	COMBINE_DATA(m_interrupt_config);
 
 	/* VBLANK: clear anything pending on the old IRQ */
-	if (state->m_vblank_irq_num != 0)
-		cputag_set_input_line(space->machine(), "maincpu", state->m_vblank_irq_num, CLEAR_LINE);
+	if (m_vblank_irq_num != 0)
+		cputag_set_input_line(machine(), "maincpu", m_vblank_irq_num, CLEAR_LINE);
 
 	/* VBLANK: compute the new IRQ vector */
-	irq = (*state->m_interrupt_config >> (2*VBLANK_IRQ_SHIFT)) & 3;
-	state->m_vblank_irq_num = (irq != 0) ? (2 + irq) : 0;
+	irq = (*m_interrupt_config >> (2*VBLANK_IRQ_SHIFT)) & 3;
+	m_vblank_irq_num = (irq != 0) ? (2 + irq) : 0;
 
 	/* Widget board case */
-	if (state->m_board_config == SEATTLE_WIDGET_CONFIG)
+	if (m_board_config == SEATTLE_WIDGET_CONFIG)
 	{
 		/* Widget: clear anything pending on the old IRQ */
-		if (state->m_widget.irq_num != 0)
-			cputag_set_input_line(space->machine(), "maincpu", state->m_widget.irq_num, CLEAR_LINE);
+		if (m_widget.irq_num != 0)
+			cputag_set_input_line(machine(), "maincpu", m_widget.irq_num, CLEAR_LINE);
 
 		/* Widget: compute the new IRQ vector */
-		irq = (*state->m_interrupt_config >> (2*WIDGET_IRQ_SHIFT)) & 3;
-		state->m_widget.irq_num = (irq != 0) ? (2 + irq) : 0;
+		irq = (*m_interrupt_config >> (2*WIDGET_IRQ_SHIFT)) & 3;
+		m_widget.irq_num = (irq != 0) ? (2 + irq) : 0;
 	}
 
 	/* Flagstaff board case */
-	if (state->m_board_config == FLAGSTAFF_CONFIG)
+	if (m_board_config == FLAGSTAFF_CONFIG)
 	{
 		/* Ethernet: clear anything pending on the old IRQ */
-		if (state->m_ethernet_irq_num != 0)
-			cputag_set_input_line(space->machine(), "maincpu", state->m_ethernet_irq_num, CLEAR_LINE);
+		if (m_ethernet_irq_num != 0)
+			cputag_set_input_line(machine(), "maincpu", m_ethernet_irq_num, CLEAR_LINE);
 
 		/* Ethernet: compute the new IRQ vector */
-		irq = (*state->m_interrupt_config >> (2*ETHERNET_IRQ_SHIFT)) & 3;
-		state->m_ethernet_irq_num = (irq != 0) ? (2 + irq) : 0;
+		irq = (*m_interrupt_config >> (2*ETHERNET_IRQ_SHIFT)) & 3;
+		m_ethernet_irq_num = (irq != 0) ? (2 + irq) : 0;
 	}
 
 	/* update the states */
-	update_vblank_irq(space->machine());
-	ethernet_interrupt_machine(space->machine(), state->m_ethernet_irq_state);
+	update_vblank_irq(machine());
+	ethernet_interrupt_machine(machine(), m_ethernet_irq_state);
 }
 
 
-static WRITE32_HANDLER( seattle_interrupt_enable_w )
+WRITE32_MEMBER(seattle_state::seattle_interrupt_enable_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	UINT32 old = *state->m_interrupt_enable;
-	COMBINE_DATA(state->m_interrupt_enable);
-	if (old != *state->m_interrupt_enable)
+	UINT32 old = *m_interrupt_enable;
+	COMBINE_DATA(m_interrupt_enable);
+	if (old != *m_interrupt_enable)
 	{
-		if (state->m_vblank_latch)
-			update_vblank_irq(space->machine());
-		if (state->m_ethernet_irq_state)
-			ethernet_interrupt_machine(space->machine(), state->m_ethernet_irq_state);
+		if (m_vblank_latch)
+			update_vblank_irq(machine());
+		if (m_ethernet_irq_state)
+			ethernet_interrupt_machine(machine(), m_ethernet_irq_state);
 	}
 }
 
@@ -732,12 +754,11 @@ static void update_vblank_irq(running_machine &machine)
 }
 
 
-static WRITE32_HANDLER( vblank_clear_w )
+WRITE32_MEMBER(seattle_state::vblank_clear_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	/* clear the latch and update the IRQ */
-	state->m_vblank_latch = 0;
-	update_vblank_irq(space->machine());
+	m_vblank_latch = 0;
+	update_vblank_irq(machine());
 }
 
 
@@ -1088,10 +1109,9 @@ static void galileo_reset(running_machine &machine)
 }
 
 
-static READ32_HANDLER( galileo_r )
+READ32_MEMBER(seattle_state::galileo_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	galileo_data &galileo = state->m_galileo;
+	galileo_data &galileo = m_galileo;
 	UINT32 result = galileo.reg[offset];
 
 	/* switch off the offset for special cases */
@@ -1113,10 +1133,10 @@ static READ32_HANDLER( galileo_r )
 			}
 
 			/* eat some time for those which poll this register */
-			device_eat_cycles(&space->device(), 100);
+			device_eat_cycles(&space.device(), 100);
 
 			if (LOG_TIMERS)
-				logerror("%08X:hires_timer_r = %08X\n", cpu_get_pc(&space->device()), result);
+				logerror("%08X:hires_timer_r = %08X\n", cpu_get_pc(&space.device()), result);
 			break;
 		}
 
@@ -1135,21 +1155,21 @@ static READ32_HANDLER( galileo_r )
 
 			/* unit 0 is the PCI bridge */
 			if (unit == 0 && func == 0)
-				result = pci_bridge_r(space, reg, type);
+				result = pci_bridge_r(&space, reg, type);
 
 			/* unit 8 is the 3dfx card */
 			else if (unit == 8 && func == 0)
-				result = pci_3dfx_r(space, reg, type);
+				result = pci_3dfx_r(&space, reg, type);
 
 			/* unit 9 is the IDE controller */
 			else if (unit == 9 && func == 0)
-				result = pci_ide_r(space, reg, type);
+				result = pci_ide_r(&space, reg, type);
 
 			/* anything else, just log */
 			else
 			{
 				result = ~0;
-				logerror("%08X:PCIBus read: bus %d unit %d func %d reg %d type %d = %08X\n", cpu_get_pc(&space->device()), bus, unit, func, reg, type, result);
+				logerror("%08X:PCIBus read: bus %d unit %d func %d reg %d type %d = %08X\n", cpu_get_pc(&space.device()), bus, unit, func, reg, type, result);
 			}
 			break;
 		}
@@ -1159,11 +1179,11 @@ static READ32_HANDLER( galileo_r )
 		case GREG_INT_MASK:
 		case GREG_TIMER_CONTROL:
 //          if (LOG_GALILEO)
-//              logerror("%08X:Galileo read from offset %03X = %08X\n", cpu_get_pc(&space->device()), offset*4, result);
+//              logerror("%08X:Galileo read from offset %03X = %08X\n", cpu_get_pc(&space.device()), offset*4, result);
 			break;
 
 		default:
-			logerror("%08X:Galileo read from offset %03X = %08X\n", cpu_get_pc(&space->device()), offset*4, result);
+			logerror("%08X:Galileo read from offset %03X = %08X\n", cpu_get_pc(&space.device()), offset*4, result);
 			break;
 	}
 
@@ -1171,10 +1191,9 @@ static READ32_HANDLER( galileo_r )
 }
 
 
-static WRITE32_HANDLER( galileo_w )
+WRITE32_MEMBER(seattle_state::galileo_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	galileo_data &galileo = state->m_galileo;
+	galileo_data &galileo = m_galileo;
 	UINT32 oldata = galileo.reg[offset];
 	COMBINE_DATA(&galileo.reg[offset]);
 
@@ -1189,7 +1208,7 @@ static WRITE32_HANDLER( galileo_w )
 			int which = offset % 4;
 
 			if (LOG_DMA)
-				logerror("%08X:Galileo write to offset %03X = %08X & %08X\n", cpu_get_pc(&space->device()), offset*4, data, mem_mask);
+				logerror("%08X:Galileo write to offset %03X = %08X & %08X\n", cpu_get_pc(&space.device()), offset*4, data, mem_mask);
 
 			/* keep the read only activity bit */
 			galileo.reg[offset] &= ~0x4000;
@@ -1197,12 +1216,12 @@ static WRITE32_HANDLER( galileo_w )
 
 			/* fetch next record */
 			if (data & 0x2000)
-				galileo_dma_fetch_next(space, which);
+				galileo_dma_fetch_next(&space, which);
 			galileo.reg[offset] &= ~0x2000;
 
 			/* if enabling, start the DMA */
 			if (!(oldata & 0x1000) && (data & 0x1000))
-				galileo_perform_dma(space, which);
+				galileo_perform_dma(&space, which);
 			break;
 		}
 
@@ -1219,7 +1238,7 @@ static WRITE32_HANDLER( galileo_w )
 			if (!timer->active)
 				timer->count = data;
 			if (LOG_TIMERS)
-				logerror("%08X:timer/counter %d count = %08X [start=%08X]\n", cpu_get_pc(&space->device()), offset % 4, data, timer->count);
+				logerror("%08X:timer/counter %d count = %08X [start=%08X]\n", cpu_get_pc(&space.device()), offset % 4, data, timer->count);
 			break;
 		}
 
@@ -1228,7 +1247,7 @@ static WRITE32_HANDLER( galileo_w )
 			int which, mask;
 
 			if (LOG_TIMERS)
-				logerror("%08X:timer/counter control = %08X\n", cpu_get_pc(&space->device()), data);
+				logerror("%08X:timer/counter control = %08X\n", cpu_get_pc(&space.device()), data);
 			for (which = 0, mask = 0x01; which < 4; which++, mask <<= 2)
 			{
 				galileo_timer *timer = &galileo.timer[which];
@@ -1262,7 +1281,7 @@ static WRITE32_HANDLER( galileo_w )
 			if (LOG_GALILEO)
 				logerror("%08X:Galileo write to IRQ clear = %08X & %08X\n", offset*4, data, mem_mask);
 			galileo.reg[offset] = oldata & data;
-			update_galileo_irqs(space->machine());
+			update_galileo_irqs(machine());
 			break;
 
 		case GREG_CONFIG_DATA:
@@ -1275,19 +1294,19 @@ static WRITE32_HANDLER( galileo_w )
 
 			/* unit 0 is the PCI bridge */
 			if (unit == 0 && func == 0)
-				pci_bridge_w(space, reg, type, data);
+				pci_bridge_w(&space, reg, type, data);
 
 			/* unit 8 is the 3dfx card */
 			else if (unit == 8 && func == 0)
-				pci_3dfx_w(space, reg, type, data);
+				pci_3dfx_w(&space, reg, type, data);
 
 			/* unit 9 is the IDE controller */
 			else if (unit == 9 && func == 0)
-				pci_ide_w(space, reg, type, data);
+				pci_ide_w(&space, reg, type, data);
 
 			/* anything else, just log */
 			else
-				logerror("%08X:PCIBus write: bus %d unit %d func %d reg %d type %d = %08X\n", cpu_get_pc(&space->device()), bus, unit, func, reg, type, data);
+				logerror("%08X:PCIBus write: bus %d unit %d func %d reg %d type %d = %08X\n", cpu_get_pc(&space.device()), bus, unit, func, reg, type, data);
 			break;
 		}
 
@@ -1298,11 +1317,11 @@ static WRITE32_HANDLER( galileo_w )
 		case GREG_CONFIG_ADDRESS:
 		case GREG_INT_MASK:
 			if (LOG_GALILEO)
-				logerror("%08X:Galileo write to offset %03X = %08X & %08X\n", cpu_get_pc(&space->device()), offset*4, data, mem_mask);
+				logerror("%08X:Galileo write to offset %03X = %08X & %08X\n", cpu_get_pc(&space.device()), offset*4, data, mem_mask);
 			break;
 
 		default:
-			logerror("%08X:Galileo write to offset %03X = %08X & %08X\n", cpu_get_pc(&space->device()), offset*4, data, mem_mask);
+			logerror("%08X:Galileo write to offset %03X = %08X & %08X\n", cpu_get_pc(&space.device()), offset*4, data, mem_mask);
 			break;
 	}
 }
@@ -1315,29 +1334,28 @@ static WRITE32_HANDLER( galileo_w )
  *
  *************************************/
 
-static WRITE32_HANDLER( seattle_voodoo_w )
+WRITE32_MEMBER(seattle_state::seattle_voodoo_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	/* if we're not stalled, just write and get out */
-	if (!state->m_voodoo_stalled)
+	if (!m_voodoo_stalled)
 	{
-		voodoo_w(state->m_voodoo, offset, data, mem_mask);
+		voodoo_w(m_voodoo, offset, data, mem_mask);
 		return;
 	}
 
 	/* shouldn't get here if the CPU is already stalled */
-	if (state->m_cpu_stalled_on_voodoo)
+	if (m_cpu_stalled_on_voodoo)
 		fatalerror("seattle_voodoo_w while CPU is stalled");
 
 	/* remember all the info about this access for later */
-	state->m_cpu_stalled_on_voodoo = TRUE;
-	state->m_cpu_stalled_offset = offset;
-	state->m_cpu_stalled_data = data;
-	state->m_cpu_stalled_mem_mask = mem_mask;
+	m_cpu_stalled_on_voodoo = TRUE;
+	m_cpu_stalled_offset = offset;
+	m_cpu_stalled_data = data;
+	m_cpu_stalled_mem_mask = mem_mask;
 
 	/* spin until we send the magic trigger */
-	device_spin_until_trigger(&space->device(), 45678);
-	if (LOG_DMA) logerror("%08X:Stalling CPU on voodoo (already stalled)\n", cpu_get_pc(&space->device()));
+	device_spin_until_trigger(&space.device(), 45678);
+	if (LOG_DMA) logerror("%08X:Stalling CPU on voodoo (already stalled)\n", cpu_get_pc(&space.device()));
 }
 
 
@@ -1405,21 +1423,19 @@ static void voodoo_stall(device_t *device, int stall)
  *
  *************************************/
 
-static READ32_HANDLER( analog_port_r )
+READ32_MEMBER(seattle_state::analog_port_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	return state->m_pending_analog_read;
+	return m_pending_analog_read;
 }
 
 
-static WRITE32_HANDLER( analog_port_w )
+WRITE32_MEMBER(seattle_state::analog_port_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	static const char *const portnames[] = { "AN0", "AN1", "AN2", "AN3", "AN4", "AN5", "AN6", "AN7" };
 
 	if (data < 8 || data > 15)
-		logerror("%08X:Unexpected analog port select = %08X\n", cpu_get_pc(&space->device()), data);
-	state->m_pending_analog_read = input_port_read(space->machine(), portnames[data & 7]);
+		logerror("%08X:Unexpected analog port select = %08X\n", cpu_get_pc(&space.device()), data);
+	m_pending_analog_read = ioport(portnames[data & 7])->read();
 }
 
 
@@ -1430,53 +1446,53 @@ static WRITE32_HANDLER( analog_port_w )
  *
  *************************************/
 
-static READ32_HANDLER( carnevil_gun_r )
+READ32_MEMBER(seattle_state::carnevil_gun_r)
 {
 	UINT32 result = 0;
 
 	switch (offset)
 	{
 		case 0:		/* low 8 bits of X */
-			result = (input_port_read(space->machine(), "LIGHT0_X") << 4) & 0xff;
+			result = (ioport("LIGHT0_X")->read() << 4) & 0xff;
 			break;
 
 		case 1:		/* upper 4 bits of X */
-			result = (input_port_read(space->machine(), "LIGHT0_X") >> 4) & 0x0f;
-			result |= (input_port_read(space->machine(), "FAKE") & 0x03) << 4;
+			result = (ioport("LIGHT0_X")->read() >> 4) & 0x0f;
+			result |= (ioport("FAKE")->read() & 0x03) << 4;
 			result |= 0x40;
 			break;
 
 		case 2:		/* low 8 bits of Y */
-			result = (input_port_read(space->machine(), "LIGHT0_Y") << 2) & 0xff;
+			result = (ioport("LIGHT0_Y")->read() << 2) & 0xff;
 			break;
 
 		case 3:		/* upper 4 bits of Y */
-			result = (input_port_read(space->machine(), "LIGHT0_Y") >> 6) & 0x03;
+			result = (ioport("LIGHT0_Y")->read() >> 6) & 0x03;
 			break;
 
 		case 4:		/* low 8 bits of X */
-			result = (input_port_read(space->machine(), "LIGHT1_X") << 4) & 0xff;
+			result = (ioport("LIGHT1_X")->read() << 4) & 0xff;
 			break;
 
 		case 5:		/* upper 4 bits of X */
-			result = (input_port_read(space->machine(), "LIGHT1_X") >> 4) & 0x0f;
-			result |= (input_port_read(space->machine(), "FAKE") & 0x30);
+			result = (ioport("LIGHT1_X")->read() >> 4) & 0x0f;
+			result |= (ioport("FAKE")->read() & 0x30);
 			result |= 0x40;
 			break;
 
 		case 6:		/* low 8 bits of Y */
-			result = (input_port_read(space->machine(), "LIGHT1_Y") << 2) & 0xff;
+			result = (ioport("LIGHT1_Y")->read() << 2) & 0xff;
 			break;
 
 		case 7:		/* upper 4 bits of Y */
-			result = (input_port_read(space->machine(), "LIGHT1_Y") >> 6) & 0x03;
+			result = (ioport("LIGHT1_Y")->read() >> 6) & 0x03;
 			break;
 	}
 	return result;
 }
 
 
-static WRITE32_HANDLER( carnevil_gun_w )
+WRITE32_MEMBER(seattle_state::carnevil_gun_w)
 {
 	logerror("carnevil_gun_w(%d) = %02X\n", offset, data);
 }
@@ -1553,7 +1569,7 @@ static READ32_DEVICE_HANDLER( widget_r )
 			break;
 
 		case WREG_ANALOG:
-			result = analog_port_r(device->machine().device("maincpu")->memory().space(AS_PROGRAM), 0, mem_mask);
+			result = state->analog_port_r(*device->machine().device("maincpu")->memory().space(AS_PROGRAM), 0, mem_mask);
 			break;
 
 		case WREG_ETHER_DATA:
@@ -1585,7 +1601,7 @@ static WRITE32_DEVICE_HANDLER( widget_w )
 			break;
 
 		case WREG_ANALOG:
-			analog_port_w(device->machine().device("maincpu")->memory().space(AS_PROGRAM), 0, data, mem_mask);
+			state->analog_port_w(*device->machine().device("maincpu")->memory().space(AS_PROGRAM), 0, data, mem_mask);
 			break;
 
 		case WREG_ETHER_DATA:
@@ -1602,33 +1618,29 @@ static WRITE32_DEVICE_HANDLER( widget_w )
  *
  *************************************/
 
-static WRITE32_HANDLER( cmos_w )
+WRITE32_MEMBER(seattle_state::cmos_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	if (state->m_cmos_write_enabled)
-		COMBINE_DATA(state->m_nvram + offset);
-	state->m_cmos_write_enabled = FALSE;
+	if (m_cmos_write_enabled)
+		COMBINE_DATA(m_nvram + offset);
+	m_cmos_write_enabled = FALSE;
 }
 
 
-static READ32_HANDLER( cmos_r )
+READ32_MEMBER(seattle_state::cmos_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	return state->m_nvram[offset];
+	return m_nvram[offset];
 }
 
 
-static WRITE32_HANDLER( cmos_protect_w )
+WRITE32_MEMBER(seattle_state::cmos_protect_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	state->m_cmos_write_enabled = TRUE;
+	m_cmos_write_enabled = TRUE;
 }
 
 
-static READ32_HANDLER( cmos_protect_r )
+READ32_MEMBER(seattle_state::cmos_protect_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	return state->m_cmos_write_enabled;
+	return m_cmos_write_enabled;
 }
 
 
@@ -1639,39 +1651,36 @@ static READ32_HANDLER( cmos_protect_r )
  *
  *************************************/
 
-static WRITE32_HANDLER( seattle_watchdog_w )
+WRITE32_MEMBER(seattle_state::seattle_watchdog_w)
 {
-	device_eat_cycles(&space->device(), 100);
+	device_eat_cycles(&space.device(), 100);
 }
 
 
-static WRITE32_HANDLER( asic_reset_w )
+WRITE32_MEMBER(seattle_state::asic_reset_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	COMBINE_DATA(state->m_asic_reset);
-	if (!(*state->m_asic_reset & 0x0002))
-		midway_ioasic_reset(space->machine());
+	COMBINE_DATA(m_asic_reset);
+	if (!(*m_asic_reset & 0x0002))
+		midway_ioasic_reset(machine());
 }
 
 
-static WRITE32_HANDLER( asic_fifo_w )
+WRITE32_MEMBER(seattle_state::asic_fifo_w)
 {
-	midway_ioasic_fifo_w(space->machine(), data);
+	midway_ioasic_fifo_w(machine(), data);
 }
 
 
-static READ32_HANDLER( status_leds_r )
+READ32_MEMBER(seattle_state::status_leds_r)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
-	return state->m_status_leds | 0xffffff00;
+	return m_status_leds | 0xffffff00;
 }
 
 
-static WRITE32_HANDLER( status_leds_w )
+WRITE32_MEMBER(seattle_state::status_leds_w)
 {
-	seattle_state *state = space->machine().driver_data<seattle_state>();
 	if (ACCESSING_BITS_0_7)
-		state->m_status_leds = data;
+		m_status_leds = data;
 }
 
 
@@ -1761,28 +1770,28 @@ static READ32_DEVICE_HANDLER( seattle_ide_r )
 	return ide_controller32_r(device, offset, mem_mask);
 }
 
-static ADDRESS_MAP_START( seattle_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( seattle_map, AS_PROGRAM, 32, seattle_state )
 	ADDRESS_MAP_UNMAP_HIGH
-	AM_RANGE(0x00000000, 0x007fffff) AM_RAM AM_BASE_MEMBER(seattle_state, m_rambase)	// wg3dh only has 4MB; sfrush, blitz99 8MB
-	AM_RANGE(0x08000000, 0x08ffffff) AM_DEVREAD("voodoo", voodoo_r) AM_WRITE(seattle_voodoo_w)
-	AM_RANGE(0x0a000000, 0x0a0003ff) AM_DEVREADWRITE("ide", seattle_ide_r, ide_controller32_w)
+	AM_RANGE(0x00000000, 0x007fffff) AM_RAM AM_SHARE("rambase")	// wg3dh only has 4MB; sfrush, blitz99 8MB
+	AM_RANGE(0x08000000, 0x08ffffff) AM_DEVREAD_LEGACY("voodoo", voodoo_r) AM_WRITE(seattle_voodoo_w)
+	AM_RANGE(0x0a000000, 0x0a0003ff) AM_DEVREADWRITE_LEGACY("ide", seattle_ide_r, ide_controller32_w)
 	AM_RANGE(0x0a00040c, 0x0a00040f) AM_NOP						// IDE-related, but annoying
-	AM_RANGE(0x0a000f00, 0x0a000f07) AM_DEVREADWRITE("ide", ide_bus_master32_r, ide_bus_master32_w)
+	AM_RANGE(0x0a000f00, 0x0a000f07) AM_DEVREADWRITE_LEGACY("ide", ide_bus_master32_r, ide_bus_master32_w)
 	AM_RANGE(0x0c000000, 0x0c000fff) AM_READWRITE(galileo_r, galileo_w)
 	AM_RANGE(0x13000000, 0x13000003) AM_WRITE(asic_fifo_w)
-	AM_RANGE(0x16000000, 0x1600003f) AM_READWRITE(midway_ioasic_r, midway_ioasic_w)
+	AM_RANGE(0x16000000, 0x1600003f) AM_READWRITE_LEGACY(midway_ioasic_r, midway_ioasic_w)
 	AM_RANGE(0x16100000, 0x1611ffff) AM_READWRITE(cmos_r, cmos_w) AM_SHARE("nvram")
 	AM_RANGE(0x17000000, 0x17000003) AM_READWRITE(cmos_protect_r, cmos_protect_w)
 	AM_RANGE(0x17100000, 0x17100003) AM_WRITE(seattle_watchdog_w)
-	AM_RANGE(0x17300000, 0x17300003) AM_RAM_WRITE(seattle_interrupt_enable_w) AM_BASE_MEMBER(seattle_state, m_interrupt_enable)
-	AM_RANGE(0x17400000, 0x17400003) AM_RAM_WRITE(interrupt_config_w) AM_BASE_MEMBER(seattle_state, m_interrupt_config)
+	AM_RANGE(0x17300000, 0x17300003) AM_RAM_WRITE(seattle_interrupt_enable_w) AM_SHARE("int_enable")
+	AM_RANGE(0x17400000, 0x17400003) AM_RAM_WRITE(interrupt_config_w) AM_SHARE("int_config")
 	AM_RANGE(0x17500000, 0x17500003) AM_READ(interrupt_state_r)
 	AM_RANGE(0x17600000, 0x17600003) AM_READ(interrupt_state2_r)
 	AM_RANGE(0x17700000, 0x17700003) AM_WRITE(vblank_clear_w)
 	AM_RANGE(0x17800000, 0x17800003) AM_NOP
 	AM_RANGE(0x17900000, 0x17900003) AM_READWRITE(status_leds_r, status_leds_w)
-	AM_RANGE(0x17f00000, 0x17f00003) AM_RAM_WRITE(asic_reset_w) AM_BASE_MEMBER(seattle_state, m_asic_reset)
-	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_ROM AM_REGION("user1", 0) AM_BASE_MEMBER(seattle_state, m_rombase)
+	AM_RANGE(0x17f00000, 0x17f00003) AM_RAM_WRITE(asic_reset_w) AM_SHARE("asic_reset")
+	AM_RANGE(0x1fc00000, 0x1fc7ffff) AM_ROM AM_REGION("user1", 0) AM_SHARE("rombase")
 ADDRESS_MAP_END
 
 
@@ -2505,8 +2514,8 @@ static MACHINE_CONFIG_START( seattle_common, seattle_state )
 	MCFG_MACHINE_RESET(seattle)
 	MCFG_NVRAM_ADD_1FILL("nvram")
 
-	MCFG_IDE_CONTROLLER_ADD("ide", ide_interrupt)
-	MCFG_IDE_BUS_MASTER_SPACE("maincpu", PROGRAM)
+	MCFG_IDE_CONTROLLER_ADD("ide", ide_interrupt, ide_devices, "hdd", NULL)
+	MCFG_IDE_BUS_MASTER_SPACE("ide", "maincpu", PROGRAM)
 
 	MCFG_3DFX_VOODOO_1_ADD("voodoo", STD_VOODOO_1_CLOCK, 2, "screen")
 	MCFG_3DFX_VOODOO_CPU("maincpu")
@@ -2587,7 +2596,7 @@ ROM_START( wg3dh )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version L1.2 (10/8/96) */
 	ROM_LOAD( "wg3dh_12.u32", 0x000000, 0x80000, CRC(15e4cea2) SHA1(72c0db7dc53ce645ba27a5311b5ce803ad39f131) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.3 (Guts 10/15/96, Main 10/15/96) */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.3 (Guts 10/15/96, Main 10/15/96) */
 	DISK_IMAGE( "wg3dh", 0, SHA1(4fc6f25d7f043d9bcf8743aa8df1d9be3cbc375b) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version L1.1 */
@@ -2599,7 +2608,7 @@ ROM_START( mace )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.0ce 7/2/97 */
 	ROM_LOAD( "mace10ce.u32", 0x000000, 0x80000, CRC(7a50b37e) SHA1(33788835f84a9443566c80bee9f20a1691490c6d) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.0B 6/10/97 (Guts 7/2/97, Main 7/2/97) */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.0B 6/10/97 (Guts 7/2/97, Main 7/2/97) */
 	DISK_IMAGE( "mace", 0, SHA1(96ec8d3ff5dd894e21aa81403bcdbeba44bb97ea) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version L1.1, Labeled as Version 1.0 */
@@ -2611,7 +2620,7 @@ ROM_START( macea )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version ??? 5/7/97 */
 	ROM_LOAD( "maceboot.u32", 0x000000, 0x80000, CRC(effe3ebc) SHA1(7af3ca3580d6276ffa7ab8b4c57274e15ee6bcbb) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.0a (Guts 6/9/97, Main 5/12/97) */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.0a (Guts 6/9/97, Main 5/12/97) */
 	DISK_IMAGE( "macea", 0, BAD_DUMP SHA1(9bd4a60627915d71932cab24f89c48ea21f4c1cb) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version L1.1 */
@@ -2632,7 +2641,7 @@ ROM_START( sfrush )
 	ROM_LOAD32_WORD( "sfrush.u53",  0x800000, 0x200000, CRC(71f8ddb0) SHA1(c24bef801f43bae68fda043c4356e8cf1298ca97) )
 	ROM_LOAD32_WORD( "sfrush.u49",  0x800002, 0x200000, CRC(dfb0a54c) SHA1(ed34f9485f7a7e5bb73bf5c6428b27548e12db12) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version L1.06 */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version L1.06 */
 	DISK_IMAGE( "sfrush", 0, SHA1(e2db0270a707fb2115207f988d5751081d6b4994) )
 ROM_END
 
@@ -2650,7 +2659,7 @@ ROM_START( sfrushrk )
 	ROM_LOAD32_WORD( "audio.u53",  0x800000, 0x200000, CRC(51c89a14) SHA1(6bc62bcda224040a4596d795132874828011a038) )
 	ROM_LOAD32_WORD( "audio.u49",  0x800002, 0x200000, CRC(e6b684d3) SHA1(1f5bab7fae974cecc8756dd23e3c7aa2cf6e7dc7) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.2 */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.2 */
 	DISK_IMAGE( "sfrushrk", 0, SHA1(e763f26aca67ebc17fe8b8df4fba91d492cf7837) )
 ROM_END
 
@@ -2659,7 +2668,7 @@ ROM_START( calspeed )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.2 (2/18/98) */
 	ROM_LOAD( "caspd1_2.u32", 0x000000, 0x80000, CRC(0a235e4e) SHA1(b352f10fad786260b58bd344b5002b6ea7aaf76d) )
 
-	DISK_REGION( "ide" )	/* Release version 2.1a (4/17/98) (Guts 1.25 4/17/98, Main 4/17/98) */
+	DISK_REGION( "drive_0" )	/* Release version 2.1a (4/17/98) (Guts 1.25 4/17/98, Main 4/17/98) */
 	DISK_IMAGE( "calspeed", 0, SHA1(08d411c591d4b8bbdd6437ea80d01c4cec8516f8) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version 1.02 */
@@ -2671,7 +2680,7 @@ ROM_START( calspeeda )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.2 (2/18/98) */
 	ROM_LOAD( "caspd1_2.u32", 0x000000, 0x80000, CRC(0a235e4e) SHA1(b352f10fad786260b58bd344b5002b6ea7aaf76d) )
 
-	DISK_REGION( "ide" )	/* Release version 1.0r7a (3/4/98) (Guts 3/3/98, Main 1/19/98) */
+	DISK_REGION( "drive_0" )	/* Release version 1.0r7a (3/4/98) (Guts 3/3/98, Main 1/19/98) */
 	DISK_IMAGE( "calspeda", 0, SHA1(6b1c3a7530195ef7309b06a651b01c8b3ece92c6) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version 1.02 */
@@ -2683,7 +2692,7 @@ ROM_START( vaportrx )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "vtrxboot.bin", 0x000000, 0x80000, CRC(ee487a6c) SHA1(fb9efda85047cf615f24f7276a9af9fd542f3354) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "vaportrx", 0, SHA1(fe53ca7643d2ed2745086abb7f2243c69678cab1) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version 1.02 */
@@ -2695,7 +2704,7 @@ ROM_START( vaportrxp )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )
 	ROM_LOAD( "vtrxboot.bin", 0x000000, 0x80000, CRC(ee487a6c) SHA1(fb9efda85047cf615f24f7276a9af9fd542f3354) )
 
-	DISK_REGION( "ide" ) /* Guts: Apr 10 1998 11:03:14  Main: Apr 10 1998 11:27:44 */
+	DISK_REGION( "drive_0" ) /* Guts: Apr 10 1998 11:03:14  Main: Apr 10 1998 11:27:44 */
 	DISK_IMAGE( "vaportrp", 0, SHA1(6c86637c442ebd6994eee8c0ae0dce343c35dbe9) )
 
 	ROM_REGION16_LE( 0x10000, "dcs", 0 )	/* ADSP-2115 data Version 1.02 */
@@ -2710,7 +2719,7 @@ ROM_START( biofreak )
 	ROM_REGION32_LE( 0x80000, "user1", 0 ) /* Seattle System Boot ROM Version 0.1i Apr 14 1997  14:52:53 */
 	ROM_LOAD( "biofreak.u32", 0x000000, 0x80000, CRC(cefa00bb) SHA1(7e171610ede1e8a448fb8d175f9cb9e7d549de28) )
 
-	DISK_REGION( "ide" ) /* Build Date 12/11/97 */
+	DISK_REGION( "drive_0" ) /* Build Date 12/11/97 */
 	DISK_IMAGE( "biofreak", 0, SHA1(711241642f92ded8eaf20c418ea748989183fe10) )
 ROM_END
 
@@ -2722,7 +2731,7 @@ ROM_START( blitz )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.2 */
 	ROM_LOAD( "blitz1_2.u32", 0x000000, 0x80000, CRC(38dbecf5) SHA1(7dd5a5b3baf83a7f8f877ff4cd3f5e8b5201b36f) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.21 */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.21 */
 	DISK_IMAGE( "blitz", 0, SHA1(9131c7888e89b3c172780156ed3fe1fe46f78b0a) )
 ROM_END
 
@@ -2734,7 +2743,7 @@ ROM_START( blitz11 )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.1 */
 	ROM_LOAD( "blitz1_1.u32", 0x000000, 0x80000, CRC(8163ce02) SHA1(89b432d8879052f6c5534ee49599f667f50a010f) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.21 */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.21 */
 	DISK_IMAGE( "blitz", 0, SHA1(9131c7888e89b3c172780156ed3fe1fe46f78b0a) )
 ROM_END
 
@@ -2746,7 +2755,7 @@ ROM_START( blitz99 )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.0 */
 	ROM_LOAD( "bltz9910.u32", 0x000000, 0x80000, CRC(777119b2) SHA1(40d255181c2f3a787919c339e83593fd506779a5) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.30 */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.30 */
 	DISK_IMAGE( "blitz99", 0, SHA1(19877e26ffce81dd525031e9e2b4f83ff982e2d9) )
 ROM_END
 
@@ -2758,7 +2767,7 @@ ROM_START( blitz2k )
 	ROM_REGION32_LE( 0x80000, "user1", 0 )	/* Boot Code Version 1.4 */
 	ROM_LOAD( "bltz2k14.u32", 0x000000, 0x80000, CRC(ac4f0051) SHA1(b8125c17370db7bfd9b783230b4ef3d5b22a2025) )
 
-	DISK_REGION( "ide" )	/* Hard Drive Version 1.5 */
+	DISK_REGION( "drive_0" )	/* Hard Drive Version 1.5 */
 	DISK_IMAGE( "blitz2k", 0, SHA1(e89b7fbd4b4a9854d47ae97493e0afffbd1f69e7) )
 ROM_END
 
@@ -2770,7 +2779,7 @@ ROM_START( carnevil )
 	ROM_REGION32_LE( 0x80000, "user1", 0 ) /* Boot Rom Version 1.9 */
 	ROM_LOAD( "carnevil1_9.u32", 0x000000, 0x80000, CRC(82c07f2e) SHA1(fa51c58022ce251c53bad12fc6ffadb35adb8162) )
 
-	DISK_REGION( "ide" )	/* Hard Drive v1.0.3  Diagnostics v3.4 / Feb 1 1999 16:00:07 */
+	DISK_REGION( "drive_0" )	/* Hard Drive v1.0.3  Diagnostics v3.4 / Feb 1 1999 16:00:07 */
 	DISK_IMAGE( "carnevil", 0, SHA1(5cffb0de63ad36eb01c5951bab04d3f8a9e23e16) )
 ROM_END
 
@@ -2782,7 +2791,7 @@ ROM_START( carnevil1 )
 	ROM_REGION32_LE( 0x80000, "user1", 0 ) /* Boot Rom Version 1.9 */
 	ROM_LOAD( "carnevil1_9.u32", 0x000000, 0x80000, CRC(82c07f2e) SHA1(fa51c58022ce251c53bad12fc6ffadb35adb8162) )
 
-	DISK_REGION( "ide" )	/* Hard Drive v1.0.1  Diagnostics v3.3 / Oct 20 1998 11:44:41 */
+	DISK_REGION( "drive_0" )	/* Hard Drive v1.0.1  Diagnostics v3.3 / Oct 20 1998 11:44:41 */
 	DISK_IMAGE( "carnevi1", 0, BAD_DUMP SHA1(94532727512280930a100fe473bf3a938fe2d44f) )
 ROM_END
 
@@ -2794,7 +2803,7 @@ ROM_START( hyprdriv )
 	ROM_REGION32_LE( 0x80000, "user1", 0 ) /* Boot Rom Version 9. */
 	ROM_LOAD( "hyprdrve.u32", 0x000000, 0x80000, CRC(3e18cb80) SHA1(b18cc4253090ee1d65d72a7ec0c426ed08c4f238) )
 
-	DISK_REGION( "ide" )	/* Version 1.40  Oct 23 1998  15:16:00 */
+	DISK_REGION( "drive_0" )	/* Version 1.40  Oct 23 1998  15:16:00 */
 	DISK_IMAGE( "hyprdriv", 0, SHA1(8cfa343797575b32f46cc24150024be48963a03e) )
 ROM_END
 
@@ -2831,7 +2840,7 @@ static void init_common(running_machine &machine, int ioasic, int serialnum, int
 
 		case FLAGSTAFF_CONFIG:
 			/* set up the analog inputs */
-			machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x14000000, 0x14000003, FUNC(analog_port_r), FUNC(analog_port_w));
+			machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x14000000, 0x14000003, read32_delegate(FUNC(seattle_state::analog_port_r),state), write32_delegate(FUNC(seattle_state::analog_port_w),state));
 
 			/* set up the ethernet controller */
 			device = machine.device("ethernet");
@@ -2964,7 +2973,8 @@ static DRIVER_INIT( carnevil )
 	init_common(machine, MIDWAY_IOASIC_CARNEVIL, 469/* 469 or 486 or 528 */, 80, SEATTLE_CONFIG);
 
 	/* set up the gun */
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x16800000, 0x1680001f, FUNC(carnevil_gun_r), FUNC(carnevil_gun_w));
+	seattle_state *state = machine.driver_data<seattle_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_readwrite_handler(0x16800000, 0x1680001f, read32_delegate(FUNC(seattle_state::carnevil_gun_r),state), write32_delegate(FUNC(seattle_state::carnevil_gun_w),state));
 
 	/* speedups */
 	mips3drc_add_hotspot(machine.device("maincpu"), 0x8015176C, 0x3C03801A, 250);		/* confirmed */

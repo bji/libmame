@@ -10,67 +10,60 @@
 #include "includes/commando.h"
 
 
-WRITE8_HANDLER( commando_videoram_w )
+WRITE8_MEMBER(commando_state::commando_videoram_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
-	state->m_videoram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset);
+	m_videoram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( commando_colorram_w )
+WRITE8_MEMBER(commando_state::commando_colorram_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
-	state->m_colorram[offset] = data;
-	state->m_bg_tilemap->mark_tile_dirty(offset);
+	m_colorram[offset] = data;
+	m_bg_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( commando_videoram2_w )
+WRITE8_MEMBER(commando_state::commando_videoram2_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
-	state->m_videoram2[offset] = data;
-	state->m_fg_tilemap->mark_tile_dirty(offset);
+	m_videoram2[offset] = data;
+	m_fg_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( commando_colorram2_w )
+WRITE8_MEMBER(commando_state::commando_colorram2_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
-	state->m_colorram2[offset] = data;
-	state->m_fg_tilemap->mark_tile_dirty(offset);
+	m_colorram2[offset] = data;
+	m_fg_tilemap->mark_tile_dirty(offset);
 }
 
-WRITE8_HANDLER( commando_scrollx_w )
+WRITE8_MEMBER(commando_state::commando_scrollx_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
-	state->m_scroll_x[offset] = data;
-	state->m_bg_tilemap->set_scrollx(0, state->m_scroll_x[0] | (state->m_scroll_x[1] << 8));
+	m_scroll_x[offset] = data;
+	m_bg_tilemap->set_scrollx(0, m_scroll_x[0] | (m_scroll_x[1] << 8));
 }
 
-WRITE8_HANDLER( commando_scrolly_w )
+WRITE8_MEMBER(commando_state::commando_scrolly_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
-	state->m_scroll_y[offset] = data;
-	state->m_bg_tilemap->set_scrolly(0, state->m_scroll_y[0] | (state->m_scroll_y[1] << 8));
+	m_scroll_y[offset] = data;
+	m_bg_tilemap->set_scrolly(0, m_scroll_y[0] | (m_scroll_y[1] << 8));
 }
 
-WRITE8_HANDLER( commando_c804_w )
+WRITE8_MEMBER(commando_state::commando_c804_w)
 {
-	commando_state *state = space->machine().driver_data<commando_state>();
 
 	// bits 0 and 1 are coin counters
-	coin_counter_w(space->machine(), 0, data & 0x01);
-	coin_counter_w(space->machine(), 1, data & 0x02);
+	coin_counter_w(machine(), 0, data & 0x01);
+	coin_counter_w(machine(), 1, data & 0x02);
 
 	// bit 4 resets the sound CPU
-	device_set_input_line(state->m_audiocpu, INPUT_LINE_RESET, (data & 0x10) ? ASSERT_LINE : CLEAR_LINE);
+	device_set_input_line(m_audiocpu, INPUT_LINE_RESET, (data & 0x10) ? ASSERT_LINE : CLEAR_LINE);
 
 	// bit 7 flips screen
-	flip_screen_set(space->machine(), data & 0x80);
+	flip_screen_set(data & 0x80);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -107,10 +100,11 @@ VIDEO_START( commando )
 
 static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
-	UINT8 *buffered_spriteram = machine.generic.buffered_spriteram.u8;
+	commando_state *state = machine.driver_data<commando_state>();
+	UINT8 *buffered_spriteram = state->m_spriteram->buffer();
 	int offs;
 
-	for (offs = machine.generic.spriteram_size - 4; offs >= 0; offs -= 4)
+	for (offs = state->m_spriteram->bytes() - 4; offs >= 0; offs -= 4)
 	{
 		// bit 1 of attr is not used
 		int attr = buffered_spriteram[offs + 1];
@@ -122,7 +116,7 @@ static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const 
 		int sx = buffered_spriteram[offs + 3] - ((attr & 0x01) << 8);
 		int sy = buffered_spriteram[offs + 2];
 
-		if (flip_screen_get(machine))
+		if (state->flip_screen())
 		{
 			sx = 240 - sx;
 			sy = 240 - sy;
@@ -143,15 +137,4 @@ SCREEN_UPDATE_IND16( commando )
 	draw_sprites(screen.machine(), bitmap, cliprect);
 	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
-}
-
-SCREEN_VBLANK( commando )
-{
-	// rising edge
-	if (vblank_on)
-	{
-		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
-
-		buffer_spriteram_w(space, 0, 0);
-	}
 }

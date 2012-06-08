@@ -63,7 +63,6 @@ The only viable way to do this is to have one tilemap per bank (0x0a-0x20), and 
 */
 
 #include "emu.h"
-#include "profiler.h"
 #include "drawgfxm.h"
 #include "includes/psikyosh.h"
 #include "ui.h"
@@ -1086,10 +1085,10 @@ static void draw_sprites(running_machine &machine, bitmap_rgb32 &bitmap, const r
 
 	psikyosh_state *state = machine.driver_data<psikyosh_state>();
 	const gfx_element *gfx;
-	UINT32 *src = machine.generic.buffered_spriteram.u32; /* Use buffered spriteram */
+	UINT32 *src = state->m_spriteram->buffer(); /* Use buffered spriteram */
 	UINT16 *list = (UINT16 *)src + 0x3800 / 2;
 	UINT16 listlen = 0x800/2;
-	UINT16 *zoom_table = (UINT16 *)state->m_zoomram;
+	UINT16 *zoom_table = (UINT16 *)state->m_zoomram.target();
 	UINT8  *alpha_table = (UINT8 *)&(state->m_vidregs[0]);
 
 	UINT16 listcntr = 0;
@@ -1307,14 +1306,3 @@ popmessage   ("%08x %08x %08x %08x\n%08x %08x %08x %08x",
 	}
 	return 0;
 }
-
-SCREEN_VBLANK( psikyosh )
-{
-	// rising edge
-	if (vblank_on)
-	{
-		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
-		buffer_spriteram32_w(space, 0, 0, 0xffffffff);
-	}
-}
-

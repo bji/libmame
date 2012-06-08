@@ -1334,6 +1334,11 @@ void psxgpu_device::FlatPolygon( int n_startpoint )
 
 	for( ;; )
 	{
+		if( n_y >= 1024 )
+		{
+			return;
+		}
+
 		if( n_y == COORD_DY( vertex[ n_leftpoint ].n_coord ) )
 		{
 			while( n_y == COORD_DY( vertex[ p_n_leftpointlist[ n_leftpoint ] ].n_coord ) )
@@ -1515,6 +1520,11 @@ void psxgpu_device::FlatTexturedPolygon( int n_startpoint )
 
 	for( ;; )
 	{
+		if( n_y >= 1024 )
+		{
+			return;
+		}
+
 		if( n_y == COORD_DY( vertex[ n_leftpoint ].n_coord ) )
 		{
 			while( n_y == COORD_DY( vertex[ p_n_leftpointlist[ n_leftpoint ] ].n_coord ) )
@@ -1698,6 +1708,11 @@ void psxgpu_device::GouraudPolygon( int n_startpoint )
 
 	for( ;; )
 	{
+		if( n_y >= 1024 )
+		{
+			return;
+		}
+
 		if( n_y == COORD_DY( vertex[ n_leftpoint ].n_coord ) )
 		{
 			while( n_y == COORD_DY( vertex[ p_n_leftpointlist[ n_leftpoint ] ].n_coord ) )
@@ -1924,6 +1939,11 @@ void psxgpu_device::GouraudTexturedPolygon( int n_startpoint )
 
 	for( ;; )
 	{
+		if( n_y >= 1024 )
+		{
+			return;
+		}
+
 		if( n_y == COORD_DY( vertex[ n_leftpoint ].n_coord ) )
 		{
 			while( n_y == COORD_DY( vertex[ p_n_leftpointlist[ n_leftpoint ] ].n_coord ) )
@@ -3703,7 +3723,12 @@ MACHINE_CONFIG_FRAGMENT( psxgpu )
 	((screen_device *)device)->register_vblank_callback(vblank_state_delegate(FUNC(psxgpu_device::vblank), (psxgpu_device *) owner));
 
 	MCFG_PALETTE_LENGTH( 65536 )
-	driver_device::static_set_palette_init(*owner->owner(), PALETTE_INIT_NAME(psx)); // MCFG_PALETTE_INIT( psx )
+	{
+		device_t *original_owner = owner;
+		owner = owner->owner();
+		MCFG_PALETTE_INIT(psx)
+		owner = original_owner;
+	}
 MACHINE_CONFIG_END
 
 //-------------------------------------------------

@@ -45,38 +45,38 @@ Dip locations and factory settings verified with US manual
 
 /* Read/Write Handlers */
 
-static READ16_HANDLER( ghunter_trackball_low_r )
+READ16_MEMBER(deadang_state::ghunter_trackball_low_r)
 {
-	return (input_port_read(space->machine(), "TRACKX") & 0xff) | ((input_port_read(space->machine(), "TRACKY") & 0xff) << 8);
+	return (ioport("TRACKX")->read() & 0xff) | ((ioport("TRACKY")->read() & 0xff) << 8);
 }
-static READ16_HANDLER( ghunter_trackball_high_r )
+READ16_MEMBER(deadang_state::ghunter_trackball_high_r)
 {
-	return ((input_port_read(space->machine(), "TRACKX") & 0x0f00) >> 4) | (input_port_read(space->machine(), "TRACKY") & 0x0f00);
+	return ((ioport("TRACKX")->read() & 0x0f00) >> 4) | (ioport("TRACKY")->read() & 0x0f00);
 }
 
 /* Memory Maps */
 
-static ADDRESS_MAP_START( main_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( main_map, AS_PROGRAM, 16, deadang_state )
 	AM_RANGE(0x00000, 0x037ff) AM_RAM
-	AM_RANGE(0x03800, 0x03fff) AM_RAM AM_BASE_MEMBER(deadang_state, m_spriteram)
+	AM_RANGE(0x03800, 0x03fff) AM_RAM AM_SHARE("spriteram")
 	AM_RANGE(0x04000, 0x04fff) AM_RAM AM_SHARE("share1")
 	AM_RANGE(0x05000, 0x05fff) AM_WRITEONLY
-	AM_RANGE(0x06000, 0x0600f) AM_READWRITE(seibu_main_word_r, seibu_main_word_w)
+	AM_RANGE(0x06000, 0x0600f) AM_READWRITE_LEGACY(seibu_main_word_r, seibu_main_word_w)
 	AM_RANGE(0x06010, 0x07fff) AM_WRITEONLY
-	AM_RANGE(0x08000, 0x087ff) AM_WRITE(deadang_text_w) AM_BASE_MEMBER(deadang_state, m_videoram)
+	AM_RANGE(0x08000, 0x087ff) AM_WRITE(deadang_text_w) AM_SHARE("videoram")
 	AM_RANGE(0x08800, 0x0bfff) AM_WRITEONLY
 	AM_RANGE(0x0a000, 0x0a001) AM_READ_PORT("P1_P2")
 	AM_RANGE(0x0a002, 0x0a003) AM_READ_PORT("DSW")
-	AM_RANGE(0x0c000, 0x0cfff) AM_WRITE(paletteram16_xxxxBBBBGGGGRRRR_word_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0x0c000, 0x0cfff) AM_WRITE(paletteram_xxxxBBBBGGGGRRRR_word_w) AM_SHARE("paletteram")
 	AM_RANGE(0x0d000, 0x0dfff) AM_WRITEONLY
-	AM_RANGE(0x0e000, 0x0e0ff) AM_WRITEONLY AM_BASE_MEMBER(deadang_state, m_scroll_ram)
+	AM_RANGE(0x0e000, 0x0e0ff) AM_WRITEONLY AM_SHARE("scroll_ram")
 	AM_RANGE(0x0e100, 0x0ffff) AM_WRITEONLY
 	AM_RANGE(0xc0000, 0xfffff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( sub_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( sub_map, AS_PROGRAM, 16, deadang_state )
 	AM_RANGE(0x00000, 0x037ff) AM_RAM
-	AM_RANGE(0x03800, 0x03fff) AM_RAM_WRITE(deadang_foreground_w) AM_BASE_MEMBER(deadang_state, m_video_data)
+	AM_RANGE(0x03800, 0x03fff) AM_RAM_WRITE(deadang_foreground_w) AM_SHARE("video_data")
 	AM_RANGE(0x04000, 0x04fff) AM_RAM AM_SHARE("share1")
 	AM_RANGE(0x08000, 0x08001) AM_WRITE(deadang_bank_w)
 	AM_RANGE(0x0c000, 0x0c001) AM_WRITE(watchdog_reset16_w)
@@ -316,9 +316,9 @@ ROM_END
 
 ROM_START( leadang )
 	ROM_REGION( 0x100000, "maincpu", 0 ) /* v20 main cpu */
-	ROM_LOAD16_BYTE("2.18h",   0x0c0000, 0x10000, CRC(611247e0) SHA1(1b9ad50f67ba3a3a9e5a0d6e33f4d4be2fc20446) )
-	ROM_LOAD16_BYTE("4.22h",   0x0c0001, 0x10000, CRC(348c1201) SHA1(277dd77dcbc950299de0fd56a4f66db8f90752ad) )
-	ROM_LOAD16_BYTE("1.18f",   0x0e0000, 0x10000, CRC(fb952d71) SHA1(c6578cddf019872e6005c3a9e8e3e024d17d8c6e) )
+	ROM_LOAD16_BYTE("2(__leadang).18h",   0x0c0000, 0x10000, CRC(611247e0) SHA1(1b9ad50f67ba3a3a9e5a0d6e33f4d4be2fc20446) )
+	ROM_LOAD16_BYTE("4(__leadang).22h",   0x0c0001, 0x10000, CRC(348c1201) SHA1(277dd77dcbc950299de0fd56a4f66db8f90752ad) )
+	ROM_LOAD16_BYTE("1(__leadang).18f",   0x0e0000, 0x10000, CRC(fb952d71) SHA1(c6578cddf019872e6005c3a9e8e3e024d17d8c6e) )
 	ROM_LOAD16_BYTE("3.22f",   0x0e0001, 0x10000, CRC(2271c6df) SHA1(774a92bb698606e58d0c74ea07d7eaecf766dddf) )
 
 	ROM_REGION( 0x100000, "sub", 0 ) /* v20 sub cpu */
@@ -423,8 +423,9 @@ static DRIVER_INIT( ghunter )
 	seibu_adpcm_decrypt(machine, "adpcm1");
 	seibu_adpcm_decrypt(machine, "adpcm2");
 
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x80000, 0x80001, FUNC(ghunter_trackball_low_r));
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0xb0000, 0xb0001, FUNC(ghunter_trackball_high_r));
+	deadang_state *state = machine.driver_data<deadang_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x80000, 0x80001, read16_delegate(FUNC(deadang_state::ghunter_trackball_low_r),state));
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0xb0000, 0xb0001, read16_delegate(FUNC(deadang_state::ghunter_trackball_high_r),state));
 }
 
 /* Game Drivers */

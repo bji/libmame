@@ -55,18 +55,24 @@ class safarir_state : public driver_device
 {
 public:
 	safarir_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag) ,
+		m_bg_scroll(*this, "bg_scroll"),
+		m_ram(*this, "ram") { }
 
 	UINT8 *m_ram_1;
 	UINT8 *m_ram_2;
-	size_t m_ram_size;
 	UINT8 m_ram_bank;
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
-	UINT8 *m_bg_scroll;
+	required_shared_ptr<UINT8> m_bg_scroll;
+	required_shared_ptr<UINT8> m_ram;
 	UINT8 m_port_last;
 	UINT8 m_port_last2;
-	device_t *m_samples;
+	samples_device *m_samples;
+	DECLARE_WRITE8_MEMBER(ram_w);
+	DECLARE_READ8_MEMBER(ram_r);
+	DECLARE_WRITE8_MEMBER(ram_bank_w);
+	DECLARE_WRITE8_MEMBER(safarir_audio_w);
 };
 
 
@@ -76,34 +82,31 @@ public:
  *
  *************************************/
 
-static WRITE8_HANDLER( ram_w )
+WRITE8_MEMBER(safarir_state::ram_w)
 {
-	safarir_state *state = space->machine().driver_data<safarir_state>();
 
-	if (state->m_ram_bank)
-		state->m_ram_2[offset] = data;
+	if (m_ram_bank)
+		m_ram_2[offset] = data;
 	else
-		state->m_ram_1[offset] = data;
+		m_ram_1[offset] = data;
 
-	((offset & 0x0400) ? state->m_bg_tilemap : state->m_fg_tilemap)->mark_tile_dirty(offset & 0x03ff);
+	((offset & 0x0400) ? m_bg_tilemap : m_fg_tilemap)->mark_tile_dirty(offset & 0x03ff);
 }
 
 
-static READ8_HANDLER( ram_r )
+READ8_MEMBER(safarir_state::ram_r)
 {
-	safarir_state *state = space->machine().driver_data<safarir_state>();
 
-	return state->m_ram_bank ? state->m_ram_2[offset] : state->m_ram_1[offset];
+	return m_ram_bank ? m_ram_2[offset] : m_ram_1[offset];
 }
 
 
-static WRITE8_HANDLER( ram_bank_w )
+WRITE8_MEMBER(safarir_state::ram_bank_w)
 {
-	safarir_state *state = space->machine().driver_data<safarir_state>();
 
-	state->m_ram_bank = data & 0x01;
+	m_ram_bank = data & 0x01;
 
-	space->machine().tilemap().mark_all_dirty();
+	machine().tilemap().mark_all_dirty();
 }
 
 
@@ -147,7 +150,8 @@ static TILE_GET_INFO( get_bg_tile_info )
 {
 	int color;
 	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
-	UINT8 code = ram_r(space,tile_index | 0x400);
+	safarir_state *state = machine.driver_data<safarir_state>();
+	UINT8 code = state->ram_r(*space,tile_index | 0x400);
 
 	if (code & 0x80)
 		color = 6;	/* yellow */
@@ -169,8 +173,8 @@ static TILE_GET_INFO( get_fg_tile_info )
 {
 	int color, flags;
 	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
-
-	UINT8 code = ram_r(space,tile_index);
+	safarir_state *state = machine.driver_data<safarir_state>();
+	UINT8 code = state->ram_r(*space,tile_index);
 
 	if (code & 0x80)
 		color = 7;	/* white */
@@ -232,42 +236,41 @@ static SCREEN_UPDATE_IND16( safarir )
 #define CHANNEL_SOUND6		5
 
 
-static WRITE8_HANDLER( safarir_audio_w )
+WRITE8_MEMBER(safarir_state::safarir_audio_w)
 {
-	safarir_state *state = space->machine().driver_data<safarir_state>();
-	device_t *samples = state->m_samples;
-	UINT8 rising_bits = data & ~state->m_port_last;
+	samples_device *samples = m_samples;
+	UINT8 rising_bits = data & ~m_port_last;
 
-	if (rising_bits == 0x12) sample_start(samples, CHANNEL_SOUND1, SAMPLE_SOUND1_1, 0);
-	if (rising_bits == 0x02) sample_start(samples, CHANNEL_SOUND1, SAMPLE_SOUND1_2, 0);
-	if (rising_bits == 0x95) sample_start(samples, CHANNEL_SOUND1, SAMPLE_SOUND6, 0);
+	if (rising_bits == 0x12) samples->start(CHANNEL_SOUND1, SAMPLE_SOUND1_1);
+	if (rising_bits == 0x02) samples->start(CHANNEL_SOUND1, SAMPLE_SOUND1_2);
+	if (rising_bits == 0x95) samples->start(CHANNEL_SOUND1, SAMPLE_SOUND6);
 
-	if (rising_bits == 0x04 && (data == 0x15 || data ==0x16)) sample_start(samples, CHANNEL_SOUND2, SAMPLE_SOUND2, 0);
+	if (rising_bits == 0x04 && (data == 0x15 || data ==0x16)) samples->start(CHANNEL_SOUND2, SAMPLE_SOUND2);
 
-	if (data == 0x5f && (rising_bits == 0x49 || rising_bits == 0x5f)) sample_start(samples, CHANNEL_SOUND3, SAMPLE_SOUND3, 1);
-	if (data == 0x00 || rising_bits == 0x01) sample_stop(samples, CHANNEL_SOUND3);
+	if (data == 0x5f && (rising_bits == 0x49 || rising_bits == 0x5f)) samples->start(CHANNEL_SOUND3, SAMPLE_SOUND3, true);
+	if (data == 0x00 || rising_bits == 0x01) samples->stop(CHANNEL_SOUND3);
 
 	if (data == 0x13)
 	{
-		if ((rising_bits == 0x13 && state->m_port_last != 0x04) || (rising_bits == 0x01 && state->m_port_last == 0x12))
+		if ((rising_bits == 0x13 && m_port_last != 0x04) || (rising_bits == 0x01 && m_port_last == 0x12))
 		{
-			sample_start(samples, CHANNEL_SOUND4, SAMPLE_SOUND7, 0);
+			samples->start(CHANNEL_SOUND4, SAMPLE_SOUND7);
 		}
-		else if (rising_bits == 0x03 && state->m_port_last2 == 0x15 && !sample_playing(samples, CHANNEL_SOUND4))
+		else if (rising_bits == 0x03 && m_port_last2 == 0x15 && !samples->playing(CHANNEL_SOUND4))
 		{
-			sample_start(samples, CHANNEL_SOUND4, SAMPLE_SOUND4_1, 0);
+			samples->start(CHANNEL_SOUND4, SAMPLE_SOUND4_1);
 		}
 	}
-	if (data == 0x53 && state->m_port_last == 0x55) sample_start(samples, CHANNEL_SOUND4, SAMPLE_SOUND4_2, 0);
+	if (data == 0x53 && m_port_last == 0x55) samples->start(CHANNEL_SOUND4, SAMPLE_SOUND4_2);
 
-	if (data == 0x1f && rising_bits == 0x1f) sample_start(samples, CHANNEL_SOUND5, SAMPLE_SOUND5_1, 0);
-	if (data == 0x14 && (rising_bits == 0x14 || rising_bits == 0x04)) sample_start(samples, CHANNEL_SOUND5, SAMPLE_SOUND5_2, 0);
+	if (data == 0x1f && rising_bits == 0x1f) samples->start(CHANNEL_SOUND5, SAMPLE_SOUND5_1);
+	if (data == 0x14 && (rising_bits == 0x14 || rising_bits == 0x04)) samples->start(CHANNEL_SOUND5, SAMPLE_SOUND5_2);
 
-	if (data == 0x07 && rising_bits == 0x07 && !sample_playing(samples, CHANNEL_SOUND6))
-		sample_start(samples, CHANNEL_SOUND6, SAMPLE_SOUND8, 0);
+	if (data == 0x07 && rising_bits == 0x07 && !samples->playing(CHANNEL_SOUND6))
+		samples->start(CHANNEL_SOUND6, SAMPLE_SOUND8);
 
-	state->m_port_last2 = state->m_port_last;
-	state->m_port_last = data;
+	m_port_last2 = m_port_last;
+	m_port_last = data;
 }
 
 
@@ -298,8 +301,7 @@ static const samples_interface safarir_samples_interface =
 
 static MACHINE_CONFIG_FRAGMENT( safarir_audio )
 	MCFG_SPEAKER_STANDARD_MONO("mono")
-	MCFG_SOUND_ADD("samples", SAMPLES, 0)
-	MCFG_SOUND_CONFIG(safarir_samples_interface)
+	MCFG_SAMPLES_ADD("samples", safarir_samples_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.50)
 MACHINE_CONFIG_END
 
@@ -315,15 +317,15 @@ static MACHINE_START( safarir )
 {
 	safarir_state *state = machine.driver_data<safarir_state>();
 
-	state->m_ram_1 = auto_alloc_array(machine, UINT8, state->m_ram_size);
-	state->m_ram_2 = auto_alloc_array(machine, UINT8, state->m_ram_size);
+	state->m_ram_1 = auto_alloc_array(machine, UINT8, state->m_ram.bytes());
+	state->m_ram_2 = auto_alloc_array(machine, UINT8, state->m_ram.bytes());
 	state->m_port_last = 0;
 	state->m_port_last2 = 0;
-	state->m_samples = machine.device("samples");
+	state->m_samples = machine.device<samples_device>("samples");
 
 	/* setup for save states */
-	state->save_pointer(NAME(state->m_ram_1), state->m_ram_size);
-	state->save_pointer(NAME(state->m_ram_2), state->m_ram_size);
+	state->save_pointer(NAME(state->m_ram_1), state->m_ram.bytes());
+	state->save_pointer(NAME(state->m_ram_2), state->m_ram.bytes());
 	state->save_item(NAME(state->m_ram_bank));
 	state->save_item(NAME(state->m_port_last));
 	state->save_item(NAME(state->m_port_last2));
@@ -337,11 +339,11 @@ static MACHINE_START( safarir )
  *
  *************************************/
 
-static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8, safarir_state )
 	AM_RANGE(0x0000, 0x17ff) AM_ROM
-	AM_RANGE(0x2000, 0x27ff) AM_READWRITE(ram_r, ram_w) AM_SIZE_MEMBER(safarir_state,m_ram_size)
+	AM_RANGE(0x2000, 0x27ff) AM_READWRITE(ram_r, ram_w) AM_SHARE("ram")
 	AM_RANGE(0x2800, 0x2800) AM_MIRROR(0x03ff) AM_READNOP AM_WRITE(ram_bank_w)
-	AM_RANGE(0x2c00, 0x2cff) AM_MIRROR(0x03ff) AM_READNOP AM_WRITEONLY AM_BASE_MEMBER(safarir_state,m_bg_scroll)
+	AM_RANGE(0x2c00, 0x2cff) AM_MIRROR(0x03ff) AM_READNOP AM_WRITEONLY AM_SHARE("bg_scroll")
 	AM_RANGE(0x3000, 0x30ff) AM_MIRROR(0x03ff) AM_WRITE(safarir_audio_w)	/* goes to SN76477 */
 	AM_RANGE(0x3400, 0x3400) AM_MIRROR(0x03ff) AM_WRITENOP	/* cleared at the beginning */
 	AM_RANGE(0x3800, 0x38ff) AM_MIRROR(0x03ff) AM_READ_PORT("INPUTS") AM_WRITENOP
@@ -386,7 +388,7 @@ static INPUT_PORTS_START( safarir )
 	PORT_DIPSETTING(    0x20, "5000" )
 	PORT_DIPSETTING(    0x40, "7000" )
 	PORT_DIPSETTING(    0x60, "9000" )
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_VBLANK )
+	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_CUSTOM ) PORT_VBLANK("screen")
 INPUT_PORTS_END
 
 

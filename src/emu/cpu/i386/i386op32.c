@@ -59,19 +59,21 @@ static UINT32 I386OP(shift_rotate32)(i386_state *cpustate, UINT8 modrm, UINT32 v
 		}
 
 	} else {
-
+		shift &= 31;
 		switch( (modrm >> 3) & 0x7 )
 		{
 			case 0:			/* ROL rm32, i8 */
 				dst = ((src & ((UINT32)0xffffffff >> shift)) << shift) |
 					  ((src & ((UINT32)0xffffffff << (32-shift))) >> (32-shift));
-				cpustate->CF = (src >> (32-shift)) & 0x1;
+				cpustate->CF = dst & 0x1;
+				cpustate->OF = (dst & 1) ^ (dst >> 31);
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_REG, CYCLES_ROTATE_MEM);
 				break;
 			case 1:			/* ROR rm32, i8 */
 				dst = ((src & ((UINT32)0xffffffff << shift)) >> shift) |
 					  ((src & ((UINT32)0xffffffff >> (32-shift))) << (32-shift));
-				cpustate->CF = (src >> (shift-1)) & 0x1;
+				cpustate->CF = (dst >> 31) & 0x1;
+				cpustate->OF = ((dst >> 31) ^ (dst >> 30)) & 1;
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_REG, CYCLES_ROTATE_MEM);
 				break;
 			case 2:			/* RCL rm32, i8 */
@@ -79,6 +81,7 @@ static UINT32 I386OP(shift_rotate32)(i386_state *cpustate, UINT8 modrm, UINT32 v
 					  ((src & ((UINT32)0xffffffff << (33-shift))) >> (33-shift)) |
 					  (cpustate->CF << (shift-1));
 				cpustate->CF = (src >> (32-shift)) & 0x1;
+				cpustate->OF = cpustate->CF ^ ((dst >> 31) & 1);
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_CARRY_REG, CYCLES_ROTATE_CARRY_MEM);
 				break;
 			case 3:			/* RCR rm32, i8 */
@@ -86,6 +89,7 @@ static UINT32 I386OP(shift_rotate32)(i386_state *cpustate, UINT8 modrm, UINT32 v
 					  ((src & ((UINT32)0xffffffff >> (32-shift))) << (33-shift)) |
 					  (cpustate->CF << (32-shift));
 				cpustate->CF = (src >> (shift-1)) & 0x1;
+				cpustate->OF = ((dst >> 31) ^ (dst >> 30)) & 1;
 				CYCLES_RM(cpustate,modrm, CYCLES_ROTATE_CARRY_REG, CYCLES_ROTATE_CARRY_MEM);
 				break;
 			case 4:			/* SHL/SAL rm32, i8 */
@@ -337,9 +341,11 @@ static void I386OP(bt_rm32_r32)(i386_state *cpustate)		// Opcode 0x0f a3
 
 		CYCLES(cpustate,CYCLES_BT_REG_REG);
 	} else {
-		UINT32 ea = GetEA(cpustate,modrm,0);
+		UINT8 segment;
+		UINT32 ea = GetNonTranslatedEA(cpustate,modrm,&segment);
 		UINT32 bit = LOAD_REG32(modrm);
 		ea += 4*(bit/32);
+		ea = i386_translate(cpustate,segment,(cpustate->address_size)?ea:(ea&0xffff),0);
 		bit %= 32;
 		UINT32 dst = READ32(cpustate,ea);
 
@@ -368,9 +374,11 @@ static void I386OP(btc_rm32_r32)(i386_state *cpustate)		// Opcode 0x0f bb
 		STORE_RM32(modrm, dst);
 		CYCLES(cpustate,CYCLES_BTC_REG_REG);
 	} else {
-		UINT32 ea = GetEA(cpustate,modrm,1);
+		UINT8 segment;
+		UINT32 ea = GetNonTranslatedEA(cpustate,modrm,&segment);
 		UINT32 bit = LOAD_REG32(modrm);
 		ea += 4*(bit/32);
+		ea = i386_translate(cpustate,segment,(cpustate->address_size)?ea:(ea&0xffff),1);
 		bit %= 32;
 		UINT32 dst = READ32(cpustate,ea);
 
@@ -401,9 +409,11 @@ static void I386OP(btr_rm32_r32)(i386_state *cpustate)		// Opcode 0x0f b3
 		STORE_RM32(modrm, dst);
 		CYCLES(cpustate,CYCLES_BTR_REG_REG);
 	} else {
-		UINT32 ea = GetEA(cpustate,modrm,1);
+		UINT8 segment;
+		UINT32 ea = GetNonTranslatedEA(cpustate,modrm,&segment);
 		UINT32 bit = LOAD_REG32(modrm);
 		ea += 4*(bit/32);
+		ea = i386_translate(cpustate,segment,(cpustate->address_size)?ea:(ea&0xffff),1);
 		bit %= 32;
 		UINT32 dst = READ32(cpustate,ea);
 
@@ -434,9 +444,11 @@ static void I386OP(bts_rm32_r32)(i386_state *cpustate)		// Opcode 0x0f ab
 		STORE_RM32(modrm, dst);
 		CYCLES(cpustate,CYCLES_BTS_REG_REG);
 	} else {
-		UINT32 ea = GetEA(cpustate,modrm,1);
+		UINT8 segment;
+		UINT32 ea = GetNonTranslatedEA(cpustate,modrm,&segment);
 		UINT32 bit = LOAD_REG32(modrm);
 		ea += 4*(bit/32);
+		ea = i386_translate(cpustate,segment,(cpustate->address_size)?ea:(ea&0xffff),1);
 		bit %= 32;
 		UINT32 dst = READ32(cpustate,ea);
 
@@ -808,7 +820,7 @@ static void I386OP(jg_rel32)(i386_state *cpustate)			// Opcode 0x0f 8f
 static void I386OP(jge_rel32)(i386_state *cpustate)			// Opcode 0x0f 8d
 {
 	INT32 disp = FETCH32(cpustate);
-	if( (cpustate->SF == cpustate->OF) ) {
+	if(cpustate->SF == cpustate->OF) {
 		cpustate->eip += disp;
 		CHANGE_PC(cpustate,cpustate->eip);
 		CYCLES(cpustate,CYCLES_JCC_FULL_DISP);		/* TODO: Timing = 7 + m */
@@ -994,7 +1006,7 @@ static void I386OP(jmp_abs32)(i386_state *cpustate)			// Opcode 0xea
 static void I386OP(lea32)(i386_state *cpustate)				// Opcode 0x8d
 {
 	UINT8 modrm = FETCH(cpustate);
-	UINT32 ea = GetNonTranslatedEA(cpustate,modrm);
+	UINT32 ea = GetNonTranslatedEA(cpustate,modrm,NULL);
 	if (!cpustate->address_size)
 	{
 		ea &= 0xffff;
@@ -1439,111 +1451,88 @@ static void I386OP(pop_edi)(i386_state *cpustate)			// Opcode 0x5f
 	CYCLES(cpustate,CYCLES_POP_REG_SHORT);
 }
 
-static void I386OP(pop_ds32)(i386_state *cpustate)			// Opcode 0x1f
+static bool I386OP(pop_seg32)(i386_state *cpustate, int segment)
 {
-	UINT32 offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
+	UINT32 ea, offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
+	UINT32 value;
+	bool fault;
 	if(i386_limit_check(cpustate,SS,offset+3) == 0)
 	{
-		cpustate->sreg[DS].selector = POP32(cpustate);
-		if( PROTECTED_MODE ) {
-			i386_load_segment_descriptor(cpustate,DS);
-		} else {
-			i386_load_segment_descriptor(cpustate,DS);
-		}
+		ea = i386_translate(cpustate, SS, offset, 0);
+		value = READ32(cpustate, ea);
+		i386_sreg_load(cpustate,value, segment, &fault);
+		if(fault) return false;
+		if(STACK_32BIT)
+			REG32(ESP) = offset + 4;
+		else
+			REG16(SP) = offset + 4;
 	}
 	else
-		FAULT(FAULT_SS,0)
+	{
+		cpustate->ext = 1;
+		i386_trap_with_error(cpustate,FAULT_SS,0,0,0);
+		return false;
+	}
 	CYCLES(cpustate,CYCLES_POP_SREG);
+	return true;
+}
+
+static void I386OP(pop_ds32)(i386_state *cpustate)			// Opcode 0x1f
+{
+	I386OP(pop_seg32)(cpustate, DS);
 }
 
 static void I386OP(pop_es32)(i386_state *cpustate)			// Opcode 0x07
 {
-	UINT32 offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
-	if(i386_limit_check(cpustate,SS,offset+3) == 0)
-	{
-		cpustate->sreg[ES].selector = POP32(cpustate);
-		if( PROTECTED_MODE ) {
-			i386_load_segment_descriptor(cpustate,ES);
-		} else {
-			i386_load_segment_descriptor(cpustate,ES);
-		}
-	}
-	else
-		FAULT(FAULT_SS,0)
-	CYCLES(cpustate,CYCLES_POP_SREG);
+	I386OP(pop_seg32)(cpustate, ES);
 }
 
 static void I386OP(pop_fs32)(i386_state *cpustate)			// Opcode 0x0f a1
 {
-	UINT32 offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
-	if(i386_limit_check(cpustate,SS,offset+3) == 0)
-	{
-		cpustate->sreg[FS].selector = POP32(cpustate);
-		if( PROTECTED_MODE ) {
-			i386_load_segment_descriptor(cpustate,FS);
-		} else {
-			i386_load_segment_descriptor(cpustate,FS);
-		}
-	}
-	else
-		FAULT(FAULT_SS,0)
-	CYCLES(cpustate,CYCLES_POP_SREG);
+	I386OP(pop_seg32)(cpustate, FS);
 }
 
 static void I386OP(pop_gs32)(i386_state *cpustate)			// Opcode 0x0f a9
 {
-	UINT32 offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
-	if(i386_limit_check(cpustate,SS,offset+3) == 0)
-	{
-		cpustate->sreg[GS].selector = POP32(cpustate);
-		if( PROTECTED_MODE ) {
-			i386_load_segment_descriptor(cpustate,GS);
-		} else {
-			i386_load_segment_descriptor(cpustate,GS);
-		}
-	}
-	else
-		FAULT(FAULT_SS,0)
-	CYCLES(cpustate,CYCLES_POP_SREG);
+	I386OP(pop_seg32)(cpustate, GS);
 }
 
 static void I386OP(pop_ss32)(i386_state *cpustate)			// Opcode 0x17
 {
-	UINT32 offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
+	if(!I386OP(pop_seg32)(cpustate, SS)) return;
 	if(cpustate->IF != 0) // if external interrupts are enabled
 	{
 		cpustate->IF = 0;  // reset IF for the next instruction
 		cpustate->delayed_interrupt_enable = 1;
 	}
-
-	if(i386_limit_check(cpustate,SS,offset+3) == 0)
-	{
-		cpustate->sreg[SS].selector = POP32(cpustate);
-		if( PROTECTED_MODE ) {
-			i386_load_segment_descriptor(cpustate,SS);
-		} else {
-			i386_load_segment_descriptor(cpustate,SS);
-		}
-	}
-	else
-		FAULT(FAULT_SS,0)
-	CYCLES(cpustate,CYCLES_POP_SREG);
 }
 
 static void I386OP(pop_rm32)(i386_state *cpustate)			// Opcode 0x8f
 {
 	UINT8 modrm = FETCH(cpustate);
 	UINT32 value;
-	UINT32 offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
+	UINT32 ea, offset = (STACK_32BIT ? REG32(ESP) : REG16(SP));
 	if(i386_limit_check(cpustate,SS,offset+3) == 0)
 	{
+		// be careful here, if the write references the esp register
+		// it expects the post-pop value but esp must be wound back
+		// if the write faults
+		UINT32 temp_sp = REG32(ESP);
 		value = POP32(cpustate);
 
 		if( modrm >= 0xc0 ) {
 			STORE_RM32(modrm, value);
 		} else {
-			UINT32 ea = GetEA(cpustate,modrm,1);
-			WRITE32(cpustate,ea, value);
+			ea = GetEA(cpustate,modrm,1);
+			try
+			{
+				WRITE32(cpustate,ea, value);
+			}
+			catch(UINT64 e)
+			{
+				REG32(ESP) = temp_sp;
+				throw e;
+			}
 		}
 	}
 	else
@@ -1867,17 +1856,18 @@ static void I386OP(scasd)(i386_state *cpustate)				// Opcode 0xaf
 
 static void I386OP(shld32_i8)(i386_state *cpustate)			// Opcode 0x0f a4
 {
-	/* TODO: Correct flags */
 	UINT8 modrm = FETCH(cpustate);
 	if( modrm >= 0xc0 ) {
 		UINT32 dst = LOAD_RM32(modrm);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = FETCH(cpustate);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (32-shift))) ? 1 : 0;
 			dst = (dst << shift) | (upper >> (32-shift));
+			cpustate->OF = cpustate->CF ^ (dst >> 31);
 			SetSZPF32(dst);
 		}
 		STORE_RM32(modrm, dst);
@@ -1887,11 +1877,13 @@ static void I386OP(shld32_i8)(i386_state *cpustate)			// Opcode 0x0f a4
 		UINT32 dst = READ32(cpustate,ea);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = FETCH(cpustate);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (32-shift))) ? 1 : 0;
 			dst = (dst << shift) | (upper >> (32-shift));
+			cpustate->OF = cpustate->CF ^ (dst >> 31);
 			SetSZPF32(dst);
 		}
 		WRITE32(cpustate,ea, dst);
@@ -1901,17 +1893,18 @@ static void I386OP(shld32_i8)(i386_state *cpustate)			// Opcode 0x0f a4
 
 static void I386OP(shld32_cl)(i386_state *cpustate)			// Opcode 0x0f a5
 {
-	/* TODO: Correct flags */
 	UINT8 modrm = FETCH(cpustate);
 	if( modrm >= 0xc0 ) {
 		UINT32 dst = LOAD_RM32(modrm);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = REG8(CL);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (32-shift))) ? 1 : 0;
 			dst = (dst << shift) | (upper >> (32-shift));
+			cpustate->OF = cpustate->CF ^ (dst >> 31);
 			SetSZPF32(dst);
 		}
 		STORE_RM32(modrm, dst);
@@ -1921,11 +1914,13 @@ static void I386OP(shld32_cl)(i386_state *cpustate)			// Opcode 0x0f a5
 		UINT32 dst = READ32(cpustate,ea);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = REG8(CL);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (32-shift))) ? 1 : 0;
 			dst = (dst << shift) | (upper >> (32-shift));
+			cpustate->OF = cpustate->CF ^ (dst >> 31);
 			SetSZPF32(dst);
 		}
 		WRITE32(cpustate,ea, dst);
@@ -1935,17 +1930,18 @@ static void I386OP(shld32_cl)(i386_state *cpustate)			// Opcode 0x0f a5
 
 static void I386OP(shrd32_i8)(i386_state *cpustate)			// Opcode 0x0f ac
 {
-	/* TODO: Correct flags */
 	UINT8 modrm = FETCH(cpustate);
 	if( modrm >= 0xc0 ) {
 		UINT32 dst = LOAD_RM32(modrm);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = FETCH(cpustate);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (shift-1))) ? 1 : 0;
 			dst = (dst >> shift) | (upper << (32-shift));
+			cpustate->OF = ((dst >> 31) ^ (dst >> 30)) & 1;
 			SetSZPF32(dst);
 		}
 		STORE_RM32(modrm, dst);
@@ -1955,11 +1951,13 @@ static void I386OP(shrd32_i8)(i386_state *cpustate)			// Opcode 0x0f ac
 		UINT32 dst = READ32(cpustate,ea);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = FETCH(cpustate);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (shift-1))) ? 1 : 0;
 			dst = (dst >> shift) | (upper << (32-shift));
+			cpustate->OF = ((dst >> 31) ^ (dst >> 30)) & 1;
 			SetSZPF32(dst);
 		}
 		WRITE32(cpustate,ea, dst);
@@ -1969,17 +1967,18 @@ static void I386OP(shrd32_i8)(i386_state *cpustate)			// Opcode 0x0f ac
 
 static void I386OP(shrd32_cl)(i386_state *cpustate)			// Opcode 0x0f ad
 {
-	/* TODO: Correct flags */
 	UINT8 modrm = FETCH(cpustate);
 	if( modrm >= 0xc0 ) {
 		UINT32 dst = LOAD_RM32(modrm);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = REG8(CL);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (shift-1))) ? 1 : 0;
 			dst = (dst >> shift) | (upper << (32-shift));
+			cpustate->OF = ((dst >> 31) ^ (dst >> 30)) & 1;
 			SetSZPF32(dst);
 		}
 		STORE_RM32(modrm, dst);
@@ -1989,11 +1988,13 @@ static void I386OP(shrd32_cl)(i386_state *cpustate)			// Opcode 0x0f ad
 		UINT32 dst = READ32(cpustate,ea);
 		UINT32 upper = LOAD_REG32(modrm);
 		UINT8 shift = REG8(CL);
-		if( shift > 31 || shift == 0 ) {
+		shift &= 31;
+		if( shift == 0 ) {
 
 		} else {
 			cpustate->CF = (dst & (1 << (shift-1))) ? 1 : 0;
 			dst = (dst >> shift) | (upper << (32-shift));
+			cpustate->OF = ((dst >> 31) ^ (dst >> 30)) & 1;
 			SetSZPF32(dst);
 		}
 		WRITE32(cpustate,ea, dst);
@@ -2675,9 +2676,7 @@ static void I386OP(groupF7_32)(i386_state *cpustate)		// Opcode 0xf7
 						REG32(EAX) = (UINT32)result;
 					}
 				} else {
-					cpustate->ext = 0;
 					i386_trap(cpustate, 0, 0, 0);
-					cpustate->ext = 1;
 				}
 			}
 			break;
@@ -2705,9 +2704,7 @@ static void I386OP(groupF7_32)(i386_state *cpustate)		// Opcode 0xf7
 						REG32(EAX) = (UINT32)result;
 					}
 				} else {
-					cpustate->ext = 0;
 					i386_trap(cpustate, 0, 0, 0);
-					cpustate->ext = 1;
 				}
 			}
 			break;
@@ -2919,7 +2916,7 @@ static void I386OP(group0F00_32)(i386_state *cpustate)			// Opcode 0x0f 00
 				}
 				memset(&seg, 0, sizeof(seg));
 				seg.selector = cpustate->ldtr.segment;
-				i386_load_protected_mode_segment(cpustate,&seg);
+				i386_load_protected_mode_segment(cpustate,&seg,NULL);
 				cpustate->ldtr.limit = seg.limit;
 				cpustate->ldtr.base = seg.base;
 				cpustate->ldtr.flags = seg.flags;
@@ -2946,7 +2943,7 @@ static void I386OP(group0F00_32)(i386_state *cpustate)			// Opcode 0x0f 00
 				}
 				memset(&seg, 0, sizeof(seg));
 				seg.selector = cpustate->task.segment;
-				i386_load_protected_mode_segment(cpustate,&seg);
+				i386_load_protected_mode_segment(cpustate,&seg,NULL);
 				cpustate->task.limit = seg.limit;
 				cpustate->task.base = seg.base;
 				cpustate->task.flags = seg.flags;
@@ -2960,7 +2957,6 @@ static void I386OP(group0F00_32)(i386_state *cpustate)			// Opcode 0x0f 00
 		case 4:  /* VERR */
 			if ( PROTECTED_MODE && !V8086_MODE )
 			{
-				result = 1;
 				if( modrm >= 0xc0 ) {
 					address = LOAD_RM32(modrm);
 					CYCLES(cpustate,CYCLES_VERR_REG);
@@ -2971,22 +2967,7 @@ static void I386OP(group0F00_32)(i386_state *cpustate)			// Opcode 0x0f 00
 				}
 				memset(&seg, 0, sizeof(seg));
 				seg.selector = address;
-				i386_load_protected_mode_segment(cpustate,&seg);
-				// check if the segment is within the bounds of the GDT or LDT
-				if(seg.selector & 0x04)
-				{  // LDT
-					if((seg.selector & 0xf8) > cpustate->ldtr.limit)
-					{
-						result = 0;
-					}
-				}
-				else
-				{  // GDT
-					if((seg.selector & 0xf8) > cpustate->gdtr.limit)
-					{
-						result = 0;
-					}
-				}
+				result = i386_load_protected_mode_segment(cpustate,&seg,NULL);
 				// check if the segment is a code or data segment (not a special segment type, like a TSS, gate, LDT...)
 				if(!(seg.flags & 0x10))
 					result = 0;
@@ -3023,7 +3004,6 @@ static void I386OP(group0F00_32)(i386_state *cpustate)			// Opcode 0x0f 00
 		case 5:  /* VERW */
 			if ( PROTECTED_MODE && !V8086_MODE )
 			{
-				result = 1;
 				if( modrm >= 0xc0 ) {
 					address = LOAD_RM16(modrm);
 					CYCLES(cpustate,CYCLES_VERW_REG);
@@ -3034,22 +3014,7 @@ static void I386OP(group0F00_32)(i386_state *cpustate)			// Opcode 0x0f 00
 				}
 				memset(&seg, 0, sizeof(seg));
 				seg.selector = address;
-				i386_load_protected_mode_segment(cpustate,&seg);
-				// check if the segment is within the bounds of the GDT or LDT
-				if(seg.selector & 0x04)
-				{  // LDT
-					if((seg.selector & 0xf8) > cpustate->ldtr.limit)
-					{
-						result = 0;
-					}
-				}
-				else
-				{  // GDT
-					if((seg.selector & 0xf8) > cpustate->gdtr.limit)
-					{
-						result = 0;
-					}
-				}
+				result = i386_load_protected_mode_segment(cpustate,&seg,NULL);
 				// check if the segment is a code or data segment (not a special segment type, like a TSS, gate, LDT...)
 				if(!(seg.flags & 0x10))
 					result = 0;
@@ -3161,6 +3126,25 @@ static void I386OP(group0F01_32)(i386_state *cpustate)		// Opcode 0x0f 01
 					WRITE16(cpustate,ea, cpustate->cr[0]);
 					CYCLES(cpustate,CYCLES_SMSW_MEM);
 				}
+				break;
+			}
+		case 6:			/* LMSW */
+			{
+				if(PROTECTED_MODE && cpustate->CPL)
+					FAULT(FAULT_GP,0)
+				UINT16 b;
+				if( modrm >= 0xc0 ) {
+					b = LOAD_RM16(modrm);
+					CYCLES(cpustate,CYCLES_LMSW_REG);
+				} else {
+					ea = GetEA(cpustate,modrm,0);
+					CYCLES(cpustate,CYCLES_LMSW_MEM);
+				b = READ16(cpustate,ea);
+				}
+				if(PROTECTED_MODE)
+					b |= 0x0001;  // cannot return to real mode using this instruction.
+				cpustate->cr[0] &= ~0x0000000f;
+				cpustate->cr[0] |= b & 0x0000000f;
 				break;
 			}
 		default:
@@ -3315,7 +3299,17 @@ static void I386OP(lar_r32_rm32)(i386_state *cpustate)  // Opcode 0x0f 0x02
 		}
 		else
 		{
-			i386_load_protected_mode_segment(cpustate,&seg);
+			UINT64 desc;
+			if(!i386_load_protected_mode_segment(cpustate,&seg,&desc))
+			{
+				SetZF(0);
+				return;
+			}
+			if((((seg.flags >> 5) & 3) < cpustate->CPL) && ((seg.flags & 0x1c) != 0x1c))
+			{
+				SetZF(0);
+				return;
+			}
 			if(!(seg.flags & 0x10))  // special segment
 			{
 				// check for invalid segment types
@@ -3326,15 +3320,13 @@ static void I386OP(lar_r32_rm32)(i386_state *cpustate)  // Opcode 0x0f 0x02
 				}
 				else
 				{
-					// TODO: check current privilege level
-					STORE_REG32(modrm,(seg.flags << 8) & 0x00ffff00);
+					STORE_REG32(modrm,(desc>>32) & 0x00ffff00);
 					SetZF(1);
 				}
 			}
 			else
 			{
-				// TODO: check current privilege level
-				STORE_REG32(modrm,(seg.flags << 8) & 0x00ffff00);
+				STORE_REG32(modrm,(desc>>32) & 0x00ffff00);
 				SetZF(1);
 			}
 		}
@@ -3371,11 +3363,38 @@ static void I386OP(lsl_r32_rm32)(i386_state *cpustate)  // Opcode 0x0f 0x03
 		}
 		else
 		{
-			// TODO: check segment type
-			i386_load_protected_mode_segment(cpustate,&seg);
-			limit = seg.limit;
-			STORE_REG32(modrm,limit);
-			SetZF(1);
+			UINT8 type;
+			if(!i386_load_protected_mode_segment(cpustate,&seg,NULL))
+			{
+				SetZF(0);
+				return;
+			}
+			if((((seg.flags >> 5) & 3) < cpustate->CPL) && ((seg.flags & 0x1c) != 0x1c))
+			{
+				SetZF(0);
+				return;
+			}
+			type = seg.flags & 0x1f;
+			switch(type)
+			{
+			case 0:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			case 10:
+			case 12:
+			case 13:
+			case 14:
+			case 15:
+				SetZF(0);
+				return;
+			default:
+				limit = seg.limit;
+				STORE_REG32(modrm,limit);
+				SetZF(1);
+			}
 		}
 	}
 	else
@@ -3472,13 +3491,7 @@ static void I386OP(load_far_pointer32)(i386_state *cpustate, int s)
 		UINT32 ea = GetEA(cpustate,modrm,0);
 		STORE_REG32(modrm, READ32(cpustate,ea + 0));
 		selector = READ16(cpustate,ea + 4);
-		if(PROTECTED_MODE && !(V8086_MODE))
-			i386_protected_mode_sreg_load(cpustate,selector,s);
-		else
-		{
-			cpustate->sreg[s].selector = selector;
-			i386_load_segment_descriptor(cpustate, s );
-		}
+		i386_sreg_load(cpustate,selector,s,NULL);
 	}
 }
 

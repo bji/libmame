@@ -47,30 +47,28 @@
 
 /*********************************************************************/
 
-static READ16_HANDLER( shared_ram_r )
+READ16_MEMBER(superchs_state::shared_ram_r)
 {
-	superchs_state *state = space->machine().driver_data<superchs_state>();
-	if ((offset&1)==0) return (state->m_shared_ram[offset/2]&0xffff0000)>>16;
-	return (state->m_shared_ram[offset/2]&0x0000ffff);
+	if ((offset&1)==0) return (m_shared_ram[offset/2]&0xffff0000)>>16;
+	return (m_shared_ram[offset/2]&0x0000ffff);
 }
 
-static WRITE16_HANDLER( shared_ram_w )
+WRITE16_MEMBER(superchs_state::shared_ram_w)
 {
-	superchs_state *state = space->machine().driver_data<superchs_state>();
 	if ((offset&1)==0) {
 		if (ACCESSING_BITS_8_15)
-			state->m_shared_ram[offset/2]=(state->m_shared_ram[offset/2]&0x00ffffff)|((data&0xff00)<<16);
+			m_shared_ram[offset/2]=(m_shared_ram[offset/2]&0x00ffffff)|((data&0xff00)<<16);
 		if (ACCESSING_BITS_0_7)
-			state->m_shared_ram[offset/2]=(state->m_shared_ram[offset/2]&0xff00ffff)|((data&0x00ff)<<16);
+			m_shared_ram[offset/2]=(m_shared_ram[offset/2]&0xff00ffff)|((data&0x00ff)<<16);
 	} else {
 		if (ACCESSING_BITS_8_15)
-			state->m_shared_ram[offset/2]=(state->m_shared_ram[offset/2]&0xffff00ff)|((data&0xff00)<< 0);
+			m_shared_ram[offset/2]=(m_shared_ram[offset/2]&0xffff00ff)|((data&0xff00)<< 0);
 		if (ACCESSING_BITS_0_7)
-			state->m_shared_ram[offset/2]=(state->m_shared_ram[offset/2]&0xffffff00)|((data&0x00ff)<< 0);
+			m_shared_ram[offset/2]=(m_shared_ram[offset/2]&0xffffff00)|((data&0x00ff)<< 0);
 	}
 }
 
-static WRITE32_HANDLER( cpua_ctrl_w )
+WRITE32_MEMBER(superchs_state::cpua_ctrl_w)
 {
 	/*
     CPUA writes 0x00, 22, 72, f2 in that order.
@@ -83,8 +81,8 @@ static WRITE32_HANDLER( cpua_ctrl_w )
 
 	if (ACCESSING_BITS_8_15)
 	{
-		cputag_set_input_line(space->machine(), "sub", INPUT_LINE_RESET, (data &0x200) ? CLEAR_LINE : ASSERT_LINE);
-		if (data&0x8000) cputag_set_input_line(space->machine(), "maincpu", 3, HOLD_LINE); /* Guess */
+		cputag_set_input_line(machine(), "sub", INPUT_LINE_RESET, (data &0x200) ? CLEAR_LINE : ASSERT_LINE);
+		if (data&0x8000) cputag_set_input_line(machine(), "maincpu", 3, HOLD_LINE); /* Guess */
 	}
 
 	if (ACCESSING_BITS_0_7)
@@ -93,43 +91,41 @@ static WRITE32_HANDLER( cpua_ctrl_w )
 	}
 }
 
-static WRITE32_HANDLER( superchs_palette_w )
+WRITE32_MEMBER(superchs_state::superchs_palette_w)
 {
 	int a,r,g,b;
-	COMBINE_DATA(&space->machine().generic.paletteram.u32[offset]);
+	COMBINE_DATA(&m_generic_paletteram_32[offset]);
 
-	a = space->machine().generic.paletteram.u32[offset];
+	a = m_generic_paletteram_32[offset];
 	r = (a &0xff0000) >> 16;
 	g = (a &0xff00) >> 8;
 	b = (a &0xff);
 
-	palette_set_color(space->machine(),offset,MAKE_RGB(r,g,b));
+	palette_set_color(machine(),offset,MAKE_RGB(r,g,b));
 }
 
-static READ32_HANDLER( superchs_input_r )
+READ32_MEMBER(superchs_state::superchs_input_r)
 {
-	superchs_state *state = space->machine().driver_data<superchs_state>();
 	switch (offset)
 	{
 		case 0x00:
-			return input_port_read(space->machine(), "INPUTS");
+			return ioport("INPUTS")->read();
 
 		case 0x01:
-			return state->m_coin_word<<16;
+			return m_coin_word<<16;
 	}
 
 	return 0xffffffff;
 }
 
-static WRITE32_HANDLER( superchs_input_w )
+WRITE32_MEMBER(superchs_state::superchs_input_w)
 {
-	superchs_state *state = space->machine().driver_data<superchs_state>();
 
 	#if 0
 	{
 	char t[64];
-	COMBINE_DATA(&state->m_mem[offset]);
-	sprintf(t,"%08x %08x",state->m_mem[0],state->m_mem[1]);
+	COMBINE_DATA(&m_mem[offset]);
+	sprintf(t,"%08x %08x",m_mem[0],m_mem[1]);
 	//popmessage(t);
 	}
 	#endif
@@ -140,12 +136,12 @@ static WRITE32_HANDLER( superchs_input_w )
 		{
 			if (ACCESSING_BITS_24_31)	/* $300000 is watchdog */
 			{
-				watchdog_reset(space->machine());
+				machine().watchdog_reset();
 			}
 
 			if (ACCESSING_BITS_0_7)
 			{
-				eeprom_device *eeprom = space->machine().device<eeprom_device>("eeprom");
+				eeprom_device *eeprom = machine().device<eeprom_device>("eeprom");
 				eeprom->set_clock_line((data & 0x20) ? ASSERT_LINE : CLEAR_LINE);
 				eeprom->write_bit(data & 0x40);
 				eeprom->set_cs_line((data & 0x10) ? CLEAR_LINE : ASSERT_LINE);
@@ -161,25 +157,24 @@ static WRITE32_HANDLER( superchs_input_w )
 		{
 			if (ACCESSING_BITS_24_31)
 			{
-				coin_lockout_w(space->machine(), 0,~data & 0x01000000);
-				coin_lockout_w(space->machine(), 1,~data & 0x02000000);
-				coin_counter_w(space->machine(), 0, data & 0x04000000);
-				coin_counter_w(space->machine(), 1, data & 0x08000000);
-				state->m_coin_word=(data >> 16) &0xffff;
+				coin_lockout_w(machine(), 0,~data & 0x01000000);
+				coin_lockout_w(machine(), 1,~data & 0x02000000);
+				coin_counter_w(machine(), 0, data & 0x04000000);
+				coin_counter_w(machine(), 1, data & 0x08000000);
+				m_coin_word=(data >> 16) &0xffff;
 			}
 		}
 	}
 }
 
-static READ32_HANDLER( superchs_stick_r )
+READ32_MEMBER(superchs_state::superchs_stick_r)
 {
-	superchs_state *state = space->machine().driver_data<superchs_state>();
-	int fake = input_port_read(space->machine(), "FAKE");
+	int fake = ioport("FAKE")->read();
 	int accel;
 
 	if (!(fake &0x10))	/* Analogue steer (the real control method) */
 	{
-		state->m_steer = input_port_read(space->machine(), "WHEEL");
+		m_steer = ioport("WHEEL")->read();
 	}
 	else	/* Digital steer, with smoothing - speed depends on how often stick_r is called */
 	{
@@ -188,10 +183,10 @@ static READ32_HANDLER( superchs_stick_r )
 		if (fake &0x04) goal = 0xff;		/* pressing left */
 		if (fake &0x08) goal = 0x0;		/* pressing right */
 
-		if (state->m_steer!=goal)
+		if (m_steer!=goal)
 		{
-			delta = goal - state->m_steer;
-			if (state->m_steer < goal)
+			delta = goal - m_steer;
+			if (m_steer < goal)
 			{
 				if (delta >2) delta = 2;
 			}
@@ -199,51 +194,51 @@ static READ32_HANDLER( superchs_stick_r )
 			{
 				if (delta < (-2)) delta = -2;
 			}
-			state->m_steer += delta;
+			m_steer += delta;
 		}
 	}
 
 	/* Accelerator is an analogue input but the game treats it as digital (on/off) */
-	if (input_port_read(space->machine(),  "FAKE") & 0x1)	/* pressing B1 */
+	if (ioport("FAKE")->read() & 0x1)	/* pressing B1 */
 		accel = 0x0;
 	else
 		accel = 0xff;
 
 	/* Todo: Verify brake - and figure out other input */
-	return (state->m_steer << 24) | (accel << 16) | (input_port_read(space->machine(), "SOUND") << 8) | input_port_read(space->machine(), "UNKNOWN");
+	return (m_steer << 24) | (accel << 16) | (ioport("SOUND")->read() << 8) | ioport("UNKNOWN")->read();
 }
 
-static WRITE32_HANDLER( superchs_stick_w )
+WRITE32_MEMBER(superchs_state::superchs_stick_w)
 {
 	/* This is guess work - the interrupts are in groups of 4, with each writing to a
         different byte in this long word before the RTE.  I assume all but the last
         (top) byte cause an IRQ with the final one being an ACK.  (Total guess but it works). */
 	if (mem_mask != 0xff000000)
-		cputag_set_input_line(space->machine(), "maincpu", 3, HOLD_LINE);
+		cputag_set_input_line(machine(), "maincpu", 3, HOLD_LINE);
 }
 
 /***********************************************************
              MEMORY STRUCTURES
 ***********************************************************/
 
-static ADDRESS_MAP_START( superchs_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( superchs_map, AS_PROGRAM, 32, superchs_state )
 	AM_RANGE(0x000000, 0x0fffff) AM_ROM
-	AM_RANGE(0x100000, 0x11ffff) AM_RAM AM_BASE_MEMBER(superchs_state, m_ram)
-	AM_RANGE(0x140000, 0x141fff) AM_RAM AM_BASE_SIZE_MEMBER(superchs_state, m_spriteram, m_spriteram_size)
-	AM_RANGE(0x180000, 0x18ffff) AM_DEVREADWRITE("tc0480scp", tc0480scp_long_r, tc0480scp_long_w)
-	AM_RANGE(0x1b0000, 0x1b002f) AM_DEVREADWRITE("tc0480scp", tc0480scp_ctrl_long_r, tc0480scp_ctrl_long_w)
-	AM_RANGE(0x200000, 0x20ffff) AM_RAM AM_BASE_MEMBER(superchs_state, m_shared_ram)
+	AM_RANGE(0x100000, 0x11ffff) AM_RAM AM_SHARE("ram")
+	AM_RANGE(0x140000, 0x141fff) AM_RAM AM_SHARE("spriteram")
+	AM_RANGE(0x180000, 0x18ffff) AM_DEVREADWRITE_LEGACY("tc0480scp", tc0480scp_long_r, tc0480scp_long_w)
+	AM_RANGE(0x1b0000, 0x1b002f) AM_DEVREADWRITE_LEGACY("tc0480scp", tc0480scp_ctrl_long_r, tc0480scp_ctrl_long_w)
+	AM_RANGE(0x200000, 0x20ffff) AM_RAM AM_SHARE("shared_ram")
 	AM_RANGE(0x240000, 0x240003) AM_WRITE(cpua_ctrl_w)
-	AM_RANGE(0x280000, 0x287fff) AM_RAM_WRITE(superchs_palette_w) AM_BASE_GENERIC(paletteram)
+	AM_RANGE(0x280000, 0x287fff) AM_RAM_WRITE(superchs_palette_w) AM_SHARE("paletteram")
 	AM_RANGE(0x2c0000, 0x2c07ff) AM_RAM AM_SHARE("f3_shared")
 	AM_RANGE(0x300000, 0x300007) AM_READWRITE(superchs_input_r, superchs_input_w)	/* eerom etc. */
 	AM_RANGE(0x340000, 0x340003) AM_READWRITE(superchs_stick_r, superchs_stick_w)	/* stick int request */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( superchs_cpub_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( superchs_cpub_map, AS_PROGRAM, 16, superchs_state )
 	AM_RANGE(0x000000, 0x03ffff) AM_ROM
 	AM_RANGE(0x200000, 0x20ffff) AM_RAM
-	AM_RANGE(0x600000, 0x60ffff) AM_DEVWRITE("tc0480scp", tc0480scp_word_w) /* Only written upon errors */
+	AM_RANGE(0x600000, 0x60ffff) AM_DEVWRITE_LEGACY("tc0480scp", tc0480scp_word_w) /* Only written upon errors */
 	AM_RANGE(0x800000, 0x80ffff) AM_READWRITE(shared_ram_r, shared_ram_w)
 	AM_RANGE(0xa00000, 0xa001ff) AM_RAM	/* Extra road control?? */
 ADDRESS_MAP_END
@@ -405,65 +400,103 @@ MACHINE_CONFIG_END
 
 ROM_START( superchs )
 	ROM_REGION( 0x100000, "maincpu", 0 )	/* 1024K for 68020 code (CPU A) */
-	ROM_LOAD32_BYTE( "d46-35.27", 0x00000, 0x40000, CRC(1575c9a7) SHA1(e3441d6018ed3315c62c5e5c4534d8712b025ae2) )
-	ROM_LOAD32_BYTE( "d46-34.25", 0x00001, 0x40000, CRC(c72a4d2b) SHA1(6ef64de15e52007406ce3255071a1f856e0e8b49) )
-	ROM_LOAD32_BYTE( "d46-33.23", 0x00002, 0x40000, CRC(3094bcd0) SHA1(b6779b81a3ebec440a9359868dc43fc3a631ee11) )
-	ROM_LOAD32_BYTE( "d46-31.21", 0x00003, 0x40000, CRC(38b983a3) SHA1(c4859cecc2f3506b7090c462cecd3e4eaabe85aa) )
+	ROM_LOAD32_BYTE( "d46-35.ic27", 0x00000, 0x40000, CRC(1575c9a7) SHA1(e3441d6018ed3315c62c5e5c4534d8712b025ae2) )
+	ROM_LOAD32_BYTE( "d46-34.ic25", 0x00001, 0x40000, CRC(c72a4d2b) SHA1(6ef64de15e52007406ce3255071a1f856e0e8b49) )
+	ROM_LOAD32_BYTE( "d46-33.ic23", 0x00002, 0x40000, CRC(3094bcd0) SHA1(b6779b81a3ebec440a9359868dc43fc3a631ee11) )
+	ROM_LOAD32_BYTE( "d46-31.ic21", 0x00003, 0x40000, CRC(38b983a3) SHA1(c4859cecc2f3506b7090c462cecd3e4eaabe85aa) )
 
 	ROM_REGION( 0x140000, "audiocpu", 0 )	/* Sound cpu */
-	ROM_LOAD16_BYTE( "d46-37.8up", 0x100000, 0x20000, CRC(60b51b91) SHA1(0d0b017808e0a3bdabe8ef5a726bbe16428db06b) )
-	ROM_LOAD16_BYTE( "d46-36.7lo", 0x100001, 0x20000, CRC(8f7aa276) SHA1(b3e330e33099d3cbf4cdc43063119b041e9eea3a) )
+	ROM_LOAD16_BYTE( "d46-37.ic8", 0x100000, 0x20000, CRC(60b51b91) SHA1(0d0b017808e0a3bdabe8ef5a726bbe16428db06b) )
+	ROM_LOAD16_BYTE( "d46-36.ic7", 0x100001, 0x20000, CRC(8f7aa276) SHA1(b3e330e33099d3cbf4cdc43063119b041e9eea3a) )
 
 	ROM_REGION( 0x40000, "sub", 0 )	/* 256K for 68000 code (CPU B) */
-	ROM_LOAD16_BYTE( "d46-24.127", 0x00000, 0x20000, CRC(a006baa1) SHA1(e691ddab6cb79444bd6c3fc870e0dff3051d8cf9) )
-	ROM_LOAD16_BYTE( "d46-23.112", 0x00001, 0x20000, CRC(9a69dbd0) SHA1(13eca492f1db834c599656750864e7003514f3d4) )
+	ROM_LOAD16_BYTE( "d46-24.ic127", 0x00000, 0x20000, CRC(a006baa1) SHA1(e691ddab6cb79444bd6c3fc870e0dff3051d8cf9) )
+	ROM_LOAD16_BYTE( "d46-23.ic112", 0x00001, 0x20000, CRC(9a69dbd0) SHA1(13eca492f1db834c599656750864e7003514f3d4) )
 
 	ROM_REGION( 0x200000, "gfx1", 0 )
-	ROM_LOAD16_BYTE( "d46-05.87", 0x00000, 0x100000, CRC(150d0e4c) SHA1(9240b32900be733b8f44868ed5d64f5f1aaadb47) )	/* SCR 16x16 tiles */
-	ROM_LOAD16_BYTE( "d46-06.88", 0x00001, 0x100000, CRC(321308be) SHA1(17e724cce39b1331650c1f08d693d057dcd43a3f) )
+	ROM_LOAD16_BYTE( "d46-05.ic87", 0x00000, 0x100000, CRC(150d0e4c) SHA1(9240b32900be733b8f44868ed5d64f5f1aaadb47) )	/* SCR 16x16 tiles */
+	ROM_LOAD16_BYTE( "d46-06.ic88", 0x00001, 0x100000, CRC(321308be) SHA1(17e724cce39b1331650c1f08d693d057dcd43a3f) )
 
 	ROM_REGION( 0x800000, "gfx2", 0 )
-	ROM_LOAD32_BYTE( "d46-01.64", 0x000003, 0x200000, CRC(5c2ae92d) SHA1(bee2caed4729a27fa0569d952d6d12170c2aa2a8) )	/* OBJ 16x16 tiles: each rom has 1 bitplane */
-	ROM_LOAD32_BYTE( "d46-02.65", 0x000002, 0x200000, CRC(a83ca82e) SHA1(03759be87a8d62c0044e8a44e90c47308e32d3e5) )
-	ROM_LOAD32_BYTE( "d46-03.66", 0x000001, 0x200000, CRC(e0e9cbfd) SHA1(b7deb2c58320af9d1b4273ad2758ce927d2e279c) )
-	ROM_LOAD32_BYTE( "d46-04.67", 0x000000, 0x200000, CRC(832769a9) SHA1(136ead19edeee90b5be91a6e2f434193dc670fd8) )
+	ROM_LOAD32_BYTE( "d46-01.ic64", 0x000003, 0x200000, CRC(5c2ae92d) SHA1(bee2caed4729a27fa0569d952d6d12170c2aa2a8) )	/* OBJ 16x16 tiles: each rom has 1 bitplane */
+	ROM_LOAD32_BYTE( "d46-02.ic65", 0x000002, 0x200000, CRC(a83ca82e) SHA1(03759be87a8d62c0044e8a44e90c47308e32d3e5) )
+	ROM_LOAD32_BYTE( "d46-03.ic66", 0x000001, 0x200000, CRC(e0e9cbfd) SHA1(b7deb2c58320af9d1b4273ad2758ce927d2e279c) )
+	ROM_LOAD32_BYTE( "d46-04.ic67", 0x000000, 0x200000, CRC(832769a9) SHA1(136ead19edeee90b5be91a6e2f434193dc670fd8) )
 
 	ROM_REGION16_LE( 0x80000, "user1", 0 )
-	ROM_LOAD16_WORD( "d46-07.34", 0x00000, 0x80000, CRC(c3b8b093) SHA1(f34364248ca7fdaaa1a0f8f6f795f9b4bc935fb9) )	/* STY, used to create big sprites on the fly */
+	ROM_LOAD16_WORD( "d46-07.ic34", 0x00000, 0x80000, CRC(c3b8b093) SHA1(f34364248ca7fdaaa1a0f8f6f795f9b4bc935fb9) )	/* STY, used to create big sprites on the fly */
 
 	ROM_REGION16_BE( 0x1000000, "ensoniq.0" , ROMREGION_ERASE00 )
-	ROM_LOAD16_BYTE( "d46-10.2", 0xc00000, 0x200000, CRC(306256be) SHA1(e6e5d4a4c0b98470f2aff2e94624dd19af73ec5d) )
-	ROM_LOAD16_BYTE( "d46-12.4", 0x000000, 0x200000, CRC(a24a53a8) SHA1(5d5fb87a94ceabda89360064d7d9b6d23c4c606b) )
+	ROM_LOAD16_BYTE( "d46-10.ic2", 0xc00000, 0x200000, CRC(306256be) SHA1(e6e5d4a4c0b98470f2aff2e94624dd19af73ec5d) )
+	ROM_LOAD16_BYTE( "d46-12.ic4", 0x000000, 0x200000, CRC(a24a53a8) SHA1(5d5fb87a94ceabda89360064d7d9b6d23c4c606b) )
 	ROM_RELOAD     (             0x400000, 0x200000 )
-	ROM_LOAD16_BYTE( "d46-11.5", 0x800000, 0x200000, CRC(d4ea0f56) SHA1(dc8d2ed3c11d0b6f9ebdfde805188884320235e6) )
+	ROM_LOAD16_BYTE( "d46-11.ic5", 0x800000, 0x200000, CRC(d4ea0f56) SHA1(dc8d2ed3c11d0b6f9ebdfde805188884320235e6) )
 
 	ROM_REGION16_BE( 0x80, "eeprom", 0 )
 	ROM_LOAD( "eeprom-superchs.bin", 0x0000, 0x0080, CRC(230f0753) SHA1(4c692b35083da71ed866b233c7c9b152a914c95c) )
 ROM_END
 
-static READ32_HANDLER( main_cycle_r )
-{
-	superchs_state *state = space->machine().driver_data<superchs_state>();
-	if (cpu_get_pc(&space->device())==0x702)
-		device_spin_until_interrupt(&space->device());
+ROM_START( superchsj )
+	ROM_REGION( 0x100000, "maincpu", 0 )	/* 1024K for 68020 code (CPU A) */
+	ROM_LOAD32_BYTE( "d46-28+.ic27", 0x00000, 0x40000, CRC(5c33784f) SHA1(cb3b3bae4fe8f83809c1f437635b3efc1fb4206a) ) /* Actually labeled D46 28* */
+	ROM_LOAD32_BYTE( "d46-27+.ic25", 0x00001, 0x40000, CRC(e81125b8) SHA1(a5c9731eb255217861cda0dfad1ee5003f087b81) ) /* Actually labeled D46 27* */
+	ROM_LOAD32_BYTE( "d46-26+.ic23", 0x00002, 0x40000, CRC(2aaba1b0) SHA1(13ceaa678bd671c5c88cac35e8a021a180728a69) ) /* Actually labeled D46 26* */
+	ROM_LOAD32_BYTE( "d46-25+.ic21", 0x00003, 0x40000, CRC(4241e97a) SHA1(e3e361080e3ebc098805310d41b3afe7f14ff8b4) ) /* Actually labeled D46 25* */
 
-	return state->m_ram[0];
+	ROM_REGION( 0x140000, "audiocpu", 0 )	/* Sound cpu */
+	ROM_LOAD16_BYTE( "d46-30.ic8", 0x100000, 0x20000, CRC(88f8a421) SHA1(4fd0885d398b1b0e127d7462926d1630a635e305) )
+	ROM_LOAD16_BYTE( "d46-29.ic7", 0x100001, 0x20000, CRC(04501fa5) SHA1(dfbafc34df8ab0fcaefb5ca4c3143977020b7e58) )
+
+	ROM_REGION( 0x40000, "sub", 0 )	/* 256K for 68000 code (CPU B) */
+	ROM_LOAD16_BYTE( "d46-24.ic127", 0x00000, 0x20000, CRC(a006baa1) SHA1(e691ddab6cb79444bd6c3fc870e0dff3051d8cf9) )
+	ROM_LOAD16_BYTE( "d46-23.ic112", 0x00001, 0x20000, CRC(9a69dbd0) SHA1(13eca492f1db834c599656750864e7003514f3d4) )
+
+	ROM_REGION( 0x200000, "gfx1", 0 )
+	ROM_LOAD16_BYTE( "d46-05.ic87", 0x00000, 0x100000, CRC(150d0e4c) SHA1(9240b32900be733b8f44868ed5d64f5f1aaadb47) )	/* SCR 16x16 tiles */
+	ROM_LOAD16_BYTE( "d46-06.ic88", 0x00001, 0x100000, CRC(321308be) SHA1(17e724cce39b1331650c1f08d693d057dcd43a3f) )
+
+	ROM_REGION( 0x800000, "gfx2", 0 )
+	ROM_LOAD32_BYTE( "d46-01.ic64", 0x000003, 0x200000, CRC(5c2ae92d) SHA1(bee2caed4729a27fa0569d952d6d12170c2aa2a8) )	/* OBJ 16x16 tiles: each rom has 1 bitplane */
+	ROM_LOAD32_BYTE( "d46-02.ic65", 0x000002, 0x200000, CRC(a83ca82e) SHA1(03759be87a8d62c0044e8a44e90c47308e32d3e5) )
+	ROM_LOAD32_BYTE( "d46-03.ic66", 0x000001, 0x200000, CRC(e0e9cbfd) SHA1(b7deb2c58320af9d1b4273ad2758ce927d2e279c) )
+	ROM_LOAD32_BYTE( "d46-04.ic67", 0x000000, 0x200000, CRC(832769a9) SHA1(136ead19edeee90b5be91a6e2f434193dc670fd8) )
+
+	ROM_REGION16_LE( 0x80000, "user1", 0 )
+	ROM_LOAD16_WORD( "d46-07.ic34", 0x00000, 0x80000, CRC(c3b8b093) SHA1(f34364248ca7fdaaa1a0f8f6f795f9b4bc935fb9) )	/* STY, used to create big sprites on the fly */
+
+	ROM_REGION16_BE( 0x1000000, "ensoniq.0" , ROMREGION_ERASE00 )
+	ROM_LOAD16_BYTE( "d46-10.ic2", 0xc00000, 0x200000, CRC(306256be) SHA1(e6e5d4a4c0b98470f2aff2e94624dd19af73ec5d) )
+	ROM_LOAD16_BYTE( "d46-09.ic4", 0x000000, 0x200000, CRC(0acb8bc7) SHA1(62d66925f0eee4cee282c4e0972e08d12acf331c) )
+	ROM_RELOAD     (             0x400000, 0x200000 )
+	ROM_LOAD16_BYTE( "d46-08.ic5", 0x800000, 0x200000, CRC(4677e820) SHA1(d6427844b08438e45af4c671589a270e46e6dead) )
+
+	ROM_REGION16_BE( 0x80, "eeprom", 0 )
+	ROM_LOAD( "eeprom-superchs.bin", 0x0000, 0x0080, CRC(230f0753) SHA1(4c692b35083da71ed866b233c7c9b152a914c95c) )
+ROM_END
+
+READ32_MEMBER(superchs_state::main_cycle_r)
+{
+	if (cpu_get_pc(&space.device())==0x702)
+		device_spin_until_interrupt(&space.device());
+
+	return m_ram[0];
 }
 
-static READ16_HANDLER( sub_cycle_r )
+READ16_MEMBER(superchs_state::sub_cycle_r)
 {
-	superchs_state *state = space->machine().driver_data<superchs_state>();
-	if (cpu_get_pc(&space->device())==0x454)
-		device_spin_until_interrupt(&space->device());
+	if (cpu_get_pc(&space.device())==0x454)
+		device_spin_until_interrupt(&space.device());
 
-	return state->m_ram[2]&0xffff;
+	return m_ram[2]&0xffff;
 }
 
 static DRIVER_INIT( superchs )
 {
 	/* Speedup handlers */
-	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x100000, 0x100003, FUNC(main_cycle_r));
-	machine.device("sub")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x80000a, 0x80000b, FUNC(sub_cycle_r));
+	superchs_state *state = machine.driver_data<superchs_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x100000, 0x100003, read32_delegate(FUNC(superchs_state::main_cycle_r),state));
+	machine.device("sub")->memory().space(AS_PROGRAM)->install_read_handler(0x80000a, 0x80000b, read16_delegate(FUNC(superchs_state::sub_cycle_r),state));
 }
 
-GAMEL( 1992, superchs, 0, superchs, superchs, superchs, ROT0, "Taito America Corporation", "Super Chase - Criminal Termination (US)", 0, layout_superchs )
+GAMEL( 1992, superchs,         0, superchs, superchs, superchs, ROT0, "Taito America Corporation", "Super Chase - Criminal Termination (US)", 0, layout_superchs )
+GAMEL( 1992, superchsj, superchs, superchs, superchs, superchs, ROT0, "Taito Corporation", "Super Chase - Criminal Termination (Japan)", 0, layout_superchs )

@@ -822,32 +822,77 @@ static void ide_interrupt(device_t *device, int state)
 	pic8259_ir6_w(chihiro_devices.pic8259_2, state); // IRQ 14
 }
 
-void get_info(device_t *device, UINT8 *buffer, UINT16 &cylinders, UINT8 &sectors, UINT8 &heads)
+// ======================> ide_baseboard_device
+
+class ide_baseboard_device : public ide_hdd_device
 {
-	cylinders=65535;
-	sectors=255;
-	heads=255;
+public:
+    // construction/destruction
+    ide_baseboard_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
+
+	virtual int	 read_sector(UINT32 lba, void *buffer);
+	virtual int	 write_sector(UINT32 lba, const void *buffer);
+	virtual bool is_ready() { return true; }
+	virtual void read_key(UINT8 key[]) { }
+protected:
+    // device-level overrides
+    virtual void device_start();
+	virtual void device_reset();
+	virtual void device_config_complete() { m_shortname = "ide_baseboard"; }
+};
+
+//**************************************************************************
+//  IDE HARD DISK IMAGE DEVICE
+//**************************************************************************
+
+// device type definition
+const device_type IDE_BASEBOARD = &device_creator<ide_baseboard_device>;
+
+//-------------------------------------------------
+//  ide_baseboard_device - constructor
+//-------------------------------------------------
+
+ide_baseboard_device::ide_baseboard_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock)
+    : ide_hdd_device(mconfig, IDE_BASEBOARD, "IDE Baseboard", tag, owner, clock)
+{
 }
 
-int read_sector(device_t *device, UINT32 lba, void *buffer)
+//-------------------------------------------------
+//  device_start - device-specific startup
+//-------------------------------------------------
+
+void ide_baseboard_device::device_start()
+{
+}
+
+//-------------------------------------------------
+//  device_reset - device-specific reset
+//-------------------------------------------------
+
+void ide_baseboard_device::device_reset()
+{
+	m_num_cylinders=65535;
+	m_num_sectors=255;
+	m_num_heads=255;
+	ide_build_features();
+}
+
+int ide_baseboard_device::read_sector(UINT32 lba, void *buffer)
 {
 	int off;
 	UINT8 *data;
 
 	logerror("baseboard: read sector lba %08x\n",lba);
 	off=(lba&0x7ff)*512;
-	data=device->machine().region("others")->base();
+	data=machine().root_device().memregion("others")->base();
 	memcpy(buffer,data+off,512);
 	return 1;
 }
-
-int write_sector(device_t *device, UINT32 lba, const void *buffer)
+int ide_baseboard_device::write_sector(UINT32 lba, const void *buffer)
 {
 	logerror("baseboard: write sector lba %08x\n",lba);
 	return 1;
 }
-
-ide_hardware baseboard={get_info,read_sector,write_sector};
 
 /*
  * PIC & PIT
@@ -1065,22 +1110,22 @@ static WRITE32_HANDLER( smbus_w )
 }
 
 
-static ADDRESS_MAP_START( xbox_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( xbox_map, AS_PROGRAM, 32, smbus_state )
 	AM_RANGE(0x00000000, 0x07ffffff) AM_RAM
-	AM_RANGE(0xfd000000, 0xfdffffff) AM_READWRITE(geforce_r, geforce_w)
-	AM_RANGE(0xfed00000, 0xfed003ff) AM_READWRITE(usbctrl_r, usbctrl_w)
+	AM_RANGE(0xfd000000, 0xfdffffff) AM_READWRITE_LEGACY(geforce_r, geforce_w)
+	AM_RANGE(0xfed00000, 0xfed003ff) AM_READWRITE_LEGACY(usbctrl_r, usbctrl_w)
 	AM_RANGE(0xff000000, 0xffffffff) AM_ROM AM_REGION("bios", 0) AM_MIRROR(0x00f80000)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START(xbox_map_io, AS_IO, 32)
-	AM_RANGE(0x0020, 0x0023) AM_DEVREADWRITE8("pic8259_1", pic8259_r, pic8259_w, 0xffffffff)
-	AM_RANGE(0x0040, 0x0043) AM_DEVREADWRITE8("pit8254", pit8253_r, pit8253_w, 0xffffffff)
-	AM_RANGE(0x00a0, 0x00a3) AM_DEVREADWRITE8("pic8259_2", pic8259_r, pic8259_w, 0xffffffff)
-	AM_RANGE(0x01f0, 0x01f7) AM_READWRITE(ide_r, ide_w)
-	AM_RANGE(0x0cf8, 0x0cff) AM_DEVREADWRITE("pcibus", pci_32le_r, pci_32le_w)
-	AM_RANGE(0x8000, 0x80ff) AM_READWRITE(dummy_r, dummy_w)
-	AM_RANGE(0xc000, 0xc0ff) AM_READWRITE(smbus_r, smbus_w)
-	AM_RANGE(0xff60, 0xff67) AM_DEVREADWRITE("ide", ide_bus_master32_r, ide_bus_master32_w)
+static ADDRESS_MAP_START(xbox_map_io, AS_IO, 32, smbus_state )
+	AM_RANGE(0x0020, 0x0023) AM_DEVREADWRITE8_LEGACY("pic8259_1", pic8259_r, pic8259_w, 0xffffffff)
+	AM_RANGE(0x0040, 0x0043) AM_DEVREADWRITE8_LEGACY("pit8254", pit8253_r, pit8253_w, 0xffffffff)
+	AM_RANGE(0x00a0, 0x00a3) AM_DEVREADWRITE8_LEGACY("pic8259_2", pic8259_r, pic8259_w, 0xffffffff)
+	AM_RANGE(0x01f0, 0x01f7) AM_READWRITE_LEGACY(ide_r, ide_w)
+	AM_RANGE(0x0cf8, 0x0cff) AM_DEVREADWRITE_LEGACY("pcibus", pci_32le_r, pci_32le_w)
+	AM_RANGE(0x8000, 0x80ff) AM_READWRITE_LEGACY(dummy_r, dummy_w)
+	AM_RANGE(0xc000, 0xc0ff) AM_READWRITE_LEGACY(smbus_r, smbus_w)
+	AM_RANGE(0xff60, 0xff67) AM_DEVREADWRITE_LEGACY("ide", ide_bus_master32_r, ide_bus_master32_w)
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( chihiro )
@@ -1107,6 +1152,10 @@ static MACHINE_START( chihiro )
 		debug_console_register_command(machine,"chihiro",CMDFLAG_NONE,0,1,4,chihiro_debug_commands);
 }
 
+static SLOT_INTERFACE_START(ide_baseboard)
+	SLOT_INTERFACE("bb", IDE_BASEBOARD)
+SLOT_INTERFACE_END
+
 static MACHINE_CONFIG_START( chihiro_base, driver_device )
 
 	/* basic machine hardware */
@@ -1128,9 +1177,8 @@ static MACHINE_CONFIG_START( chihiro_base, driver_device )
 	MCFG_PIC8259_ADD( "pic8259_1", chihiro_pic8259_1_config )
 	MCFG_PIC8259_ADD( "pic8259_2", chihiro_pic8259_2_config )
 	MCFG_PIT8254_ADD( "pit8254", chihiro_pit8254_config )
-	MCFG_IDE_CONTROLLER_ADD( "ide", ide_interrupt )
-	MCFG_IDE_BUS_MASTER_SPACE( "maincpu", PROGRAM )
-	MCFG_IDE_CONNECTED_TO( &baseboard )
+	MCFG_IDE_CONTROLLER_ADD( "ide", ide_interrupt , ide_baseboard, "bb", NULL)
+	MCFG_IDE_BUS_MASTER_SPACE( "ide", "maincpu", PROGRAM )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
@@ -1179,7 +1227,7 @@ ROM_START( hotd3 )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0001", 0,  SHA1(174c72f851d0c97e8993227467f16b0781ed2f5c) )
+	DISK_IMAGE_READONLY( "gdx-0001", 0, BAD_DUMP  SHA1(174c72f851d0c97e8993227467f16b0781ed2f5c) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0348-com.data", 0x00, 0x50, CRC(d28219ef) SHA1(40dbbc092bc9f99b8d2ae67fbefacd62184f90ec) )
@@ -1189,7 +1237,7 @@ ROM_START( outr2 )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0004a", 0, SHA1(27acd2d0680e6bafa0d052f60b4372adc37224fd) )
+	DISK_IMAGE_READONLY( "gdx-0004a", 0, BAD_DUMP SHA1(27acd2d0680e6bafa0d052f60b4372adc37224fd) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0372-com.data", 0x00, 0x50, CRC(a15c9666) SHA1(fd36c524744acb33e579ccb257c71375a5d3af67) )
@@ -1217,7 +1265,7 @@ ROM_START( ghostsqu )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0012a", 0,  SHA1(d7d78ce4992cb16ee5b4ac6ca7a37c46b07e8c14) )
+	DISK_IMAGE_READONLY( "gdx-0012a", 0, BAD_DUMP  SHA1(d7d78ce4992cb16ee5b4ac6ca7a37c46b07e8c14) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0398-com.data", 0x00, 0x50, CRC(8c5391a2) SHA1(e64cadeb30c94c3cd4002630cd79cc76c7bde2ed) )
@@ -1228,7 +1276,7 @@ ROM_START( gundamos )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0013", 0, SHA1(96b3dafcc2d2d6803fe3bf43a245d43ee5e0e5a6) )
+	DISK_IMAGE_READONLY( "gdx-0013", 0, BAD_DUMP SHA1(96b3dafcc2d2d6803fe3bf43a245d43ee5e0e5a6) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0013.data", 0x00, 0x50, CRC(0479c383) SHA1(7e86a037d2f9d09cec61a38cb19de510bf9482b3) )
@@ -1262,7 +1310,7 @@ ROM_START( vcop3 )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0003a", 0,  SHA1(cdfec1d2ef02ae9e29cb1462f08904177bc4c9ea) )
+	DISK_IMAGE_READONLY( "gdx-0003a", 0, BAD_DUMP  SHA1(cdfec1d2ef02ae9e29cb1462f08904177bc4c9ea) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-0354-com.data", 0x00, 0x50,  CRC(df7e3217) SHA1(9f0f4bf6b15f3b6eeea81eaa27b3d25bd94110da) )
@@ -1273,7 +1321,7 @@ ROM_START( mj2 )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0006c", 0, SHA1(505653117a73ed8b256ccf19450e7573a4dc57e9) )
+	DISK_IMAGE_READONLY( "gdx-0006c", 0, BAD_DUMP SHA1(505653117a73ed8b256ccf19450e7573a4dc57e9) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE) // key was missing
 	ROM_LOAD("gdx-0006c.pic_data", 0x00, 0x50, NO_DUMP )
@@ -1283,7 +1331,7 @@ ROM_START( ollie )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0007", 0, SHA1(8898a571a427936bffcecd3ef27cb79087d22798) )
+	DISK_IMAGE_READONLY( "gdx-0007", 0, BAD_DUMP SHA1(8898a571a427936bffcecd3ef27cb79087d22798) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0007.data", 0x00, 0x50, CRC(d2a8b31f) SHA1(e9ee2df30031826db6bc4bd91969e6680255dcf9) )
@@ -1295,7 +1343,7 @@ ROM_START( wangmid )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0009b", 0, SHA1(e032b9fd8d5d09255592f02f7531a608e8179c9c) )
+	DISK_IMAGE_READONLY( "gdx-0009b", 0, BAD_DUMP SHA1(e032b9fd8d5d09255592f02f7531a608e8179c9c) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0009b.data", 0x00, 0x50, CRC(3af801f3) SHA1(e9a2558930f3f1f55d5b3c2cadad69329d931f26) )
@@ -1306,7 +1354,7 @@ ROM_START( wangmid2 )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0015", 0, SHA1(259483fd211a70c23205ffd852316d616c5a2740) )
+	DISK_IMAGE_READONLY( "gdx-0015", 0, BAD_DUMP SHA1(259483fd211a70c23205ffd852316d616c5a2740) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-5106-com.data", 0x00, 0x50, CRC(75c716aa) SHA1(5c2bcf3d28a80b336c6882d5aeb010d04327f8c1) )
@@ -1317,7 +1365,7 @@ ROM_START( wangmd2b )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0016a", 0, SHA1(cb306df60550bbd8df312634cb97014bb39f1631) )
+	DISK_IMAGE_READONLY( "gdx-0016a", 0, BAD_DUMP SHA1(cb306df60550bbd8df312634cb97014bb39f1631) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("317-5106-com.data", 0x00, 0x50, CRC(75c716aa) SHA1(5c2bcf3d28a80b336c6882d5aeb010d04327f8c1) )
@@ -1328,7 +1376,7 @@ ROM_START( mj3 )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0017d", 0, SHA1(cfbbd452c8f4efe0e99f398f5521fc3574b913bb) )
+	DISK_IMAGE_READONLY( "gdx-0017d", 0, BAD_DUMP SHA1(cfbbd452c8f4efe0e99f398f5521fc3574b913bb) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE) // key was missing
 	ROM_LOAD("gdx-0017d.pic_data", 0x00, 0x50, NO_DUMP )
@@ -1338,7 +1386,7 @@ ROM_START( scg06nt )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0018a", 0, SHA1(e6f3dc8066392854ad7d83f81d3cbc81a5e340b3) )
+	DISK_IMAGE_READONLY( "gdx-0018a", 0, BAD_DUMP SHA1(e6f3dc8066392854ad7d83f81d3cbc81a5e340b3) )
 
 	ROM_REGION( 0x50, "pic", ROMREGION_ERASE)
 	ROM_LOAD("gdx-0018.data", 0x00, 0x50, CRC(1a210abd) SHA1(43a54d028315d2dfa9f8ea6fb59265e0b980b02f) )
@@ -1348,7 +1396,7 @@ ROM_START( outr2st )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0014a", 0, SHA1(4f9656634c47631f63eab554a13d19b15558217e) )
+	DISK_IMAGE_READONLY( "gdx-0014a", 0, BAD_DUMP SHA1(4f9656634c47631f63eab554a13d19b15558217e) )
 
 	ROM_REGION( 0x4000, "pic", ROMREGION_ERASEFF)	// number was not readable on pic, please fix if known
 	ROM_LOAD( "317-0xxx-com.pic", 0x000000, 0x004000, CRC(f94cf26f) SHA1(dd4af2b52935c7b2d8cd196ec1a30c0ef0993322) )
@@ -1358,7 +1406,7 @@ ROM_START( crtaxihr )
 	CHIHIRO_BIOS
 
 	DISK_REGION( "gdrom" )
-	DISK_IMAGE_READONLY( "gdx-0002b", 0, SHA1(4056ebd5587d6c897f475240bc5a4075a995aa8c) )
+	DISK_IMAGE_READONLY( "gdx-0002b", 0, BAD_DUMP SHA1(4056ebd5587d6c897f475240bc5a4075a995aa8c) )
 
 	ROM_REGION( 0x4000, "pic", ROMREGION_ERASEFF)
 	ROM_LOAD( "317-0353-com.pic", 0x000000, 0x004000, CRC(1c6830b1) SHA1(75be47441783c18ee296209a34c432864deed70d) )

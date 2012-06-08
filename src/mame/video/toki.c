@@ -26,25 +26,10 @@ remove all the code writing the $a0000 area.)
 
 *************************************************************************/
 
-WRITE16_HANDLER( toki_control_w )
+WRITE16_MEMBER(toki_state::toki_control_w)
 {
-	toki_state *state = space->machine().driver_data<toki_state>();
-	space->machine().primary_screen->update_partial(space->machine().primary_screen->vpos() - 1);
-	COMBINE_DATA(&state->m_scrollram16[offset]);
-}
-
-SCREEN_VBLANK( toki )
-{
-	// rising edge
-	if (vblank_on)
-		buffer_spriteram16_w(screen.machine().device("maincpu")->memory().space(AS_PROGRAM), 0, 0, 0xffff);
-}
-
-SCREEN_VBLANK( tokib )
-{
-	// rising edge
-	if (vblank_on)
-		buffer_spriteram16_w(screen.machine().device("maincpu")->memory().space(AS_PROGRAM), 0, 0, 0xffff);
+	machine().primary_screen->update_partial(machine().primary_screen->vpos() - 1);
+	COMBINE_DATA(&m_scrollram16[offset]);
 }
 
 static TILE_GET_INFO( get_text_tile_info )
@@ -114,26 +99,23 @@ VIDEO_START( toki )
 
 /*************************************/
 
-WRITE16_HANDLER( toki_foreground_videoram16_w )
+WRITE16_MEMBER(toki_state::toki_foreground_videoram16_w)
 {
-	toki_state *state = space->machine().driver_data<toki_state>();
-	UINT16 *videoram = state->m_videoram;
+	UINT16 *videoram = m_videoram;
 	COMBINE_DATA(&videoram[offset]);
-	state->m_text_layer->mark_tile_dirty(offset);
+	m_text_layer->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( toki_background1_videoram16_w )
+WRITE16_MEMBER(toki_state::toki_background1_videoram16_w)
 {
-	toki_state *state = space->machine().driver_data<toki_state>();
-	COMBINE_DATA(&state->m_background1_videoram16[offset]);
-	state->m_background_layer->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_background1_videoram16[offset]);
+	m_background_layer->mark_tile_dirty(offset);
 }
 
-WRITE16_HANDLER( toki_background2_videoram16_w )
+WRITE16_MEMBER(toki_state::toki_background2_videoram16_w)
 {
-	toki_state *state = space->machine().driver_data<toki_state>();
-	COMBINE_DATA(&state->m_background2_videoram16[offset]);
-	state->m_foreground_layer->mark_tile_dirty(offset);
+	COMBINE_DATA(&m_background2_videoram16[offset]);
+	m_foreground_layer->mark_tile_dirty(offset);
 }
 
 /***************************************************************************
@@ -187,12 +169,13 @@ WRITE16_HANDLER( toki_background2_videoram16_w )
 
 static void toki_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
+	toki_state *state = machine.driver_data<toki_state>();
 	int x,y,xoffs,yoffs,tile,flipx,flipy,color,offs;
 	UINT16 *sprite_word;
 
-	for (offs = (machine.generic.spriteram_size/2)-4;offs >= 0;offs -= 4)
+	for (offs = (state->m_spriteram->bytes()/2)-4;offs >= 0;offs -= 4)
 	{
-		sprite_word = &machine.generic.buffered_spriteram.u16[offs];
+		sprite_word = &state->m_spriteram->buffer()[offs];
 
 		if ((sprite_word[2] != 0xf000) && (sprite_word[0] != 0xffff))
 		{
@@ -211,7 +194,7 @@ static void toki_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,con
 			flipy   = 0;
 			tile    = (sprite_word[1] & 0xfff) + ((sprite_word[2] & 0x8000) >> 3);
 
-			if (flip_screen_get(machine)) {
+			if (state->flip_screen()) {
 				x=240-x;
 				y=240-y;
 				if (flipx) flipx=0; else flipx=1;
@@ -230,12 +213,13 @@ static void toki_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,con
 
 static void tokib_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
+	toki_state *state = machine.driver_data<toki_state>();
 	int x,y,tile,flipx,color,offs;
 	UINT16 *sprite_word;
 
-	for (offs = 0;offs < machine.generic.spriteram_size / 2;offs += 4)
+	for (offs = 0;offs < state->m_spriteram->bytes() / 2;offs += 4)
 	{
-		sprite_word = &machine.generic.buffered_spriteram.u16[offs];
+		sprite_word = &state->m_spriteram->buffer()[offs];
 
 		if (sprite_word[0] == 0xf100)
 			break;
@@ -292,7 +276,7 @@ SCREEN_UPDATE_IND16( toki )
 	state->m_foreground_layer->set_scrollx(0, foreground_x_scroll );
 	state->m_foreground_layer->set_scrolly(0, foreground_y_scroll );
 
-	flip_screen_set(screen.machine(), (state->m_scrollram16[0x28]&0x8000)==0);
+	state->flip_screen_set((state->m_scrollram16[0x28]&0x8000)==0);
 
 	if (state->m_scrollram16[0x28]&0x100) {
 		state->m_background_layer->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE,0);

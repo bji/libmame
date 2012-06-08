@@ -234,32 +234,32 @@ DONE? (check on real board)
 #include "sound/msm5205.h"
 #include "includes/stfight.h"
 
-static ADDRESS_MAP_START( cpu1_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( cpu1_map, AS_PROGRAM, 8, stfight_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 	AM_RANGE(0x8000, 0xbfff) AM_ROMBANK("bank1")                  /* sf02.bin */
-	AM_RANGE(0xc000, 0xc0ff) AM_RAM AM_BASE_GENERIC(paletteram)
-	AM_RANGE(0xc100, 0xc1ff) AM_RAM AM_BASE_GENERIC(paletteram2)
+	AM_RANGE(0xc000, 0xc0ff) AM_RAM AM_SHARE("paletteram")
+	AM_RANGE(0xc100, 0xc1ff) AM_RAM AM_SHARE("paletteram2")
 	AM_RANGE(0xc200, 0xc200) AM_READ_PORT("P1")			/* IN1 */
 	AM_RANGE(0xc201, 0xc201) AM_READ_PORT("P2")			/* IN2 */
 	AM_RANGE(0xc202, 0xc202) AM_READ_PORT("START")		/* IN3 */
 	AM_RANGE(0xc203, 0xc204) AM_READ(stfight_dsw_r)		/* DS0,1 */
 	AM_RANGE(0xc205, 0xc205) AM_READ(stfight_coin_r)	/* coin mech */
 	AM_RANGE(0xc500, 0xc500) AM_WRITE(stfight_fm_w)               /* play fm sound */
-	AM_RANGE(0xc600, 0xc600) AM_DEVWRITE("msm", stfight_adpcm_control_w)    /* voice control */
+	AM_RANGE(0xc600, 0xc600) AM_DEVWRITE_LEGACY("msm", stfight_adpcm_control_w)    /* voice control */
 	AM_RANGE(0xc700, 0xc700) AM_WRITE(stfight_coin_w)             /* coin mech */
 	AM_RANGE(0xc804, 0xc806) AM_WRITENOP                    /* TBD */
 	AM_RANGE(0xc807, 0xc807) AM_WRITE(stfight_sprite_bank_w)
-	AM_RANGE(0xd000, 0xd3ff) AM_RAM_WRITE(stfight_text_char_w) AM_BASE_MEMBER(stfight_state, m_text_char_ram)
-	AM_RANGE(0xd400, 0xd7ff) AM_RAM_WRITE(stfight_text_attr_w) AM_BASE_MEMBER(stfight_state, m_text_attr_ram)
-	AM_RANGE(0xd800, 0xd808) AM_WRITE(stfight_vh_latch_w) AM_BASE_MEMBER(stfight_state, m_vh_latch_ram)
+	AM_RANGE(0xd000, 0xd3ff) AM_RAM_WRITE(stfight_text_char_w) AM_SHARE("text_char_ram")
+	AM_RANGE(0xd400, 0xd7ff) AM_RAM_WRITE(stfight_text_attr_w) AM_SHARE("text_attr_ram")
+	AM_RANGE(0xd800, 0xd808) AM_WRITE(stfight_vh_latch_w) AM_SHARE("vh_latch_ram")
 	AM_RANGE(0xe000, 0xefff) AM_RAM
-	AM_RANGE(0xf000, 0xffff) AM_RAM AM_BASE_MEMBER(stfight_state, m_sprite_ram)
+	AM_RANGE(0xf000, 0xffff) AM_RAM AM_SHARE("sprite_ram")
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( cpu2_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( cpu2_map, AS_PROGRAM, 8, stfight_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
-	AM_RANGE(0xc000, 0xc001) AM_DEVREADWRITE("ym1", ym2203_r, ym2203_w)
-	AM_RANGE(0xc800, 0xc801) AM_DEVREADWRITE("ym2", ym2203_r, ym2203_w)
+	AM_RANGE(0xc000, 0xc001) AM_DEVREADWRITE_LEGACY("ym1", ym2203_r, ym2203_w)
+	AM_RANGE(0xc800, 0xc801) AM_DEVREADWRITE_LEGACY("ym2", ym2203_r, ym2203_w)
 	AM_RANGE(0xe800, 0xe800) AM_WRITE(stfight_e800_w)
 	AM_RANGE(0xf000, 0xf000) AM_READ(stfight_fm_r)
 	AM_RANGE(0xf800, 0xffff) AM_RAM
@@ -599,8 +599,8 @@ ROM_END
 
 ROM_START( empcityj )
 	ROM_REGION( 2*0x18000, "maincpu", 0 )	/* 96k for code + 96k for decrypted opcodes */
-	ROM_LOAD( "1.bin",      0x00000, 0x8000, CRC(8162331c) SHA1(f2fdf5fbc52d4ea692fb87fa049c48935a73d67b) )
-	ROM_LOAD( "2.bin",      0x10000, 0x8000, CRC(960edea6) SHA1(fd19475e841defe42625a94c40c6390b7e6e7682) )	/* bank switched */
+	ROM_LOAD( "1(__empcityj).bin",   0x00000, 0x8000, CRC(8162331c) SHA1(f2fdf5fbc52d4ea692fb87fa049c48935a73d67b) )
+	ROM_LOAD( "2(__empcityj).bin",   0x10000, 0x8000, CRC(960edea6) SHA1(fd19475e841defe42625a94c40c6390b7e6e7682) )	/* bank switched */
 
 	ROM_REGION( 0x10000, "audiocpu", 0 )	/* 64k for the second CPU */
 	ROM_LOAD( "ec_04.rom",  0x0000,  0x8000, CRC(aa3e7d1e) SHA1(da350384d55f011253d19ce17fc327cd2604257f) )

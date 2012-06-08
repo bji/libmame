@@ -40,6 +40,7 @@ enum {
 	TYPE3_SWAP_25,
 	TYPE3_SWAP_34_0,
 	TYPE3_SWAP_34_7,
+	TYPE3_SWAP_45,
 	TYPE3_SWAP_23_56,
 	TYPE3_SWAP_56,
 	TYPE3_SWAP_67
@@ -60,7 +61,7 @@ WRITE8_HANDLER( decocass_sound_command_w )
 {
 	decocass_state *state = space->machine().driver_data<decocass_state>();
 	LOG(2,("CPU %s sound command -> $%02x\n", space->device().tag(), data));
-	soundlatch_w(space, 0, data);
+	state->soundlatch_byte_w(*space, 0, data);
 	state->m_sound_ack |= 0x80;
 	/* remove snd cpu data ack bit. i don't see it in the schems, but... */
 	state->m_sound_ack &= ~0x40;
@@ -69,7 +70,8 @@ WRITE8_HANDLER( decocass_sound_command_w )
 
 READ8_HANDLER( decocass_sound_data_r )
 {
-	UINT8 data = soundlatch2_r(space, 0);
+	decocass_state *state = space->machine().driver_data<decocass_state>();
+	UINT8 data = state->soundlatch2_byte_r(*space, 0);
 	LOG(2,("CPU %s sound data    <- $%02x\n", space->device().tag(), data));
 	return data;
 }
@@ -86,14 +88,14 @@ WRITE8_HANDLER( decocass_sound_data_w )
 {
 	decocass_state *state = space->machine().driver_data<decocass_state>();
 	LOG(2,("CPU %s sound data    -> $%02x\n", space->device().tag(), data));
-	soundlatch2_w(space, 0, data);
+	state->soundlatch2_byte_w(*space, 0, data);
 	state->m_sound_ack |= 0x40;
 }
 
 READ8_HANDLER( decocass_sound_command_r )
 {
 	decocass_state *state = space->machine().driver_data<decocass_state>();
-	UINT8 data = soundlatch_r(space, 0);
+	UINT8 data = state->soundlatch_byte_r(*space, 0);
 	LOG(4,("CPU %s sound command <- $%02x\n", space->device().tag(), data));
 	device_set_input_line(state->m_audiocpu, M6502_IRQ_LINE, CLEAR_LINE);
 	state->m_sound_ack &= ~0x80;
@@ -150,10 +152,10 @@ WRITE8_HANDLER( decocass_quadrature_decoder_reset_w )
 	decocass_state *state = space->machine().driver_data<decocass_state>();
 
 	/* just latch the analog controls here */
-	state->m_quadrature_decoder[0] = input_port_read(space->machine(), "AN0");
-	state->m_quadrature_decoder[1] = input_port_read(space->machine(), "AN1");
-	state->m_quadrature_decoder[2] = input_port_read(space->machine(), "AN2");
-	state->m_quadrature_decoder[3] = input_port_read(space->machine(), "AN3");
+	state->m_quadrature_decoder[0] = state->ioport("AN0")->read();
+	state->m_quadrature_decoder[1] = state->ioport("AN1")->read();
+	state->m_quadrature_decoder[2] = state->ioport("AN2")->read();
+	state->m_quadrature_decoder[3] = state->ioport("AN3")->read();
 }
 
 WRITE8_HANDLER( decocass_adc_w )
@@ -179,7 +181,7 @@ READ8_HANDLER( decocass_input_r )
 	switch (offset & 7)
 	{
 	case 0: case 1: case 2:
-		data = input_port_read(space->machine(), portnames[offset & 7]);
+		data = space->machine().root_device().ioport(portnames[offset & 7])->read();
 		break;
 	case 3: case 4: case 5: case 6:
 		data = state->m_quadrature_decoder[(offset & 7) - 3];
@@ -260,13 +262,12 @@ static void decocass_fno( running_machine &machine, offs_t offset, UINT8 data )
 /***************************************************************************
  *
  *  TYPE1 DONGLE (DE-0061)
- *  - Lock 'n Chase
- *  - Treasure Island
- *  - Super Astro Fighter
- *  - Lucky Poker
  *  - Terranian
- *  - Explorer
+ *  - Super Astro Fighter
+ *  - Lock 'n Chase
  *  - Pro Golf
+ *  - Lucky Poker
+ *  - Treasure Island
  *
  * Latch bits 2 and 6, pass bit 3, invert bit 2.
  * Lookup PROM DE-0061 using bits 0, 1, 4, 5, and 7 as the
@@ -296,7 +297,7 @@ static READ8_HANDLER( decocass_type1_latch_26_pass_3_inv_2_r )
 	{
 		offs_t promaddr;
 		UINT8 save;
-		UINT8 *prom = space->machine().region("dongle")->base();
+		UINT8 *prom = space->machine().root_device().memregion("dongle")->base();
 
 		if (state->m_firsttime)
 		{
@@ -376,7 +377,7 @@ static READ8_HANDLER( decocass_type1_pass_136_r )
 	{
 		offs_t promaddr;
 		UINT8 save;
-		UINT8 *prom = space->machine().region("dongle")->base();
+		UINT8 *prom = space->machine().root_device().memregion("dongle")->base();
 
 		if (state->m_firsttime)
 		{
@@ -456,7 +457,7 @@ static READ8_HANDLER( decocass_type1_latch_27_pass_3_inv_2_r )
 	{
 		offs_t promaddr;
 		UINT8 save;
-		UINT8 *prom = space->machine().region("dongle")->base();
+		UINT8 *prom = space->machine().root_device().memregion("dongle")->base();
 
 		if (state->m_firsttime)
 		{
@@ -536,7 +537,7 @@ static READ8_HANDLER( decocass_type1_latch_26_pass_5_inv_2_r )
 	{
 		offs_t promaddr;
 		UINT8 save;
-		UINT8 *prom = space->machine().region("dongle")->base();
+		UINT8 *prom = space->machine().root_device().memregion("dongle")->base();
 
 		if (state->m_firsttime)
 		{
@@ -618,7 +619,7 @@ static READ8_HANDLER( decocass_type1_latch_16_pass_3_inv_1_r )
 	{
 		offs_t promaddr;
 		UINT8 save;
-		UINT8 *prom = space->machine().region("dongle")->base();
+		UINT8 *prom = space->machine().root_device().memregion("dongle")->base();
 
 		if (state->m_firsttime)
 		{
@@ -671,10 +672,10 @@ static READ8_HANDLER( decocass_type1_latch_16_pass_3_inv_1_r )
 /***************************************************************************
  *
  *  TYPE2 DONGLE (CS82-007)
- *  - Mission X
  *  - Disco No 1
- *  - Pro Tennis
  *  - Tornado
+ *  - Mission X
+ *  - Pro Tennis
  *
  ***************************************************************************/
 static READ8_HANDLER( decocass_type2_r )
@@ -686,7 +687,7 @@ static READ8_HANDLER( decocass_type2_r )
 	{
 		if (1 == (offset & 1))
 		{
-			UINT8 *prom = space->machine().region("dongle")->base();
+			UINT8 *prom = state->memregion("dongle")->base();
 			data = prom[256 * state->m_type2_d2_latch + state->m_type2_promaddr];
 			LOG(3,("%10s 6502-PC: %04x decocass_type2_r(%02x): $%02x <- prom[%03x]\n", space->machine().time().as_string(6), cpu_get_previouspc(&space->device()), offset, data, 256 * state->m_type2_d2_latch + state->m_type2_promaddr));
 		}
@@ -746,17 +747,19 @@ static WRITE8_HANDLER( decocass_type2_w )
 /***************************************************************************
  *
  *  TYPE3 DONGLE
+ *  - Burger Time
  *  - Bump 'n Jump
  *  - Burnin' Rubber
- *  - Burger Time
  *  - Graplop
  *  - Cluster Buster
  *  - LaPaPa
- *  - Fighting Ice Hockey
+ *  - Skater
  *  - Pro Bowling
  *  - Night Star
  *  - Pro Soccer
+ *  - Super Doubles Tennis
  *  - Peter Pepper's Ice Cream Factory
+ *  - Fighting Ice Hockey
  *
  ***************************************************************************/
 static READ8_HANDLER( decocass_type3_r )
@@ -768,7 +771,7 @@ static READ8_HANDLER( decocass_type3_r )
 	{
 		if (1 == state->m_type3_pal_19)
 		{
-			UINT8 *prom = space->machine().region("dongle")->base();
+			UINT8 *prom = state->memregion("dongle")->base();
 			data = prom[state->m_type3_ctrs];
 			LOG(3,("%10s 6502-PC: %04x decocass_type3_r(%02x): $%02x <- prom[$%03x]\n", space->machine().time().as_string(6), cpu_get_previouspc(&space->device()), offset, data, state->m_type3_ctrs));
 			if (++state->m_type3_ctrs == 4096)
@@ -879,6 +882,17 @@ static READ8_HANDLER( decocass_type3_r )
 						(BIT(save, 6) << 6) |
 						(state->m_type3_d0_latch << 7);
 					break;
+				case TYPE3_SWAP_45:
+					data =
+						state->m_type3_d0_latch |
+						(BIT(save, 1) << 1) |
+						(BIT(save, 2) << 2) |
+						(BIT(save, 3) << 3) |
+						(BIT(save, 5) << 4) |
+						(BIT(save, 4) << 5) |
+						(BIT(save, 6) << 6) |
+						(BIT(save, 7) << 7);
+					break;
 				case TYPE3_SWAP_23_56:
 					data =
 						(state->m_type3_d0_latch << 0) |
@@ -979,6 +993,7 @@ static WRITE8_HANDLER( decocass_type3_w )
  *
  *  TYPE4 DONGLE
  *  - Scrum Try
+ *  - Oozumou/The Grand Sumo
  *  Contains a 32K (EP)ROM that can be read from any byte
  *  boundary sequentially. The EPROM is enable after writing
  *  1100xxxx to E5x1 once. Then an address is written LSB
@@ -1009,7 +1024,7 @@ static READ8_HANDLER( decocass_type4_r )
 	{
 		if (state->m_type4_latch)
 		{
-			UINT8 *prom = space->machine().region("dongle")->base();
+			UINT8 *prom = space->machine().root_device().memregion("dongle")->base();
 
 			data = prom[state->m_type4_ctrs];
 			LOG(3,("%10s 6502-PC: %04x decocass_type4_r(%02x): $%02x '%c' <- PROM[%04x]\n", space->machine().time().as_string(6), cpu_get_previouspc(&space->device()), offset, data, (data >= 32) ? data : '.', state->m_type4_ctrs));
@@ -1065,7 +1080,7 @@ static WRITE8_HANDLER( decocass_type4_w )
 
 /***************************************************************************
  *
- *  TYPE5 DONGLE
+ *  TYPE4 DONGLE
  *  - Boulder Dash
  *  Actually a NOP dongle returning 0x55 after triggering a latch
  *  by writing 1100xxxx to E5x1
@@ -1273,7 +1288,7 @@ WRITE8_HANDLER( decocass_e900_w )
 {
 	decocass_state *state = space->machine().driver_data<decocass_state>();
 	state->m_de0091_enable = data & 1;
-	memory_set_bank(space->machine(), "bank1", data & 1);
+	state->membank("bank1")->set_entry(data & 1);
 	/* Perhaps the second row of ROMs is enabled by another bit.
      * There is no way to verify this yet, so for now just look
      * at bit 0 to enable the daughter board at reads between
@@ -1418,52 +1433,12 @@ MACHINE_RESET( chwy )
 	state->m_dongle_r = decocass_type1_latch_27_pass_3_inv_2_r;
 }
 
-MACHINE_RESET( clocknch )
+MACHINE_RESET( cdsteljn )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
-	LOG(0,("dongle type #1 (DE-0061 flip 2-3)\n"));
-	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
-	state->m_type1_inmap = MAKE_MAP(0,1,3,2,4,5,6,7);
-	state->m_type1_outmap = MAKE_MAP(0,1,3,2,4,5,6,7);
-}
-
-MACHINE_RESET( ctisland )
-{
-	decocass_state *state = machine.driver_data<decocass_state>();
-	decocass_reset_common(machine);
-	LOG(0,("dongle type #1 (DE-0061 flip 0-2)\n"));
-	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
-	state->m_type1_inmap = MAKE_MAP(2,1,0,3,4,5,6,7);
-	state->m_type1_outmap = MAKE_MAP(2,1,0,3,4,5,6,7);
-}
-
-MACHINE_RESET( csuperas )
-{
-	decocass_state *state = machine.driver_data<decocass_state>();
-	decocass_reset_common(machine);
-	LOG(0,("dongle type #1 (DE-0061 flip 4-5)\n"));
-	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
-	state->m_type1_inmap = MAKE_MAP(0,1,2,3,5,4,6,7);
-	state->m_type1_outmap = MAKE_MAP(0,1,2,3,5,4,6,7);
-}
-
-MACHINE_RESET( castfant )
-{
-	decocass_state *state = machine.driver_data<decocass_state>();
-	decocass_reset_common(machine);
-	LOG(0,("dongle type #1 (DE-0061)\n"));
-	state->m_dongle_r = decocass_type1_latch_16_pass_3_inv_1_r;
-}
-
-MACHINE_RESET( cluckypo )
-{
-	decocass_state *state = machine.driver_data<decocass_state>();
-	decocass_reset_common(machine);
-	LOG(0,("dongle type #1 (DE-0061 flip 1-3)\n"));
-	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
-	state->m_type1_inmap = MAKE_MAP(0,3,2,1,4,5,6,7);
-	state->m_type1_outmap = MAKE_MAP(0,3,2,1,4,5,6,7);
+	LOG(0,("dongle type #1 (A-0061)\n"));
+	state->m_dongle_r = decocass_type1_latch_27_pass_3_inv_2_r;
 }
 
 MACHINE_RESET( cterrani )
@@ -1476,12 +1451,32 @@ MACHINE_RESET( cterrani )
 	state->m_type1_outmap = MAKE_MAP(0,1,2,3,4,5,6,7);
 }
 
-MACHINE_RESET( cexplore )
+MACHINE_RESET( castfant )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
-	LOG(0,("dongle type #1 (DE-0061 own PROM)\n"));
-	state->m_dongle_r = decocass_type1_latch_26_pass_5_inv_2_r;
+	LOG(0,("dongle type #1 (DE-0061)\n"));
+	state->m_dongle_r = decocass_type1_latch_16_pass_3_inv_1_r;
+}
+
+MACHINE_RESET( csuperas )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #1 (DE-0061 flip 4-5)\n"));
+	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
+	state->m_type1_inmap = MAKE_MAP(0,1,2,3,5,4,6,7);
+	state->m_type1_outmap = MAKE_MAP(0,1,2,3,5,4,6,7);
+}
+
+MACHINE_RESET( clocknch )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #1 (DE-0061 flip 2-3)\n"));
+	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
+	state->m_type1_inmap = MAKE_MAP(0,1,3,2,4,5,6,7);
+	state->m_type1_outmap = MAKE_MAP(0,1,3,2,4,5,6,7);
 }
 
 MACHINE_RESET( cprogolf )
@@ -1494,25 +1489,45 @@ MACHINE_RESET( cprogolf )
 	state->m_type1_outmap = MAKE_MAP(1,0,2,3,4,5,6,7);
 }
 
-MACHINE_RESET( cmissnx )
+MACHINE_RESET( cprogolfj )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
-	LOG(0,("dongle type #2 (CS82-007)\n"));
-	state->m_dongle_r = decocass_type2_r;
-	state->m_dongle_w = decocass_type2_w;
+	LOG(0,("dongle type #1 (A-0061 flip 0-1)\n"));
+	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
+	state->m_type1_inmap = MAKE_MAP(1,0,2,3,4,5,6,7);
+	state->m_type1_outmap = MAKE_MAP(1,0,2,3,4,5,6,7);
+}
+
+MACHINE_RESET( cluckypo )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #1 (DE-0061 flip 1-3)\n"));
+	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
+	state->m_type1_inmap = MAKE_MAP(0,3,2,1,4,5,6,7);
+	state->m_type1_outmap = MAKE_MAP(0,3,2,1,4,5,6,7);
+}
+
+MACHINE_RESET( ctisland )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #1 (DE-0061 flip 0-2)\n"));
+	state->m_dongle_r = decocass_type1_latch_26_pass_3_inv_2_r;
+	state->m_type1_inmap = MAKE_MAP(2,1,0,3,4,5,6,7);
+	state->m_type1_outmap = MAKE_MAP(2,1,0,3,4,5,6,7);
+}
+
+MACHINE_RESET( cexplore )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #1 (DE-0061 own PROM)\n"));
+	state->m_dongle_r = decocass_type1_latch_26_pass_5_inv_2_r;
 }
 
 MACHINE_RESET( cdiscon1 )
-{
-	decocass_state *state = machine.driver_data<decocass_state>();
-	decocass_reset_common(machine);
-	LOG(0,("dongle type #2 (CS82-007)\n"));
-	state->m_dongle_r = decocass_type2_r;
-	state->m_dongle_w = decocass_type2_w;
-}
-
-MACHINE_RESET( cptennis )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
@@ -1530,24 +1545,22 @@ MACHINE_RESET( ctornado )
 	state->m_dongle_w = decocass_type2_w;
 }
 
-MACHINE_RESET( cbnj )
+MACHINE_RESET( cmissnx )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
-	LOG(0,("dongle type #3 (PAL)\n"));
-	state->m_dongle_r = decocass_type3_r;
-	state->m_dongle_w = decocass_type3_w;
-	state->m_type3_swap = TYPE3_SWAP_67;
+	LOG(0,("dongle type #2 (CS82-007)\n"));
+	state->m_dongle_r = decocass_type2_r;
+	state->m_dongle_w = decocass_type2_w;
 }
 
-MACHINE_RESET( cburnrub )
+MACHINE_RESET( cptennis )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
-	LOG(0,("dongle type #3 (PAL)\n"));
-	state->m_dongle_r = decocass_type3_r;
-	state->m_dongle_w = decocass_type3_w;
-	state->m_type3_swap = TYPE3_SWAP_67;
+	LOG(0,("dongle type #2 (CS82-007)\n"));
+	state->m_dongle_r = decocass_type2_r;
+	state->m_dongle_w = decocass_type2_w;
 }
 
 MACHINE_RESET( cbtime )
@@ -1558,6 +1571,16 @@ MACHINE_RESET( cbtime )
 	state->m_dongle_r = decocass_type3_r;
 	state->m_dongle_w = decocass_type3_w;
 	state->m_type3_swap = TYPE3_SWAP_12;
+}
+
+MACHINE_RESET( cburnrub )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #3 (PAL)\n"));
+	state->m_dongle_r = decocass_type3_r;
+	state->m_dongle_w = decocass_type3_w;
+	state->m_type3_swap = TYPE3_SWAP_67;
 }
 
 MACHINE_RESET( cgraplop )
@@ -1590,14 +1613,14 @@ MACHINE_RESET( clapapa )
 	state->m_type3_swap = TYPE3_SWAP_34_7;
 }
 
-MACHINE_RESET( cfghtice )
+MACHINE_RESET( cskater )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
 	LOG(0,("dongle type #3 (PAL)\n"));
 	state->m_dongle_r = decocass_type3_r;
 	state->m_dongle_w = decocass_type3_w;
-	state->m_type3_swap = TYPE3_SWAP_25;
+	state->m_type3_swap = TYPE3_SWAP_45;
 }
 
 MACHINE_RESET( cprobowl )
@@ -1630,6 +1653,40 @@ MACHINE_RESET( cpsoccer )
 	state->m_type3_swap = TYPE3_SWAP_24;
 }
 
+MACHINE_RESET( csdtenis )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #3 (PAL)\n"));
+	state->m_dongle_r = decocass_type3_r;
+	state->m_dongle_w = decocass_type3_w;
+	state->m_type3_swap = TYPE3_SWAP_23_56;
+}
+
+MACHINE_RESET( czeroize )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	UINT8 *mem = state->memregion("dongle")->base();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #3 (PAL)\n"));
+	state->m_dongle_r = decocass_type3_r;
+	state->m_dongle_w = decocass_type3_w;
+	state->m_type3_swap = TYPE3_SWAP_23_56;
+
+	/*
+     * FIXME: remove if the original ROM is available.
+     * The Zeroize 6502 code at 0x3707 issues LODCTRS with 0x8a,
+     * and expects to read 0x18 from 0x08a0 ff. within 7 bytes
+     * and 0xf7 from 0x8a1 (which 0xd is subtracted from presumably in order
+     * to form a NOP of 0xea).
+     * This hack seems to be sufficient to get around
+     * the missing dongle ROM contents and play the game.
+     */
+	memset(mem, 0x00, 0x1000);
+	mem[0x08a0] = 0x18;
+	mem[0x08a1] = 0xf7;
+}
+
 MACHINE_RESET( cppicf )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
@@ -1640,7 +1697,17 @@ MACHINE_RESET( cppicf )
 	state->m_type3_swap = TYPE3_SWAP_01;
 }
 
-MACHINE_RESET( cscrtry )
+MACHINE_RESET( cfghtice )
+{
+	decocass_state *state = machine.driver_data<decocass_state>();
+	decocass_reset_common(machine);
+	LOG(0,("dongle type #3 (PAL)\n"));
+	state->m_dongle_r = decocass_type3_r;
+	state->m_dongle_w = decocass_type3_w;
+	state->m_type3_swap = TYPE3_SWAP_25;
+}
+
+MACHINE_RESET( type4 )
 {
 	decocass_state *state = machine.driver_data<decocass_state>();
 	decocass_reset_common(machine);
@@ -1664,30 +1731,6 @@ MACHINE_RESET( cflyball )
 	decocass_reset_common(machine);
 	LOG(0,("no dongle\n"));
 	state->m_dongle_r = decocass_nodong_r;
-}
-
-MACHINE_RESET( czeroize )
-{
-	decocass_state *state = machine.driver_data<decocass_state>();
-	UINT8 *mem = machine.region("dongle")->base();
-	decocass_reset_common(machine);
-	LOG(0,("dongle type #3 (PAL)\n"));
-	state->m_dongle_r = decocass_type3_r;
-	state->m_dongle_w = decocass_type3_w;
-	state->m_type3_swap = TYPE3_SWAP_23_56;
-
-	/*
-     * FIXME: remove if the original ROM is available.
-     * The Zeroize 6502 code at 0x3707 issues LODCTRS with 0x8a,
-     * and expects to read 0x18 from 0x08a0 ff. within 7 bytes
-     * and 0xf7 from 0x8a1 (which 0xd is subtracted from presumably in order
-     * to form a NOP of 0xea).
-     * This hack seems to be sufficient to get around
-     * the missing dongle ROM contents and play the game.
-     */
-	memset(mem, 0x00, 0x1000);
-	mem[0x08a0] = 0x18;
-	mem[0x08a1] = 0xf7;
 }
 
 /***************************************************************************

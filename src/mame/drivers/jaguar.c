@@ -358,13 +358,14 @@ class cojag_state : public driver_device
 public:
 	cojag_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag),
-		  m_nvram(*this, "nvram") { }
+		  m_nvram(*this, "nvram") ,
+		m_rom_base(*this, "robase"){ }
 
-	required_shared_ptr<UINT32>	m_nvram;
+	optional_shared_ptr<UINT32>	m_nvram;
 	cpu_device *m_main_cpu;
 	UINT32 m_misc_control_data;
 	UINT8 m_eeprom_enable;
-	UINT32 *m_rom_base;
+	optional_shared_ptr<UINT32> m_rom_base;
 	UINT32 *m_gpu_jump_address;
 	UINT8 m_gpu_command_pending;
 	UINT32 m_gpu_spin_pc;
@@ -373,6 +374,69 @@ public:
 	UINT64 m_main_speedup_last_cycles;
 	UINT64 m_main_speedup_max_cycles;
 	UINT32 *m_main_gpu_wait;
+	DECLARE_WRITE32_MEMBER(jaguar_eeprom_w);
+	DECLARE_READ32_MEMBER(jaguar_eeprom_clk);
+	DECLARE_READ32_MEMBER(jaguar_eeprom_cs);
+	DECLARE_READ32_MEMBER(misc_control_r);
+	DECLARE_WRITE32_MEMBER(misc_control_w);
+	DECLARE_READ32_MEMBER(gpuctrl_r);
+	DECLARE_WRITE32_MEMBER(gpuctrl_w);
+	DECLARE_READ32_MEMBER(dspctrl_r);
+	DECLARE_WRITE32_MEMBER(dspctrl_w);
+	DECLARE_READ32_MEMBER(jaguar_wave_rom_r);
+	DECLARE_READ32_MEMBER(joystick_r);
+	DECLARE_WRITE32_MEMBER(joystick_w);
+	DECLARE_WRITE32_MEMBER(latch_w);
+	DECLARE_READ32_MEMBER(eeprom_data_r);
+	DECLARE_WRITE32_MEMBER(eeprom_enable_w);
+	DECLARE_WRITE32_MEMBER(eeprom_data_w);
+	DECLARE_WRITE32_MEMBER(gpu_jump_w);
+	DECLARE_READ32_MEMBER(gpu_jump_r);
+	DECLARE_READ32_MEMBER(cojagr3k_main_speedup_r);
+	DECLARE_READ32_MEMBER(main_gpu_wait_r);
+	DECLARE_WRITE32_MEMBER(area51_main_speedup_w);
+	DECLARE_WRITE32_MEMBER(area51mx_main_speedup_w);
+	DECLARE_READ16_MEMBER(gpuctrl_r16);
+	DECLARE_WRITE16_MEMBER(gpuctrl_w16);
+	DECLARE_READ16_MEMBER(jaguar_blitter_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_blitter_w16);
+	DECLARE_READ16_MEMBER(jaguar_serial_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_serial_w16);
+	DECLARE_READ16_MEMBER(dspctrl_r16);
+	DECLARE_WRITE16_MEMBER(dspctrl_w16);
+	DECLARE_READ16_MEMBER(jaguar_eeprom_cs16);
+	DECLARE_READ16_MEMBER(jaguar_eeprom_clk16);
+	DECLARE_WRITE16_MEMBER(jaguar_eeprom_w16);
+	DECLARE_READ16_MEMBER(joystick_r16);
+	DECLARE_WRITE16_MEMBER(joystick_w16);
+	DECLARE_READ32_MEMBER(jaguar_shared_ram_r);
+	DECLARE_WRITE32_MEMBER(jaguar_shared_ram_w);
+	DECLARE_READ32_MEMBER(jaguar_rom_base_r);
+	DECLARE_WRITE32_MEMBER(jaguar_rom_base_w);
+	DECLARE_READ32_MEMBER(jaguar_cart_base_r);
+	DECLARE_WRITE32_MEMBER(jaguar_cart_base_w);
+	DECLARE_READ32_MEMBER(high_rom_base_r);
+	DECLARE_WRITE32_MEMBER(high_rom_base_w);
+	DECLARE_READ32_MEMBER(jaguar_dsp_ram_r);
+	DECLARE_WRITE32_MEMBER(jaguar_dsp_ram_w);
+	DECLARE_READ32_MEMBER(jaguar_gpu_clut_r);
+	DECLARE_WRITE32_MEMBER(jaguar_gpu_clut_w);
+	DECLARE_READ32_MEMBER(jaguar_gpu_ram_r);
+	DECLARE_WRITE32_MEMBER(jaguar_gpu_ram_w);
+	DECLARE_READ16_MEMBER(jaguar_shared_ram_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_shared_ram_w16);
+	DECLARE_READ16_MEMBER(jaguar_rom_base_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_rom_base_w16);
+	DECLARE_READ16_MEMBER(jaguar_cart_base_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_cart_base_w16);
+	DECLARE_READ16_MEMBER(high_rom_base_r16);
+	DECLARE_WRITE16_MEMBER(high_rom_base_w16);
+	DECLARE_READ16_MEMBER(jaguar_dsp_ram_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_dsp_ram_w16);
+	DECLARE_READ16_MEMBER(jaguar_gpu_clut_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_gpu_clut_w16);
+	DECLARE_READ16_MEMBER(jaguar_gpu_ram_r16);
+	DECLARE_WRITE16_MEMBER(jaguar_gpu_ram_w16);
 };
 
 
@@ -427,7 +491,7 @@ static IRQ_CALLBACK(jaguar_irq_callback)
 static MACHINE_RESET( cojag )
 {
 	cojag_state *state = machine.driver_data<cojag_state>();
-	UINT8 *rom = machine.region("user2")->base();
+	UINT8 *rom = state->memregion("user2")->base();
 
 	/* 68020 only: copy the interrupt vectors into RAM */
 	if (!cojag_is_r3000)
@@ -439,17 +503,17 @@ static MACHINE_RESET( cojag )
 		/* graphics banks */
 		if (cojag_is_r3000)
 		{
-			memory_configure_bank(machine, "bank1", 0, 2, rom + 0x800000, 0x400000);
-			memory_set_bank(machine, "bank1", 0);
+			state->membank("bank1")->configure_entries(0, 2, rom + 0x800000, 0x400000);
+			state->membank("bank1")->set_entry(0);
 		}
-		memory_configure_bank(machine, "bank8", 0, 2, rom + 0x800000, 0x400000);
-		memory_set_bank(machine, "bank8", 0);
+		state->membank("bank8")->configure_entries(0, 2, rom + 0x800000, 0x400000);
+		state->membank("bank8")->set_entry(0);
 
 		/* sound banks */
-		memory_configure_bank(machine, "bank2", 0, 8, rom + 0x000000, 0x200000);
-		memory_configure_bank(machine, "bank9", 0, 8, rom + 0x000000, 0x200000);
-		memory_set_bank(machine, "bank2", 0);
-		memory_set_bank(machine, "bank9", 0);
+		state->membank("bank2")->configure_entries(0, 8, rom + 0x000000, 0x200000);
+		state->membank("bank9")->configure_entries(0, 8, rom + 0x000000, 0x200000);
+		state->membank("bank2")->set_entry(0);
+		state->membank("bank9")->set_entry(0);
 	}
 
 	/* clear any spinuntil stuff */
@@ -491,7 +555,7 @@ static MACHINE_RESET( jaguar )
 	joystick_data = 0xffffffff;
 	eeprom_bit_count = 0;
 	blitter_status = 1;
-	if ((using_cart) && (input_port_read(machine, "CONFIG") & 2))
+	if ((using_cart) && (machine.root_device().ioport("CONFIG")->read() & 2))
 	{
 		cart_base[0x102] = 1;
 		using_cart = 0;
@@ -581,9 +645,9 @@ static NVRAM_HANDLER( jaguar )
     }
 }
 */
-static WRITE32_HANDLER( jaguar_eeprom_w )
+WRITE32_MEMBER(cojag_state::jaguar_eeprom_w)
 {
-	eeprom_device *eeprom = space->machine().device<eeprom_device>("eeprom");
+	eeprom_device *eeprom = machine().device<eeprom_device>("eeprom");
 	eeprom_bit_count++;
 	if (eeprom_bit_count != 9)		/* kill extra bit at end of address */
 	{
@@ -592,16 +656,16 @@ static WRITE32_HANDLER( jaguar_eeprom_w )
 	}
 }
 
-static READ32_HANDLER( jaguar_eeprom_clk )
+READ32_MEMBER(cojag_state::jaguar_eeprom_clk)
 {
-	eeprom_device *eeprom = space->machine().device<eeprom_device>("eeprom");
+	eeprom_device *eeprom = machine().device<eeprom_device>("eeprom");
 	eeprom->set_clock_line(PULSE_LINE);	/* get next bit when reading */
 	return 0;
 }
 
-static READ32_HANDLER( jaguar_eeprom_cs )
+READ32_MEMBER(cojag_state::jaguar_eeprom_cs)
 {
-	eeprom_device *eeprom = space->machine().device<eeprom_device>("eeprom");
+	eeprom_device *eeprom = machine().device<eeprom_device>("eeprom");
 	eeprom->set_cs_line(ASSERT_LINE);	/* must do at end of an operation */
 	eeprom->set_cs_line(CLEAR_LINE);		/* enable chip for next operation */
 	eeprom->write_bit(1);			/* write a start bit */
@@ -618,9 +682,8 @@ static READ32_HANDLER( jaguar_eeprom_cs )
  *
  *************************************/
 
-static READ32_HANDLER( misc_control_r )
+READ32_MEMBER(cojag_state::misc_control_r)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
 	/*  D7    = board reset (low)
         D6    = audio must & reset (high)
         D5    = volume control data (invert on write)
@@ -628,14 +691,13 @@ static READ32_HANDLER( misc_control_r )
         D3-D1 = audio bank 2-0
         D0    = shared memory select (0=XBUS) */
 
-	return state->m_misc_control_data ^ 0x20;
+	return m_misc_control_data ^ 0x20;
 }
 
 
-static WRITE32_HANDLER( misc_control_w )
+WRITE32_MEMBER(cojag_state::misc_control_w)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-	logerror("%08X:misc_control_w(%02X)\n", cpu_get_previouspc(&space->device()), data);
+	logerror("%08X:misc_control_w(%02X)\n", cpu_get_previouspc(&space.device()), data);
 
 	/*  D7    = board reset (low)
         D6    = audio must & reset (high)
@@ -648,22 +710,22 @@ static WRITE32_HANDLER( misc_control_w )
 	if (!(data & 0x80))
 	{
 		/* clear any spinuntil stuff */
-		jaguar_gpu_resume(space->machine());
-		jaguar_dsp_resume(space->machine());
+		jaguar_gpu_resume(machine());
+		jaguar_dsp_resume(machine());
 
 		/* halt the CPUs */
-		jaguargpu_ctrl_w(space->machine().device("gpu"), G_CTRL, 0, 0xffffffff);
-		jaguardsp_ctrl_w(space->machine().device("audiocpu"), D_CTRL, 0, 0xffffffff);
+		jaguargpu_ctrl_w(machine().device("gpu"), G_CTRL, 0, 0xffffffff);
+		jaguardsp_ctrl_w(machine().device("audiocpu"), D_CTRL, 0, 0xffffffff);
 	}
 
 	/* adjust banking */
-	if (space->machine().region("user2")->base())
+	if (machine().root_device().memregion("user2")->base())
 	{
-		memory_set_bank(space->machine(), "bank2", (data >> 1) & 7);
-		memory_set_bank(space->machine(), "bank9", (data >> 1) & 7);
+		membank("bank2")->set_entry((data >> 1) & 7);
+		membank("bank9")->set_entry((data >> 1) & 7);
 	}
 
-	COMBINE_DATA(&state->m_misc_control_data);
+	COMBINE_DATA(&m_misc_control_data);
 }
 
 
@@ -674,9 +736,9 @@ static WRITE32_HANDLER( misc_control_w )
  *************************************/
 
 // shouldn't the DSPs be doing this calc, why is this needed for Jaguar?
-static READ32_HANDLER( gpuctrl_r )
+READ32_MEMBER(cojag_state::gpuctrl_r)
 {
-	UINT32 result = jaguargpu_ctrl_r(space->machine().device("gpu"), offset);
+	UINT32 result = jaguargpu_ctrl_r(machine().device("gpu"), offset);
 
 	if (is_jaguar)
 	{
@@ -691,12 +753,12 @@ static READ32_HANDLER( gpuctrl_r )
 }
 
 
-static WRITE32_HANDLER( gpuctrl_w )
+WRITE32_MEMBER(cojag_state::gpuctrl_w)
 {
 	if (is_jaguar)
 		if ((!protection_check) && (offset == 5) && (data == 1)) protection_check++;
 
-	jaguargpu_ctrl_w(space->machine().device("gpu"), offset, data, mem_mask);
+	jaguargpu_ctrl_w(machine().device("gpu"), offset, data, mem_mask);
 }
 
 
@@ -707,19 +769,19 @@ static WRITE32_HANDLER( gpuctrl_w )
  *
  *************************************/
 
-static READ32_HANDLER( dspctrl_r )
+READ32_MEMBER(cojag_state::dspctrl_r)
 {
-	return jaguardsp_ctrl_r(space->machine().device("audiocpu"), offset);
+	return jaguardsp_ctrl_r(machine().device("audiocpu"), offset);
 }
 
 
-static WRITE32_HANDLER( dspctrl_w )
+WRITE32_MEMBER(cojag_state::dspctrl_w)
 {
-	jaguardsp_ctrl_w(space->machine().device("audiocpu"), offset, data, mem_mask);
+	jaguardsp_ctrl_w(machine().device("audiocpu"), offset, data, mem_mask);
 }
 
 
-static READ32_HANDLER( jaguar_wave_rom_r )
+READ32_MEMBER(cojag_state::jaguar_wave_rom_r)
 {
 	return jaguar_wave_rom[offset];
 }
@@ -734,7 +796,7 @@ static READ32_HANDLER( jaguar_wave_rom_r )
  *
  *************************************/
 
-static READ32_HANDLER( joystick_r )
+READ32_MEMBER(cojag_state::joystick_r)
 {
 	UINT16 joystick_result = 0xfffe;
 	UINT16 joybuts_result = 0xffef;
@@ -763,18 +825,18 @@ static READ32_HANDLER( joystick_r )
 	{
 		if ((joystick_data & (0x10000 << i)) == 0)
 		{
-			joystick_result &= input_port_read(space->machine(), keynames[0][i]);
-			joybuts_result &= input_port_read(space->machine(), keynames[1][i]);
+			joystick_result &= ioport(keynames[0][i])->read();
+			joybuts_result &= ioport(keynames[1][i])->read();
 		}
 	}
 
-	joystick_result |= space->machine().device<eeprom_device>("eeprom")->read_bit();
-	joybuts_result |= (input_port_read(space->machine(), "CONFIG") & 0x10);
+	joystick_result |= machine().device<eeprom_device>("eeprom")->read_bit();
+	joybuts_result |= (ioport("CONFIG")->read() & 0x10);
 
 	return (joystick_result << 16) | joybuts_result;
 }
 
-static WRITE32_HANDLER( joystick_w )
+WRITE32_MEMBER(cojag_state::joystick_w)
 {
 	/*
      *   16        12         8         4         0
@@ -832,16 +894,16 @@ static WRITE32_HANDLER( joystick_w )
  *
  *************************************/
 
-static WRITE32_HANDLER( latch_w )
+WRITE32_MEMBER(cojag_state::latch_w)
 {
-	logerror("%08X:latch_w(%X)\n", cpu_get_previouspc(&space->device()), data);
+	logerror("%08X:latch_w(%X)\n", cpu_get_previouspc(&space.device()), data);
 
 	/* adjust banking */
-	if (space->machine().region("user2")->base())
+	if (machine().root_device().memregion("user2")->base())
 	{
 		if (cojag_is_r3000)
-			memory_set_bank(space->machine(), "bank1", data & 1);
-		memory_set_bank(space->machine(), "bank8", data & 1);
+			membank("bank1")->set_entry(data & 1);
+		membank("bank8")->set_entry(data & 1);
 	}
 }
 
@@ -853,36 +915,33 @@ static WRITE32_HANDLER( latch_w )
  *
  *************************************/
 
-static READ32_HANDLER( eeprom_data_r )
+READ32_MEMBER(cojag_state::eeprom_data_r)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
 	if (cojag_is_r3000)
-		return state->m_nvram[offset] | 0xffffff00;
+		return m_nvram[offset] | 0xffffff00;
 	else
-		return state->m_nvram[offset] | 0x00ffffff;
+		return m_nvram[offset] | 0x00ffffff;
 }
 
 
-static WRITE32_HANDLER( eeprom_enable_w )
+WRITE32_MEMBER(cojag_state::eeprom_enable_w)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-	state->m_eeprom_enable = 1;
+	m_eeprom_enable = 1;
 }
 
 
-static WRITE32_HANDLER( eeprom_data_w )
+WRITE32_MEMBER(cojag_state::eeprom_data_w)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-//  if (state->m_eeprom_enable)
+//  if (m_eeprom_enable)
 	{
 		if (cojag_is_r3000)
-			state->m_nvram[offset] = data & 0x000000ff;
+			m_nvram[offset] = data & 0x000000ff;
 		else
-			state->m_nvram[offset] = data & 0xff000000;
+			m_nvram[offset] = data & 0xff000000;
 	}
 //  else
-//      logerror("%08X:error writing to disabled EEPROM\n", cpu_get_previouspc(&space->device()));
-	state->m_eeprom_enable = 0;
+//      logerror("%08X:error writing to disabled EEPROM\n", cpu_get_previouspc(&space.device()));
+	m_eeprom_enable = 0;
 }
 
 
@@ -924,40 +983,38 @@ static TIMER_CALLBACK( gpu_sync_timer )
 }
 
 
-static WRITE32_HANDLER( gpu_jump_w )
+WRITE32_MEMBER(cojag_state::gpu_jump_w)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
 	/* update the data in memory */
-	COMBINE_DATA(state->m_gpu_jump_address);
-	logerror("%08X:GPU jump address = %08X\n", cpu_get_previouspc(&space->device()), *state->m_gpu_jump_address);
+	COMBINE_DATA(m_gpu_jump_address);
+	logerror("%08X:GPU jump address = %08X\n", cpu_get_previouspc(&space.device()), *m_gpu_jump_address);
 
 	/* if the GPU is suspended, release it now */
-	jaguar_gpu_resume(space->machine());
+	jaguar_gpu_resume(machine());
 
 	/* start the sync timer going, and note that there is a command pending */
-	space->machine().scheduler().synchronize(FUNC(gpu_sync_timer));
-	state->m_gpu_command_pending = 1;
+	machine().scheduler().synchronize(FUNC(gpu_sync_timer));
+	m_gpu_command_pending = 1;
 }
 
 
-static READ32_HANDLER( gpu_jump_r )
+READ32_MEMBER(cojag_state::gpu_jump_r)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
 	/* if the current GPU command is just pointing back to the spin loop, and */
 	/* we're reading it from the spin loop, we can optimize */
-	if (*state->m_gpu_jump_address == state->m_gpu_spin_pc && cpu_get_previouspc(&space->device()) == state->m_gpu_spin_pc)
+	if (*m_gpu_jump_address == m_gpu_spin_pc && cpu_get_previouspc(&space.device()) == m_gpu_spin_pc)
 	{
 #if ENABLE_SPEEDUP_HACKS
 		/* spin if we're allowed */
-		if (jaguar_hacks_enabled) jaguar_gpu_suspend(space->machine());
+		if (jaguar_hacks_enabled) jaguar_gpu_suspend(machine());
 #endif
 
 		/* no command is pending */
-		state->m_gpu_command_pending = 0;
+		m_gpu_command_pending = 0;
 	}
 
 	/* return the current value */
-	return *state->m_gpu_jump_address;
+	return *m_gpu_jump_address;
 }
 
 
@@ -982,31 +1039,30 @@ static READ32_HANDLER( gpu_jump_r )
 #if ENABLE_SPEEDUP_HACKS
 
 
-static READ32_HANDLER( cojagr3k_main_speedup_r )
+READ32_MEMBER(cojag_state::cojagr3k_main_speedup_r)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-	UINT64 curcycles = state->m_main_cpu->total_cycles();
+	UINT64 curcycles = m_main_cpu->total_cycles();
 
 	/* if it's been less than main_speedup_max_cycles cycles since the last time */
-	if (curcycles - state->m_main_speedup_last_cycles < state->m_main_speedup_max_cycles)
+	if (curcycles - m_main_speedup_last_cycles < m_main_speedup_max_cycles)
 	{
 		/* increment the count; if we hit 5, we can spin until an interrupt comes */
-		if (state->m_main_speedup_hits++ > 5)
+		if (m_main_speedup_hits++ > 5)
 		{
-			device_spin_until_interrupt(&space->device());
-			state->m_main_speedup_hits = 0;
+			device_spin_until_interrupt(&space.device());
+			m_main_speedup_hits = 0;
 		}
 	}
 
 	/* if it's been more than main_speedup_max_cycles cycles, reset our count */
 	else
-		state->m_main_speedup_hits = 0;
+		m_main_speedup_hits = 0;
 
 	/* remember the last cycle count */
-	state->m_main_speedup_last_cycles = curcycles;
+	m_main_speedup_last_cycles = curcycles;
 
 	/* return the real value */
-	return *state->m_main_speedup;
+	return *m_main_speedup;
 }
 
 #endif
@@ -1031,12 +1087,11 @@ static READ32_HANDLER( cojagr3k_main_speedup_r )
 #if ENABLE_SPEEDUP_HACKS
 
 
-static READ32_HANDLER( main_gpu_wait_r )
+READ32_MEMBER(cojag_state::main_gpu_wait_r)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-	if (state->m_gpu_command_pending)
-		device_spin_until_interrupt(&space->device());
-	return *state->m_main_gpu_wait;
+	if (m_gpu_command_pending)
+		device_spin_until_interrupt(&space.device());
+	return *m_main_gpu_wait;
 }
 
 #endif
@@ -1058,31 +1113,30 @@ static READ32_HANDLER( main_gpu_wait_r )
 
 #if ENABLE_SPEEDUP_HACKS
 
-static WRITE32_HANDLER( area51_main_speedup_w )
+WRITE32_MEMBER(cojag_state::area51_main_speedup_w)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-	UINT64 curcycles = state->m_main_cpu->total_cycles();
+	UINT64 curcycles = m_main_cpu->total_cycles();
 
 	/* store the data */
-	COMBINE_DATA(state->m_main_speedup);
+	COMBINE_DATA(m_main_speedup);
 
 	/* if it's been less than 400 cycles since the last time */
-	if (*state->m_main_speedup == 0 && curcycles - state->m_main_speedup_last_cycles < 400)
+	if (*m_main_speedup == 0 && curcycles - m_main_speedup_last_cycles < 400)
 	{
 		/* increment the count; if we hit 5, we can spin until an interrupt comes */
-		if (state->m_main_speedup_hits++ > 5)
+		if (m_main_speedup_hits++ > 5)
 		{
-			device_spin_until_interrupt(&space->device());
-			state->m_main_speedup_hits = 0;
+			device_spin_until_interrupt(&space.device());
+			m_main_speedup_hits = 0;
 		}
 	}
 
 	/* if it's been more than 400 cycles, reset our count */
 	else
-		state->m_main_speedup_hits = 0;
+		m_main_speedup_hits = 0;
 
 	/* remember the last cycle count */
-	state->m_main_speedup_last_cycles = curcycles;
+	m_main_speedup_last_cycles = curcycles;
 }
 
 
@@ -1093,31 +1147,30 @@ static WRITE32_HANDLER( area51_main_speedup_w )
     against 0 must handle that explicitly.
 */
 
-static WRITE32_HANDLER( area51mx_main_speedup_w )
+WRITE32_MEMBER(cojag_state::area51mx_main_speedup_w)
 {
-	cojag_state *state = space->machine().driver_data<cojag_state>();
-	UINT64 curcycles = state->m_main_cpu->total_cycles();
+	UINT64 curcycles = m_main_cpu->total_cycles();
 
 	/* store the data */
-	COMBINE_DATA(&state->m_main_speedup[offset]);
+	COMBINE_DATA(&m_main_speedup[offset]);
 
 	/* if it's been less than 450 cycles since the last time */
-	if (((state->m_main_speedup[0] << 16) | (state->m_main_speedup[1] >> 16)) == 0 && curcycles - state->m_main_speedup_last_cycles < 450)
+	if (((m_main_speedup[0] << 16) | (m_main_speedup[1] >> 16)) == 0 && curcycles - m_main_speedup_last_cycles < 450)
 	{
 		/* increment the count; if we hit 5, we can spin until an interrupt comes */
-		if (state->m_main_speedup_hits++ > 10)
+		if (m_main_speedup_hits++ > 10)
 		{
-			device_spin_until_interrupt(&space->device());
-			state->m_main_speedup_hits = 0;
+			device_spin_until_interrupt(&space.device());
+			m_main_speedup_hits = 0;
 		}
 	}
 
 	/* if it's been more than 450 cycles, reset our count */
 	else
-		state->m_main_speedup_hits = 0;
+		m_main_speedup_hits = 0;
 
 	/* remember the last cycle count */
-	state->m_main_speedup_last_cycles = curcycles;
+	m_main_speedup_last_cycles = curcycles;
 }
 
 #endif
@@ -1136,69 +1189,69 @@ static WRITE32_HANDLER( area51mx_main_speedup_w )
 // surely these should be 16-bit natively if the standard Jaguar is driven by a plain 68k?
 // all these trampolines are not good for performance ;-)
 
-static READ16_HANDLER( gpuctrl_r16 )  { if (!(offset&1)) { return gpuctrl_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return gpuctrl_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( gpuctrl_w16 ) { if (!(offset&1)) { gpuctrl_w(space, offset>>1, data << 16, mem_mask << 16); } else { gpuctrl_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_blitter_r16 )  { if (!(offset&1)) { return jaguar_blitter_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_blitter_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_blitter_w16 ) { if (!(offset&1)) { jaguar_blitter_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_blitter_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_serial_r16 )  { if (!(offset&1)) { return jaguar_serial_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_serial_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_serial_w16 ) { if (!(offset&1)) { jaguar_serial_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_serial_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( dspctrl_r16 )  { if (!(offset&1)) { return dspctrl_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return dspctrl_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( dspctrl_w16 ) { if (!(offset&1)) { dspctrl_w(space, offset>>1, data << 16, mem_mask << 16); } else { dspctrl_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_eeprom_cs16 )  { if (!(offset&1)) { return jaguar_eeprom_cs(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_eeprom_cs(space, offset>>1, mem_mask); } }
-static READ16_HANDLER( jaguar_eeprom_clk16 )  { if (!(offset&1)) { return jaguar_eeprom_clk(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_eeprom_clk(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_eeprom_w16 ) { if (!(offset&1)) { jaguar_eeprom_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_eeprom_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( joystick_r16 )  { if (!(offset&1)) { return joystick_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return joystick_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( joystick_w16 ) { if (!(offset&1)) { joystick_w(space, offset>>1, data << 16, mem_mask << 16); } else { joystick_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::gpuctrl_r16){ if (!(offset&1)) { return gpuctrl_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return gpuctrl_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::gpuctrl_w16){ if (!(offset&1)) { gpuctrl_w(space, offset>>1, data << 16, mem_mask << 16); } else { gpuctrl_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_blitter_r16){ if (!(offset&1)) { return jaguar_blitter_r(&space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_blitter_r(&space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_blitter_w16){ if (!(offset&1)) { jaguar_blitter_w(&space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_blitter_w(&space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_serial_r16){ if (!(offset&1)) { return jaguar_serial_r(&space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_serial_r(&space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_serial_w16){ if (!(offset&1)) { jaguar_serial_w(&space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_serial_w(&space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::dspctrl_r16){ if (!(offset&1)) { return dspctrl_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return dspctrl_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::dspctrl_w16){ if (!(offset&1)) { dspctrl_w(space, offset>>1, data << 16, mem_mask << 16); } else { dspctrl_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_eeprom_cs16){ if (!(offset&1)) { return jaguar_eeprom_cs(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_eeprom_cs(space, offset>>1, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_eeprom_clk16){ if (!(offset&1)) { return jaguar_eeprom_clk(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_eeprom_clk(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_eeprom_w16){ if (!(offset&1)) { jaguar_eeprom_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_eeprom_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::joystick_r16){ if (!(offset&1)) { return joystick_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return joystick_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::joystick_w16){ if (!(offset&1)) { joystick_w(space, offset>>1, data << 16, mem_mask << 16); } else { joystick_w(space, offset>>1, data, mem_mask); } }
 
-static READ32_HANDLER( jaguar_shared_ram_r ) { return jaguar_shared_ram[offset]; }
-static WRITE32_HANDLER( jaguar_shared_ram_w ) {	COMBINE_DATA(&jaguar_shared_ram[offset]); }
-static READ32_HANDLER( jaguar_rom_base_r ) { return rom_base[offset]; }
-static WRITE32_HANDLER( jaguar_rom_base_w ) { /*ROM!*/ }
-static READ32_HANDLER( jaguar_cart_base_r ) { return cart_base[offset]; }
-static WRITE32_HANDLER( jaguar_cart_base_w ) { /*ROM!*/ }
-static READ32_HANDLER( high_rom_base_r ) { return high_rom_base[offset]; }
-static WRITE32_HANDLER( high_rom_base_w ) { /*ROM!*/ }
-static READ32_HANDLER( jaguar_dsp_ram_r ) {	return jaguar_dsp_ram[offset]; }
-static WRITE32_HANDLER( jaguar_dsp_ram_w ) { COMBINE_DATA(&jaguar_dsp_ram[offset]); }
-static READ32_HANDLER( jaguar_gpu_clut_r ) { return jaguar_gpu_clut[offset]; }
-static WRITE32_HANDLER( jaguar_gpu_clut_w ) { COMBINE_DATA(&jaguar_gpu_clut[offset]); }
-static READ32_HANDLER( jaguar_gpu_ram_r ) { return jaguar_gpu_ram[offset]; }
-static WRITE32_HANDLER( jaguar_gpu_ram_w ) { COMBINE_DATA(&jaguar_gpu_ram[offset]); }
+READ32_MEMBER(cojag_state::jaguar_shared_ram_r){ return jaguar_shared_ram[offset]; }
+WRITE32_MEMBER(cojag_state::jaguar_shared_ram_w){	COMBINE_DATA(&jaguar_shared_ram[offset]); }
+READ32_MEMBER(cojag_state::jaguar_rom_base_r){ return rom_base[offset]; }
+WRITE32_MEMBER(cojag_state::jaguar_rom_base_w){ /*ROM!*/ }
+READ32_MEMBER(cojag_state::jaguar_cart_base_r){ return cart_base[offset]; }
+WRITE32_MEMBER(cojag_state::jaguar_cart_base_w){ /*ROM!*/ }
+READ32_MEMBER(cojag_state::high_rom_base_r){ return high_rom_base[offset]; }
+WRITE32_MEMBER(cojag_state::high_rom_base_w){ /*ROM!*/ }
+READ32_MEMBER(cojag_state::jaguar_dsp_ram_r){	return jaguar_dsp_ram[offset]; }
+WRITE32_MEMBER(cojag_state::jaguar_dsp_ram_w){ COMBINE_DATA(&jaguar_dsp_ram[offset]); }
+READ32_MEMBER(cojag_state::jaguar_gpu_clut_r){ return jaguar_gpu_clut[offset]; }
+WRITE32_MEMBER(cojag_state::jaguar_gpu_clut_w){ COMBINE_DATA(&jaguar_gpu_clut[offset]); }
+READ32_MEMBER(cojag_state::jaguar_gpu_ram_r){ return jaguar_gpu_ram[offset]; }
+WRITE32_MEMBER(cojag_state::jaguar_gpu_ram_w){ COMBINE_DATA(&jaguar_gpu_ram[offset]); }
 
-static READ16_HANDLER( jaguar_shared_ram_r16 )  { if (!(offset&1)) { return jaguar_shared_ram_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_shared_ram_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_shared_ram_w16 ) { if (!(offset&1)) { jaguar_shared_ram_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_shared_ram_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_rom_base_r16 )  { if (!(offset&1)) { return jaguar_rom_base_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_rom_base_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_rom_base_w16 ) { if (!(offset&1)) { jaguar_rom_base_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_rom_base_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_cart_base_r16 )  { if (!(offset&1)) { return jaguar_cart_base_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_cart_base_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_cart_base_w16 ) { if (!(offset&1)) { jaguar_cart_base_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_cart_base_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( high_rom_base_r16 )  { if (!(offset&1)) { return high_rom_base_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return high_rom_base_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( high_rom_base_w16 ) { if (!(offset&1)) { high_rom_base_w(space, offset>>1, data << 16, mem_mask << 16); } else { high_rom_base_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_shared_ram_r16){ if (!(offset&1)) { return jaguar_shared_ram_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_shared_ram_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_shared_ram_w16){ if (!(offset&1)) { jaguar_shared_ram_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_shared_ram_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_rom_base_r16){ if (!(offset&1)) { return jaguar_rom_base_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_rom_base_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_rom_base_w16){ if (!(offset&1)) { jaguar_rom_base_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_rom_base_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_cart_base_r16){ if (!(offset&1)) { return jaguar_cart_base_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_cart_base_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_cart_base_w16){ if (!(offset&1)) { jaguar_cart_base_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_cart_base_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::high_rom_base_r16){ if (!(offset&1)) { return high_rom_base_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return high_rom_base_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::high_rom_base_w16){ if (!(offset&1)) { high_rom_base_w(space, offset>>1, data << 16, mem_mask << 16); } else { high_rom_base_w(space, offset>>1, data, mem_mask); } }
 
-static READ16_HANDLER( jaguar_dsp_ram_r16 )  { if (!(offset&1)) { return jaguar_dsp_ram_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_dsp_ram_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_dsp_ram_w16 ) { if (!(offset&1)) { jaguar_dsp_ram_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_dsp_ram_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_gpu_clut_r16 )  { if (!(offset&1)) { return jaguar_gpu_clut_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_gpu_clut_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_gpu_clut_w16 ) { if (!(offset&1)) { jaguar_gpu_clut_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_gpu_clut_w(space, offset>>1, data, mem_mask); } }
-static READ16_HANDLER( jaguar_gpu_ram_r16 )  { if (!(offset&1)) { return jaguar_gpu_ram_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_gpu_ram_r(space, offset>>1, mem_mask); } }
-static WRITE16_HANDLER( jaguar_gpu_ram_w16 ) { if (!(offset&1)) { jaguar_gpu_ram_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_gpu_ram_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_dsp_ram_r16){ if (!(offset&1)) { return jaguar_dsp_ram_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_dsp_ram_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_dsp_ram_w16){ if (!(offset&1)) { jaguar_dsp_ram_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_dsp_ram_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_gpu_clut_r16){ if (!(offset&1)) { return jaguar_gpu_clut_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_gpu_clut_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_gpu_clut_w16){ if (!(offset&1)) { jaguar_gpu_clut_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_gpu_clut_w(space, offset>>1, data, mem_mask); } }
+READ16_MEMBER(cojag_state::jaguar_gpu_ram_r16){ if (!(offset&1)) { return jaguar_gpu_ram_r(space, offset>>1, mem_mask<<16) >> 16;  } else { return jaguar_gpu_ram_r(space, offset>>1, mem_mask); } }
+WRITE16_MEMBER(cojag_state::jaguar_gpu_ram_w16){ if (!(offset&1)) { jaguar_gpu_ram_w(space, offset>>1, data << 16, mem_mask << 16); } else { jaguar_gpu_ram_w(space, offset>>1, data, mem_mask); } }
 
-static ADDRESS_MAP_START( jaguar_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( jaguar_map, AS_PROGRAM, 16, cojag_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xffffff)
-	AM_RANGE(0x000000, 0x1fffff) AM_MIRROR(0x200000) AM_READWRITE( jaguar_shared_ram_r16, jaguar_shared_ram_w16 );
-	AM_RANGE(0x800000, 0xdfffff) AM_READWRITE( jaguar_cart_base_r16, jaguar_cart_base_w16 )
-	AM_RANGE(0xe00000, 0xe1ffff) AM_READWRITE( jaguar_rom_base_r16, jaguar_rom_base_w16 )
-	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE(jaguar_tom_regs_r, jaguar_tom_regs_w) // might be reversed endian of the others..
+	AM_RANGE(0x000000, 0x1fffff) AM_MIRROR(0x200000) AM_READWRITE(jaguar_shared_ram_r16, jaguar_shared_ram_w16 );
+	AM_RANGE(0x800000, 0xdfffff) AM_READWRITE(jaguar_cart_base_r16, jaguar_cart_base_w16 )
+	AM_RANGE(0xe00000, 0xe1ffff) AM_READWRITE(jaguar_rom_base_r16, jaguar_rom_base_w16 )
+	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE_LEGACY(jaguar_tom_regs_r, jaguar_tom_regs_w) // might be reversed endian of the others..
 	AM_RANGE(0xf00400, 0xf005ff) AM_MIRROR(0x000200) AM_READWRITE(jaguar_gpu_clut_r16, jaguar_gpu_clut_w16 )
 	AM_RANGE(0xf02100, 0xf021ff) AM_MIRROR(0x008000) AM_READWRITE(gpuctrl_r16, gpuctrl_w16)
 	AM_RANGE(0xf02200, 0xf022ff) AM_MIRROR(0x008000) AM_READWRITE(jaguar_blitter_r16, jaguar_blitter_w16)
-	AM_RANGE(0xf03000, 0xf03fff) AM_MIRROR(0x008000) AM_READWRITE( jaguar_gpu_ram_r16, jaguar_gpu_ram_w16 )
-	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE(jaguar_jerry_regs_r, jaguar_jerry_regs_w) // might be reversed endian of the others..
+	AM_RANGE(0xf03000, 0xf03fff) AM_MIRROR(0x008000) AM_READWRITE(jaguar_gpu_ram_r16, jaguar_gpu_ram_w16 )
+	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs_r, jaguar_jerry_regs_w) // might be reversed endian of the others..
 	AM_RANGE(0xf14000, 0xf14003) AM_READWRITE(joystick_r16, joystick_w16)
 	AM_RANGE(0xf14800, 0xf14803) AM_READWRITE(jaguar_eeprom_clk16,jaguar_eeprom_w16)	// GPI00
 	AM_RANGE(0xf15000, 0xf15003) AM_READ(jaguar_eeprom_cs16)				// GPI01
 	AM_RANGE(0xf1a100, 0xf1a13f) AM_READWRITE(dspctrl_r16, dspctrl_w16)
 	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE(jaguar_serial_r16, jaguar_serial_w16)
 	AM_RANGE(0xf1b000, 0xf1cfff) AM_READWRITE(jaguar_dsp_ram_r16, jaguar_dsp_ram_w16)
-	AM_RANGE(0xf1d000, 0xf1dfff) AM_READWRITE( high_rom_base_r16, high_rom_base_w16 )
+	AM_RANGE(0xf1d000, 0xf1dfff) AM_READWRITE(high_rom_base_r16, high_rom_base_w16 )
 ADDRESS_MAP_END
 
 
@@ -1209,24 +1262,24 @@ ADDRESS_MAP_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( r3000_map, AS_PROGRAM, 32 )
-	AM_RANGE(0x04000000, 0x047fffff) AM_RAM AM_BASE(&jaguar_shared_ram) AM_SHARE("share1")
+static ADDRESS_MAP_START( r3000_map, AS_PROGRAM, 32, cojag_state )
+	AM_RANGE(0x04000000, 0x047fffff) AM_RAM AM_BASE_LEGACY(&jaguar_shared_ram) AM_SHARE("share1")
 	AM_RANGE(0x04800000, 0x04bfffff) AM_ROMBANK("bank1")
 	AM_RANGE(0x04c00000, 0x04dfffff) AM_ROMBANK("bank2")
-	AM_RANGE(0x04e00000, 0x04e003ff) AM_DEVREADWRITE("ide", ide_controller32_r, ide_controller32_w)
-	AM_RANGE(0x04f00000, 0x04f003ff) AM_READWRITE(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
-	AM_RANGE(0x04f00400, 0x04f007ff) AM_RAM AM_BASE(&jaguar_gpu_clut) AM_SHARE("share2")
+	AM_RANGE(0x04e00000, 0x04e003ff) AM_DEVREADWRITE_LEGACY("ide", ide_controller32_r, ide_controller32_w)
+	AM_RANGE(0x04f00000, 0x04f003ff) AM_READWRITE_LEGACY(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
+	AM_RANGE(0x04f00400, 0x04f007ff) AM_RAM AM_BASE_LEGACY(&jaguar_gpu_clut) AM_SHARE("share2")
 	AM_RANGE(0x04f02100, 0x04f021ff) AM_READWRITE(gpuctrl_r, gpuctrl_w)
-	AM_RANGE(0x04f02200, 0x04f022ff) AM_READWRITE(jaguar_blitter_r, jaguar_blitter_w)
-	AM_RANGE(0x04f03000, 0x04f03fff) AM_MIRROR(0x00008000) AM_RAM AM_BASE(&jaguar_gpu_ram) AM_SHARE("share3")
-	AM_RANGE(0x04f10000, 0x04f103ff) AM_READWRITE(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
-	AM_RANGE(0x04f16000, 0x04f1600b) AM_READ(cojag_gun_input_r)	// GPI02
+	AM_RANGE(0x04f02200, 0x04f022ff) AM_READWRITE_LEGACY(jaguar_blitter_r, jaguar_blitter_w)
+	AM_RANGE(0x04f03000, 0x04f03fff) AM_MIRROR(0x00008000) AM_RAM AM_BASE_LEGACY(&jaguar_gpu_ram) AM_SHARE("share3")
+	AM_RANGE(0x04f10000, 0x04f103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
+	AM_RANGE(0x04f16000, 0x04f1600b) AM_READ_LEGACY(cojag_gun_input_r)	// GPI02
 	AM_RANGE(0x04f17000, 0x04f17003) AM_READ_PORT("SYSTEM")		// GPI03
 	AM_RANGE(0x04f17800, 0x04f17803) AM_WRITE(latch_w)			// GPI04
 	AM_RANGE(0x04f17c00, 0x04f17c03) AM_READ_PORT("P1_P2")		// GPI05
 	AM_RANGE(0x04f1a100, 0x04f1a13f) AM_READWRITE(dspctrl_r, dspctrl_w)
-	AM_RANGE(0x04f1a140, 0x04f1a17f) AM_READWRITE(jaguar_serial_r, jaguar_serial_w)
-	AM_RANGE(0x04f1b000, 0x04f1cfff) AM_RAM AM_BASE(&jaguar_dsp_ram) AM_SHARE("share4")
+	AM_RANGE(0x04f1a140, 0x04f1a17f) AM_READWRITE_LEGACY(jaguar_serial_r, jaguar_serial_w)
+	AM_RANGE(0x04f1b000, 0x04f1cfff) AM_RAM AM_BASE_LEGACY(&jaguar_dsp_ram) AM_SHARE("share4")
 
 	AM_RANGE(0x06000000, 0x06000003) AM_READWRITE(misc_control_r, misc_control_w)
 	AM_RANGE(0x10000000, 0x1007ffff) AM_RAM
@@ -1234,33 +1287,33 @@ static ADDRESS_MAP_START( r3000_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x14000004, 0x14000007) AM_WRITE(watchdog_reset32_w)
 	AM_RANGE(0x16000000, 0x16000003) AM_WRITE(eeprom_enable_w)
 	AM_RANGE(0x18000000, 0x18001fff) AM_READWRITE(eeprom_data_r, eeprom_data_w) AM_SHARE("nvram")
-	AM_RANGE(0x1fc00000, 0x1fdfffff) AM_ROM AM_REGION("user1", 0) AM_BASE_MEMBER(cojag_state, m_rom_base)
+	AM_RANGE(0x1fc00000, 0x1fdfffff) AM_ROM AM_REGION("user1", 0) AM_SHARE("robase")
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( m68020_map, AS_PROGRAM, 32 )
-	AM_RANGE(0x000000, 0x7fffff) AM_RAM AM_BASE(&jaguar_shared_ram) AM_SHARE("share1")
-	AM_RANGE(0x800000, 0x9fffff) AM_ROM AM_REGION("user1", 0) AM_BASE_MEMBER(cojag_state, m_rom_base)
+static ADDRESS_MAP_START( m68020_map, AS_PROGRAM, 32, cojag_state )
+	AM_RANGE(0x000000, 0x7fffff) AM_RAM AM_BASE_LEGACY(&jaguar_shared_ram) AM_SHARE("share1")
+	AM_RANGE(0x800000, 0x9fffff) AM_ROM AM_REGION("user1", 0) AM_SHARE("robase")
 	AM_RANGE(0xa00000, 0xa1ffff) AM_RAM
 	AM_RANGE(0xa20000, 0xa21fff) AM_READWRITE(eeprom_data_r, eeprom_data_w) AM_SHARE("nvram")
 	AM_RANGE(0xa30000, 0xa30003) AM_WRITE(watchdog_reset32_w)
 	AM_RANGE(0xa40000, 0xa40003) AM_WRITE(eeprom_enable_w)
 	AM_RANGE(0xb70000, 0xb70003) AM_READWRITE(misc_control_r, misc_control_w)
 	AM_RANGE(0xc00000, 0xdfffff) AM_ROMBANK("bank2")
-	AM_RANGE(0xe00000, 0xe003ff) AM_DEVREADWRITE("ide",  ide_controller32_r, ide_controller32_w)
-	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
-	AM_RANGE(0xf00400, 0xf007ff) AM_RAM AM_BASE(&jaguar_gpu_clut) AM_SHARE("share2")
+	AM_RANGE(0xe00000, 0xe003ff) AM_DEVREADWRITE_LEGACY("ide",  ide_controller32_r, ide_controller32_w)
+	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE_LEGACY(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
+	AM_RANGE(0xf00400, 0xf007ff) AM_RAM AM_BASE_LEGACY(&jaguar_gpu_clut) AM_SHARE("share2")
 	AM_RANGE(0xf02100, 0xf021ff) AM_READWRITE(gpuctrl_r, gpuctrl_w)
-	AM_RANGE(0xf02200, 0xf022ff) AM_READWRITE(jaguar_blitter_r, jaguar_blitter_w)
-	AM_RANGE(0xf03000, 0xf03fff) AM_MIRROR(0x008000) AM_RAM AM_BASE(&jaguar_gpu_ram) AM_SHARE("share3")
-	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
-	AM_RANGE(0xf16000, 0xf1600b) AM_READ(cojag_gun_input_r)	// GPI02
+	AM_RANGE(0xf02200, 0xf022ff) AM_READWRITE_LEGACY(jaguar_blitter_r, jaguar_blitter_w)
+	AM_RANGE(0xf03000, 0xf03fff) AM_MIRROR(0x008000) AM_RAM AM_BASE_LEGACY(&jaguar_gpu_ram) AM_SHARE("share3")
+	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
+	AM_RANGE(0xf16000, 0xf1600b) AM_READ_LEGACY(cojag_gun_input_r)	// GPI02
 	AM_RANGE(0xf17000, 0xf17003) AM_READ_PORT("SYSTEM")		// GPI03
 //  AM_RANGE(0xf17800, 0xf17803) AM_WRITE(latch_w)          // GPI04
 	AM_RANGE(0xf17c00, 0xf17c03) AM_READ_PORT("P1_P2")		// GPI05
 	AM_RANGE(0xf1a100, 0xf1a13f) AM_READWRITE(dspctrl_r, dspctrl_w)
-	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE(jaguar_serial_r, jaguar_serial_w)
-	AM_RANGE(0xf1b000, 0xf1cfff) AM_RAM AM_BASE(&jaguar_dsp_ram) AM_SHARE("share4")
+	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE_LEGACY(jaguar_serial_r, jaguar_serial_w)
+	AM_RANGE(0xf1b000, 0xf1cfff) AM_RAM AM_BASE_LEGACY(&jaguar_dsp_ram) AM_SHARE("share4")
 ADDRESS_MAP_END
 
 
@@ -1271,17 +1324,17 @@ ADDRESS_MAP_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( gpu_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( gpu_map, AS_PROGRAM, 32, cojag_state )
 	AM_RANGE(0x000000, 0x7fffff) AM_RAM AM_SHARE("share1")
 	AM_RANGE(0x800000, 0xbfffff) AM_ROMBANK("bank8")
 	AM_RANGE(0xc00000, 0xdfffff) AM_ROMBANK("bank9")
-	AM_RANGE(0xe00000, 0xe003ff) AM_DEVREADWRITE("ide", ide_controller32_r, ide_controller32_w)
-	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
+	AM_RANGE(0xe00000, 0xe003ff) AM_DEVREADWRITE_LEGACY("ide", ide_controller32_r, ide_controller32_w)
+	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE_LEGACY(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
 	AM_RANGE(0xf00400, 0xf007ff) AM_RAM AM_SHARE("share2")
 	AM_RANGE(0xf02100, 0xf021ff) AM_READWRITE(gpuctrl_r, gpuctrl_w)
-	AM_RANGE(0xf02200, 0xf022ff) AM_READWRITE(jaguar_blitter_r, jaguar_blitter_w)
+	AM_RANGE(0xf02200, 0xf022ff) AM_READWRITE_LEGACY(jaguar_blitter_r, jaguar_blitter_w)
 	AM_RANGE(0xf03000, 0xf03fff) AM_RAM AM_SHARE("share3")
-	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
+	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
 ADDRESS_MAP_END
 
 
@@ -1292,51 +1345,51 @@ ADDRESS_MAP_END
  *
  *************************************/
 
-static ADDRESS_MAP_START( dsp_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( dsp_map, AS_PROGRAM, 32, cojag_state )
 	AM_RANGE(0x000000, 0x7fffff) AM_RAM AM_SHARE("share1")
 	AM_RANGE(0x800000, 0xbfffff) AM_ROMBANK("bank8")
 	AM_RANGE(0xc00000, 0xdfffff) AM_ROMBANK("bank9")
-	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
+	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
 	AM_RANGE(0xf1a100, 0xf1a13f) AM_READWRITE(dspctrl_r, dspctrl_w)
-	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE(jaguar_serial_r, jaguar_serial_w)
+	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE_LEGACY(jaguar_serial_r, jaguar_serial_w)
 	AM_RANGE(0xf1b000, 0xf1cfff) AM_RAM AM_SHARE("share4")
-	AM_RANGE(0xf1d000, 0xf1dfff) AM_READ(jaguar_wave_rom_r) AM_BASE(&jaguar_wave_rom)
+	AM_RANGE(0xf1d000, 0xf1dfff) AM_READ(jaguar_wave_rom_r) AM_BASE_LEGACY(&jaguar_wave_rom)
 ADDRESS_MAP_END
 
 /* ToDo, these maps SHOULD be merged with the ones above */
 
-static ADDRESS_MAP_START( jag_gpu_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( jag_gpu_map, AS_PROGRAM, 32, cojag_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xffffff)
-	AM_RANGE(0x000000, 0x1fffff) AM_RAM AM_BASE(&jaguar_shared_ram) AM_MIRROR(0x200000)  AM_SHARE("share1") AM_REGION("maincpu", 0)
-	AM_RANGE(0x800000, 0xdfffff) AM_ROM AM_BASE(&cart_base) AM_SIZE(&cart_size)  AM_SHARE("share15") AM_REGION("maincpu", 0x800000)
-	AM_RANGE(0xe00000, 0xe1ffff) AM_ROM AM_BASE(&rom_base) AM_SIZE(&rom_size)  AM_SHARE("share16") AM_REGION("maincpu", 0xe00000)
-	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
-	AM_RANGE(0xf00400, 0xf005ff) AM_BASE(&jaguar_gpu_clut) AM_MIRROR(0x000200) AM_RAM AM_SHARE("share2")
+	AM_RANGE(0x000000, 0x1fffff) AM_RAM AM_BASE_LEGACY(&jaguar_shared_ram) AM_MIRROR(0x200000)  AM_SHARE("share1") AM_REGION("maincpu", 0)
+	AM_RANGE(0x800000, 0xdfffff) AM_ROM AM_BASE_LEGACY(&cart_base) AM_SIZE_LEGACY(&cart_size)  AM_SHARE("share15") AM_REGION("maincpu", 0x800000)
+	AM_RANGE(0xe00000, 0xe1ffff) AM_ROM AM_BASE_LEGACY(&rom_base) AM_SIZE_LEGACY(&rom_size)  AM_SHARE("share16") AM_REGION("maincpu", 0xe00000)
+	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE_LEGACY(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
+	AM_RANGE(0xf00400, 0xf005ff) AM_BASE_LEGACY(&jaguar_gpu_clut) AM_MIRROR(0x000200) AM_RAM AM_SHARE("share2")
 	AM_RANGE(0xf02100, 0xf021ff) AM_MIRROR(0x008000) AM_READWRITE(gpuctrl_r, gpuctrl_w)
-	AM_RANGE(0xf02200, 0xf022ff) AM_MIRROR(0x008000) AM_READWRITE(jaguar_blitter_r, jaguar_blitter_w)
-	AM_RANGE(0xf03000, 0xf03fff) AM_BASE(&jaguar_gpu_ram) AM_MIRROR(0x008000) AM_RAM AM_SHARE("share3")
-	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
+	AM_RANGE(0xf02200, 0xf022ff) AM_MIRROR(0x008000) AM_READWRITE_LEGACY(jaguar_blitter_r, jaguar_blitter_w)
+	AM_RANGE(0xf03000, 0xf03fff) AM_BASE_LEGACY(&jaguar_gpu_ram) AM_MIRROR(0x008000) AM_RAM AM_SHARE("share3")
+	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
 	AM_RANGE(0xf14000, 0xf14003) AM_READWRITE(joystick_r, joystick_w)
 	AM_RANGE(0xf1a100, 0xf1a13f) AM_READWRITE(dspctrl_r, dspctrl_w)
-	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE(jaguar_serial_r, jaguar_serial_w)
-	AM_RANGE(0xf1b000, 0xf1cfff) AM_BASE(&jaguar_dsp_ram) AM_RAM AM_SHARE("share4")
-	AM_RANGE(0xf1d000, 0xf1dfff) AM_ROM AM_BASE(&high_rom_base) AM_REGION("maincpu", 0xf1d000)
+	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE_LEGACY(jaguar_serial_r, jaguar_serial_w)
+	AM_RANGE(0xf1b000, 0xf1cfff) AM_BASE_LEGACY(&jaguar_dsp_ram) AM_RAM AM_SHARE("share4")
+	AM_RANGE(0xf1d000, 0xf1dfff) AM_ROM AM_BASE_LEGACY(&high_rom_base) AM_REGION("maincpu", 0xf1d000)
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( jag_dsp_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( jag_dsp_map, AS_PROGRAM, 32, cojag_state )
 	ADDRESS_MAP_GLOBAL_MASK(0xffffff)
 	AM_RANGE(0x000000, 0x1fffff) AM_MIRROR(0x200000) AM_RAM AM_SHARE("share1") AM_REGION("maincpu", 0)
 	AM_RANGE(0x800000, 0xdfffff) AM_ROM AM_SHARE("share15") AM_REGION("maincpu", 0x800000)
 	AM_RANGE(0xe00000, 0xe1ffff) AM_ROM AM_SHARE("share16") AM_REGION("maincpu", 0xe00000)
-	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
+	AM_RANGE(0xf00000, 0xf003ff) AM_READWRITE_LEGACY(jaguar_tom_regs32_r, jaguar_tom_regs32_w)
 	AM_RANGE(0xf00400, 0xf005ff) AM_MIRROR(0x000200) AM_RAM AM_SHARE("share2")
 	AM_RANGE(0xf02100, 0xf021ff) AM_MIRROR(0x008000) AM_READWRITE(gpuctrl_r, gpuctrl_w)
-	AM_RANGE(0xf02200, 0xf022ff) AM_MIRROR(0x008000) AM_READWRITE(jaguar_blitter_r, jaguar_blitter_w)
+	AM_RANGE(0xf02200, 0xf022ff) AM_MIRROR(0x008000) AM_READWRITE_LEGACY(jaguar_blitter_r, jaguar_blitter_w)
 	AM_RANGE(0xf03000, 0xf03fff) AM_MIRROR(0x008000) AM_RAM AM_SHARE("share3")
-	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
+	AM_RANGE(0xf10000, 0xf103ff) AM_READWRITE_LEGACY(jaguar_jerry_regs32_r, jaguar_jerry_regs32_w)
 	AM_RANGE(0xf14000, 0xf14003) AM_READWRITE(joystick_r, joystick_w)
 	AM_RANGE(0xf1a100, 0xf1a13f) AM_READWRITE(dspctrl_r, dspctrl_w)
-	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE(jaguar_serial_r, jaguar_serial_w)
+	AM_RANGE(0xf1a140, 0xf1a17f) AM_READWRITE_LEGACY(jaguar_serial_r, jaguar_serial_w)
 	AM_RANGE(0xf1b000, 0xf1cfff) AM_RAM AM_SHARE("share4")
 	AM_RANGE(0xf1d000, 0xf1dfff) AM_ROM AM_REGION("maincpu", 0xf1d000)
 ADDRESS_MAP_END
@@ -1367,8 +1420,8 @@ static INPUT_PORTS_START( area51 )
 	PORT_BIT( 0xfe000000, IP_ACTIVE_LOW, IPT_UNUSED )
 
 	PORT_START("SYSTEM")
-	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
-	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
+	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
+	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
 
 	PORT_START("FAKE0")
 	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_COIN1 )
@@ -1425,8 +1478,8 @@ static INPUT_PORTS_START( freezeat )
 	PORT_BIT( 0x80000000, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_PLAYER(1)
 
 	PORT_START("SYSTEM")
-	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
-	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
+	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
+	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
 
 	PORT_START("FAKE0")
 	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_COIN1 )
@@ -1469,8 +1522,8 @@ static INPUT_PORTS_START( fishfren )
 	PORT_BIT( 0x80000000, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_PLAYER(1)
 
 	PORT_START("SYSTEM")
-	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
-	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
+	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
+	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
 
 	PORT_START("FAKE0")
 	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_COIN1 )
@@ -1519,8 +1572,8 @@ static INPUT_PORTS_START( vcircle )
 	PORT_BIT( 0x80000000, IP_ACTIVE_LOW, IPT_JOYSTICK_UP ) PORT_PLAYER(1)
 
 	PORT_START("SYSTEM")
-	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
-	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM(custom_port_read, "FAKE0")
+	PORT_BIT( 0x0000ffff, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
+	PORT_BIT( 0xffff0000, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_CUSTOM_MEMBER(DEVICE_SELF, driver_device,custom_port_read, "FAKE0")
 
 	PORT_START("FAKE0")
 	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_COIN1 )
@@ -1684,7 +1737,7 @@ static MACHINE_CONFIG_START( cojagr3k, cojag_state )
 	MCFG_MACHINE_RESET(cojag)
 	MCFG_NVRAM_ADD_1FILL("nvram")
 
-	MCFG_IDE_CONTROLLER_ADD("ide", jaguar_external_int)
+	MCFG_IDE_CONTROLLER_ADD("ide", jaguar_external_int, ide_devices, "hdd", NULL)
 
 	MCFG_TIMER_ADD("serial_timer", jaguar_serial_callback)
 
@@ -1716,7 +1769,7 @@ static MACHINE_CONFIG_DERIVED( cojag68k, cojagr3k )
 MACHINE_CONFIG_END
 
 
-static MACHINE_CONFIG_START( jaguar, driver_device )
+static MACHINE_CONFIG_START( jaguar, cojag_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, JAGUAR_CLOCK/2)
@@ -1778,7 +1831,7 @@ MACHINE_CONFIG_END
 
 static void jaguar_fix_endian( running_machine &machine, UINT32 addr, UINT32 size )
 {
-	UINT8 j[4], *RAM = machine.region("maincpu")->base();
+	UINT8 j[4], *RAM = machine.root_device().memregion("maincpu")->base();
 	UINT32 i;
 	size += addr;
 	logerror("File Loaded to address range %X to %X\n",addr,size-1);
@@ -1818,7 +1871,7 @@ static QUICKLOAD_LOAD( jaguar )
 	memset(jaguar_shared_ram, 0, 0x200000);
 	quickload_size = MIN(quickload_size, 0x200000 - quickload_begin);
 
-	image.fread( &image.device().machine().region("maincpu")->base()[quickload_begin], quickload_size);
+	image.fread( &image.device().machine().root_device().memregion("maincpu")->base()[quickload_begin], quickload_size);
 
 	jaguar_fix_endian(image.device().machine(), quickload_begin, quickload_size);
 
@@ -1863,7 +1916,7 @@ static QUICKLOAD_LOAD( jaguar )
 	{
 		memset(jaguar_shared_ram, 0, 0x200000);
 		image.fseek(0, SEEK_SET);
-		image.fread( &image.device().machine().region("maincpu")->base()[start-skip], quickload_size);
+		image.fread( &image.device().machine().root_device().memregion("maincpu")->base()[start-skip], quickload_size);
 		quickload_begin = start;
 		jaguar_fix_endian(image.device().machine(), (start-skip)&0xfffffc, quickload_size);
 	}
@@ -1902,7 +1955,7 @@ static DEVICE_IMAGE_LOAD( jaguar )
 		}
 
 		/* Load cart into memory */
-		image.fread( &image.device().machine().region("maincpu")->base()[0x800000+load_offset], size);
+		image.fread( &image.device().machine().root_device().memregion("maincpu")->base()[0x800000+load_offset], size);
 	}
 	else
 	{
@@ -1967,7 +2020,7 @@ ROM_START( area51t ) /* 68020 based, Area51 Time Warner License  Date: Nov 15, 1
 	ROM_LOAD32_BYTE( "136105-0001c.3m", 0x00002, 0x80000, CRC(6f135a81) SHA1(2d9660f240b14481e8c46bc98713e9dc12035063) )
 	ROM_LOAD32_BYTE( "136105-0000c.3k", 0x00003, 0x80000, CRC(94f50c14) SHA1(a54552e3ac5c4f481ba4f2fc7d724534576fe76c) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "area51t", 0, SHA1(d2865cc7b1bb08a4393a72013a90e18d8a8f9860) )
 ROM_END
 
@@ -1978,7 +2031,7 @@ ROM_START( area51a ) /* 68020 based, Area51 Atari Games License  Date: Oct 25, 1
 	ROM_LOAD32_BYTE( "136105-0001a.3m", 0x00002, 0x80000, CRC(c6d8322b) SHA1(90cf848a4195c51b505653cc2c74a3b9e3c851b8) )
 	ROM_LOAD32_BYTE( "136105-0000a.3k", 0x00003, 0x80000, CRC(729eb1b7) SHA1(21864b4281b1ad17b2903e3aa294e4be74161e80) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "area51", 0, SHA1(3b303bc37e206a6d7339352c869f050d04186f11) )
 ROM_END
 
@@ -1989,7 +2042,7 @@ ROM_START( area51 ) /* R3000 based, labeled as "Area51 2-C"  Date: Nov 11 1996 *
 	ROM_LOAD32_BYTE( "a51_2-c.lh", 0x00002, 0x80000, CRC(a6524f73) SHA1(ae377a6803a4f7d1bbcc111725af121a3e82317d) )
 	ROM_LOAD32_BYTE( "a51_2-c.ll", 0x00003, 0x80000, CRC(471b15d2) SHA1(4b5f45ee140b03a6be61475cae1c2dbef0f07457) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "area51", 0, SHA1(3b303bc37e206a6d7339352c869f050d04186f11) )
 ROM_END
 
@@ -2000,7 +2053,7 @@ ROM_START( maxforce ) /* R3000 based, labeled as "Maximum Force 5-23-97 v1.05" *
 	ROM_LOAD32_BYTE( "maxf_105.lh", 0x00002, 0x80000, CRC(84d49423) SHA1(88d9a6724f1118f2bbef5dfa27accc2b65c5ba1d) )
 	ROM_LOAD32_BYTE( "maxf_105.ll", 0x00003, 0x80000, CRC(16d0768d) SHA1(665a6d7602a7f2f5b1f332b0220b1533143d56b1) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "maxforce", 0, SHA1(d54e7a8f3866bb2a1d28ae637e7c92ffa4dbe558) )
 ROM_END
 
@@ -2012,7 +2065,7 @@ ROM_START( maxf_102 ) /* R3000 based, labeled as "Maximum Force 2-27-97 v1.02" *
 	ROM_LOAD32_BYTE( "maxf_102.lh", 0x00002, 0x80000, CRC(459ffba5) SHA1(adb40db6904e84c17f32ac6518fd2e994da7883f) )
 	ROM_LOAD32_BYTE( "maxf_102.ll", 0x00003, 0x80000, CRC(e491be7f) SHA1(cbe281c099a4aa87067752d68cf2bb0ab3900531) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "maxforce", 0, SHA1(d54e7a8f3866bb2a1d28ae637e7c92ffa4dbe558) )
 ROM_END
 
@@ -2027,7 +2080,7 @@ ROM_START( maxf_ng ) /* R3000 based, stickers say 'NO GORE' */
 	ROM_REGION( 0x800, "user2", 0 ) /* 28C16 style eeprom, currently loaded but not used */
 	ROM_LOAD( "28c16.17z", 0x000, 0x800, CRC(1cdd9088) SHA1(4f01f02ff95f31ced87a3cdd7f171afd92551266) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "maxforce", 0, SHA1(d54e7a8f3866bb2a1d28ae637e7c92ffa4dbe558) )
 ROM_END
 
@@ -2039,7 +2092,7 @@ ROM_START( area51mx )	/* 68020 based, Labeled as "68020 MAX/A51 KIT 2.0" Date: A
 	ROM_LOAD32_BYTE( "area51mx.3m", 0x00002, 0x80000, CRC(d800ac17) SHA1(3d515c8608d8101ee9227116175b3c3f1fe22e0c) )
 	ROM_LOAD32_BYTE( "area51mx.3k", 0x00003, 0x80000, CRC(0e78f308) SHA1(adc4c8e441eb8fe525d0a6220eb3a2a8791a7289) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "area51mx", 0, SHA1(5ff10f4e87094d4449eabf3de7549564ca568c7e) )
 ROM_END
 
@@ -2051,7 +2104,7 @@ ROM_START( a51mxr3k ) /* R3000 based, Labeled as "R3K Max/A51 Kit Ver 1.0" */
 	ROM_LOAD32_BYTE( "a51mxr3k.lh", 0x00002, 0x80000, CRC(d7d94dac) SHA1(2060a74715f36a0d7f5dd0855eda48ad1f20f095) )
 	ROM_LOAD32_BYTE( "a51mxr3k.ll", 0x00003, 0x80000, CRC(ece9e5ae) SHA1(7e44402726f5afa6d1670b27aa43ad13d21c4ad9) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "area51mx", 0, SHA1(5ff10f4e87094d4449eabf3de7549564ca568c7e) )
 ROM_END
 
@@ -2063,7 +2116,7 @@ ROM_START( vcircle )
 	ROM_LOAD32_BYTE( "lh", 0x00002, 0x80000, CRC(be4b2ef6) SHA1(4332b3036e9cb12685e914d085d9a63aa856f0be) )
 	ROM_LOAD32_BYTE( "ll", 0x00003, 0x80000, CRC(ba8753eb) SHA1(0322e0e37d814a38d08ba191b1a97fb1a55fe461) )
 
-	DISK_REGION( "ide" )
+	DISK_REGION( "drive_0" )
 	DISK_IMAGE( "vcircle", 0, SHA1(bfa79c4cacdc9c2cd6362f62a23056b3e35a2034) )
 ROM_END
 
@@ -2157,132 +2210,132 @@ ROM_END
 
 ROM_START( freezeat2 )
 	ROM_REGION32_BE( 0x200000, "user1", 0 )	/* 2MB for R3000 code */
-	ROM_LOAD32_BYTE( "prog.hh",              0x000000, 0x040000, CRC(a8aefa52) SHA1(ba95da93035520de4b15245f68217c59dfb69dbd) )
-	ROM_LOAD32_BYTE( "prog.hl",              0x000001, 0x040000, CRC(152dd641) SHA1(52fa260baf1979ed8f15f8abcbbeebd8e595d0e4) )
-	ROM_LOAD32_BYTE( "prog.lh",              0x000002, 0x040000, CRC(416d26ed) SHA1(11cf3b88415a8a5d0bb8e1df08603a85202186ef) )
-	ROM_LOAD32_BYTE( "prog.ll",              0x000003, 0x040000, CRC(d6a5dbc8) SHA1(0e2176c35cbc59b2a5283366210409d0e930bac7) )
+	ROM_LOAD32_BYTE( "prog(__961018).hh",  0x000000, 0x040000, CRC(a8aefa52) SHA1(ba95da93035520de4b15245f68217c59dfb69dbd) )
+	ROM_LOAD32_BYTE( "prog(__961018).hl",  0x000001, 0x040000, CRC(152dd641) SHA1(52fa260baf1979ed8f15f8abcbbeebd8e595d0e4) )
+	ROM_LOAD32_BYTE( "prog(__961018).lh",  0x000002, 0x040000, CRC(416d26ed) SHA1(11cf3b88415a8a5d0bb8e1df08603a85202186ef) )
+	ROM_LOAD32_BYTE( "prog(__961018).ll",  0x000003, 0x040000, CRC(d6a5dbc8) SHA1(0e2176c35cbc59b2a5283366210409d0e930bac7) )
 
 	ROM_REGION32_BE( 0x1000000, "user2", 0 )	/* 16MB for 64-bit ROM data */
-	ROMX_LOAD( "fish_gr0.63-56", 0x000000, 0x100000, CRC(99d0dc75) SHA1(b32126eea70c7584d1c34a6ca33282fbaf4b03aa), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.55-48", 0x000001, 0x100000, CRC(2dfdfe62) SHA1(e0554d36ef5cf4b6ce171857ea4f2737f11286a5), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.47-40", 0x000002, 0x100000, CRC(722aee2a) SHA1(bc79433131bed5b08453d1b80324a28a552783de), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.39-32", 0x000003, 0x100000, CRC(919e31b4) SHA1(3807d4629d8277c780dba888c23d17ba47803f27), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.31-24", 0x000004, 0x100000, CRC(a957ac95) SHA1(ddfaca994c06976bee8b123857904e64f40b7f31), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.23-16", 0x000005, 0x100000, CRC(a147ec66) SHA1(6291008158d581b81e025ed34ff0950983c12c67), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.15-08", 0x000006, 0x100000, CRC(206d2f38) SHA1(6aca89df26d3602ff1da3c23f19e0782439623ff), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.07-00", 0x000007, 0x100000, CRC(06559831) SHA1(b2c022457425d7900337cfa2fd1622336c0c0bc5), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.63-56", 0x800000, 0x100000, CRC(30c624d2) SHA1(4ced77d1663169d0cb37d6728ec52e67f05064c5), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.55-48", 0x800001, 0x100000, CRC(049cd60f) SHA1(8a7615a76b57a4e6ef5d95a5ee6c56086671dbb6), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.47-40", 0x800002, 0x100000, CRC(d6aaf3bf) SHA1(1c597bdc0e61fd0941cff5a8a93f24f108bd0daa), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.39-32", 0x800003, 0x100000, CRC(7d6ebc69) SHA1(668769297f75f9c367bc5cde26419ed092fc9dd8), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.31-24", 0x800004, 0x100000, CRC(6e5fee1f) SHA1(1eca79c8d395f881d0a05f10073998fcae70c3b1), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.23-16", 0x800005, 0x100000, CRC(a8b1e9b4) SHA1(066285928e574e656510b90bc212a8d86660bd07), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.15-08", 0x800006, 0x100000, CRC(c90080e6) SHA1(a764bdd6b4e9e727f7468a53424a9211ec5fd5a8), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.07-00", 0x800007, 0x100000, CRC(1f20c020) SHA1(71b32386dc0444264f2f1e2a81899e0e9260994c), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).63-56", 0x000000, 0x100000, CRC(99d0dc75) SHA1(b32126eea70c7584d1c34a6ca33282fbaf4b03aa), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).55-48", 0x000001, 0x100000, CRC(2dfdfe62) SHA1(e0554d36ef5cf4b6ce171857ea4f2737f11286a5), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).47-40", 0x000002, 0x100000, CRC(722aee2a) SHA1(bc79433131bed5b08453d1b80324a28a552783de), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).39-32", 0x000003, 0x100000, CRC(919e31b4) SHA1(3807d4629d8277c780dba888c23d17ba47803f27), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).31-24", 0x000004, 0x100000, CRC(a957ac95) SHA1(ddfaca994c06976bee8b123857904e64f40b7f31), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).23-16", 0x000005, 0x100000, CRC(a147ec66) SHA1(6291008158d581b81e025ed34ff0950983c12c67), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).15-08", 0x000006, 0x100000, CRC(206d2f38) SHA1(6aca89df26d3602ff1da3c23f19e0782439623ff), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961018).07-00", 0x000007, 0x100000, CRC(06559831) SHA1(b2c022457425d7900337cfa2fd1622336c0c0bc5), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).63-56", 0x800000, 0x100000, CRC(30c624d2) SHA1(4ced77d1663169d0cb37d6728ec52e67f05064c5), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).55-48", 0x800001, 0x100000, CRC(049cd60f) SHA1(8a7615a76b57a4e6ef5d95a5ee6c56086671dbb6), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).47-40", 0x800002, 0x100000, CRC(d6aaf3bf) SHA1(1c597bdc0e61fd0941cff5a8a93f24f108bd0daa), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).39-32", 0x800003, 0x100000, CRC(7d6ebc69) SHA1(668769297f75f9c367bc5cde26419ed092fc9dd8), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).31-24", 0x800004, 0x100000, CRC(6e5fee1f) SHA1(1eca79c8d395f881d0a05f10073998fcae70c3b1), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).23-16", 0x800005, 0x100000, CRC(a8b1e9b4) SHA1(066285928e574e656510b90bc212a8d86660bd07), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).15-08", 0x800006, 0x100000, CRC(c90080e6) SHA1(a764bdd6b4e9e727f7468a53424a9211ec5fd5a8), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961018).07-00", 0x800007, 0x100000, CRC(1f20c020) SHA1(71b32386dc0444264f2f1e2a81899e0e9260994c), ROM_SKIP(7) )
 ROM_END
 
 ROM_START( freezeat3 )
 	ROM_REGION32_BE( 0x200000, "user1", 0 )	/* 2MB for R3000 code */
-	ROM_LOAD32_BYTE( "prog.hh",              0x000000, 0x040000, CRC(863942e6) SHA1(c7429c8a5c86ff93c64950e201cffca83dd7b7b0) )
-	ROM_LOAD32_BYTE( "prog.hl",              0x000001, 0x040000, CRC(2acc18ef) SHA1(ead02566f7641b1d1066bd2e257b695e5c7e8437) )
-	ROM_LOAD32_BYTE( "prog.lh",              0x000002, 0x040000, CRC(948cf20c) SHA1(86c757aa3c849ef5ba94ed4d5dbf10e833dab6bd) )
-	ROM_LOAD32_BYTE( "prog.ll",              0x000003, 0x040000, CRC(5f44969e) SHA1(32345d7c56a3a890e71f8c71f25414d442b60af8) )
+	ROM_LOAD32_BYTE( "prog(__961007).hh",  0x000000, 0x040000, CRC(863942e6) SHA1(c7429c8a5c86ff93c64950e201cffca83dd7b7b0) )
+	ROM_LOAD32_BYTE( "prog(__961007).hl",  0x000001, 0x040000, CRC(2acc18ef) SHA1(ead02566f7641b1d1066bd2e257b695e5c7e8437) )
+	ROM_LOAD32_BYTE( "prog(__961007).lh",  0x000002, 0x040000, CRC(948cf20c) SHA1(86c757aa3c849ef5ba94ed4d5dbf10e833dab6bd) )
+	ROM_LOAD32_BYTE( "prog(__961007).ll",  0x000003, 0x040000, CRC(5f44969e) SHA1(32345d7c56a3a890e71f8c71f25414d442b60af8) )
 
 	ROM_REGION32_BE( 0x1000000, "user2", 0 )	/* 16MB for 64-bit ROM data */
-	ROMX_LOAD( "fish_gr0.63-56", 0x000000, 0x100000, CRC(36799449) SHA1(bb706fe7fdc68f840702a127eed7d4519dd45869), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.55-48", 0x000001, 0x100000, CRC(23959947) SHA1(a35a6e62c7b2be57d41b1b64be93713cbf897f0a), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.47-40", 0x000002, 0x100000, CRC(4657e4e0) SHA1(b6c07182babcb0a106bf4a8f2e3f524371dd882d), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.39-32", 0x000003, 0x100000, CRC(b6ea4b64) SHA1(176f94f14307c40b9c611d6f6bc9118e498cdfad), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.31-24", 0x000004, 0x100000, CRC(7d4ce71f) SHA1(a1cf5aa9df8dd29c777c10cfdce0925981584261), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.23-16", 0x000005, 0x100000, CRC(02db4fd1) SHA1(fce6f31802bf36d6b006f0b212f553bdf21f9374), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.15-08", 0x000006, 0x100000, CRC(7d496d6c) SHA1(f82db0621729a00acf4077482e9dfab040ac829b), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.07-00", 0x000007, 0x100000, CRC(3aa389d8) SHA1(52502f2f3c91d7c29261f60fe8f489a352399c96), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.63-56", 0x800000, 0x100000, CRC(ead678c9) SHA1(f83d467f6685965b6176b10adbd4e35ef808baf3), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.55-48", 0x800001, 0x100000, CRC(3591e752) SHA1(df242d2f724edfd78f7191f0ba7a8cde2c09b25f), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.47-40", 0x800002, 0x100000, CRC(e29a7a6c) SHA1(0bfb26076b390492eed81d4c4f0852c64fdccfce), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.39-32", 0x800003, 0x100000, CRC(e980f957) SHA1(78e8ef07f443ce7991a46005627d5802d36d731c), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.31-24", 0x800004, 0x100000, CRC(d90c5221) SHA1(7a330f39f3751d58157f872d92c3c2b91fe60d14), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.23-16", 0x800005, 0x100000, CRC(9be0d4de) SHA1(9bb67a1f1db77483e896fed7096c1e23c153ede4), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.15-08", 0x800006, 0x100000, CRC(122248af) SHA1(80dd5486106d475bd9f6d78919ebeb176e7becff), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.07-00", 0x800007, 0x100000, CRC(5ae08327) SHA1(822d8292793509ebfbfce27e92a74c78c4328bda), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).63-56", 0x000000, 0x100000, CRC(36799449) SHA1(bb706fe7fdc68f840702a127eed7d4519dd45869), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).55-48", 0x000001, 0x100000, CRC(23959947) SHA1(a35a6e62c7b2be57d41b1b64be93713cbf897f0a), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).47-40", 0x000002, 0x100000, CRC(4657e4e0) SHA1(b6c07182babcb0a106bf4a8f2e3f524371dd882d), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).39-32", 0x000003, 0x100000, CRC(b6ea4b64) SHA1(176f94f14307c40b9c611d6f6bc9118e498cdfad), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).31-24", 0x000004, 0x100000, CRC(7d4ce71f) SHA1(a1cf5aa9df8dd29c777c10cfdce0925981584261), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).23-16", 0x000005, 0x100000, CRC(02db4fd1) SHA1(fce6f31802bf36d6b006f0b212f553bdf21f9374), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).15-08", 0x000006, 0x100000, CRC(7d496d6c) SHA1(f82db0621729a00acf4077482e9dfab040ac829b), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961007).07-00", 0x000007, 0x100000, CRC(3aa389d8) SHA1(52502f2f3c91d7c29261f60fe8f489a352399c96), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).63-56", 0x800000, 0x100000, CRC(ead678c9) SHA1(f83d467f6685965b6176b10adbd4e35ef808baf3), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).55-48", 0x800001, 0x100000, CRC(3591e752) SHA1(df242d2f724edfd78f7191f0ba7a8cde2c09b25f), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).47-40", 0x800002, 0x100000, CRC(e29a7a6c) SHA1(0bfb26076b390492eed81d4c4f0852c64fdccfce), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).39-32", 0x800003, 0x100000, CRC(e980f957) SHA1(78e8ef07f443ce7991a46005627d5802d36d731c), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).31-24", 0x800004, 0x100000, CRC(d90c5221) SHA1(7a330f39f3751d58157f872d92c3c2b91fe60d14), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).23-16", 0x800005, 0x100000, CRC(9be0d4de) SHA1(9bb67a1f1db77483e896fed7096c1e23c153ede4), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).15-08", 0x800006, 0x100000, CRC(122248af) SHA1(80dd5486106d475bd9f6d78919ebeb176e7becff), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961007).07-00", 0x800007, 0x100000, CRC(5ae08327) SHA1(822d8292793509ebfbfce27e92a74c78c4328bda), ROM_SKIP(7) )
 ROM_END
 
 ROM_START( freezeat4 )
 	ROM_REGION32_BE( 0x200000, "user1", 0 )	/* 2MB for R3000 code */
-	ROM_LOAD32_BYTE( "prog.hh",              0x000000, 0x040000, CRC(80336f5e) SHA1(9946e8eebec2cd68db059f40f535ea212f41913d) )
-	ROM_LOAD32_BYTE( "prog.hl",              0x000001, 0x040000, CRC(55125520) SHA1(13be4fbf32bcd94a2ea97fd690bd1dfdff146d33) )
-	ROM_LOAD32_BYTE( "prog.lh",              0x000002, 0x040000, CRC(9d99c794) SHA1(f443f05a5979db66d61ef4174f0369a1cf4b7793) )
-	ROM_LOAD32_BYTE( "prog.ll",              0x000003, 0x040000, CRC(e03700e0) SHA1(24d41750f02ee7e8fb379e517751b661400aa521) )
+	ROM_LOAD32_BYTE( "prog(__961003).hh",  0x000000, 0x040000, CRC(80336f5e) SHA1(9946e8eebec2cd68db059f40f535ea212f41913d) )
+	ROM_LOAD32_BYTE( "prog(__961003).hl",  0x000001, 0x040000, CRC(55125520) SHA1(13be4fbf32bcd94a2ea97fd690bd1dfdff146d33) )
+	ROM_LOAD32_BYTE( "prog(__961003).lh",  0x000002, 0x040000, CRC(9d99c794) SHA1(f443f05a5979db66d61ef4174f0369a1cf4b7793) )
+	ROM_LOAD32_BYTE( "prog(__961003).ll",  0x000003, 0x040000, CRC(e03700e0) SHA1(24d41750f02ee7e8fb379e517751b661400aa521) )
 
 	ROM_REGION32_BE( 0x1000000, "user2", 0 )	/* 16MB for 64-bit ROM data */
-	ROMX_LOAD( "fish_gr0.63-56", 0x000000, 0x100000, CRC(36799449) SHA1(bb706fe7fdc68f840702a127eed7d4519dd45869), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.55-48", 0x000001, 0x100000, CRC(23959947) SHA1(a35a6e62c7b2be57d41b1b64be93713cbf897f0a), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.47-40", 0x000002, 0x100000, CRC(4657e4e0) SHA1(b6c07182babcb0a106bf4a8f2e3f524371dd882d), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.39-32", 0x000003, 0x100000, CRC(b6ea4b64) SHA1(176f94f14307c40b9c611d6f6bc9118e498cdfad), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.31-24", 0x000004, 0x100000, CRC(7d4ce71f) SHA1(a1cf5aa9df8dd29c777c10cfdce0925981584261), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.23-16", 0x000005, 0x100000, CRC(02db4fd1) SHA1(fce6f31802bf36d6b006f0b212f553bdf21f9374), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.15-08", 0x000006, 0x100000, CRC(7d496d6c) SHA1(f82db0621729a00acf4077482e9dfab040ac829b), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.07-00", 0x000007, 0x100000, CRC(3aa389d8) SHA1(52502f2f3c91d7c29261f60fe8f489a352399c96), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.63-56", 0x800000, 0x100000, CRC(c91b6ee4) SHA1(58d2d6b1b9847150b8b3e358842c4a097ef91475), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.55-48", 0x800001, 0x100000, CRC(65528e55) SHA1(18020cababed379f77149b7e89e80b294766df31), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.47-40", 0x800002, 0x100000, CRC(8fe4187f) SHA1(c9ceec40688617e1251142465d0e608f80a83e40), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.39-32", 0x800003, 0x100000, CRC(fdf05a42) SHA1(849e224b68be2fb396ee4cb4729517470af7c282), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.31-24", 0x800004, 0x100000, CRC(bb2cd741) SHA1(ac55a54c702d222cb1b9bb480b0f7a71bc315878), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.23-16", 0x800005, 0x100000, CRC(ea8c5984) SHA1(eca1619c17dfac154a2024ec49b4b4f9f06a50c9), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.15-08", 0x800006, 0x100000, CRC(0b00c816) SHA1(879b0e9d92fe737d740c348dc1cc376c8abfbdb8), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.07-00", 0x800007, 0x100000, CRC(a84335c3) SHA1(340f5ddb9bff1ecd469eab8be36cc0ede84f1f5e), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).63-56", 0x000000, 0x100000, CRC(36799449) SHA1(bb706fe7fdc68f840702a127eed7d4519dd45869), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).55-48", 0x000001, 0x100000, CRC(23959947) SHA1(a35a6e62c7b2be57d41b1b64be93713cbf897f0a), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).47-40", 0x000002, 0x100000, CRC(4657e4e0) SHA1(b6c07182babcb0a106bf4a8f2e3f524371dd882d), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).39-32", 0x000003, 0x100000, CRC(b6ea4b64) SHA1(176f94f14307c40b9c611d6f6bc9118e498cdfad), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).31-24", 0x000004, 0x100000, CRC(7d4ce71f) SHA1(a1cf5aa9df8dd29c777c10cfdce0925981584261), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).23-16", 0x000005, 0x100000, CRC(02db4fd1) SHA1(fce6f31802bf36d6b006f0b212f553bdf21f9374), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).15-08", 0x000006, 0x100000, CRC(7d496d6c) SHA1(f82db0621729a00acf4077482e9dfab040ac829b), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__961003).07-00", 0x000007, 0x100000, CRC(3aa389d8) SHA1(52502f2f3c91d7c29261f60fe8f489a352399c96), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).63-56", 0x800000, 0x100000, CRC(c91b6ee4) SHA1(58d2d6b1b9847150b8b3e358842c4a097ef91475), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).55-48", 0x800001, 0x100000, CRC(65528e55) SHA1(18020cababed379f77149b7e89e80b294766df31), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).47-40", 0x800002, 0x100000, CRC(8fe4187f) SHA1(c9ceec40688617e1251142465d0e608f80a83e40), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).39-32", 0x800003, 0x100000, CRC(fdf05a42) SHA1(849e224b68be2fb396ee4cb4729517470af7c282), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).31-24", 0x800004, 0x100000, CRC(bb2cd741) SHA1(ac55a54c702d222cb1b9bb480b0f7a71bc315878), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).23-16", 0x800005, 0x100000, CRC(ea8c5984) SHA1(eca1619c17dfac154a2024ec49b4b4f9f06a50c9), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).15-08", 0x800006, 0x100000, CRC(0b00c816) SHA1(879b0e9d92fe737d740c348dc1cc376c8abfbdb8), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__961003).07-00", 0x800007, 0x100000, CRC(a84335c3) SHA1(340f5ddb9bff1ecd469eab8be36cc0ede84f1f5e), ROM_SKIP(7) )
 ROM_END
 
 ROM_START( freezeat5 )
 	ROM_REGION32_BE( 0x200000, "user1", 0 )	/* 2MB for R3000 code */
-	ROM_LOAD32_BYTE( "prog.hh",              0x000000, 0x040000, CRC(95c4fc64) SHA1(cd00efe7f760ef1e4cdc4bc8a3b368427cb15d8a) )
-	ROM_LOAD32_BYTE( "prog.hl",              0x000001, 0x040000, CRC(ffb9cb71) SHA1(35d6a5440d63bc5b94c4447645365039169da368) )
-	ROM_LOAD32_BYTE( "prog.lh",              0x000002, 0x040000, CRC(3ddacd80) SHA1(79f9650531847eefd83908b6ea1e8362688b377c) )
-	ROM_LOAD32_BYTE( "prog.ll",              0x000003, 0x040000, CRC(95ebefb0) SHA1(b88b12adabd7b0902c3a78919bcec8d9a2b04168) )
+	ROM_LOAD32_BYTE( "prog(__960920).hh",  0x000000, 0x040000, CRC(95c4fc64) SHA1(cd00efe7f760ef1e4cdc4bc8a3b368427cb15d8a) )
+	ROM_LOAD32_BYTE( "prog(__960920).hl",  0x000001, 0x040000, CRC(ffb9cb71) SHA1(35d6a5440d63bc5b94c4447645365039169da368) )
+	ROM_LOAD32_BYTE( "prog(__960920).lh",  0x000002, 0x040000, CRC(3ddacd80) SHA1(79f9650531847eefd83908b6ea1e8362688b377c) )
+	ROM_LOAD32_BYTE( "prog(__960920).ll",  0x000003, 0x040000, CRC(95ebefb0) SHA1(b88b12adabd7b0902c3a78919bcec8d9a2b04168) )
 
 	ROM_REGION32_BE( 0x1000000, "user2", 0 )	/* 16MB for 64-bit ROM data */
-	ROMX_LOAD( "fish_gr0.63-56", 0x000000, 0x100000, CRC(404a10c3) SHA1(8e353ac7608bd54f0fea610c85166ad14f2faadb), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.55-48", 0x000001, 0x100000, CRC(0b262f2f) SHA1(2a963cb5c3344091406d090edfdda498709c6aa6), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.47-40", 0x000002, 0x100000, CRC(43f86d26) SHA1(b31d36b11052514b5bcd5bf8e400457ca572c306), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.39-32", 0x000003, 0x100000, CRC(5cf0228f) SHA1(7a8c59cf9a7744e9f332db5f661f507323375968), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.31-24", 0x000004, 0x100000, CRC(7a24ff98) SHA1(db9e0e8bb417f187267a6e4fc1e66ff060ee4096), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.23-16", 0x000005, 0x100000, CRC(ea163c93) SHA1(d07ed26191d36497c56b15774625a49ecb958386), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.15-08", 0x000006, 0x100000, CRC(d364534f) SHA1(153908bb8929a898945f768f8bc3d853c6aeaceb), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.07-00", 0x000007, 0x100000, CRC(7ba4cb0d) SHA1(16bd487123f499b7080596dc76253081179a0f66), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.63-56", 0x800000, 0x100000, CRC(0e1fc4a9) SHA1(a200bb0af5f1e2c3f8d221ae4e9ba55b9dfb8550), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.55-48", 0x800001, 0x100000, CRC(b696b875) SHA1(16dc4d5cee3f08360cf19926584419c21d781f45), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.47-40", 0x800002, 0x100000, CRC(e78d9302) SHA1(f8b5ed992c433d63677edbeafd3e465b1d42b455), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.39-32", 0x800003, 0x100000, CRC(9b50374c) SHA1(d8af3c9d8e0459e24b974cdf2e75c7c39582912f), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.31-24", 0x800004, 0x100000, CRC(b6a19b7e) SHA1(5668b27db4dade8efb1524b8ecd1fe78498e8460), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.23-16", 0x800005, 0x100000, CRC(ff835b67) SHA1(19da2de1d067069871c33c8b25fd2eac2d03f627), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.15-08", 0x800006, 0x100000, CRC(8daf6995) SHA1(2f44031378b5fb1ba1f80a966dbe902316dc6fe8), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.07-00", 0x800007, 0x100000, CRC(3676ac70) SHA1(640c4d4f53ca2bcae2009e402fd6ad70e40defa4), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).63-56", 0x000000, 0x100000, CRC(404a10c3) SHA1(8e353ac7608bd54f0fea610c85166ad14f2faadb), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).55-48", 0x000001, 0x100000, CRC(0b262f2f) SHA1(2a963cb5c3344091406d090edfdda498709c6aa6), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).47-40", 0x000002, 0x100000, CRC(43f86d26) SHA1(b31d36b11052514b5bcd5bf8e400457ca572c306), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).39-32", 0x000003, 0x100000, CRC(5cf0228f) SHA1(7a8c59cf9a7744e9f332db5f661f507323375968), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).31-24", 0x000004, 0x100000, CRC(7a24ff98) SHA1(db9e0e8bb417f187267a6e4fc1e66ff060ee4096), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).23-16", 0x000005, 0x100000, CRC(ea163c93) SHA1(d07ed26191d36497c56b15774625a49ecb958386), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).15-08", 0x000006, 0x100000, CRC(d364534f) SHA1(153908bb8929a898945f768f8bc3d853c6aeaceb), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960920).07-00", 0x000007, 0x100000, CRC(7ba4cb0d) SHA1(16bd487123f499b7080596dc76253081179a0f66), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).63-56", 0x800000, 0x100000, CRC(0e1fc4a9) SHA1(a200bb0af5f1e2c3f8d221ae4e9ba55b9dfb8550), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).55-48", 0x800001, 0x100000, CRC(b696b875) SHA1(16dc4d5cee3f08360cf19926584419c21d781f45), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).47-40", 0x800002, 0x100000, CRC(e78d9302) SHA1(f8b5ed992c433d63677edbeafd3e465b1d42b455), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).39-32", 0x800003, 0x100000, CRC(9b50374c) SHA1(d8af3c9d8e0459e24b974cdf2e75c7c39582912f), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).31-24", 0x800004, 0x100000, CRC(b6a19b7e) SHA1(5668b27db4dade8efb1524b8ecd1fe78498e8460), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).23-16", 0x800005, 0x100000, CRC(ff835b67) SHA1(19da2de1d067069871c33c8b25fd2eac2d03f627), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).15-08", 0x800006, 0x100000, CRC(8daf6995) SHA1(2f44031378b5fb1ba1f80a966dbe902316dc6fe8), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960920).07-00", 0x800007, 0x100000, CRC(3676ac70) SHA1(640c4d4f53ca2bcae2009e402fd6ad70e40defa4), ROM_SKIP(7) )
 ROM_END
 
 ROM_START( freezeat6 )
 	ROM_REGION32_BE( 0x200000, "user1", 0 )	/* 2MB for R3000 code */
-	ROM_LOAD32_BYTE( "prog.hh",              0x000000, 0x040000, CRC(120711fe) SHA1(387e3cc8a1a9ea7d65c528387891d09ed9889fe3) )
-	ROM_LOAD32_BYTE( "prog.hl",              0x000001, 0x040000, CRC(18dd292a) SHA1(00e79851140716985f43594142c97e510a06b24a) )
-	ROM_LOAD32_BYTE( "prog.lh",              0x000002, 0x040000, CRC(ce387e72) SHA1(021a274da0b828550a47c3778e1059d4e759693a) )
-	ROM_LOAD32_BYTE( "prog.ll",              0x000003, 0x040000, CRC(9b307b7c) SHA1(71b696802fe7c867525d2626351dcfacedabd696) )
+	ROM_LOAD32_BYTE( "prog(__960907).hh",  0x000000, 0x040000, CRC(120711fe) SHA1(387e3cc8a1a9ea7d65c528387891d09ed9889fe3) )
+	ROM_LOAD32_BYTE( "prog(__960907).hl",  0x000001, 0x040000, CRC(18dd292a) SHA1(00e79851140716985f43594142c97e510a06b24a) )
+	ROM_LOAD32_BYTE( "prog(__960907).lh",  0x000002, 0x040000, CRC(ce387e72) SHA1(021a274da0b828550a47c3778e1059d4e759693a) )
+	ROM_LOAD32_BYTE( "prog(__960907).ll",  0x000003, 0x040000, CRC(9b307b7c) SHA1(71b696802fe7c867525d2626351dcfacedabd696) )
 
 	ROM_REGION32_BE( 0x1000000, "user2", 0 )	/* 16MB for 64-bit ROM data */
-	ROMX_LOAD( "fish_gr0.63-56", 0x000000, 0x100000, CRC(293a3308) SHA1(e4c88759c3b8f8a359db83817dbd0428350b4f7e), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.55-48", 0x000001, 0x100000, CRC(18bb4bdf) SHA1(1f6c49b3b5946390fa7582b531f8d9af3baa2567), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.47-40", 0x000002, 0x100000, CRC(1faedcc6) SHA1(1e4ecbe4553fb3ebfbd03bd7e16066ccb531d00b), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.39-32", 0x000003, 0x100000, CRC(536bc349) SHA1(06d7ac38b2c8cdc85e2cb531bba9c836e50c8247), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.31-24", 0x000004, 0x100000, CRC(813d4a31) SHA1(e024f9da2f15a482d8142870baf487297b995ed9), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.23-16", 0x000005, 0x100000, CRC(f881514b) SHA1(a694f90621e2c1569a6a5ed8920838ba5506f72e), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.15-08", 0x000006, 0x100000, CRC(d7634655) SHA1(d7ac83c0fa5d0ec57d096d4d704fe99ee8160e09), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr0.07-00", 0x000007, 0x100000, CRC(3fca32a3) SHA1(22753a9678e04d9355238e013e58d9f45315579d), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.63-56", 0x800000, 0x100000, CRC(a2b89d3a) SHA1(9cfcd0b88dea192ba39efcdccc78d1a0fd8f3388), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.55-48", 0x800001, 0x100000, CRC(766822a8) SHA1(2c9b14542a5467c1a3451559ea296da09c2cfdb9), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.47-40", 0x800002, 0x100000, CRC(112b519c) SHA1(f0e1ed1b8ad271fa9708f513b11d5cca6e550668), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.39-32", 0x800003, 0x100000, CRC(435b5d37) SHA1(ecb6e7271d993f8e315b85e69166838e66dd41a8), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.31-24", 0x800004, 0x100000, CRC(2637ae7f) SHA1(5e0bd0e08d8c1eaae725b4d55030c2698abd46e7), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.23-16", 0x800005, 0x100000, CRC(e732f1bf) SHA1(a228aee0cc36a0089716f20bfa75d87750692adb), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.15-08", 0x800006, 0x100000, CRC(7d4e2d9e) SHA1(4cb9b754b7585df4cae6bdd7085a57729d53e643), ROM_SKIP(7) )
-	ROMX_LOAD( "fish_gr1.07-00", 0x800007, 0x100000, CRC(8ea036af) SHA1(1f9baec6712e0ba0e8a744529e41799217760194), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).63-56", 0x000000, 0x100000, CRC(293a3308) SHA1(e4c88759c3b8f8a359db83817dbd0428350b4f7e), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).55-48", 0x000001, 0x100000, CRC(18bb4bdf) SHA1(1f6c49b3b5946390fa7582b531f8d9af3baa2567), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).47-40", 0x000002, 0x100000, CRC(1faedcc6) SHA1(1e4ecbe4553fb3ebfbd03bd7e16066ccb531d00b), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).39-32", 0x000003, 0x100000, CRC(536bc349) SHA1(06d7ac38b2c8cdc85e2cb531bba9c836e50c8247), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).31-24", 0x000004, 0x100000, CRC(813d4a31) SHA1(e024f9da2f15a482d8142870baf487297b995ed9), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).23-16", 0x000005, 0x100000, CRC(f881514b) SHA1(a694f90621e2c1569a6a5ed8920838ba5506f72e), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).15-08", 0x000006, 0x100000, CRC(d7634655) SHA1(d7ac83c0fa5d0ec57d096d4d704fe99ee8160e09), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr0(__960907).07-00", 0x000007, 0x100000, CRC(3fca32a3) SHA1(22753a9678e04d9355238e013e58d9f45315579d), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).63-56", 0x800000, 0x100000, CRC(a2b89d3a) SHA1(9cfcd0b88dea192ba39efcdccc78d1a0fd8f3388), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).55-48", 0x800001, 0x100000, CRC(766822a8) SHA1(2c9b14542a5467c1a3451559ea296da09c2cfdb9), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).47-40", 0x800002, 0x100000, CRC(112b519c) SHA1(f0e1ed1b8ad271fa9708f513b11d5cca6e550668), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).39-32", 0x800003, 0x100000, CRC(435b5d37) SHA1(ecb6e7271d993f8e315b85e69166838e66dd41a8), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).31-24", 0x800004, 0x100000, CRC(2637ae7f) SHA1(5e0bd0e08d8c1eaae725b4d55030c2698abd46e7), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).23-16", 0x800005, 0x100000, CRC(e732f1bf) SHA1(a228aee0cc36a0089716f20bfa75d87750692adb), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).15-08", 0x800006, 0x100000, CRC(7d4e2d9e) SHA1(4cb9b754b7585df4cae6bdd7085a57729d53e643), ROM_SKIP(7) )
+	ROMX_LOAD( "fish_gr1(__960907).07-00", 0x800007, 0x100000, CRC(8ea036af) SHA1(1f9baec6712e0ba0e8a744529e41799217760194), ROM_SKIP(7) )
 ROM_END
 
 
@@ -2301,10 +2354,10 @@ static void cojag_common_init(running_machine &machine, UINT16 gpu_jump_offs, UI
 
 	/* install synchronization hooks for GPU */
 	if (cojag_is_r3000)
-		machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_write_handler(0x04f0b000 + gpu_jump_offs, 0x04f0b003 + gpu_jump_offs, FUNC(gpu_jump_w));
+		machine.device("maincpu")->memory().space(AS_PROGRAM)->install_write_handler(0x04f0b000 + gpu_jump_offs, 0x04f0b003 + gpu_jump_offs, write32_delegate(FUNC(cojag_state::gpu_jump_w),state));
 	else
-		machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_write_handler(0xf0b000 + gpu_jump_offs, 0xf0b003 + gpu_jump_offs, FUNC(gpu_jump_w));
-	machine.device("gpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0xf03000 + gpu_jump_offs, 0xf03003 + gpu_jump_offs, FUNC(gpu_jump_r));
+		machine.device("maincpu")->memory().space(AS_PROGRAM)->install_write_handler(0xf0b000 + gpu_jump_offs, 0xf0b003 + gpu_jump_offs, write32_delegate(FUNC(cojag_state::gpu_jump_w),state));
+	machine.device("gpu")->memory().space(AS_PROGRAM)->install_read_handler(0xf03000 + gpu_jump_offs, 0xf03003 + gpu_jump_offs, read32_delegate(FUNC(cojag_state::gpu_jump_r),state));
 	state->m_gpu_jump_address = &jaguar_gpu_ram[gpu_jump_offs/4];
 	state->m_gpu_spin_pc = 0xf03000 + spin_pc;
 
@@ -2323,7 +2376,7 @@ static DRIVER_INIT( area51a )
 		cojag_state *state = machine.driver_data<cojag_state>();
 
 		/* install speedup for main CPU */
-		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_write_handler(0xa02030, 0xa02033, FUNC(area51_main_speedup_w));
+		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_write_handler(0xa02030, 0xa02033, write32_delegate(FUNC(cojag_state::area51_main_speedup_w),state));
 	}
 #endif
 }
@@ -2340,7 +2393,7 @@ static DRIVER_INIT( area51 )
 
 		/* install speedup for main CPU */
 		state->m_main_speedup_max_cycles = 120;
-		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x100062e8, 0x100062eb, FUNC(cojagr3k_main_speedup_r));
+		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x100062e8, 0x100062eb, read32_delegate(FUNC(cojag_state::cojagr3k_main_speedup_r),state));
 	}
 #endif
 }
@@ -2357,7 +2410,7 @@ static DRIVER_INIT( maxforce )
 #if ENABLE_SPEEDUP_HACKS
 	/* install speedup for main CPU */
 	state->m_main_speedup_max_cycles = 120;
-	state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x1000865c, 0x1000865f, FUNC(cojagr3k_main_speedup_r));
+	state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x1000865c, 0x1000865f, read32_delegate(FUNC(cojag_state::cojagr3k_main_speedup_r),state));
 #endif
 }
 
@@ -2373,7 +2426,7 @@ static DRIVER_INIT( area51mx )
 
 #if ENABLE_SPEEDUP_HACKS
 	/* install speedup for main CPU */
-	state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_write_handler(0xa19550, 0xa19557, FUNC(area51mx_main_speedup_w));
+	state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_write_handler(0xa19550, 0xa19557, write32_delegate(FUNC(cojag_state::area51mx_main_speedup_w),state));
 #endif
 }
 
@@ -2390,7 +2443,7 @@ static DRIVER_INIT( a51mxr3k )
 #if ENABLE_SPEEDUP_HACKS
 	/* install speedup for main CPU */
 	state->m_main_speedup_max_cycles = 120;
-	state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x10006f0c, 0x10006f0f, FUNC(cojagr3k_main_speedup_r));
+	state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x10006f0c, 0x10006f0f, read32_delegate(FUNC(cojag_state::cojagr3k_main_speedup_r),state));
 #endif
 }
 
@@ -2406,7 +2459,7 @@ static DRIVER_INIT( fishfren )
 
 		/* install speedup for main CPU */
 		state->m_main_speedup_max_cycles = 200;
-		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x10021b60, 0x10021b63, FUNC(cojagr3k_main_speedup_r));
+		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x10021b60, 0x10021b63, read32_delegate(FUNC(cojag_state::cojagr3k_main_speedup_r),state));
 	}
 #endif
 }
@@ -2423,8 +2476,8 @@ static void init_freeze_common(running_machine &machine, offs_t main_speedup_add
 		/* install speedup for main CPU */
 		state->m_main_speedup_max_cycles = 200;
 		if (main_speedup_addr != 0)
-			state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(main_speedup_addr, main_speedup_addr + 3, FUNC(cojagr3k_main_speedup_r));
-		state->m_main_gpu_wait = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x0400d900, 0x0400d900 + 3, FUNC(main_gpu_wait_r));
+			state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(main_speedup_addr, main_speedup_addr + 3, read32_delegate(FUNC(cojag_state::cojagr3k_main_speedup_r),state));
+		state->m_main_gpu_wait = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x0400d900, 0x0400d900 + 3, read32_delegate(FUNC(cojag_state::main_gpu_wait_r),state));
 	}
 #endif
 }
@@ -2448,7 +2501,7 @@ static DRIVER_INIT( vcircle )
 
 		/* install speedup for main CPU */
 		state->m_main_speedup_max_cycles = 50;
-		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x12005b34, 0x12005b37, FUNC(cojagr3k_main_speedup_r));
+		state->m_main_speedup = machine.device("maincpu")->memory().space(AS_PROGRAM)->install_read_handler(0x12005b34, 0x12005b37, read32_delegate(FUNC(cojag_state::cojagr3k_main_speedup_r),state));
 	}
 #endif
 }
