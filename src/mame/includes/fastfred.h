@@ -28,6 +28,9 @@ public:
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
 	tilemap_t *m_web_tilemap;
+
+	UINT8 m_nmi_mask;
+	UINT8 m_sound_nmi_mask;
 };
 
 
@@ -43,9 +46,9 @@ WRITE8_HANDLER( fastfred_colorbank1_w );
 WRITE8_HANDLER( fastfred_colorbank2_w );
 WRITE8_HANDLER( fastfred_flip_screen_x_w );
 WRITE8_HANDLER( fastfred_flip_screen_y_w );
-SCREEN_UPDATE( fastfred );
+SCREEN_UPDATE_IND16( fastfred );
 
 VIDEO_START( imago );
-SCREEN_UPDATE( imago );
+SCREEN_UPDATE_IND16( imago );
 WRITE8_HANDLER( imago_fg_videoram_w );
 WRITE8_HANDLER( imago_charbank_w );

@@ -14,8 +14,10 @@ typedef struct
 {
 	UINT32 lba;
 	UINT32 blocks;
+	int sectorbytes;
+	chd_file       *handle;
 	hard_disk_file *disk;
-	bool is_file;
+	bool is_image_device;
 } SCSIHd;
 
 
@@ -45,7 +47,7 @@ static int scsihd_exec_command( SCSIInstance *scsiInstance, UINT8 *statusCode )
 			logerror("SCSIHD: READ at LBA %x for %x blocks\n", our_this->lba, our_this->blocks);
 
 			SCSISetPhase( scsiInstance, SCSI_PHASE_DATAIN );
-			return our_this->blocks * 512;
+			return our_this->blocks * our_this->sectorbytes;
 
 		case 0x0a: // WRITE(6)
 			our_this->lba = (command[1]&0x1f)<<16 | command[2]<<8 | command[3];
@@ -54,7 +56,7 @@ static int scsihd_exec_command( SCSIInstance *scsiInstance, UINT8 *statusCode )
 			logerror("SCSIHD: WRITE to LBA %x for %x blocks\n", our_this->lba, our_this->blocks);
 
 			SCSISetPhase( scsiInstance, SCSI_PHASE_DATAOUT );
-			return our_this->blocks * 512;
+			return our_this->blocks * our_this->sectorbytes;
 
 		case 0x12: // INQUIRY
 			SCSISetPhase( scsiInstance, SCSI_PHASE_DATAIN );
@@ -80,7 +82,7 @@ static int scsihd_exec_command( SCSIInstance *scsiInstance, UINT8 *statusCode )
 			logerror("SCSIHD: READ at LBA %x for %x blocks\n", our_this->lba, our_this->blocks);
 
 			SCSISetPhase( scsiInstance, SCSI_PHASE_DATAIN );
-			return our_this->blocks * 512;
+			return our_this->blocks * our_this->sectorbytes;
 
 		case 0x2a: // WRITE (10)
 			our_this->lba = command[2]<<24 | command[3]<<16 | command[4]<<8 | command[5];
@@ -90,7 +92,7 @@ static int scsihd_exec_command( SCSIInstance *scsiInstance, UINT8 *statusCode )
 
 			SCSISetPhase( scsiInstance, SCSI_PHASE_DATAOUT );
 
-			return our_this->blocks * 512;
+			return our_this->blocks * our_this->sectorbytes;
 
 		case 0xa8: // READ(12)
 			our_this->lba = command[2]<<24 | command[3]<<16 | command[4]<<8 | command[5];
@@ -99,7 +101,7 @@ static int scsihd_exec_command( SCSIInstance *scsiInstance, UINT8 *statusCode )
 			logerror("SCSIHD: READ at LBA %x for %x blocks\n", our_this->lba, our_this->blocks);
 
 			SCSISetPhase( scsiInstance, SCSI_PHASE_DATAIN );
-			return our_this->blocks * 512;
+			return our_this->blocks * our_this->sectorbytes;
 
 		default:
 			return SCSIBase( &SCSIClassHARDDISK, SCSIOP_EXEC_COMMAND, scsiInstance, 0, NULL );
@@ -168,8 +170,8 @@ static void scsihd_read_data( SCSIInstance *scsiInstance, UINT8 *data, int dataL
 					}
 					our_this->lba++;
 					our_this->blocks--;
-					dataLength -= 512;
-					data += 512;
+					dataLength -= our_this->sectorbytes;
+					data += our_this->sectorbytes;
 				}
 			}
 			break;
@@ -231,8 +233,8 @@ static void scsihd_write_data( SCSIInstance *scsiInstance, UINT8 *data, int data
 					}
 					our_this->lba++;
 					our_this->blocks--;
-					dataLength -= 512;
-					data += 512;
+					dataLength -= our_this->sectorbytes;
+					data += our_this->sectorbytes;
 				}
 			}
 			break;
@@ -250,19 +252,52 @@ static void scsihd_alloc_instance( SCSIInstance *scsiInstance, const char *diskr
 
 	our_this->lba = 0;
 	our_this->blocks = 0;
+	our_this->sectorbytes = 512;
 
+	// Attempt to register save state entry after state registration is closed!
 	state_save_register_item( machine, "scsihd", diskregion, 0, our_this->lba );
 	state_save_register_item( machine, "scsihd", diskregion, 0, our_this->blocks );
 
-	if (machine.device( diskregion )) {
-		our_this->is_file = TRUE;
-		our_this->disk = machine.device<harddisk_image_device>(diskregion)->get_hard_disk_file();
-	} else {
-		our_this->is_file = FALSE;
-		our_this->disk = hard_disk_open(get_disk_handle( machine, diskregion ));
+	// try to locate the CHD from a DISK_REGION
+	our_this->handle = get_disk_handle(machine, diskregion);
+	our_this->disk = hard_disk_open(our_this->handle);
+	our_this->is_image_device = false;
+
+	if (our_this->disk == NULL)
+	{
+		// try to locate the CHD from an image device
+		harddisk_image_device *image_device = machine.device<harddisk_image_device>(diskregion);
+
+		if (image_device != NULL)
+		{
+			our_this->handle = image_device->get_chd_file();
+			our_this->disk = hard_disk_open(our_this->handle);
+			our_this->is_image_device = true;
+		}
 	}
 
-	if (!our_this->disk)
+	if (our_this->disk == NULL)
+	{
+		// try to locate the CHD from an image subdevice
+		device_iterator iter(machine.root_device());
+		for (device_t *device = iter.first(); device != NULL; device = iter.next())
+		{
+			if (device->subdevice(diskregion) != NULL)
+			{
+				our_this->handle = device->subdevice<harddisk_image_device>(diskregion)->get_chd_file();
+				our_this->disk = hard_disk_open(our_this->handle);
+				our_this->is_image_device = true;
+			}
+		}
+	}
+
+	if (our_this->disk != NULL)
+	{
+		// get hard disk sector size from CHD metadata
+		const hard_disk_info *hdinfo = hard_disk_get_info(our_this->disk);
+		our_this->sectorbytes = hdinfo->sectorbytes;
+	}
+	else
 	{
 		logerror("SCSIHD: no HD found!\n");
 	}
@@ -271,7 +306,7 @@ static void scsihd_alloc_instance( SCSIInstance *scsiInstance, const char *diskr
 static void scsihd_delete_instance( SCSIInstance *scsiInstance )
 {
 	SCSIHd *our_this = (SCSIHd *)SCSIThis( &SCSIClassHARDDISK, scsiInstance );
-	if (!our_this->is_file) {
+	if (!our_this->is_image_device) {
 		if( our_this->disk )
 		{
 			hard_disk_close( our_this->disk );

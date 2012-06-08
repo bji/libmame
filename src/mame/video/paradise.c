@@ -77,7 +77,7 @@ WRITE8_HANDLER( paradise_vram_0_w )
 {
 	paradise_state *state = space->machine().driver_data<paradise_state>();
 	state->m_vram_0[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap_0, offset % 0x400);
+	state->m_tilemap_0->mark_tile_dirty(offset % 0x400);
 }
 
 /* 16 color tiles with paradise_palbank as color code */
@@ -94,7 +94,7 @@ WRITE8_HANDLER( paradise_palbank_w )
 	if (state->m_palbank != bank1)
 	{
 		state->m_palbank = bank1;
-		tilemap_mark_all_tiles_dirty(state->m_tilemap_0);
+		state->m_tilemap_0->mark_all_dirty();
 	}
 }
 
@@ -111,7 +111,7 @@ WRITE8_HANDLER( paradise_vram_1_w )
 {
 	paradise_state *state = space->machine().driver_data<paradise_state>();
 	state->m_vram_1[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap_1, offset % 0x400);
+	state->m_tilemap_1->mark_tile_dirty(offset % 0x400);
 }
 
 static TILE_GET_INFO( get_tile_info_1 )
@@ -127,7 +127,7 @@ WRITE8_HANDLER( paradise_vram_2_w )
 {
 	paradise_state *state = space->machine().driver_data<paradise_state>();
 	state->m_vram_2[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap_2, offset % 0x400);
+	state->m_tilemap_2->mark_tile_dirty(offset % 0x400);
 }
 
 static TILE_GET_INFO( get_tile_info_2 )
@@ -149,8 +149,8 @@ WRITE8_HANDLER( paradise_pixmap_w )
 	x = (offset & 0x7f) << 1;
 	y = (offset >> 7);
 
-	*BITMAP_ADDR16(state->m_tmpbitmap, y, x + 0) = 0x80f - (data >> 4);
-	*BITMAP_ADDR16(state->m_tmpbitmap, y, x + 1) = 0x80f - (data & 0x0f);
+	state->m_tmpbitmap.pix16(y, x + 0) = 0x80f - (data >> 4);
+	state->m_tmpbitmap.pix16(y, x + 1) = 0x80f - (data & 0x0f);
 }
 
 
@@ -169,13 +169,13 @@ VIDEO_START( paradise )
 	state->m_tilemap_2 = tilemap_create(machine, get_tile_info_2, tilemap_scan_rows, 8, 8, 0x20, 0x20);
 
 	/* pixmap */
-	state->m_tmpbitmap = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap);
 
-	tilemap_set_transparent_pen(state->m_tilemap_0, 0x0f);
-	tilemap_set_transparent_pen(state->m_tilemap_1, 0xff);
-	tilemap_set_transparent_pen(state->m_tilemap_2, 0xff);
+	state->m_tilemap_0->set_transparent_pen(0x0f);
+	state->m_tilemap_1->set_transparent_pen(0xff);
+	state->m_tilemap_2->set_transparent_pen(0xff);
 
-	state->save_item(NAME(*state->m_tmpbitmap));
+	state->save_item(NAME(state->m_tmpbitmap));
 }
 
 
@@ -192,7 +192,7 @@ WRITE8_HANDLER( paradise_priority_w )
 	state->m_priority = data;
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	paradise_state *state = machine.driver_data<paradise_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -241,97 +241,97 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 
 ***************************************************************************/
 
-SCREEN_UPDATE( paradise )
+SCREEN_UPDATE_IND16( paradise )
 {
-	paradise_state *state = screen->machine().driver_data<paradise_state>();
+	paradise_state *state = screen.machine().driver_data<paradise_state>();
 	int layers_ctrl = -1;
 
 #ifdef MAME_DEBUG
-if (screen->machine().input().code_pressed(KEYCODE_Z))
+if (screen.machine().input().code_pressed(KEYCODE_Z))
 {
 	int mask = 0;
-	if (screen->machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
-	if (screen->machine().input().code_pressed(KEYCODE_W))	mask |= 2;
-	if (screen->machine().input().code_pressed(KEYCODE_E))	mask |= 4;
-	if (screen->machine().input().code_pressed(KEYCODE_R))	mask |= 8;
-	if (screen->machine().input().code_pressed(KEYCODE_A))	mask |= 16;
+	if (screen.machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
+	if (screen.machine().input().code_pressed(KEYCODE_W))	mask |= 2;
+	if (screen.machine().input().code_pressed(KEYCODE_E))	mask |= 4;
+	if (screen.machine().input().code_pressed(KEYCODE_R))	mask |= 8;
+	if (screen.machine().input().code_pressed(KEYCODE_A))	mask |= 16;
 	if (mask != 0) layers_ctrl &= mask;
 }
 #endif
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!(state->m_priority & 4))	/* Screen blanking */
 		return 0;
 
 	if (state->m_priority & 1)
 		if (layers_ctrl & 16)
-			draw_sprites(screen->machine(), bitmap, cliprect);
+			draw_sprites(screen.machine(), bitmap, cliprect);
 
-	if (layers_ctrl & 1)	tilemap_draw(bitmap, cliprect, state->m_tilemap_0, 0, 0);
-	if (layers_ctrl & 2)	tilemap_draw(bitmap, cliprect, state->m_tilemap_1, 0, 0);
-	if (layers_ctrl & 4)	copybitmap_trans(bitmap, state->m_tmpbitmap, flip_screen_get(screen->machine()), flip_screen_get(screen->machine()), 0, 0, cliprect, 0x80f);
+	if (layers_ctrl & 1)	state->m_tilemap_0->draw(bitmap, cliprect, 0, 0);
+	if (layers_ctrl & 2)	state->m_tilemap_1->draw(bitmap, cliprect, 0, 0);
+	if (layers_ctrl & 4)	copybitmap_trans(bitmap, state->m_tmpbitmap, flip_screen_get(screen.machine()), flip_screen_get(screen.machine()), 0, 0, cliprect, 0x80f);
 
 	if (state->m_priority & 2)
 	{
 		if (!(state->m_priority & 1))
 			if (layers_ctrl & 16)
-				draw_sprites(screen->machine(), bitmap, cliprect);
+				draw_sprites(screen.machine(), bitmap, cliprect);
 		if (layers_ctrl & 8)
-			tilemap_draw(bitmap,cliprect, state->m_tilemap_2, 0, 0);
+			state->m_tilemap_2->draw(bitmap, cliprect, 0, 0);
 	}
 	else
 	{
 		if (layers_ctrl & 8)
-			tilemap_draw(bitmap, cliprect, state->m_tilemap_2, 0, 0);
+			state->m_tilemap_2->draw(bitmap, cliprect, 0, 0);
 		if (!(state->m_priority & 1))
 			if (layers_ctrl & 16)
-				draw_sprites(screen->machine(), bitmap, cliprect);
+				draw_sprites(screen.machine(), bitmap, cliprect);
 	}
 	return 0;
 }
 
 /* no pix layer, no tilemap_0, different priority bits */
-SCREEN_UPDATE( torus )
+SCREEN_UPDATE_IND16( torus )
 {
-	paradise_state *state = screen->machine().driver_data<paradise_state>();
+	paradise_state *state = screen.machine().driver_data<paradise_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!(state->m_priority & 2))	/* Screen blanking */
 		return 0;
 
 	if (state->m_priority & 1)
-		draw_sprites(screen->machine(), bitmap, cliprect);
+		draw_sprites(screen.machine(), bitmap, cliprect);
 
-	tilemap_draw(bitmap, cliprect, state->m_tilemap_1, 0,0);
+	state->m_tilemap_1->draw(bitmap, cliprect, 0,0);
 
 	if (state->m_priority & 4)
 	{
 		if (!(state->m_priority & 1))
-			draw_sprites(screen->machine(), bitmap, cliprect);
+			draw_sprites(screen.machine(), bitmap, cliprect);
 
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_2, 0, 0);
+		state->m_tilemap_2->draw(bitmap, cliprect, 0, 0);
 	}
 	else
 	{
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_2, 0, 0);
+		state->m_tilemap_2->draw(bitmap, cliprect, 0, 0);
 
 		if (!(state->m_priority & 1))
-			draw_sprites(screen->machine(), bitmap,cliprect);
+			draw_sprites(screen.machine(), bitmap,cliprect);
 	}
 	return 0;
 }
 
 /* I don't know how the priority bits work on this one */
-SCREEN_UPDATE( madball )
+SCREEN_UPDATE_IND16( madball )
 {
-	paradise_state *state = screen->machine().driver_data<paradise_state>();
+	paradise_state *state = screen.machine().driver_data<paradise_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	tilemap_draw(bitmap, cliprect, state->m_tilemap_0, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_tilemap_1, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_tilemap_2, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	state->m_tilemap_0->draw(bitmap, cliprect, 0, 0);
+	state->m_tilemap_1->draw(bitmap, cliprect, 0, 0);
+	state->m_tilemap_2->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

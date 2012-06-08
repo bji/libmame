@@ -68,18 +68,27 @@
 static WRITE8_HANDLER( brkthru_1803_w )
 {
 	brkthru_state *state = space->machine().driver_data<brkthru_state>();
+
 	/* bit 0 = NMI enable */
-	cpu_interrupt_enable(state->m_maincpu, ~data & 1);
+	state->m_nmi_mask = ~data & 1;
+
+	if(data & 2)
+		device_set_input_line(state->m_maincpu, 0, CLEAR_LINE);
 
 	/* bit 1 = ? maybe IRQ acknowledge */
 }
+
 static WRITE8_HANDLER( darwin_0803_w )
 {
 	brkthru_state *state = space->machine().driver_data<brkthru_state>();
 	/* bit 0 = NMI enable */
-	/*cpu_interrupt_enable(state->m_audiocpu, ~data & 1);*/
+	state->m_nmi_mask = data & 1;
 	logerror("0803 %02X\n",data);
-	cpu_interrupt_enable(state->m_maincpu, data & 1);
+
+	if(data & 2)
+		device_set_input_line(state->m_maincpu, 0, CLEAR_LINE);
+
+
 	/* bit 1 = ? maybe IRQ acknowledge */
 }
 
@@ -93,8 +102,10 @@ static WRITE8_HANDLER( brkthru_soundlatch_w )
 static INPUT_CHANGED( coin_inserted )
 {
 	brkthru_state *state = field.machine().driver_data<brkthru_state>();
+
 	/* coin insertion causes an IRQ */
-	device_set_input_line(state->m_maincpu, 0, newval ? CLEAR_LINE : ASSERT_LINE);
+	if(oldval)
+		device_set_input_line(state->m_maincpu, 0, ASSERT_LINE);
 }
 
 
@@ -384,12 +395,20 @@ static MACHINE_RESET( brkthru )
 	state->m_flipscreen = 0;
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	brkthru_state *state = device->machine().driver_data<brkthru_state>();
+
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 static MACHINE_CONFIG_START( brkthru, brkthru_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, MASTER_CLOCK/8)        /* 1.5 MHz ? */
 	MCFG_CPU_PROGRAM_MAP(brkthru_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", M6809, MASTER_CLOCK/8)		/* 1.5 MHz ? */
 	MCFG_CPU_PROGRAM_MAP(sound_map)
@@ -404,8 +423,7 @@ static MACHINE_CONFIG_START( brkthru, brkthru_state )
 	/* not sure; assuming to be the same as darwin */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 384, 8, 248, 272, 8, 248)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_UPDATE(brkthru)
+	MCFG_SCREEN_UPDATE_STATIC(brkthru)
 
 	MCFG_PALETTE_INIT(brkthru)
 	MCFG_VIDEO_START(brkthru)
@@ -430,7 +448,7 @@ static MACHINE_CONFIG_START( darwin, brkthru_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, MASTER_CLOCK/8)        /* 1.5 MHz ? */
 	MCFG_CPU_PROGRAM_MAP(darwin_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", M6809, MASTER_CLOCK/8)		/* 1.5 MHz ? */
 	MCFG_CPU_PROGRAM_MAP(sound_map)
@@ -456,8 +474,7 @@ static MACHINE_CONFIG_START( darwin, brkthru_state )
                   = 15.625kHz / (240 + 32)
                   = 57.444855Hz
         tuned by Shingo SUZUKI(VSyncMAME Project) 2000/10/19 */
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_UPDATE(brkthru)
+	MCFG_SCREEN_UPDATE_STATIC(brkthru)
 
 	MCFG_PALETTE_INIT(brkthru)
 	MCFG_VIDEO_START(brkthru)

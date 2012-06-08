@@ -80,7 +80,7 @@ static TILE_GET_INFO( get_tx_tile_info )
 }
 
 /* copied from Legionnaire */
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect,int pri)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect,int pri)
 {
 	r2dx_v33_state *state = machine.driver_data<r2dx_v33_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -173,42 +173,42 @@ static VIDEO_START( rdx_v33 )
 	fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows,16,16,32,32);
 	tx_tilemap = tilemap_create(machine, get_tx_tile_info, tilemap_scan_rows,8, 8, 64,32);
 
-	tilemap_set_transparent_pen(bg_tilemap, 15);
-	tilemap_set_transparent_pen(md_tilemap, 15);
-	tilemap_set_transparent_pen(fg_tilemap, 15);
-	tilemap_set_transparent_pen(tx_tilemap, 15);
+	bg_tilemap->set_transparent_pen(15);
+	md_tilemap->set_transparent_pen(15);
+	fg_tilemap->set_transparent_pen(15);
+	tx_tilemap->set_transparent_pen(15);
 }
 
-static SCREEN_UPDATE( rdx_v33 )
+static SCREEN_UPDATE_IND16( rdx_v33 )
 {
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
-	tilemap_draw(bitmap, cliprect, bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, md_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, fg_tilemap, 0, 0);
+	bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	md_tilemap->draw(bitmap, cliprect, 0, 0);
+	fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	draw_sprites(screen->machine(),bitmap,cliprect,0);
+	draw_sprites(screen.machine(),bitmap,cliprect,0);
 
-	tilemap_draw(bitmap, cliprect, tx_tilemap, 0, 0);
+	tx_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* debug DMA processing */
 	if(0)
 	{
 		static UINT32 src_addr = 0x100000;
 		static int frame;
-		address_space *space = screen->machine().device("maincpu")->memory().space(AS_PROGRAM);
+		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
 
-		//if(screen->machine().input().code_pressed_once(KEYCODE_A))
+		//if(screen.machine().input().code_pressed_once(KEYCODE_A))
 		//  src_addr+=0x800;
 
-		//if(screen->machine().input().code_pressed_once(KEYCODE_S))
+		//if(screen.machine().input().code_pressed_once(KEYCODE_S))
 		//  src_addr-=0x800;
 
 		frame++;
 
 		popmessage("%08x 0",src_addr);
 
-		//if(screen->machine().input().code_pressed_once(KEYCODE_Z))
+		//if(screen.machine().input().code_pressed_once(KEYCODE_Z))
 		if(frame == 5)
 		{
 			int i,data;
@@ -223,7 +223,7 @@ static SCREEN_UPDATE( rdx_v33 )
 			}
 
 			popmessage("%08x 1",src_addr);
-			tilemap_mark_all_tiles_dirty(bg_tilemap);
+			bg_tilemap->mark_all_dirty();
 			frame = 0;
 			src_addr+=0x800;
 		}
@@ -288,25 +288,25 @@ WRITE16_HANDLER( mcu_prog_offs_w )
 static WRITE16_HANDLER( rdx_bg_vram_w )
 {
 	COMBINE_DATA(&bg_vram[offset]);
-	tilemap_mark_tile_dirty(bg_tilemap, offset);
+	bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( rdx_md_vram_w )
 {
 	COMBINE_DATA(&md_vram[offset]);
-	tilemap_mark_tile_dirty(md_tilemap, offset);
+	md_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( rdx_fg_vram_w )
 {
 	COMBINE_DATA(&fg_vram[offset]);
-	tilemap_mark_tile_dirty(fg_tilemap, offset);
+	fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( rdx_tx_vram_w )
 {
 	COMBINE_DATA(&tx_vram[offset]);
-	tilemap_mark_tile_dirty(tx_tilemap, offset);
+	tx_tilemap->mark_tile_dirty(offset);
 }
 
 static READ16_HANDLER( rdx_v33_unknown_r )
@@ -667,10 +667,9 @@ static MACHINE_CONFIG_START( rdx_v33, r2dx_v33_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(rdx_v33)
+	MCFG_SCREEN_UPDATE_STATIC(rdx_v33)
 
 	MCFG_GFXDECODE(rdx_v33)
 	MCFG_PALETTE_LENGTH(2048)
@@ -702,10 +701,9 @@ static MACHINE_CONFIG_START( nzerotea, r2dx_v33_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(55.47)    /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate *//2)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0, 32*8-1)
-	MCFG_SCREEN_UPDATE(rdx_v33)
+	MCFG_SCREEN_UPDATE_STATIC(rdx_v33)
 	MCFG_GFXDECODE(rdx_v33)
 	MCFG_PALETTE_LENGTH(2048)
 

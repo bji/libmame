@@ -49,7 +49,7 @@ WRITE16_HANDLER(rng_936_videoram_w)
 {
 	rungun_state *state = space->machine().driver_data<rungun_state>();
 	COMBINE_DATA(&state->m_936_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_936_tilemap, offset / 2);
+	state->m_936_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_rng_936_tile_info )
@@ -82,7 +82,7 @@ VIDEO_START( rng )
 	int gfx_index;
 
 	state->m_936_tilemap = tilemap_create(machine, get_rng_936_tile_info, tilemap_scan_rows, 16, 16, 128, 128);
-	tilemap_set_transparent_pen(state->m_936_tilemap, 0);
+	state->m_936_tilemap->set_transparent_pen(0);
 
 	/* find first empty slot to decode gfx */
 	for (gfx_index = 0; gfx_index < MAX_GFX_ELEMENTS; gfx_index++)
@@ -98,23 +98,23 @@ VIDEO_START( rng )
 	// create the tilemap
 	state->m_ttl_tilemap = tilemap_create(machine, ttl_get_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_ttl_tilemap, 0);
+	state->m_ttl_tilemap->set_transparent_pen(0);
 
 	state->m_sprite_colorbase = 0x20;
 }
 
-SCREEN_UPDATE(rng)
+SCREEN_UPDATE_IND16(rng)
 {
-	rungun_state *state = screen->machine().driver_data<rungun_state>();
+	rungun_state *state = screen.machine().driver_data<rungun_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_936_tilemap, 0, 0, 1);
 
 	k053247_sprites_draw(state->m_k055673, bitmap, cliprect);
 
-	tilemap_mark_all_tiles_dirty(state->m_ttl_tilemap);
-	tilemap_draw(bitmap, cliprect, state->m_ttl_tilemap, 0, 0);
+	state->m_ttl_tilemap->mark_all_dirty();
+	state->m_ttl_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

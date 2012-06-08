@@ -70,39 +70,39 @@ static VIDEO_START( itgambl3 )
 }
 
 /* (dirty) debug code for looking 8bpps blitter-based gfxs */
-static SCREEN_UPDATE( itgambl3 )
+static SCREEN_UPDATE_RGB32( itgambl3 )
 {
-	itgambl3_state *state = screen->machine().driver_data<itgambl3_state>();
+	itgambl3_state *state = screen.machine().driver_data<itgambl3_state>();
 	int x,y,count;
-	const UINT8 *blit_ram = screen->machine().region("gfx1")->base();
+	const UINT8 *blit_ram = screen.machine().region("gfx1")->base();
 
-	if(screen->machine().input().code_pressed(KEYCODE_Z))
+	if(screen.machine().input().code_pressed(KEYCODE_Z))
 		state->m_test_x++;
 
-	if(screen->machine().input().code_pressed(KEYCODE_X))
+	if(screen.machine().input().code_pressed(KEYCODE_X))
 		state->m_test_x--;
 
-	if(screen->machine().input().code_pressed(KEYCODE_A))
+	if(screen.machine().input().code_pressed(KEYCODE_A))
 		state->m_test_y++;
 
-	if(screen->machine().input().code_pressed(KEYCODE_S))
+	if(screen.machine().input().code_pressed(KEYCODE_S))
 		state->m_test_y--;
 
-	if(screen->machine().input().code_pressed(KEYCODE_Q))
+	if(screen.machine().input().code_pressed(KEYCODE_Q))
 		state->m_start_offs+=0x200;
 
-	if(screen->machine().input().code_pressed(KEYCODE_W))
+	if(screen.machine().input().code_pressed(KEYCODE_W))
 		state->m_start_offs-=0x200;
 
-	if(screen->machine().input().code_pressed(KEYCODE_E))
+	if(screen.machine().input().code_pressed(KEYCODE_E))
 		state->m_start_offs++;
 
-	if(screen->machine().input().code_pressed(KEYCODE_R))
+	if(screen.machine().input().code_pressed(KEYCODE_R))
 		state->m_start_offs--;
 
 	popmessage("%d %d %04x",state->m_test_x,state->m_test_y,state->m_start_offs);
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	count = (state->m_start_offs);
 
@@ -114,8 +114,8 @@ static SCREEN_UPDATE( itgambl3 )
 
 			color = (blit_ram[count] & 0xff)>>0;
 
-			if((x)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x) = screen->machine().pens[color];
+			if(cliprect.contains(x, y))
+				bitmap.pix32(y, x) = screen.machine().pens[color];
 
 			count++;
 		}
@@ -236,9 +236,9 @@ static PALETTE_INIT( itgambl3 )
 
 	for(x=0;x<0x100;x++)
 	{
-		r = (x & 0xf)*0x10;
-		g = ((x & 0x3c)>>2)*0x10;
-		b = ((x & 0xf0)>>4)*0x10;
+		r = (x & 0xf)*0x11;
+		g = ((x & 0x3c)>>2)*0x11;
+		b = ((x & 0xf0)>>4)*0x11;
 		palette_set_color(machine,x,MAKE_RGB(r,g,b));
 	}
 }
@@ -258,10 +258,9 @@ static MACHINE_CONFIG_START( itgambl3, itgambl3_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE( itgambl3 )
+	MCFG_SCREEN_UPDATE_STATIC( itgambl3 )
 
 	MCFG_MACHINE_RESET( itgambl3 )
 	MCFG_PALETTE_INIT( itgambl3 )
@@ -487,7 +486,7 @@ ROM_END
 *************************/
 
 /*    YEAR  NAME      PARENT  MACHINE   INPUT     INIT ROT    COMPANY        FULLNAME        FLAGS  */
-GAME( 200?, ejollyx5, 0,      itgambl3, itgambl3, 0,   ROT0, "Solar Games",           "Euro Jolly X5",                  GAME_NOT_WORKING )
-GAME( 200?, grandprx, 0,      itgambl3, itgambl3, 0,   ROT0, "4fun",                  "Grand Prix",                     GAME_NOT_WORKING )
-GAME( 200?, supjolly, 0,      itgambl3, itgambl3, 0,   ROT0, "<unknown>",             "Super Jolly",                    GAME_NOT_WORKING )
-GAME( 200?, x5jokers, 0,      itgambl3, itgambl3, 0,   ROT0, "Electronic Projects",   "X Five Jokers (Version 1.12)",   GAME_NOT_WORKING )
+GAME( 200?, ejollyx5, 0,      itgambl3, itgambl3, 0,   ROT0, "Solar Games",           "Euro Jolly X5",                  GAME_IS_SKELETON )
+GAME( 200?, grandprx, 0,      itgambl3, itgambl3, 0,   ROT0, "4fun",                  "Grand Prix",                     GAME_IS_SKELETON )
+GAME( 200?, supjolly, 0,      itgambl3, itgambl3, 0,   ROT0, "<unknown>",             "Super Jolly",                    GAME_IS_SKELETON )
+GAME( 200?, x5jokers, 0,      itgambl3, itgambl3, 0,   ROT0, "Electronic Projects",   "X Five Jokers (Version 1.12)",   GAME_IS_SKELETON )

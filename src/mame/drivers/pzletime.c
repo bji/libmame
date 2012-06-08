@@ -61,7 +61,7 @@ static TILE_GET_INFO( get_txt_tile_info )
 
 	SET_TILE_INFO(0, tileno, colour, 0);
 
-	tileinfo->category = BIT(colour, 3);
+	tileinfo.category = BIT(colour, 3);
 }
 
 static VIDEO_START( pzletime )
@@ -71,23 +71,23 @@ static VIDEO_START( pzletime )
 	state->m_mid_tilemap = tilemap_create(machine, get_mid_tile_info, tilemap_scan_cols, 16, 16, 64, 16);
 	state->m_txt_tilemap = tilemap_create(machine, get_txt_tile_info, tilemap_scan_rows,  8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_mid_tilemap, 0);
-	tilemap_set_transparent_pen(state->m_txt_tilemap, 0);
+	state->m_mid_tilemap->set_transparent_pen(0);
+	state->m_txt_tilemap->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE( pzletime )
+static SCREEN_UPDATE_IND16( pzletime )
 {
-	pzletime_state *state = screen->machine().driver_data<pzletime_state>();
+	pzletime_state *state = screen.machine().driver_data<pzletime_state>();
 	int count;
 	int y, x;
 
-	bitmap_fill(bitmap, cliprect, screen->machine().pens[0]); //bg pen
+	bitmap.fill(screen.machine().pens[0], cliprect); //bg pen
 
-	tilemap_set_scrolly(state->m_txt_tilemap, 0, state->m_tilemap_regs[0] - 3);
-	tilemap_set_scrollx(state->m_txt_tilemap, 0, state->m_tilemap_regs[1]);
+	state->m_txt_tilemap->set_scrolly(0, state->m_tilemap_regs[0] - 3);
+	state->m_txt_tilemap->set_scrollx(0, state->m_tilemap_regs[1]);
 
-	tilemap_set_scrolly(state->m_mid_tilemap, 0, state->m_tilemap_regs[2] - 3);
-	tilemap_set_scrollx(state->m_mid_tilemap, 0, state->m_tilemap_regs[3] - 7);
+	state->m_mid_tilemap->set_scrolly(0, state->m_tilemap_regs[2] - 3);
+	state->m_mid_tilemap->set_scrollx(0, state->m_tilemap_regs[3] - 7);
 
 	if (state->m_video_regs[2] & 1)
 	{
@@ -98,14 +98,14 @@ static SCREEN_UPDATE( pzletime )
 			for (x = 0; x < 512; x++)
 			{
 				if (state->m_bg_videoram[count] & 0x8000)
-					*BITMAP_ADDR16(bitmap, (y - 18) & 0xff, (x - 32) & 0x1ff) = 0x300 + (state->m_bg_videoram[count] & 0x7fff);
+					bitmap.pix16((y - 18) & 0xff, (x - 32) & 0x1ff) = 0x300 + (state->m_bg_videoram[count] & 0x7fff);
 
 				count++;
 			}
 		}
 	}
 
-	tilemap_draw(bitmap, cliprect, state->m_mid_tilemap, 0, 0);
+	state->m_mid_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	{
 		UINT16 *spriteram = state->m_spriteram;
@@ -123,13 +123,13 @@ static SCREEN_UPDATE( pzletime )
 
 			// is spriteram[offs + 0] & 0x200 flipy? it's always set
 
-			drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1], spr_offs, colour, 0, 1, sx, sy, 0);
+			drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1], spr_offs, colour, 0, 1, sx, sy, 0);
 		}
 	}
 
-	tilemap_draw(bitmap, cliprect, state->m_txt_tilemap, 0, 0);
-	if ((screen->frame_number() % 16) != 0)
-		tilemap_draw(bitmap, cliprect, state->m_txt_tilemap, 1, 0);
+	state->m_txt_tilemap->draw(bitmap, cliprect, 0, 0);
+	if ((screen.frame_number() % 16) != 0)
+		state->m_txt_tilemap->draw(bitmap, cliprect, 1, 0);
 
 	return 0;
 }
@@ -138,14 +138,14 @@ static WRITE16_HANDLER( mid_videoram_w )
 {
 	pzletime_state *state = space->machine().driver_data<pzletime_state>();
 	COMBINE_DATA(&state->m_mid_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_mid_tilemap, offset);
+	state->m_mid_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( txt_videoram_w )
 {
 	pzletime_state *state = space->machine().driver_data<pzletime_state>();
 	COMBINE_DATA(&state->m_txt_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_txt_tilemap, offset);
+	state->m_txt_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_DEVICE_HANDLER( eeprom_w )
@@ -322,10 +322,9 @@ static MACHINE_CONFIG_START( pzletime, pzletime_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 48*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(pzletime)
+	MCFG_SCREEN_UPDATE_STATIC(pzletime)
 	MCFG_GFXDECODE(pzletime)
 	MCFG_PALETTE_LENGTH(0x300 + 32768)
 	MCFG_EEPROM_93C46_ADD("eeprom")

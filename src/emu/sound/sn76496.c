@@ -24,7 +24,7 @@
   It uses a 15-bit ring buffer for periodic noise/arbitrary duty cycle.
   Its output is not inverted.
   ** SN76494 is the same as SN76489A but lacks the /8 divider on its clock input.
-  ** SN76496 is identical in operation to the SN76489A, but the audio input is
+  ** SN76496 is identical in operation to the SN76489A, but the audio input on pin 9 is
   documented.
   All the TI-made PSG chips have an audio input line which is mixed with the 4 channels
   of output. (It is undocumented and may not function properly on the sn76489, 76489a
@@ -151,6 +151,8 @@ INLINE sn76496_state *get_safe_token(device_t *device)
 {
 	assert(device != NULL);
 	assert(device->type() == SN76496 ||
+		   device->type() == U8106 ||
+		   device->type() == Y2404 ||
 		   device->type() == SN76489 ||
 		   device->type() == SN76489A ||
 		   device->type() == SN76494 ||
@@ -431,7 +433,7 @@ static void generic_start(device_t *device, int feedbackmask, int noisetap1, int
 	device->save_item(NAME(chip->Freq0IsMax));
 }
 
-// function parameters: device, feedback destination tap, feedback source taps,
+// function parameters: device, feedback destination tap, feedback source taps (1,2),
 // normal(false)/invert(true), mono(false)/stereo(true), clock divider factor
 
 static DEVICE_START( sn76489 )
@@ -439,9 +441,19 @@ static DEVICE_START( sn76489 )
 	generic_start(device, 0x4000, 0x01, 0x02, TRUE, FALSE, 8, TRUE); // SN76489 not verified yet. todo: verify;
 }
 
+static DEVICE_START( u8106 )
+{
+	generic_start(device, 0x4000, 0x01, 0x02, TRUE, FALSE, 8, TRUE); // U8106 not verified yet. todo: verify; (a custom marked sn76489? only used on mr. do and maybe other universal games)
+}
+
 static DEVICE_START( sn76489a )
 {
 	generic_start(device, 0x10000, 0x04, 0x08, FALSE, FALSE, 8, TRUE); // SN76489A: whitenoise verified, phase verified, periodic verified (by plgdavid)
+}
+
+static DEVICE_START( y2404 )
+{
+	generic_start(device, 0x10000, 0x04, 0x08, FALSE, FALSE, 8, TRUE); // Y2404 not verified yet. todo: verify; (don't be fooled by the Y, it's a TI chip, not Yamaha)
 }
 
 static DEVICE_START( sn76494 )
@@ -493,10 +505,10 @@ DEVICE_GET_INFO( sn76496 )
 
 		/* --- the following bits of info are returned as NULL-terminated strings --- */
 		case DEVINFO_STR_NAME:							strcpy(info->s, "SN76496");						break;
-		case DEVINFO_STR_FAMILY:					strcpy(info->s, "TI PSG");						break;
-		case DEVINFO_STR_VERSION:					strcpy(info->s, "1.1");							break;
-		case DEVINFO_STR_SOURCE_FILE:						strcpy(info->s, __FILE__);						break;
-		case DEVINFO_STR_CREDITS:					strcpy(info->s, "Copyright Nicola Salmoria and the MAME Team"); break;
+		case DEVINFO_STR_FAMILY:						strcpy(info->s, "TI PSG");						break;
+		case DEVINFO_STR_VERSION:						strcpy(info->s, "1.1");							break;
+		case DEVINFO_STR_SOURCE_FILE:					strcpy(info->s, __FILE__);						break;
+		case DEVINFO_STR_CREDITS:						strcpy(info->s, "Copyright Nicola Salmoria and the MAME Team"); break;
 	}
 }
 
@@ -506,7 +518,7 @@ DEVICE_GET_INFO( sn76489 )
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( sn76489 );		break;
 		case DEVINFO_STR_NAME:							strcpy(info->s, "SN76489");						break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
@@ -514,9 +526,29 @@ DEVICE_GET_INFO( sn76489a )
 {
 	switch (state)
 	{
-		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( sn76489a );		break;
+		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( sn76489a );	break;
 		case DEVINFO_STR_NAME:							strcpy(info->s, "SN76489A");					break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
+	}
+}
+
+DEVICE_GET_INFO( u8106 )
+{
+	switch (state)
+	{
+		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( u8106 );		break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "U8106");						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
+	}
+}
+
+DEVICE_GET_INFO( y2404 )
+{
+	switch (state)
+	{
+		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( y2404 );		break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "Y2404");						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
@@ -526,7 +558,7 @@ DEVICE_GET_INFO( sn76494 )
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( sn76494 );		break;
 		case DEVINFO_STR_NAME:							strcpy(info->s, "SN76494");						break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
@@ -536,7 +568,7 @@ DEVICE_GET_INFO( sn94624 )
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( sn94624 );		break;
 		case DEVINFO_STR_NAME:							strcpy(info->s, "SN94624");						break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
@@ -546,7 +578,7 @@ DEVICE_GET_INFO( ncr7496 )
 	{
 		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( ncr7496 );		break;
 		case DEVINFO_STR_NAME:							strcpy(info->s, "NCR7496");						break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
@@ -554,9 +586,9 @@ DEVICE_GET_INFO( gamegear )
 {
 	switch (state)
 	{
-		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( gamegear );		break;
+		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( gamegear );	break;
 		case DEVINFO_STR_NAME:							strcpy(info->s, "Game Gear PSG");				break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
@@ -564,14 +596,16 @@ DEVICE_GET_INFO( segapsg )
 {
 	switch (state)
 	{
-		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( segapsg );			break;
-		case DEVINFO_STR_NAME:							strcpy(info->s, "SEGA VDP PSG");					break;
-		default:										DEVICE_GET_INFO_CALL(sn76496);						break;
+		case DEVINFO_FCT_START:							info->start = DEVICE_START_NAME( segapsg );		break;
+		case DEVINFO_STR_NAME:							strcpy(info->s, "SEGA VDP PSG");				break;
+		default:										DEVICE_GET_INFO_CALL(sn76496);					break;
 	}
 }
 
 
 DEFINE_LEGACY_SOUND_DEVICE(SN76496, sn76496);
+DEFINE_LEGACY_SOUND_DEVICE(U8106, u8106);
+DEFINE_LEGACY_SOUND_DEVICE(Y2404, y2404);
 DEFINE_LEGACY_SOUND_DEVICE(SN76489, sn76489);
 DEFINE_LEGACY_SOUND_DEVICE(SN76489A, sn76489a);
 DEFINE_LEGACY_SOUND_DEVICE(SN76494, sn76494);

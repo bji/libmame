@@ -26,6 +26,8 @@ public:
 	/* devices */
 	cpu_device *m_maincpu;
 	cpu_device *m_audiocpu;
+
+	UINT8      m_irq_mask;
 };
 
 
@@ -38,4 +40,4 @@ WRITE8_HANDLER( mikie_flipscreen_w );
 
 PALETTE_INIT( mikie );
 VIDEO_START( mikie );
-SCREEN_UPDATE( mikie );
+SCREEN_UPDATE_IND16( mikie );

@@ -60,23 +60,23 @@ static VIDEO_START(laserbas)
 	state->save_item(NAME(state->m_vram2));
 }
 
-static SCREEN_UPDATE(laserbas)
+static SCREEN_UPDATE_IND16(laserbas)
 {
-	laserbas_state *state = screen->machine().driver_data<laserbas_state>();
+	laserbas_state *state = screen.machine().driver_data<laserbas_state>();
 	int x, y;
 
 	for (y = 0; y < 256; y++)
 		for(x = 0; x < 128; x++)
 		{
 			if (state->m_vram2[y * 128 + x] & 0xf)
-				*BITMAP_ADDR16(bitmap, y, x * 2) = (state->m_vram2[y * 128 + x] & 0xf);
+				bitmap.pix16(y, x * 2) = (state->m_vram2[y * 128 + x] & 0xf);
 			else
-				*BITMAP_ADDR16(bitmap, y, x * 2) = (state->m_vram1[y * 128 + x] & 0xf) + 16;
+				bitmap.pix16(y, x * 2) = (state->m_vram1[y * 128 + x] & 0xf) + 16;
 
 			if (state->m_vram2[y * 128 + x] >> 4)
-				*BITMAP_ADDR16(bitmap, y, x * 2 + 1) = (state->m_vram2[y * 128 + x] >> 4);
+				bitmap.pix16(y, x * 2 + 1) = (state->m_vram2[y * 128 + x] >> 4);
 			else
-				*BITMAP_ADDR16(bitmap, y, x * 2 + 1) = (state->m_vram1[y * 128 + x] >> 4) + 16;
+				bitmap.pix16(y, x * 2 + 1) = (state->m_vram1[y * 128 + x] >> 4) + 16;
 		}
 	return 0;
 }
@@ -317,11 +317,10 @@ static MACHINE_CONFIG_START( laserbas, laserbas_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(laserbas)
+	MCFG_SCREEN_UPDATE_STATIC(laserbas)
 
 	MCFG_MC6845_ADD("crtc", H46505, 3000000/4, mc6845_intf)	/* unknown clock, hand tuned to get ~60 fps */
 

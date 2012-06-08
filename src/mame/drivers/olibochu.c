@@ -120,14 +120,14 @@ static WRITE8_HANDLER( olibochu_videoram_w )
 {
 	olibochu_state *state = space->machine().driver_data<olibochu_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( olibochu_colorram_w )
 {
 	olibochu_state *state = space->machine().driver_data<olibochu_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( olibochu_flipscreen_w )
@@ -135,7 +135,7 @@ static WRITE8_HANDLER( olibochu_flipscreen_w )
 	if (flip_screen_get(space->machine()) != (data & 0x80))
 	{
 		flip_screen_set(space->machine(), data & 0x80);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 
 	/* other bits are used, but unknown */
@@ -158,7 +158,7 @@ static VIDEO_START( olibochu )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	olibochu_state *state = machine.driver_data<olibochu_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -218,11 +218,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-static SCREEN_UPDATE( olibochu )
+static SCREEN_UPDATE_IND16( olibochu )
 {
-	olibochu_state *state = screen->machine().driver_data<olibochu_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	olibochu_state *state = screen.machine().driver_data<olibochu_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }
 
@@ -458,10 +458,9 @@ static MACHINE_CONFIG_START( olibochu, olibochu_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(olibochu)
+	MCFG_SCREEN_UPDATE_STATIC(olibochu)
 
 	MCFG_GFXDECODE(olibochu)
 	MCFG_PALETTE_LENGTH(512)

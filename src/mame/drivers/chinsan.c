@@ -84,9 +84,9 @@ static VIDEO_START( chinsan )
 {
 }
 
-static SCREEN_UPDATE( chinsan )
+static SCREEN_UPDATE_IND16( chinsan )
 {
-	chinsan_state *state = screen->machine().driver_data<chinsan_state>();
+	chinsan_state *state = screen.machine().driver_data<chinsan_state>();
 	int y, x, count;
 	count = 0;
 	for (y = 0; y < 32; y++)
@@ -96,7 +96,7 @@ static SCREEN_UPDATE( chinsan )
 			int tileno, colour;
 			tileno = state->m_video[count] | (state->m_video[count + 0x800] << 8);
 			colour = state->m_video[count + 0x1000] >> 3;
-			drawgfx_opaque(bitmap,cliprect,screen->machine().gfx[0],tileno,colour,0,0,x*8,y*8);
+			drawgfx_opaque(bitmap,cliprect,screen.machine().gfx[0],tileno,colour,0,0,x*8,y*8);
 			count++;
 		}
 	}
@@ -603,12 +603,11 @@ static MACHINE_CONFIG_START( chinsan, chinsan_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_VISIBLE_AREA(24, 512-24-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(chinsan)
+	MCFG_SCREEN_UPDATE_STATIC(chinsan)
 
 	MCFG_GFXDECODE(chinsan)
 	MCFG_PALETTE_LENGTH(0x100)

@@ -17,13 +17,16 @@ public:
 	int m_ra_spritebank;
 	UINT8 *m_spriteram;
 	size_t m_spriteram_size;
+
+	UINT8 m_nmi_mask;
+	UINT8 m_sound_nmi_mask;
 };
 
 
 /*----------- defined in video/rollrace.c -----------*/
 
 PALETTE_INIT( rollrace );
-SCREEN_UPDATE( rollrace );
+SCREEN_UPDATE_IND16( rollrace );
 
 WRITE8_HANDLER( rollrace_charbank_w );
 WRITE8_HANDLER( rollrace_backgroundpage_w );

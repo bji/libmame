@@ -95,12 +95,11 @@ Not all regional versions are available for each Megatouch series
   - clean up V9938 interrupt implementation
   - finish inputs, dsw, outputs (lamps)
   - problem with registering touches on the bottom of the screen (currently hacked to work)
-  - megat5: has jmp $0000 in the initialization code causing infinite loop, rom U38 is dumped at half size / bad dump
+  - megat5a: has jmp $0000 in the initialization code causing infinite loop, rom U38 is dumped at half size / bad dump
   - for pbst30 only roms were found, it appears that two roms with graphics data were missing, using pitbossm roms for now
  */
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "cpu/z80/z80daisy.h"
 #include "sound/ay8910.h"
@@ -128,21 +127,23 @@ class meritm_state : public driver_device
 {
 public:
 	meritm_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_v9938_0(*this, "v9938_0"),
+		  m_v9938_1(*this, "v9938_1") { }
 
 	UINT8* m_ram;
 	device_t *m_z80pio[2];
 	int m_vint;
 	int m_interrupt_vdp0_state;
 	int m_interrupt_vdp1_state;
-	bitmap_t *m_vdp0_bitmap;
-	bitmap_t *m_vdp1_bitmap;
 	int m_layer0_enabled;
 	int m_layer1_enabled;
 	int m_bank;
 	int m_psd_a15;
 	UINT16 m_questions_loword_address;
 	ds1204_t m_ds1204;
+	required_device<v9938_device> m_v9938_0;
+	required_device<v9938_device> m_v9938_1;
 };
 
 
@@ -317,24 +318,30 @@ static int meritm_touch_coord_transform(running_machine &machine, int *touch_x, 
  *************************************/
 
 
-static INTERRUPT_GEN( meritm_interrupt )
+static TIMER_DEVICE_CALLBACK( meritm_interrupt )
 {
-	v9938_set_sprite_limit(0, 0);
-	v9938_set_resolution(0, RENDER_HIGH);
-	v9938_interrupt(device->machine(), 0);
+	meritm_state *state = timer.machine().driver_data<meritm_state>();
+	int scanline = param;
 
-	v9938_set_sprite_limit(1, 0);
-	v9938_set_resolution(1, RENDER_HIGH);
-	v9938_interrupt(device->machine(), 1);
+	if((scanline % 2) == 0)
+	{
+		state->m_v9938_0->set_sprite_limit(0);
+		state->m_v9938_0->set_resolution(RENDER_HIGH);
+		state->m_v9938_0->interrupt();
+
+		state->m_v9938_1->set_sprite_limit(0);
+		state->m_v9938_1->set_resolution(RENDER_HIGH);
+		state->m_v9938_1->interrupt();
+	}
 }
 
-static void meritm_vdp0_interrupt(running_machine &machine, int i)
+static void meritm_vdp0_interrupt(device_t *, v99x8_device &device, int i)
 {
 	/* this is not used as the v9938 interrupt callbacks are broken
        interrupts seem to be fired quite randomly */
 }
 
-static void meritm_vdp1_interrupt(running_machine &machine, int i)
+static void meritm_vdp1_interrupt(device_t *, v99x8_device &device, int i)
 {
 	/* this is not used as the v9938 interrupt callbacks are broken
        interrupts seem to be fired quite randomly */
@@ -346,47 +353,36 @@ static VIDEO_START( meritm )
 	meritm_state *state = machine.driver_data<meritm_state>();
 	state->m_layer0_enabled = state->m_layer1_enabled = 1;
 
-	state->m_vdp0_bitmap = machine.primary_screen->alloc_compatible_bitmap();
-	v9938_init (machine, 0, *machine.primary_screen, state->m_vdp0_bitmap, MODEL_V9938, 0x20000, meritm_vdp0_interrupt);
-	v9938_reset(0);
-
-	state->m_vdp1_bitmap = machine.primary_screen->alloc_compatible_bitmap();
-	v9938_init (machine, 1, *machine.primary_screen, state->m_vdp1_bitmap, MODEL_V9938, 0x20000, meritm_vdp1_interrupt);
-	v9938_reset(1);
-
 	state->m_vint = 0x18;
 	state_save_register_global(machine, state->m_vint);
 	state_save_register_global(machine, state->m_interrupt_vdp0_state);
 	state_save_register_global(machine, state->m_interrupt_vdp1_state);
-	state_save_register_global_bitmap(machine, state->m_vdp0_bitmap);
-	state_save_register_global_bitmap(machine, state->m_vdp1_bitmap);
-
 }
 
-static SCREEN_UPDATE( meritm )
+static SCREEN_UPDATE_IND16( meritm )
 {
-	meritm_state *state = screen->machine().driver_data<meritm_state>();
-	if(screen->machine().input().code_pressed_once(KEYCODE_Q))
+	meritm_state *state = screen.machine().driver_data<meritm_state>();
+	if(screen.machine().input().code_pressed_once(KEYCODE_Q))
 	{
 		state->m_layer0_enabled^=1;
 		popmessage("Layer 0 %sabled",state->m_layer0_enabled ? "en" : "dis");
 	}
-	if(screen->machine().input().code_pressed_once(KEYCODE_W))
+	if(screen.machine().input().code_pressed_once(KEYCODE_W))
 	{
 		state->m_layer1_enabled^=1;
 		popmessage("Layer 1 %sabled",state->m_layer1_enabled ? "en" : "dis");
 	}
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if ( state->m_layer0_enabled )
 	{
-		copybitmap(bitmap, state->m_vdp0_bitmap, 0, 0, 0, 0, cliprect);
+		copybitmap(bitmap, state->m_v9938_0->get_bitmap(), 0, 0, 0, 0, cliprect);
 	}
 
 	if ( state->m_layer1_enabled )
 	{
-		copybitmap_trans(bitmap, state->m_vdp1_bitmap, 0, 0, -6, -12, cliprect, v9938_get_transpen(1));
+		copybitmap_trans(bitmap, state->m_v9938_1->get_bitmap(), 0, 0, -6, -12, cliprect, state->m_v9938_1->get_transpen());
 	}
 	return 0;
 }
@@ -580,14 +576,8 @@ ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( meritm_crt250_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x10, 0x10) AM_READWRITE(v9938_0_vram_r, v9938_0_vram_w)
-	AM_RANGE(0x11, 0x11) AM_READWRITE(v9938_0_status_r, v9938_0_command_w)
-	AM_RANGE(0x12, 0x12) AM_WRITE(v9938_0_palette_w)
-	AM_RANGE(0x13, 0x13) AM_WRITE(v9938_0_register_w)
-	AM_RANGE(0x20, 0x20) AM_READWRITE(v9938_1_vram_r, v9938_1_vram_w)
-	AM_RANGE(0x21, 0x21) AM_READWRITE(v9938_1_status_r, v9938_1_command_w)
-	AM_RANGE(0x22, 0x22) AM_WRITE(v9938_1_palette_w)
-	AM_RANGE(0x23, 0x23) AM_WRITE(v9938_1_register_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE_MODERN("v9938_0", v9938_device, read, write)
+	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE_MODERN("v9938_1", v9938_device, read, write)
 	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
 	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
 	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
@@ -598,14 +588,8 @@ ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( meritm_crt250_crt258_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x10, 0x10) AM_READWRITE(v9938_0_vram_r, v9938_0_vram_w)
-	AM_RANGE(0x11, 0x11) AM_READWRITE(v9938_0_status_r, v9938_0_command_w)
-	AM_RANGE(0x12, 0x12) AM_WRITE(v9938_0_palette_w)
-	AM_RANGE(0x13, 0x13) AM_WRITE(v9938_0_register_w)
-	AM_RANGE(0x20, 0x20) AM_READWRITE(v9938_1_vram_r, v9938_1_vram_w)
-	AM_RANGE(0x21, 0x21) AM_READWRITE(v9938_1_status_r, v9938_1_command_w)
-	AM_RANGE(0x22, 0x22) AM_WRITE(v9938_1_palette_w)
-	AM_RANGE(0x23, 0x23) AM_WRITE(v9938_1_register_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE_MODERN("v9938_0", v9938_device, read, write)
+	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE_MODERN("v9938_1", v9938_device, read, write)
 	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
 	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
 	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
@@ -625,14 +609,8 @@ static ADDRESS_MAP_START( meritm_io_map, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE(0x00, 0x00) AM_WRITE(meritm_psd_a15_w)
 	AM_RANGE(0x01, 0x01) AM_WRITE(watchdog_reset_w)
-	AM_RANGE(0x10, 0x10) AM_READWRITE(v9938_0_vram_r, v9938_0_vram_w)
-	AM_RANGE(0x11, 0x11) AM_READWRITE(v9938_0_status_r, v9938_0_command_w)
-	AM_RANGE(0x12, 0x12) AM_WRITE(v9938_0_palette_w)
-	AM_RANGE(0x13, 0x13) AM_WRITE(v9938_0_register_w)
-	AM_RANGE(0x20, 0x20) AM_READWRITE(v9938_1_vram_r, v9938_1_vram_w)
-	AM_RANGE(0x21, 0x21) AM_READWRITE(v9938_1_status_r, v9938_1_command_w)
-	AM_RANGE(0x22, 0x22) AM_WRITE(v9938_1_palette_w)
-	AM_RANGE(0x23, 0x23) AM_WRITE(v9938_1_register_w)
+	AM_RANGE(0x10, 0x13) AM_DEVREADWRITE_MODERN("v9938_0", v9938_device, read, write)
+	AM_RANGE(0x20, 0x23) AM_DEVREADWRITE_MODERN("v9938_1", v9938_device, read, write)
 	AM_RANGE(0x30, 0x33) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
 	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE("z80pio_0", z80pio_cd_ba_r, z80pio_cd_ba_w)
 	AM_RANGE(0x50, 0x53) AM_DEVREADWRITE("z80pio_1", z80pio_cd_ba_r, z80pio_cd_ba_w)
@@ -1071,7 +1049,7 @@ static MACHINE_CONFIG_START( meritm_crt250, meritm_state )
 	MCFG_CPU_PROGRAM_MAP(meritm_crt250_map)
 	MCFG_CPU_IO_MAP(meritm_crt250_io_map)
 	MCFG_CPU_CONFIG(meritm_daisy_chain)
-	MCFG_CPU_VBLANK_INT_HACK(meritm_interrupt,262)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", meritm_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_START(meritm_crt250)
 
@@ -1087,14 +1065,19 @@ static MACHINE_CONFIG_START( meritm_crt250, meritm_state )
 
 	MCFG_VIDEO_ATTRIBUTES(VIDEO_UPDATE_BEFORE_VBLANK)
 
+	MCFG_V9938_ADD("v9938_0", "screen", 0x20000)
+	MCFG_V99X8_INTERRUPT_CALLBACK_STATIC(meritm_vdp0_interrupt)
+
+	MCFG_V9938_ADD("v9938_1", "screen", 0x20000)
+	MCFG_V99X8_INTERRUPT_CALLBACK_STATIC(meritm_vdp1_interrupt)
+
 	MCFG_SCREEN_ADD("screen",RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(MSX2_TOTAL_XRES_PIXELS, MSX2_TOTAL_YRES_PIXELS)
+	MCFG_SCREEN_SIZE(MSX2_TOTAL_XRES_PIXELS, 262*2)
 	MCFG_SCREEN_VISIBLE_AREA(MSX2_XBORDER_PIXELS - MSX2_VISIBLE_XBORDER_PIXELS, MSX2_TOTAL_XRES_PIXELS - MSX2_XBORDER_PIXELS + MSX2_VISIBLE_XBORDER_PIXELS - 1, MSX2_YBORDER_PIXELS - MSX2_VISIBLE_YBORDER_PIXELS, MSX2_TOTAL_YRES_PIXELS - MSX2_YBORDER_PIXELS + MSX2_VISIBLE_YBORDER_PIXELS - 1)
-	MCFG_SCREEN_UPDATE(meritm)
+	MCFG_SCREEN_UPDATE_STATIC(meritm)
 	MCFG_PALETTE_LENGTH(512)
 
 	MCFG_PALETTE_INIT( v9938 )

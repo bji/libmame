@@ -161,7 +161,7 @@ public:
 
 	// state setters
 	void set_state(int index, UINT64 value);
-	void set_state(int index, const char *string);
+	void set_state_string(int index, const char *string);
 
 public:	// protected eventually
 
@@ -194,6 +194,9 @@ protected:
 	device_state_entry *					m_fast_state[k_fast_state_max  + 1 - k_fast_state_min];
 																	// fast access to common entries
 };
+
+// iterator
+typedef device_interface_iterator<device_state_interface> state_interface_iterator;
 
 
 

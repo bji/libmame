@@ -388,24 +388,24 @@ READ8_HANDLER( ataxx_svram_port_r )
  *
  *************************************/
 
-static SCREEN_UPDATE( leland )
+static SCREEN_UPDATE_IND16( leland )
 {
-	leland_state *state = screen->machine().driver_data<leland_state>();
+	leland_state *state = screen.machine().driver_data<leland_state>();
 	int y;
 
-	const UINT8 *bg_prom = screen->machine().region("user1")->base();
-	const UINT8 *bg_gfx = screen->machine().region("gfx1")->base();
-	offs_t bg_gfx_bank_page_size = screen->machine().region("gfx1")->bytes() / 3;
+	const UINT8 *bg_prom = screen.machine().region("user1")->base();
+	const UINT8 *bg_gfx = screen.machine().region("gfx1")->base();
+	offs_t bg_gfx_bank_page_size = screen.machine().region("gfx1")->bytes() / 3;
 	offs_t char_bank = (((state->m_gfxbank >> 4) & 0x03) * 0x2000) & (bg_gfx_bank_page_size - 1);
 	offs_t prom_bank = ((state->m_gfxbank >> 3) & 0x01) * 0x2000;
 
 	/* for each scanline in the visible region */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		int x;
 		UINT8 fg_data = 0;
 
-		UINT16 *dst = BITMAP_ADDR16(bitmap, y, 0);
+		UINT16 *dst = &bitmap.pix16(y);
 		UINT8 *fg_src = &state->m_video_ram[y << 8];
 
 		/* for each pixel on the scanline */
@@ -457,22 +457,22 @@ static SCREEN_UPDATE( leland )
  *
  *************************************/
 
-static SCREEN_UPDATE( ataxx )
+static SCREEN_UPDATE_IND16( ataxx )
 {
-	leland_state *state = screen->machine().driver_data<leland_state>();
+	leland_state *state = screen.machine().driver_data<leland_state>();
 	int y;
 
-	const UINT8 *bg_gfx = screen->machine().region("gfx1")->base();
-	offs_t bg_gfx_bank_page_size = screen->machine().region("gfx1")->bytes() / 6;
+	const UINT8 *bg_gfx = screen.machine().region("gfx1")->base();
+	offs_t bg_gfx_bank_page_size = screen.machine().region("gfx1")->bytes() / 6;
 	offs_t bg_gfx_offs_mask = bg_gfx_bank_page_size - 1;
 
 	/* for each scanline in the visible region */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		int x;
 		UINT8 fg_data = 0;
 
-		UINT16 *dst = BITMAP_ADDR16(bitmap, y, 0);
+		UINT16 *dst = &bitmap.pix16(y);
 		UINT8 *fg_src = &state->m_video_ram[y << 8];
 
 		/* for each pixel on the scanline */
@@ -531,16 +531,15 @@ MACHINE_CONFIG_FRAGMENT( leland_video )
 	MCFG_PALETTE_LENGTH(1024)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 30*8-1)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_UPDATE(leland)
+	MCFG_SCREEN_UPDATE_STATIC(leland)
 MACHINE_CONFIG_END
 
 
 MACHINE_CONFIG_DERIVED( ataxx_video, leland_video )
 	MCFG_VIDEO_START(ataxx)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(ataxx)
+	MCFG_SCREEN_UPDATE_STATIC(ataxx)
 MACHINE_CONFIG_END

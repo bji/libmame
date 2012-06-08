@@ -131,7 +131,7 @@ static WRITE8_HANDLER( wallc_videoram_w )
 	wallc_state *state = space->machine().driver_data<wallc_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -147,10 +147,10 @@ static VIDEO_START( wallc )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_cols_flip_y,	8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( wallc )
+static SCREEN_UPDATE_IND16( wallc )
 {
-	wallc_state *state = screen->machine().driver_data<wallc_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	wallc_state *state = screen.machine().driver_data<wallc_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -302,10 +302,9 @@ static MACHINE_CONFIG_START( wallc, wallc_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(wallc)
+	MCFG_SCREEN_UPDATE_STATIC(wallc)
 
 	MCFG_GFXDECODE(wallc)
 	MCFG_PALETTE_LENGTH(32)

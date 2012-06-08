@@ -326,7 +326,7 @@ static void init_alpha_blend_func(running_machine &machine);
 
 /******************************************************************************/
 
-static void print_debug_info(running_machine &machine, bitmap_t *bitmap)
+static void print_debug_info(running_machine &machine, bitmap_rgb32 &bitmap)
 {
 	taito_f3_state *state = machine.driver_data<taito_f3_state>();
 	UINT16 *f3_line_ram = state->m_f3_line_ram;
@@ -402,7 +402,7 @@ static void print_debug_info(running_machine &machine, bitmap_t *bitmap)
 
 /******************************************************************************/
 
-INLINE void get_tile_info(running_machine &machine, tile_data *tileinfo, int tile_index, UINT16 *gfx_base)
+INLINE void get_tile_info(running_machine &machine, tile_data &tileinfo, int tile_index, UINT16 *gfx_base)
 {
 	UINT32 tile=(gfx_base[tile_index*2+0]<<16)|(gfx_base[tile_index*2+1]&0xffff);
 	UINT8 abtype=(tile>>(16+9)) & 1;
@@ -416,8 +416,8 @@ INLINE void get_tile_info(running_machine &machine, tile_data *tileinfo, int til
 			tile&0xffff,
 			(tile>>16) & 0x1ff & (~extra_planes),
 			TILE_FLIPYX( tile >> 30 ));
-	tileinfo->category =  abtype&1;		/* alpha blending type */
-	tileinfo->pen_mask = (extra_planes << 4) | 0x0f;
+	tileinfo.category =  abtype&1;		/* alpha blending type */
+	tileinfo.pen_mask = (extra_planes << 4) | 0x0f;
 }
 
 static TILE_GET_INFO( get_tile_info1 )
@@ -515,22 +515,26 @@ static TILE_GET_INFO( get_tile_info_pixel )
 
 /******************************************************************************/
 
-SCREEN_EOF( f3 )
+SCREEN_VBLANK( f3 )
 {
-	taito_f3_state *state = machine.driver_data<taito_f3_state>();
-	if (state->m_sprite_lag==2)
+	// rising edge
+	if (vblank_on)
 	{
-		if (machine.video().skip_this_frame() == 0)
+		taito_f3_state *state = screen.machine().driver_data<taito_f3_state>();
+		if (state->m_sprite_lag==2)
 		{
-			get_sprite_info(machine, state->m_spriteram16_buffered);
+			if (screen.machine().video().skip_this_frame() == 0)
+			{
+				get_sprite_info(screen.machine(), state->m_spriteram16_buffered);
+			}
+			memcpy(state->m_spriteram16_buffered,state->m_spriteram,0x10000);
 		}
-		memcpy(state->m_spriteram16_buffered,state->m_spriteram,0x10000);
-	}
-	else if (state->m_sprite_lag==1)
-	{
-		if (machine.video().skip_this_frame() == 0)
+		else if (state->m_sprite_lag==1)
 		{
-			get_sprite_info(machine, state->m_spriteram);
+			if (screen.machine().video().skip_this_frame() == 0)
+			{
+				get_sprite_info(screen.machine(), state->m_spriteram);
+			}
 		}
 	}
 }
@@ -539,7 +543,7 @@ VIDEO_START( f3 )
 {
 	taito_f3_state *state = machine.driver_data<taito_f3_state>();
 	const struct F3config *pCFG=&f3_config_table[0];
-	int width, height, i;
+	int i;
 
 	state->m_f3_alpha_level_2as=127;
 	state->m_f3_alpha_level_2ad=127;
@@ -563,7 +567,6 @@ VIDEO_START( f3 )
 	state->m_spritelist=0;
 	state->m_spriteram16_buffered=0;
 	state->m_pf_line_inf=0;
-	state->m_pri_alp_bitmap=0;
 	state->m_tile_opaque_sp=0;
 
 	/* Setup individual game */
@@ -599,10 +602,10 @@ VIDEO_START( f3 )
 		state->m_twidth_mask=0x7f;
 		state->m_twidth_mask_bit=7;
 
-		tilemap_set_transparent_pen(state->m_pf1_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf2_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf3_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf4_tilemap,0);
+		state->m_pf1_tilemap->set_transparent_pen(0);
+		state->m_pf2_tilemap->set_transparent_pen(0);
+		state->m_pf3_tilemap->set_transparent_pen(0);
+		state->m_pf4_tilemap->set_transparent_pen(0);
 
 
 	} else {
@@ -628,14 +631,14 @@ VIDEO_START( f3 )
 		state->m_twidth_mask=0x3f;
 		state->m_twidth_mask_bit=6;
 
-		tilemap_set_transparent_pen(state->m_pf1_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf2_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf3_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf4_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf5_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf6_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf7_tilemap,0);
-		tilemap_set_transparent_pen(state->m_pf8_tilemap,0);
+		state->m_pf1_tilemap->set_transparent_pen(0);
+		state->m_pf2_tilemap->set_transparent_pen(0);
+		state->m_pf3_tilemap->set_transparent_pen(0);
+		state->m_pf4_tilemap->set_transparent_pen(0);
+		state->m_pf5_tilemap->set_transparent_pen(0);
+		state->m_pf6_tilemap->set_transparent_pen(0);
+		state->m_pf7_tilemap->set_transparent_pen(0);
+		state->m_pf8_tilemap->set_transparent_pen(0);
 	}
 
 	state->m_spriteram16_buffered = auto_alloc_array(machine, UINT16, 0x10000/2);
@@ -645,16 +648,14 @@ VIDEO_START( f3 )
 	state->m_pixel_layer = tilemap_create(machine, get_tile_info_pixel,tilemap_scan_cols,8,8,64,32);
 	state->m_pf_line_inf = auto_alloc_array(machine, struct f3_playfield_line_inf, 5);
 	state->m_sa_line_inf = auto_alloc_array(machine, struct f3_spritealpha_line_inf, 1);
-	width = machine.primary_screen->width();
-	height = machine.primary_screen->height();
-	state->m_pri_alp_bitmap = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED8 );
+	machine.primary_screen->register_screen_bitmap(state->m_pri_alp_bitmap);
 	state->m_tile_opaque_sp = auto_alloc_array(machine, UINT8, machine.gfx[2]->total_elements);
 	for (i=0; i<8; i++)
 		state->m_tile_opaque_pf[i] = auto_alloc_array(machine, UINT8, machine.gfx[1]->total_elements);
 
 
-	tilemap_set_transparent_pen(state->m_vram_layer,0);
-	tilemap_set_transparent_pen(state->m_pixel_layer,0);
+	state->m_vram_layer->set_transparent_pen(0);
+	state->m_pixel_layer->set_transparent_pen(0);
 
 	/* Palettes have 4 bpp indexes despite up to 6 bpp data. The unused */
 	/* top bits in the gfx data are cleared later.                      */
@@ -747,19 +748,19 @@ WRITE16_HANDLER( f3_pf_data_w )
 	COMBINE_DATA(&state->m_f3_pf_data[offset]);
 
 	if (state->m_f3_game_config->extend) {
-		if		(offset<0x1000) tilemap_mark_tile_dirty(state->m_pf1_tilemap,(offset & 0xfff) >> 1);
-		else if (offset<0x2000) tilemap_mark_tile_dirty(state->m_pf2_tilemap,(offset & 0xfff) >> 1);
-		else if (offset<0x3000) tilemap_mark_tile_dirty(state->m_pf3_tilemap,(offset & 0xfff) >> 1);
-		else if (offset<0x4000) tilemap_mark_tile_dirty(state->m_pf4_tilemap,(offset & 0xfff) >> 1);
+		if		(offset<0x1000) state->m_pf1_tilemap->mark_tile_dirty((offset & 0xfff) >> 1);
+		else if (offset<0x2000) state->m_pf2_tilemap->mark_tile_dirty((offset & 0xfff) >> 1);
+		else if (offset<0x3000) state->m_pf3_tilemap->mark_tile_dirty((offset & 0xfff) >> 1);
+		else if (offset<0x4000) state->m_pf4_tilemap->mark_tile_dirty((offset & 0xfff) >> 1);
 	} else {
-		if		(offset<0x0800) tilemap_mark_tile_dirty(state->m_pf1_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x1000) tilemap_mark_tile_dirty(state->m_pf2_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x1800) tilemap_mark_tile_dirty(state->m_pf3_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x2000) tilemap_mark_tile_dirty(state->m_pf4_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x2800) tilemap_mark_tile_dirty(state->m_pf5_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x3000) tilemap_mark_tile_dirty(state->m_pf6_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x3800) tilemap_mark_tile_dirty(state->m_pf7_tilemap,(offset & 0x7ff) >> 1);
-		else if (offset<0x4000) tilemap_mark_tile_dirty(state->m_pf8_tilemap,(offset & 0x7ff) >> 1);
+		if		(offset<0x0800) state->m_pf1_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x1000) state->m_pf2_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x1800) state->m_pf3_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x2000) state->m_pf4_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x2800) state->m_pf5_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x3000) state->m_pf6_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x3800) state->m_pf7_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
+		else if (offset<0x4000) state->m_pf8_tilemap->mark_tile_dirty((offset & 0x7ff) >> 1);
 	}
 }
 
@@ -799,16 +800,16 @@ WRITE16_HANDLER( f3_videoram_w )
 	int tile,col_off;
 	COMBINE_DATA(&state->m_videoram[offset]);
 
-	tilemap_mark_tile_dirty(state->m_vram_layer,offset);
-	//tilemap_mark_tile_dirty(state->m_vram_layer,offset+1);
+	state->m_vram_layer->mark_tile_dirty(offset);
+	//state->m_vram_layer->mark_tile_dirty(offset+1);
 
 	if (offset>0x7ff) offset-=0x800;
 
 	tile=offset;
 	col_off=((tile&0x3f)*32)+((tile&0xfc0)>>6);
 
-	tilemap_mark_tile_dirty(state->m_pixel_layer,col_off);
-	//tilemap_mark_tile_dirty(state->m_pixel_layer,col_off+32);
+	state->m_pixel_layer->mark_tile_dirty(col_off);
+	//state->m_pixel_layer->mark_tile_dirty(col_off+32);
 }
 
 
@@ -1437,7 +1438,7 @@ static void init_alpha_blend_func(running_machine &machine)
 /*============================================================================*/
 
 INLINE void draw_scanlines(running_machine &machine,
-		bitmap_t *bitmap,int xsize,INT16 *draw_line_num,
+		bitmap_rgb32 &bitmap,int xsize,INT16 *draw_line_num,
 		const struct f3_playfield_line_inf **line_t,
 		const int *sprite,
 		UINT32 orient,
@@ -1459,17 +1460,19 @@ INLINE void draw_scanlines(running_machine &machine,
 
 	UINT8 *dstp0,*dstp;
 
-	int yadv = bitmap->rowpixels;
+	int yadv = bitmap.rowpixels();
+	int yadvp = state->m_pri_alp_bitmap.rowpixels();
 	int i=0,y=draw_line_num[0];
 	int ty = y;
 
 	if (orient & ORIENTATION_FLIP_Y)
 	{
-		ty = bitmap->height - 1 - ty;
+		ty = bitmap.height() - 1 - ty;
 		yadv = -yadv;
+		yadvp = -yadvp;
 	}
 
-	dstp0 = BITMAP_ADDR8(state->m_pri_alp_bitmap, ty, x);
+	dstp0 = &state->m_pri_alp_bitmap.pix8(ty, x);
 
 	state->m_pdest_2a = state->m_f3_alpha_level_2ad ? 0x10 : 0;
 	state->m_pdest_2b = state->m_f3_alpha_level_2bd ? 0x20 : 0;
@@ -1482,7 +1485,7 @@ INLINE void draw_scanlines(running_machine &machine,
 
 	{
 		UINT32 *dsti0,*dsti;
-		dsti0 = BITMAP_ADDR32(bitmap, ty, x);
+		dsti0 = &bitmap.pix32(ty, x);
 		while(1)
 		{
 			int cx=0;
@@ -1545,15 +1548,14 @@ INLINE void draw_scanlines(running_machine &machine,
 			if(draw_line_num[i]==y+1)
 			{
 				dsti0 += yadv;
-				dstp0 += yadv;
+				dstp0 += yadvp;
 				y++;
 				continue;
 			}
 			else
 			{
-				int dy=(draw_line_num[i]-y)*yadv;
-				dsti0 += dy;
-				dstp0 += dy;
+				dsti0 += (draw_line_num[i]-y)*yadv;
+				dstp0 += (draw_line_num[i]-y)*yadvp;
 				y=draw_line_num[i];
 			}
 		}
@@ -1846,8 +1848,6 @@ static void get_line_ram_info(running_machine &machine, tilemap_t *tmap, int sx,
 {
 	taito_f3_state *state = machine.driver_data<taito_f3_state>();
 	struct f3_playfield_line_inf *line_t=&state->m_pf_line_inf[pos];
-	const bitmap_t *srcbitmap;
-	const bitmap_t *flagsbitmap;
 
 	int y,y_start,y_end,y_inc;
 	int line_base,zoom_base,col_base,pri_base,inc;
@@ -2011,8 +2011,8 @@ static void get_line_ram_info(running_machine &machine, tilemap_t *tmap, int sx,
 		}
 
 		/* set pixmap pointer */
-		srcbitmap = tilemap_get_pixmap(tmap);
-		flagsbitmap = tilemap_get_flagsmap(tmap);
+		bitmap_ind16 &srcbitmap = tmap->pixmap();
+		bitmap_ind8 &flagsbitmap = tmap->flagsmap();
 
 		if(line_t->alpha_mode[y]!=0)
 		{
@@ -2031,11 +2031,11 @@ static void get_line_ram_info(running_machine &machine, tilemap_t *tmap, int sx,
 
 			/* set pixmap index */
 			line_t->x_count[y]=x_index_fx & 0xffff; // Fractional part
-			line_t->src_s[y]=src_s=BITMAP_ADDR16(srcbitmap, y_index, 0);
+			line_t->src_s[y]=src_s=&srcbitmap.pix16(y_index);
 			line_t->src_e[y]=&src_s[state->m_width_mask+1];
 			line_t->src[y]=&src_s[x_index_fx>>16];
 
-			line_t->tsrc_s[y]=tsrc_s=BITMAP_ADDR8(flagsbitmap, y_index, 0);
+			line_t->tsrc_s[y]=tsrc_s=&flagsbitmap.pix8(y_index);
 			line_t->tsrc[y]=&tsrc_s[x_index_fx>>16];
 		}
 
@@ -2049,8 +2049,6 @@ static void get_vram_info(running_machine &machine, tilemap_t *vram_tilemap, til
 	taito_f3_state *state = machine.driver_data<taito_f3_state>();
 	const struct f3_spritealpha_line_inf *sprite_alpha_line_t=&state->m_sa_line_inf[0];
 	struct f3_playfield_line_inf *line_t=&state->m_pf_line_inf[4];
-	const bitmap_t *srcbitmap_pixel, *srcbitmap_vram;
-	const bitmap_t *flagsbitmap_pixel, *flagsbitmap_vram;
 
 	int y,y_start,y_end,y_inc;
 	int pri_base,inc;
@@ -2128,10 +2126,10 @@ static void get_vram_info(running_machine &machine, tilemap_t *vram_tilemap, til
 	sx&=0x1ff;
 
 	/* set pixmap pointer */
-	srcbitmap_pixel = tilemap_get_pixmap(pixel_tilemap);
-	flagsbitmap_pixel = tilemap_get_flagsmap(pixel_tilemap);
-	srcbitmap_vram = tilemap_get_pixmap(vram_tilemap);
-	flagsbitmap_vram = tilemap_get_flagsmap(vram_tilemap);
+	bitmap_ind16 &srcbitmap_pixel = pixel_tilemap->pixmap();
+	bitmap_ind8 &flagsbitmap_pixel = pixel_tilemap->flagsmap();
+	bitmap_ind16 &srcbitmap_vram = vram_tilemap->pixmap();
+	bitmap_ind8 &flagsbitmap_vram = vram_tilemap->flagsmap();
 
 	y=y_start;
 	while(y!=y_end)
@@ -2148,16 +2146,16 @@ static void get_vram_info(running_machine &machine, tilemap_t *vram_tilemap, til
 			/* set pixmap index */
 			line_t->x_count[y]=0xffff;
 			if (usePixelLayer)
-				line_t->src_s[y]=src_s=BITMAP_ADDR16(srcbitmap_pixel, sy&0xff, 0);
+				line_t->src_s[y]=src_s=&srcbitmap_pixel.pix16(sy&0xff);
 			else
-				line_t->src_s[y]=src_s=BITMAP_ADDR16(srcbitmap_vram, sy&0x1ff, 0);
+				line_t->src_s[y]=src_s=&srcbitmap_vram.pix16(sy&0x1ff);
 			line_t->src_e[y]=&src_s[vram_width_mask+1];
 			line_t->src[y]=&src_s[sx];
 
 			if (usePixelLayer)
-				line_t->tsrc_s[y]=tsrc_s=BITMAP_ADDR8(flagsbitmap_pixel, sy&0xff, 0);
+				line_t->tsrc_s[y]=tsrc_s=&flagsbitmap_pixel.pix8(sy&0xff);
 			else
-				line_t->tsrc_s[y]=tsrc_s=BITMAP_ADDR8(flagsbitmap_vram, sy&0x1ff, 0);
+				line_t->tsrc_s[y]=tsrc_s=&flagsbitmap_vram.pix8(sy&0x1ff);
 			line_t->tsrc[y]=&tsrc_s[sx];
 		}
 
@@ -2168,7 +2166,7 @@ static void get_vram_info(running_machine &machine, tilemap_t *vram_tilemap, til
 
 /******************************************************************************/
 
-static void scanline_draw(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void scanline_draw(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	taito_f3_state *state = machine.driver_data<taito_f3_state>();
 	int i,j,y,ys,ye;
@@ -2597,7 +2595,7 @@ static void scanline_draw(running_machine &machine, bitmap_t *bitmap, const rect
 	pri++;
 
 INLINE void f3_drawgfx(
-		bitmap_t *dest_bmp,const rectangle *clip,const gfx_element *gfx,
+		bitmap_rgb32 &dest_bmp,const rectangle &clip,const gfx_element *gfx,
 		int code,
 		int color,
 		int flipx,int flipy,
@@ -2610,20 +2608,8 @@ INLINE void f3_drawgfx(
 	pri_dst=1<<pri_dst;
 
 	/* KW 991012 -- Added code to force clip to bitmap boundary */
-	if(clip)
-	{
-		myclip.min_x = clip->min_x;
-		myclip.max_x = clip->max_x;
-		myclip.min_y = clip->min_y;
-		myclip.max_y = clip->max_y;
-
-		if (myclip.min_x < 0) myclip.min_x = 0;
-		if (myclip.max_x >= dest_bmp->width) myclip.max_x = dest_bmp->width-1;
-		if (myclip.min_y < 0) myclip.min_y = 0;
-		if (myclip.max_y >= dest_bmp->height) myclip.max_y = dest_bmp->height-1;
-
-		clip=&myclip;
-	}
+	myclip = clip;
+	myclip &= dest_bmp.cliprect();
 
 
 	if( gfx )
@@ -2662,43 +2648,41 @@ INLINE void f3_drawgfx(
 				y_index = 0;
 			}
 
-			if( clip )
-			{
-				if( sx < clip->min_x)
-				{ /* clip left */
-					int pixels = clip->min_x-sx;
-					sx += pixels;
-					x_index_base += pixels*dx;
-				}
-				if( sy < clip->min_y )
-				{ /* clip top */
-					int pixels = clip->min_y-sy;
-					sy += pixels;
-					y_index += pixels*dy;
-				}
-				/* NS 980211 - fixed incorrect clipping */
-				if( ex > clip->max_x+1 )
-				{ /* clip right */
-					int pixels = ex-clip->max_x-1;
-					ex -= pixels;
-				}
-				if( ey > clip->max_y+1 )
-				{ /* clip bottom */
-					int pixels = ey-clip->max_y-1;
-					ey -= pixels;
-				}
+			if( sx < myclip.min_x)
+			{ /* clip left */
+				int pixels = myclip.min_x-sx;
+				sx += pixels;
+				x_index_base += pixels*dx;
+			}
+			if( sy < myclip.min_y )
+			{ /* clip top */
+				int pixels = myclip.min_y-sy;
+				sy += pixels;
+				y_index += pixels*dy;
+			}
+			/* NS 980211 - fixed incorrect clipping */
+			if( ex > myclip.max_x+1 )
+			{ /* clip right */
+				int pixels = ex-myclip.max_x-1;
+				ex -= pixels;
+			}
+			if( ey > myclip.max_y+1 )
+			{ /* clip bottom */
+				int pixels = ey-myclip.max_y-1;
+				ey -= pixels;
 			}
 
 			if( ex>sx && ey>sy)
 			{ /* skip if inner loop doesn't draw anything */
-//              if (dest_bmp->bpp == 32)
+//              if (dest_bmp.bpp == 32)
 				{
 					int y=ey-sy;
 					int x=(ex-sx-1)|(state->m_tile_opaque_sp[code % gfx->total_elements]<<4);
 					const UINT8 *source0 = code_base + y_index * 16 + x_index_base;
-					UINT32 *dest0 = BITMAP_ADDR32(dest_bmp, sy, sx);
-					UINT8 *pri0 = BITMAP_ADDR8(state->m_pri_alp_bitmap, sy, sx);
-					int yadv = dest_bmp->rowpixels;
+					UINT32 *dest0 = &dest_bmp.pix32(sy, sx);
+					UINT8 *pri0 = &state->m_pri_alp_bitmap.pix8(sy, sx);
+					int yadv = dest_bmp.rowpixels();
+					int yadvp = state->m_pri_alp_bitmap.rowpixels();
 					dy=dy*16;
 					while(1)
 					{
@@ -2748,7 +2732,7 @@ INLINE void f3_drawgfx(
 						if(!(--y)) break;
 						source0 += dy;
 						dest0+=yadv;
-						pri0+=yadv;
+						pri0+=yadvp;
 					}
 				}
 			}
@@ -2761,7 +2745,7 @@ INLINE void f3_drawgfx(
 
 
 INLINE void f3_drawgfxzoom(
-		bitmap_t *dest_bmp,const rectangle *clip,const gfx_element *gfx,
+		bitmap_rgb32 &dest_bmp,const rectangle &clip,const gfx_element *gfx,
 		int code,
 		int color,
 		int flipx,int flipy,
@@ -2775,20 +2759,8 @@ INLINE void f3_drawgfxzoom(
 	pri_dst=1<<pri_dst;
 
 	/* KW 991012 -- Added code to force clip to bitmap boundary */
-	if(clip)
-	{
-		myclip.min_x = clip->min_x;
-		myclip.max_x = clip->max_x;
-		myclip.min_y = clip->min_y;
-		myclip.max_y = clip->max_y;
-
-		if (myclip.min_x < 0) myclip.min_x = 0;
-		if (myclip.max_x >= dest_bmp->width) myclip.max_x = dest_bmp->width-1;
-		if (myclip.min_y < 0) myclip.min_y = 0;
-		if (myclip.max_y >= dest_bmp->height) myclip.max_y = dest_bmp->height-1;
-
-		clip=&myclip;
-	}
+	myclip = clip;
+	myclip &= dest_bmp.cliprect();
 
 
 	if( gfx )
@@ -2827,43 +2799,40 @@ INLINE void f3_drawgfxzoom(
 				y_index = 0;
 			}
 
-			if( clip )
-			{
-				if( sx < clip->min_x)
-				{ /* clip left */
-					int pixels = clip->min_x-sx;
-					sx += pixels;
-					x_index_base += pixels*dx;
-				}
-				if( sy < clip->min_y )
-				{ /* clip top */
-					int pixels = clip->min_y-sy;
-					sy += pixels;
-					y_index += pixels*dy;
-				}
-				/* NS 980211 - fixed incorrect clipping */
-				if( ex > clip->max_x+1 )
-				{ /* clip right */
-					int pixels = ex-clip->max_x-1;
-					ex -= pixels;
-				}
-				if( ey > clip->max_y+1 )
-				{ /* clip bottom */
-					int pixels = ey-clip->max_y-1;
-					ey -= pixels;
-				}
+			if( sx < myclip.min_x)
+			{ /* clip left */
+				int pixels = myclip.min_x-sx;
+				sx += pixels;
+				x_index_base += pixels*dx;
+			}
+			if( sy < myclip.min_y )
+			{ /* clip top */
+				int pixels = myclip.min_y-sy;
+				sy += pixels;
+				y_index += pixels*dy;
+			}
+			/* NS 980211 - fixed incorrect clipping */
+			if( ex > myclip.max_x+1 )
+			{ /* clip right */
+				int pixels = ex-myclip.max_x-1;
+				ex -= pixels;
+			}
+			if( ey > myclip.max_y+1 )
+			{ /* clip bottom */
+				int pixels = ey-myclip.max_y-1;
+				ey -= pixels;
 			}
 
 			if( ex>sx )
 			{ /* skip if inner loop doesn't draw anything */
-//              if (dest_bmp->bpp == 32)
+//              if (dest_bmp.bpp == 32)
 				{
 					int y;
 					for( y=sy; y<ey; y++ )
 					{
 						const UINT8 *source = code_base + (y_index>>16) * 16;
-						UINT32 *dest = BITMAP_ADDR32(dest_bmp, y, 0);
-						UINT8 *pri = BITMAP_ADDR8(state->m_pri_alp_bitmap, y, 0);
+						UINT32 *dest = &dest_bmp.pix32(y);
+						UINT8 *pri = &state->m_pri_alp_bitmap.pix8(y);
 
 						int x, x_index = x_index_base;
 						for( x=sx; x<ex; x++ )
@@ -3164,7 +3133,7 @@ static void get_sprite_info(running_machine &machine, const UINT16 *spriteram16_
 #undef CALC_ZOOM
 
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	taito_f3_state *state = machine.driver_data<taito_f3_state>();
 	const struct tempsprite *sprite_ptr;
@@ -3206,13 +3175,13 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 
 /******************************************************************************/
 
-SCREEN_UPDATE( f3 )
+SCREEN_UPDATE_RGB32( f3 )
 {
-	taito_f3_state *state = screen->machine().driver_data<taito_f3_state>();
+	taito_f3_state *state = screen.machine().driver_data<taito_f3_state>();
 	UINT32 sy_fix[5],sx_fix[5];
 
 	state->m_f3_skip_this_frame=0;
-	tilemap_set_flip_all(screen->machine(),state->m_flipscreen ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0);
+	screen.machine().tilemap().set_flip_all(state->m_flipscreen ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0);
 
 	/* Setup scroll */
 	sy_fix[0]=((state->m_f3_control_0[4]&0xffff)<< 9) + (1<<16);
@@ -3245,29 +3214,29 @@ SCREEN_UPDATE( f3 )
 		sy_fix[4]=-sy_fix[4];
 	}
 
-	bitmap_fill(state->m_pri_alp_bitmap,cliprect,0);
+	state->m_pri_alp_bitmap.fill(0, cliprect);
 
 	/* sprites */
 	if (state->m_sprite_lag==0)
-		get_sprite_info(screen->machine(), state->m_spriteram);
+		get_sprite_info(screen.machine(), state->m_spriteram);
 
 	/* Update sprite buffer */
-	draw_sprites(screen->machine(), bitmap,cliprect);
+	draw_sprites(screen.machine(), bitmap,cliprect);
 
 	/* Parse sprite, alpha & clipping parts of lineram */
 	get_spritealphaclip_info(state);
 
 	/* Parse playfield effects */
-	get_line_ram_info(screen->machine(), state->m_pf1_tilemap,sx_fix[0],sy_fix[0],0,state->m_f3_pf_data_1);
-	get_line_ram_info(screen->machine(), state->m_pf2_tilemap,sx_fix[1],sy_fix[1],1,state->m_f3_pf_data_2);
-	get_line_ram_info(screen->machine(), state->m_pf3_tilemap,sx_fix[2],sy_fix[2],2,state->m_f3_pf_data_3);
-	get_line_ram_info(screen->machine(), state->m_pf4_tilemap,sx_fix[3],sy_fix[3],3,state->m_f3_pf_data_4);
-	get_vram_info(screen->machine(), state->m_vram_layer,state->m_pixel_layer,sx_fix[4],sy_fix[4]);
+	get_line_ram_info(screen.machine(), state->m_pf1_tilemap,sx_fix[0],sy_fix[0],0,state->m_f3_pf_data_1);
+	get_line_ram_info(screen.machine(), state->m_pf2_tilemap,sx_fix[1],sy_fix[1],1,state->m_f3_pf_data_2);
+	get_line_ram_info(screen.machine(), state->m_pf3_tilemap,sx_fix[2],sy_fix[2],2,state->m_f3_pf_data_3);
+	get_line_ram_info(screen.machine(), state->m_pf4_tilemap,sx_fix[3],sy_fix[3],3,state->m_f3_pf_data_4);
+	get_vram_info(screen.machine(), state->m_vram_layer,state->m_pixel_layer,sx_fix[4],sy_fix[4]);
 
 	/* Draw final framebuffer */
-	scanline_draw(screen->machine(), bitmap,cliprect);
+	scanline_draw(screen.machine(), bitmap,cliprect);
 
 	if (VERBOSE)
-		print_debug_info(screen->machine(), bitmap);
+		print_debug_info(screen.machine(), bitmap);
 	return 0;
 }

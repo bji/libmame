@@ -47,7 +47,7 @@ static WRITE8_HANDLER( bg_tile_w )
 	spoker_state *state = space->machine().driver_data<spoker_state>();
 
 	state->m_bg_tile_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -69,7 +69,7 @@ static WRITE8_HANDLER( fg_tile_w )
 	spoker_state *state = space->machine().driver_data<spoker_state>();
 
 	state->m_fg_tile_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( fg_color_w )
@@ -77,7 +77,7 @@ static WRITE8_HANDLER( fg_color_w )
 	spoker_state *state = space->machine().driver_data<spoker_state>();
 
 	state->m_fg_color_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static VIDEO_START(spoker)
@@ -86,16 +86,16 @@ static VIDEO_START(spoker)
 
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows,	8,  32,	128, 8);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows,	8,  8,	128, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE(spoker)
+static SCREEN_UPDATE_IND16(spoker)
 {
-	spoker_state *state = screen->machine().driver_data<spoker_state>();
+	spoker_state *state = screen.machine().driver_data<spoker_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -539,10 +539,9 @@ static MACHINE_CONFIG_START( spoker, spoker_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-16-1)
-	MCFG_SCREEN_UPDATE(spoker)
+	MCFG_SCREEN_UPDATE_STATIC(spoker)
 
 	MCFG_GFXDECODE(spoker)
 	MCFG_PALETTE_LENGTH(0x400)

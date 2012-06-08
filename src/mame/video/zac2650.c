@@ -20,7 +20,7 @@ WRITE8_HANDLER( tinvader_videoram_w )
 	zac2650_state *state = space->machine().driver_data<zac2650_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 READ8_HANDLER( zac_s2636_r )
@@ -67,7 +67,7 @@ static int SpriteCollision(running_machine &machine, int first,int second)
 
         /* Draw first sprite */
 
-	    drawgfx_opaque(state->m_spritebitmap,0, machine.gfx[expand],
+	    drawgfx_opaque(state->m_spritebitmap,state->m_spritebitmap.cliprect(), machine.gfx[expand],
 			    first * 2,
 			    0,
 			    0,0,
@@ -79,21 +79,14 @@ static int SpriteCollision(running_machine &machine, int first,int second)
 	    {
 		    for (y = fy; y < fy + machine.gfx[expand]->height; y++)
             {
-			    if ((x < visarea.min_x) ||
-			        (x > visarea.max_x) ||
-			        (y < visarea.min_y) ||
-			        (y > visarea.max_y))
-			    {
-				    continue;
-			    }
-
-        	    Checksum += *BITMAP_ADDR16(state->m_spritebitmap, y, x);
+			    if (visarea.contains(x, y))
+	        	    Checksum += state->m_spritebitmap.pix16(y, x);
             }
 	    }
 
         /* Blackout second sprite */
 
-	    drawgfx_transpen(state->m_spritebitmap,0, machine.gfx[1],
+	    drawgfx_transpen(state->m_spritebitmap,state->m_spritebitmap.cliprect(), machine.gfx[1],
 			    second * 2,
 			    1,
 			    0,0,
@@ -105,21 +98,14 @@ static int SpriteCollision(running_machine &machine, int first,int second)
 	    {
 		    for (y = fy; y < fy + machine.gfx[expand]->height; y++)
             {
-			    if ((x < visarea.min_x) ||
-			        (x > visarea.max_x) ||
-			        (y < visarea.min_y) ||
-			        (y > visarea.max_y))
-			    {
-				    continue;
-			    }
-
-        	    Checksum -= *BITMAP_ADDR16(state->m_spritebitmap, y, x);
+			    if (visarea.contains(x, y))
+	        	    Checksum -= state->m_spritebitmap.pix16(y, x);
             }
 	    }
 
         /* Zero bitmap */
 
-	    drawgfx_opaque(state->m_spritebitmap,0, machine.gfx[expand],
+	    drawgfx_opaque(state->m_spritebitmap,state->m_spritebitmap.cliprect(), machine.gfx[expand],
 			    first * 2,
 			    1,
 			    0,0,
@@ -144,14 +130,14 @@ VIDEO_START( tinvader )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows,
 		 24, 24, 32, 32);
 
-	state->m_spritebitmap = machine.primary_screen->alloc_compatible_bitmap();
-	machine.generic.tmpbitmap = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_bitmap);
+	machine.primary_screen->register_screen_bitmap(state->m_spritebitmap);
 
 	gfx_element_set_source(machine.gfx[1], state->m_s2636_0_ram);
 	gfx_element_set_source(machine.gfx[2], state->m_s2636_0_ram);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	zac2650_state *state = machine.driver_data<zac2650_state>();
 	int offs;
@@ -171,7 +157,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap)
     state->m_CollisionBackground = 0;	/* Read from 0x1e80 bit 7 */
 
 	// for collision detection checking
-	copybitmap(machine.generic.tmpbitmap,bitmap,0,0,0,0,&visarea);
+	copybitmap(state->m_bitmap,bitmap,0,0,0,0,visarea);
 
     for(offs=0;offs<0x50;offs+=0x10)
     {
@@ -184,7 +170,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap)
             int x,y;
 
             /* Sprite->Background collision detection */
-			drawgfx_transpen(bitmap,0, machine.gfx[expand],
+			drawgfx_transpen(bitmap,cliprect, machine.gfx[expand],
 				    spriteno,
 					1,
 				    0,0,
@@ -194,23 +180,16 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap)
 	        {
 		        for (y = by; y < by + machine.gfx[expand]->height; y++)
                 {
-			        if ((x < visarea.min_x) ||
-			            (x > visarea.max_x) ||
-			            (y < visarea.min_y) ||
-			            (y > visarea.max_y))
-			        {
-				        continue;
-			        }
-
-        	        if (*BITMAP_ADDR16(bitmap, y, x) != *BITMAP_ADDR16(machine.generic.tmpbitmap, y, x))
-        	        {
-                    	state->m_CollisionBackground = 0x80;
-				        break;
-			        }
+			        if (visarea.contains(x, y))
+	        	        if (bitmap.pix16(y, x) != state->m_bitmap.pix16(y, x))
+	        	        {
+	                    	state->m_CollisionBackground = 0x80;
+					        break;
+				        }
                 }
 	        }
 
-			drawgfx_transpen(bitmap,0, machine.gfx[expand],
+			drawgfx_transpen(bitmap,cliprect, machine.gfx[expand],
 				    spriteno,
 					0,
 				    0,0,
@@ -228,10 +207,10 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap)
 //  if(SpriteCollision(machine, 2,4)) state->m_CollisionSprite |= 0x01;   /* Not Used */
 }
 
-SCREEN_UPDATE( tinvader )
+SCREEN_UPDATE_IND16( tinvader )
 {
-	zac2650_state *state = screen->machine().driver_data<zac2650_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap);
+	zac2650_state *state = screen.machine().driver_data<zac2650_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

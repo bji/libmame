@@ -21,6 +21,7 @@ public:
 	UINT16 m_collision_address;
 	UINT8 m_collision_address_clear;
 	tilemap_t *m_bg_tilemap;
+	UINT8 m_irq_mask;
 };
 
 
@@ -40,7 +41,7 @@ MACHINE_CONFIG_EXTERN( crbaloon_audio );
 
 PALETTE_INIT( crbaloon );
 VIDEO_START( crbaloon );
-SCREEN_UPDATE( crbaloon );
+SCREEN_UPDATE_IND16( crbaloon );
 
 WRITE8_HANDLER( crbaloon_videoram_w );
 WRITE8_HANDLER( crbaloon_colorram_w );

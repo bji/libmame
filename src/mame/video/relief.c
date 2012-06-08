@@ -94,7 +94,7 @@ VIDEO_START( relief )
 
 	/* initialize the second playfield */
 	state->m_playfield2_tilemap = tilemap_create(machine, get_playfield2_tile_info, tilemap_scan_cols,  8,8, 64,64);
-	tilemap_set_transparent_pen(state->m_playfield2_tilemap, 0);
+	state->m_playfield2_tilemap->set_transparent_pen(0);
 
 	/* initialize the motion objects */
 	atarimo_init(machine, 0, &modesc);
@@ -108,27 +108,27 @@ VIDEO_START( relief )
  *
  *************************************/
 
-SCREEN_UPDATE( relief )
+SCREEN_UPDATE_IND16( relief )
 {
-	relief_state *state = screen->machine().driver_data<relief_state>();
-	bitmap_t *priority_bitmap = screen->machine().priority_bitmap;
+	relief_state *state = screen.machine().driver_data<relief_state>();
+	bitmap_ind8 &priority_bitmap = screen.machine().priority_bitmap;
 	atarimo_rect_list rectlist;
-	bitmap_t *mobitmap;
+	bitmap_ind16 *mobitmap;
 	int x, y, r;
 
 	/* draw the playfield */
-	bitmap_fill(priority_bitmap, cliprect, 0);
-	tilemap_draw(bitmap, cliprect, state->m_playfield_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_playfield2_tilemap, 0, 1);
+	priority_bitmap.fill(0, cliprect);
+	state->m_playfield_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_playfield2_tilemap->draw(bitmap, cliprect, 0, 1);
 
 	/* draw and merge the MO */
 	mobitmap = atarimo_render(0, cliprect, &rectlist);
 	for (r = 0; r < rectlist.numrects; r++, rectlist.rect++)
 		for (y = rectlist.rect->min_y; y <= rectlist.rect->max_y; y++)
 		{
-			UINT16 *mo = (UINT16 *)mobitmap->base + mobitmap->rowpixels * y;
-			UINT16 *pf = (UINT16 *)bitmap->base + bitmap->rowpixels * y;
-			UINT8 *pri = (UINT8 *)priority_bitmap->base + priority_bitmap->rowpixels * y;
+			UINT16 *mo = &mobitmap->pix16(y);
+			UINT16 *pf = &bitmap.pix16(y);
+			UINT8 *pri = &priority_bitmap.pix8(y);
 			for (x = rectlist.rect->min_x; x <= rectlist.rect->max_x; x++)
 				if (mo[x])
 				{

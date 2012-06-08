@@ -26,7 +26,7 @@ WRITE8_HANDLER( speedspn_vidram_w )
 	state->m_vidram[offset + state->m_bank_vidram] = data;
 
 	if (state->m_bank_vidram == 0)
-		tilemap_mark_tile_dirty(state->m_tilemap,offset/2);
+		state->m_tilemap->mark_tile_dirty(offset/2);
 }
 
 WRITE8_HANDLER( speedspn_attram_w )
@@ -34,7 +34,7 @@ WRITE8_HANDLER( speedspn_attram_w )
 	speedspn_state *state = space->machine().driver_data<speedspn_state>();
 	state->m_attram[offset] = data;
 
-	tilemap_mark_tile_dirty(state->m_tilemap,offset^0x400);
+	state->m_tilemap->mark_tile_dirty(offset^0x400);
 }
 
 READ8_HANDLER( speedspn_vidram_r )
@@ -59,7 +59,7 @@ WRITE8_HANDLER(speedspn_global_display_w)
 }
 
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	speedspn_state *state = machine.driver_data<speedspn_state>();
 	const gfx_element *gfx = machine.gfx[1];
@@ -93,12 +93,12 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 }
 
 
-SCREEN_UPDATE(speedspn)
+SCREEN_UPDATE_IND16(speedspn)
 {
-	speedspn_state *state = screen->machine().driver_data<speedspn_state>();
+	speedspn_state *state = screen.machine().driver_data<speedspn_state>();
 	if (state->m_display_disable)
 	{
-		bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 		return 0;
 	}
 
@@ -110,8 +110,8 @@ SCREEN_UPDATE(speedspn)
 		fclose(f);
 	}
 #endif
-	tilemap_set_scrollx(state->m_tilemap,0, 0x100); // verify
-	tilemap_draw(bitmap,cliprect,state->m_tilemap,0,0);
-	draw_sprites(screen->machine(), bitmap,cliprect);
+	state->m_tilemap->set_scrollx(0, 0x100); // verify
+	state->m_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap,cliprect);
 	return 0;
 }

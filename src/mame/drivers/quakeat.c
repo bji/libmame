@@ -6,7 +6,8 @@
 
  I've also seen CDs of this for sale, so maybe there should be a CD too, for the music?
 
-
+TODO:
+can't be emulated without proper mb bios
 
  -- set info
 
@@ -78,7 +79,7 @@ static VIDEO_START(quake)
 {
 }
 
-static SCREEN_UPDATE(quake)
+static SCREEN_UPDATE_IND16(quake)
 {
 	return 0;
 }
@@ -176,12 +177,11 @@ static MACHINE_CONFIG_START( quake, quakeat_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(quake)
+	MCFG_SCREEN_UPDATE_STATIC(quake)
 
 	MCFG_PALETTE_LENGTH(0x100)
 
@@ -198,4 +198,4 @@ ROM_START(quake)
 ROM_END
 
 
-GAME( 1998, quake,  0,   quake, quake, 0, ROT0, "Lazer-Tron / iD Software", "Quake Arcade Tournament (Release Beta 2)", GAME_NOT_WORKING|GAME_NO_SOUND )
+GAME( 1998, quake,  0,   quake, quake, 0, ROT0, "Lazer-Tron / iD Software", "Quake Arcade Tournament (Release Beta 2)", GAME_IS_SKELETON )

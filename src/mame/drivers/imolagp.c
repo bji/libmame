@@ -74,7 +74,6 @@ Known issues:
 ***************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "machine/8255ppi.h"
 #include "sound/ay8910.h"
@@ -87,7 +86,9 @@ class imolagp_state : public driver_device
 {
 public:
 	imolagp_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT8 *m_slave_workram; // used only ifdef HLE_COM
 
@@ -110,6 +111,8 @@ public:
 
 	/* memory */
 	UINT8  m_videoram[3][0x4000];
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -195,9 +198,9 @@ static VIDEO_START( imolagp )
 }
 
 
-static SCREEN_UPDATE( imolagp )
+static SCREEN_UPDATE_IND16( imolagp )
 {
-	imolagp_state *state = screen->machine().driver_data<imolagp_state>();
+	imolagp_state *state = screen.machine().driver_data<imolagp_state>();
 	int scroll2 = state->m_scroll ^ 0x03;
 	int pass;
 	for (pass = 0; pass < 2; pass++)
@@ -210,7 +213,7 @@ static SCREEN_UPDATE( imolagp )
 			int pen;
 			int y = (i / 0x40);
 			int x = (i & 0x3f) * 4 - scroll2;
-			UINT16 *dest = BITMAP_ADDR16(bitmap, y & 0xff, 0);
+			UINT16 *dest = &bitmap.pix16(y & 0xff);
 			int data = source[i];
 			if (data || pass == 0)
 			{
@@ -463,21 +466,13 @@ INPUT_PORTS_END
 
 /***************************************************************************/
 
-static INTERRUPT_GEN( master_interrupt )
+
+static TIMER_DEVICE_CALLBACK ( imolagp_nmi_cb )
 {
-	imolagp_state *state = device->machine().driver_data<imolagp_state>();
-	int which = cpu_getiloops(device);
-	if (which == 0)
+	imolagp_state *state = timer.machine().driver_data<imolagp_state>();
+
 	{
-#ifdef HLE_COM
-		memcpy(&state->m_slave_workram[0x80], state->m_mComData, state->m_mComCount);
-		state->m_mComCount = 0;
-#endif
-		device_set_input_line(device, 0, HOLD_LINE);
-	}
-	else
-	{
-		int newsteer = input_port_read(device->machine(), "2802") & 0xf;
+		int newsteer = input_port_read(timer.machine(), "2802") & 0xf;
 		if (newsteer != state->m_oldsteer)
 		{
 			if (state->m_steerlatch == 0)
@@ -491,9 +486,20 @@ static INTERRUPT_GEN( master_interrupt )
 			{
 				state->m_oldsteer = (state->m_oldsteer + 1) & 0xf;
 			}
-			device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+			device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 		}
 	}
+}
+
+static INTERRUPT_GEN( vblank_irq )
+{
+	imolagp_state *state = device->machine().driver_data<imolagp_state>();
+
+#ifdef HLE_COM
+	memcpy(&state->m_slave_workram[0x80], state->m_mComData, state->m_mComCount);
+	state->m_mComCount = 0;
+#endif
+	device_set_input_line(device, 0, HOLD_LINE);
 } /* master_interrupt */
 
 
@@ -550,7 +556,8 @@ static MACHINE_CONFIG_START( imolagp, imolagp_state )
 	MCFG_CPU_ADD("maincpu", Z80,8000000) /* ? */
 	MCFG_CPU_PROGRAM_MAP(imolagp_master)
 	MCFG_CPU_IO_MAP(readport_master)
-	MCFG_CPU_VBLANK_INT_HACK(master_interrupt,4)
+	MCFG_CPU_VBLANK_INT("screen",vblank_irq)
+	MCFG_TIMER_ADD_PERIODIC("pot_irq", imolagp_nmi_cb, attotime::from_hz(60*3))
 
 	MCFG_CPU_ADD("slave", Z80,8000000) /* ? */
 	MCFG_CPU_PROGRAM_MAP(imolagp_slave)
@@ -567,10 +574,9 @@ static MACHINE_CONFIG_START( imolagp, imolagp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256,256)
 	MCFG_SCREEN_VISIBLE_AREA(0+64-16,255,0+16,255)
-	MCFG_SCREEN_UPDATE(imolagp)
+	MCFG_SCREEN_UPDATE_STATIC(imolagp)
 
 	MCFG_PALETTE_LENGTH(0x20)
 	MCFG_VIDEO_START(imolagp)

@@ -110,7 +110,7 @@ static TILE_GET_INFO( ac_get_tx_tile_info )
 			0);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int priority, int pri_mask)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int priority, int pri_mask)
 {
 	acommand_state *state = machine.driver_data<acommand_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -177,7 +177,7 @@ static VIDEO_START( acommand )
 
 	state->m_ac_vregs = auto_alloc_array(machine, UINT16, 0x80/2);
 
-	tilemap_set_transparent_pen(state->m_tx_tilemap,15);
+	state->m_tx_tilemap->set_transparent_pen(15);
 }
 
 
@@ -203,47 +203,47 @@ g & 40
 /*                                    0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f*/
 static const UINT8 led_fill[0x10] = { 0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f,0x00,0x00,0x00,0x00,0x00,0x00};
 
-static void draw_led(bitmap_t *bitmap, int x, int y,UINT8 value)
+static void draw_led(bitmap_ind16 &bitmap, int x, int y,UINT8 value)
 {
-	plot_box(bitmap, x, y, 6, 10, 0x00000000);
+	bitmap.plot_box(x, y, 6, 10, 0x00000000);
 
 	/*a*/
-	*BITMAP_ADDR16(bitmap, y+0, x+1) = ((led_fill[value] & 0x0001) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+0, x+2) = ((led_fill[value] & 0x0001) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+0, x+3) = ((led_fill[value] & 0x0001) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+0, x+1) = ((led_fill[value] & 0x0001) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+0, x+2) = ((led_fill[value] & 0x0001) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+0, x+3) = ((led_fill[value] & 0x0001) ? LED_ON : LED_OFF);
 	/*b*/
-	*BITMAP_ADDR16(bitmap, y+1, x+4) = ((led_fill[value] & 0x0002) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+2, x+4) = ((led_fill[value] & 0x0002) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+3, x+4) = ((led_fill[value] & 0x0002) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+1, x+4) = ((led_fill[value] & 0x0002) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+2, x+4) = ((led_fill[value] & 0x0002) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+3, x+4) = ((led_fill[value] & 0x0002) ? LED_ON : LED_OFF);
 	/*c*/
-	*BITMAP_ADDR16(bitmap, y+5, x+4) = ((led_fill[value] & 0x0004) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+6, x+4) = ((led_fill[value] & 0x0004) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+7, x+4) = ((led_fill[value] & 0x0004) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+5, x+4) = ((led_fill[value] & 0x0004) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+6, x+4) = ((led_fill[value] & 0x0004) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+7, x+4) = ((led_fill[value] & 0x0004) ? LED_ON : LED_OFF);
 	/*d*/
-	*BITMAP_ADDR16(bitmap, y+8, x+1) = ((led_fill[value] & 0x0008) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+8, x+2) = ((led_fill[value] & 0x0008) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+8, x+3) = ((led_fill[value] & 0x0008) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+8, x+1) = ((led_fill[value] & 0x0008) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+8, x+2) = ((led_fill[value] & 0x0008) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+8, x+3) = ((led_fill[value] & 0x0008) ? LED_ON : LED_OFF);
 	/*e*/
-	*BITMAP_ADDR16(bitmap, y+5, x+0) = ((led_fill[value] & 0x0010) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+6, x+0) = ((led_fill[value] & 0x0010) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+7, x+0) = ((led_fill[value] & 0x0010) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+5, x+0) = ((led_fill[value] & 0x0010) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+6, x+0) = ((led_fill[value] & 0x0010) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+7, x+0) = ((led_fill[value] & 0x0010) ? LED_ON : LED_OFF);
 	/*f*/
-	*BITMAP_ADDR16(bitmap, y+1, x+0) = ((led_fill[value] & 0x0020) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+2, x+0) = ((led_fill[value] & 0x0020) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+3, x+0) = ((led_fill[value] & 0x0020) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+1, x+0) = ((led_fill[value] & 0x0020) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+2, x+0) = ((led_fill[value] & 0x0020) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+3, x+0) = ((led_fill[value] & 0x0020) ? LED_ON : LED_OFF);
 	/*g*/
-	*BITMAP_ADDR16(bitmap, y+4, x+1) = ((led_fill[value] & 0x0040) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+4, x+2) = ((led_fill[value] & 0x0040) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+4, x+3) = ((led_fill[value] & 0x0040) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+4, x+1) = ((led_fill[value] & 0x0040) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+4, x+2) = ((led_fill[value] & 0x0040) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+4, x+3) = ((led_fill[value] & 0x0040) ? LED_ON : LED_OFF);
 }
 
 
-static SCREEN_UPDATE( acommand )
+static SCREEN_UPDATE_IND16( acommand )
 {
-	acommand_state *state = screen->machine().driver_data<acommand_state>();
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	draw_sprites(screen->machine(),bitmap,cliprect,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	acommand_state *state = screen.machine().driver_data<acommand_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(),bitmap,cliprect,0,0);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 
 	/*Order might be wrong,but these for sure are the led numbers tested*/
 	draw_led(bitmap,  0, 20, (state->m_led0 & 0x0f00) >> 8);
@@ -261,14 +261,14 @@ static WRITE16_HANDLER( ac_bgvram_w )
 {
 	acommand_state *state = space->machine().driver_data<acommand_state>();
 	COMBINE_DATA(&state->m_ac_bgvram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( ac_txvram_w )
 {
 	acommand_state *state = space->machine().driver_data<acommand_state>();
 	COMBINE_DATA(&state->m_ac_txvram[offset]);
-	tilemap_mark_tile_dirty(state->m_tx_tilemap,offset);
+	state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER(ac_bgscroll_w)
@@ -276,8 +276,8 @@ static WRITE16_HANDLER(ac_bgscroll_w)
 	acommand_state *state = space->machine().driver_data<acommand_state>();
 	switch(offset)
 	{
-		case 0: tilemap_set_scrollx(state->m_bg_tilemap,0,data); break;
-		case 1: tilemap_set_scrolly(state->m_bg_tilemap,0,data); break;
+		case 0: state->m_bg_tilemap->set_scrollx(0,data); break;
+		case 1: state->m_bg_tilemap->set_scrolly(0,data); break;
 		case 2: /*BG_TILEMAP priority?*/ break;
 	}
 }
@@ -287,8 +287,8 @@ static WRITE16_HANDLER(ac_txscroll_w)
 	acommand_state *state = space->machine().driver_data<acommand_state>();
 	switch(offset)
 	{
-		case 0: tilemap_set_scrollx(state->m_tx_tilemap,0,data); break;
-		case 1: tilemap_set_scrolly(state->m_tx_tilemap,0,data); break;
+		case 0: state->m_tx_tilemap->set_scrollx(0,data); break;
+		case 1: state->m_tx_tilemap->set_scrolly(0,data); break;
 		case 2: /*TX_TILEMAP priority?*/ break;
 	}
 }
@@ -602,10 +602,9 @@ static MACHINE_CONFIG_START( acommand, acommand_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(acommand)
+	MCFG_SCREEN_UPDATE_STATIC(acommand)
 
 	MCFG_GFXDECODE(acommand)
 	MCFG_PALETTE_LENGTH(0x4000)

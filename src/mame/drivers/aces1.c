@@ -11,6 +11,8 @@ lots of reads from 0xe000 at the start
 
 */
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/z80/z80.h"
 
@@ -18,18 +20,25 @@ class aces1_state : public driver_device
 {
 public:
 	aces1_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
 };
 
 
 
-static ADDRESS_MAP_START( aces1_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( aces1_map, AS_PROGRAM, 8, aces1_state )
 	AM_RANGE(0x0000, 0x7fff) AM_ROM
 	AM_RANGE(0x8000, 0x87ff) AM_RAM
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( aces1_portmap, AS_IO, 8 )
+static ADDRESS_MAP_START( aces1_portmap, AS_IO, 8, aces1_state )
 ADDRESS_MAP_END
 
 
@@ -232,25 +241,24 @@ ROM_END
 
 DRIVER_INIT( aces1 )
 {
-
 }
 
-GAME( 199?, ac1cshtw		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Cash Towers (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1clbmn		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Club Money (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1gogld		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Go For Gold (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1hotpf		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Hot Profit (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1pster		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Pound Sterling (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1pstrt		,0			,aces1	,aces1	,aces1	,ROT0	,"Pcp", "Pound Stretcher (Pcp) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1primt		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Primetime (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1taklv		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Take It Or Leave It (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, ac1cshtw		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Cash Towers (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1clbmn		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Club Money (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1gogld		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Go For Gold (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1hotpf		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Hot Profit (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1pster		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Pound Sterling (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1pstrt		,0			,aces1	,aces1	,aces1	,ROT0	,"Pcp", "Pound Stretcher (Pcp) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1primt		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Primetime (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1taklv		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Take It Or Leave It (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
 // guessed hw
-GAME( 199?, ac1bbclb		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Big Break Club (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1clbsv		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Club Sovereign (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1clbxt		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Club Xtra (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1piaca		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Play It Again Casino (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL ) // Same ROMs were in 'Play It Again Deluxe'
-GAME( 199?, ac1piacl		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Play It Again Club (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1prmcl		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Premier Club (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1rundx		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Runner Deluxe Club (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1totb			,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Top Of The Bill (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1sptb			,0			,aces1	,aces1	,aces1	,ROT0	,"Pcp", "Simply the Best (Pcp) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, ac1shid			,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Super Hi De Hi (Ace) (ACESYS1)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, ac1bbclb		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Big Break Club (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1clbsv		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Club Sovereign (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1clbxt		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Club Xtra (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1piaca		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Play It Again Casino (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL ) // Same ROMs were in 'Play It Again Deluxe'
+GAME( 199?, ac1piacl		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Play It Again Club (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1prmcl		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Premier Club (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1rundx		,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Runner Deluxe Club (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1totb			,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Top Of The Bill (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1sptb			,0			,aces1	,aces1	,aces1	,ROT0	,"Pcp", "Simply the Best (Pcp) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, ac1shid			,0			,aces1	,aces1	,aces1	,ROT0	,"Ace", "Super Hi De Hi (Ace) (ACESYS1)",GAME_IS_SKELETON_MECHANICAL )

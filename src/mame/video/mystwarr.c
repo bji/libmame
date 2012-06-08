@@ -186,7 +186,7 @@ VIDEO_START(gaiapols)
 	K053936GP_set_offset(0, -10,  0); // floor tiles in demo loop2 (Elaine vs. boss)
 
 	state->m_ult_936_tilemap = tilemap_create(machine, get_gai_936_tile_info, tilemap_scan_rows,  16, 16, 512, 512);
-	tilemap_set_transparent_pen(state->m_ult_936_tilemap, 0);
+	state->m_ult_936_tilemap->set_transparent_pen(0);
 }
 
 static TILE_GET_INFO( get_ult_936_tile_info )
@@ -230,7 +230,7 @@ VIDEO_START(dadandrn)
 	K053936GP_set_offset(0, -8, 0); // Brainy's laser
 
 	state->m_ult_936_tilemap = tilemap_create(machine, get_ult_936_tile_info, tilemap_scan_rows,  16, 16, 512, 512);
-	tilemap_set_transparent_pen(state->m_ult_936_tilemap, 0);
+	state->m_ult_936_tilemap->set_transparent_pen(0);
 }
 
 VIDEO_START(mystwarr)
@@ -329,9 +329,9 @@ VIDEO_START(martchmp)
 
 
 
-SCREEN_UPDATE(mystwarr)
+SCREEN_UPDATE_RGB32(mystwarr)
 {
-	mystwarr_state *state = screen->machine().driver_data<mystwarr_state>();
+	mystwarr_state *state = screen.machine().driver_data<mystwarr_state>();
 	int i, old, blendmode=0;
 
 	if (state->m_cbparam<0) state->m_cbparam=0; else if (state->m_cbparam>=32) blendmode=(1<<16|GXMIX_BLEND_FORCE)<<2; //* water hack (TEMPORARY)
@@ -345,13 +345,13 @@ SCREEN_UPDATE(mystwarr)
 
 	state->m_sprite_colorbase = K055555_get_palette_index(4)<<5;
 
-	konamigx_mixer(screen->machine(), bitmap, cliprect, 0, 0, 0, 0, blendmode, 0, 0);
+	konamigx_mixer(screen.machine(), bitmap, cliprect, 0, 0, 0, 0, blendmode, 0, 0);
 	return 0;
 }
 
-SCREEN_UPDATE(metamrph)
+SCREEN_UPDATE_RGB32(metamrph)
 {
-	mystwarr_state *state = screen->machine().driver_data<mystwarr_state>();
+	mystwarr_state *state = screen.machine().driver_data<mystwarr_state>();
 	int i, old;
 
 	for (i = 0; i < 4; i++)
@@ -363,13 +363,13 @@ SCREEN_UPDATE(metamrph)
 
 	state->m_sprite_colorbase = K055555_get_palette_index(4)<<4;
 
-	konamigx_mixer(screen->machine(), bitmap, cliprect, 0, GXSUB_K053250 | GXSUB_4BPP, 0, 0, 0, 0, 0);
+	konamigx_mixer(screen.machine(), bitmap, cliprect, 0, GXSUB_K053250 | GXSUB_4BPP, 0, 0, 0, 0, 0);
 	return 0;
 }
 
-SCREEN_UPDATE(martchmp)
+SCREEN_UPDATE_RGB32(martchmp)
 {
-	mystwarr_state *state = screen->machine().driver_data<mystwarr_state>();
+	mystwarr_state *state = screen.machine().driver_data<mystwarr_state>();
 	int i, old, blendmode;
 
 	for (i = 0; i < 4; i++)
@@ -387,7 +387,7 @@ SCREEN_UPDATE(martchmp)
 	// not quite right
 	blendmode = (state->m_oinprion==0xef && K054338_read_register(K338_REG_PBLEND)) ? ((1<<16|GXMIX_BLEND_FORCE)<<2) : 0;
 
-	konamigx_mixer(screen->machine(), bitmap, cliprect, 0, 0, 0, 0, blendmode, 0, 0);
+	konamigx_mixer(screen.machine(), bitmap, cliprect, 0, 0, 0, 0, blendmode, 0, 0);
 	return 0;
 }
 
@@ -499,9 +499,9 @@ READ16_HANDLER(ddd_053936_tilerom_2_r)
 	return ROM[offset]<<8;
 }
 
-SCREEN_UPDATE(dadandrn) /* and gaiapols */
+SCREEN_UPDATE_RGB32(dadandrn) /* and gaiapols */
 {
-	mystwarr_state *state = screen->machine().driver_data<mystwarr_state>();
+	mystwarr_state *state = screen.machine().driver_data<mystwarr_state>();
 	int i, newbase, dirty, rozmode;
 
 	if (state->m_gametype == 0)
@@ -547,12 +547,12 @@ SCREEN_UPDATE(dadandrn) /* and gaiapols */
 
 	if (state->m_last_psac_colorbase != state->m_sub1_colorbase)
 	{
-		tilemap_mark_all_tiles_dirty(state->m_ult_936_tilemap);
+		state->m_ult_936_tilemap->mark_all_dirty();
 
 		if (MW_VERBOSE)
 			popmessage("K053936: PSAC colorbase changed");
 	}
 
-	konamigx_mixer(screen->machine(), bitmap, cliprect, (state->m_roz_enable) ? state->m_ult_936_tilemap : 0, rozmode, 0, 0, 0, 0, 0);
+	konamigx_mixer(screen.machine(), bitmap, cliprect, (state->m_roz_enable) ? state->m_ult_936_tilemap : 0, rozmode, 0, 0, 0, 0, 0);
 	return 0;
 }

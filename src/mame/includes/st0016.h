@@ -1,4 +1,16 @@
 
+class st0016_state : public driver_device
+{
+public:
+	st0016_state(const machine_config &mconfig, device_type type, const char *tag)
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
+
+	int mux_port;
+	required_device<cpu_device> m_maincpu;
+};
+
 #define ISMACS  (st0016_game&0x80)
 #define ISMACS1 (((st0016_game&0x180)==0x180))
 #define ISMACS2 (((st0016_game&0x180)==0x080))
@@ -45,6 +57,6 @@ WRITE8_HANDLER	(st0016_character_ram_w);
 READ8_HANDLER	(st0016_vregs_r);
 WRITE8_HANDLER	(st0016_vregs_w);
 
-void st0016_draw_screen(screen_device *screen, bitmap_t *bitmap, const rectangle *cliprect);
+void st0016_draw_screen(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 VIDEO_START(st0016);
-SCREEN_UPDATE(st0016);
+SCREEN_UPDATE_IND16(st0016);

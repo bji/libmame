@@ -391,11 +391,11 @@ static void voodoo_vblank_1(device_t *device, int param)
 	cputag_set_input_line(device->machine(), "maincpu", INPUT_LINE_IRQ1, ASSERT_LINE);
 }
 
-static SCREEN_UPDATE( hornet )
+static SCREEN_UPDATE_RGB32( hornet )
 {
-	hornet_state *state = screen->machine().driver_data<hornet_state>();
-	device_t *voodoo = screen->machine().device("voodoo0");
-	device_t *k037122 = screen->machine().device("k037122_1");
+	hornet_state *state = screen.machine().driver_data<hornet_state>();
+	device_t *voodoo = screen.machine().device("voodoo0");
+	device_t *k037122 = screen.machine().device("k037122_1");
 
 	voodoo_update(voodoo, bitmap, cliprect);
 
@@ -406,22 +406,22 @@ static SCREEN_UPDATE( hornet )
 	return 0;
 }
 
-static SCREEN_UPDATE( hornet_2board )
+static SCREEN_UPDATE_RGB32( hornet_2board )
 {
-	hornet_state *state = screen->machine().driver_data<hornet_state>();
-	if (strcmp(screen->tag(), "lscreen") == 0)
+	hornet_state *state = screen.machine().driver_data<hornet_state>();
+	if (strcmp(screen.tag(), "lscreen") == 0)
 	{
-		device_t *k037122 = screen->machine().device("k037122_1");
-		device_t *voodoo = screen->machine().device("voodoo0");
+		device_t *k037122 = screen.machine().device("k037122_1");
+		device_t *voodoo = screen.machine().device("voodoo0");
 		voodoo_update(voodoo, bitmap, cliprect);
 
 		/* TODO: tilemaps per screen */
 		k037122_tile_draw(k037122, bitmap, cliprect);
 	}
-	else if (strcmp(screen->tag(), "rscreen") == 0)
+	else if (strcmp(screen.tag(), "rscreen") == 0)
 	{
-		device_t *k037122 = screen->machine().device("k037122_2");
-		device_t *voodoo = screen->machine().device("voodoo1");
+		device_t *k037122 = screen.machine().device("k037122_2");
+		device_t *voodoo = screen.machine().device("voodoo1");
 		voodoo_update(voodoo, bitmap, cliprect);
 
 		/* TODO: tilemaps per screen */
@@ -975,10 +975,9 @@ static MACHINE_CONFIG_START( hornet, hornet_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(64*8, 48*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 48*8-1)
-	MCFG_SCREEN_UPDATE(hornet)
+	MCFG_SCREEN_UPDATE_STATIC(hornet)
 
 	MCFG_PALETTE_LENGTH(65536)
 
@@ -1047,18 +1046,16 @@ static MACHINE_CONFIG_DERIVED( hornet_2board, hornet )
 	MCFG_DEVICE_REMOVE("screen")
 
 	MCFG_SCREEN_ADD("lscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_SIZE(512, 384)
 	MCFG_SCREEN_VISIBLE_AREA(0, 511, 0, 383)
-	MCFG_SCREEN_UPDATE(hornet_2board)
+	MCFG_SCREEN_UPDATE_STATIC(hornet_2board)
 
 	MCFG_SCREEN_ADD("rscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_SIZE(512, 384)
 	MCFG_SCREEN_VISIBLE_AREA(0, 511, 0, 383)
-	MCFG_SCREEN_UPDATE(hornet_2board)
+	MCFG_SCREEN_UPDATE_STATIC(hornet_2board)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( terabrst, hornet_2board )

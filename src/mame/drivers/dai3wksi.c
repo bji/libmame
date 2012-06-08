@@ -123,9 +123,9 @@ static void dai3wksi_get_pens(pen_t *pens)
 }
 
 
-static SCREEN_UPDATE( dai3wksi )
+static SCREEN_UPDATE_RGB32( dai3wksi )
 {
-	dai3wksi_state *state = screen->machine().driver_data<dai3wksi_state>();
+	dai3wksi_state *state = screen.machine().driver_data<dai3wksi_state>();
 	offs_t offs;
 	pen_t pens[8];
 
@@ -147,7 +147,7 @@ static SCREEN_UPDATE( dai3wksi )
 		}
 		else
 		{
-			if (input_port_read(screen->machine(), "IN2") & 0x03)
+			if (input_port_read(screen.machine(), "IN2") & 0x03)
 				color = vr_prom2[value];
 			else
 				color = vr_prom1[value];
@@ -158,9 +158,9 @@ static SCREEN_UPDATE( dai3wksi )
 			pen_t pen = (data & (1 << i)) ? pens[color] : pens[0];
 
 			if (state->m_dai3wksi_flipscreen)
-				*BITMAP_ADDR32(bitmap, 255-y, 255-x) = pen;
+				bitmap.pix32(255-y, 255-x) = pen;
 			else
-				*BITMAP_ADDR32(bitmap, y, x) = pen;
+				bitmap.pix32(y, x) = pen;
 
 			x++;
 		}
@@ -262,14 +262,14 @@ static WRITE8_HANDLER( dai3wksi_audio_3_w )
 static const char *const dai3wksi_sample_names[] =
 {
 	"*dai3wksi",
-	"1.wav",
-	"2.wav",
-	"3.wav",
-	"3-2.wav",
-	"4.wav",
-	"5.wav",
-	"6.wav",
-	"6-2.wav",
+	"1",
+	"2",
+	"3",
+	"3-2",
+	"4",
+	"5",
+	"6",
+	"6-2",
 	0
 };
 
@@ -599,11 +599,10 @@ static MACHINE_CONFIG_START( dai3wksi, dai3wksi_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(4, 251, 8, 247)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_UPDATE(dai3wksi)
+	MCFG_SCREEN_UPDATE_STATIC(dai3wksi)
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 

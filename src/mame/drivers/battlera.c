@@ -13,6 +13,7 @@
     Twice as much VRAM.
 
     Todo:
+    - Convert this driver to use proper PC-Engine video.
     - Priority is wrong for the submarine at the end of level 1.
     - There seems to be a bug with a stuck note from the YM2203 FM channel
       at the start of scene 3 and near the ending when your characters are
@@ -21,7 +22,6 @@
 **********************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/h6280/h6280.h"
 #include "sound/2203intf.h"
 #include "sound/msm5205.h"
@@ -236,7 +236,7 @@ static MACHINE_CONFIG_START( battlera, battlera_state )
 	MCFG_CPU_ADD("maincpu", H6280,21477200/3)
 	MCFG_CPU_PROGRAM_MAP(battlera_map)
 	MCFG_CPU_IO_MAP(battlera_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(battlera_interrupt,256) /* 8 prelines, 232 lines, 16 vblank? */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", battlera_irq, "screen", 0, 1) /* 8 prelines, 232 lines, 16 vblank? */
 
 	MCFG_CPU_ADD("audiocpu", H6280,21477200/3)
 	MCFG_CPU_PROGRAM_MAP(sound_map)
@@ -245,10 +245,9 @@ static MACHINE_CONFIG_START( battlera, battlera_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 1*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(battlera)
+	MCFG_SCREEN_UPDATE_STATIC(battlera)
 
 	MCFG_GFXDECODE(battlera)
 	MCFG_PALETTE_LENGTH(512)

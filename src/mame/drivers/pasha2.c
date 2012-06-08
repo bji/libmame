@@ -332,26 +332,26 @@ static VIDEO_START( pasha2 )
 	state->save_item(NAME(state->m_bitmap1));
 }
 
-static SCREEN_UPDATE( pasha2 )
+static SCREEN_UPDATE_IND16( pasha2 )
 {
-	pasha2_state *state = screen->machine().driver_data<pasha2_state>();
+	pasha2_state *state = screen.machine().driver_data<pasha2_state>();
 	int x, y, count;
 	int color;
 
 	/* 2 512x256 bitmaps */
 
 	count = 0;
-	for (y = 0; y <= cliprect->max_y; y++)
+	for (y = 0; y <= cliprect.max_y; y++)
 	{
 		for (x = 0; x < 512 / 2; x++)
 		{
-			if (x * 2 < cliprect->max_x)
+			if (x * 2 < cliprect.max_x)
 			{
 				color = (state->m_bitmap0[count + (state->m_vbuffer ^ 1) * 0x20000 / 2] & 0xff00) >> 8;
-				*BITMAP_ADDR16(bitmap, y, x * 2 + 0) = color + 0x100;
+				bitmap.pix16(y, x * 2 + 0) = color + 0x100;
 
 				color = state->m_bitmap0[count + (state->m_vbuffer ^ 1) * 0x20000 / 2] & 0xff;
-				*BITMAP_ADDR16(bitmap, y, x * 2 + 1) = color + 0x100;
+				bitmap.pix16(y, x * 2 + 1) = color + 0x100;
 			}
 
 			count++;
@@ -359,19 +359,19 @@ static SCREEN_UPDATE( pasha2 )
 	}
 
 	count = 0;
-	for (y = 0; y <= cliprect->max_y; y++)
+	for (y = 0; y <= cliprect.max_y; y++)
 	{
 		for (x = 0; x < 512 / 2; x++)
 		{
-			if (x * 2 < cliprect->max_x)
+			if (x * 2 < cliprect.max_x)
 			{
 				color = state->m_bitmap1[count + (state->m_vbuffer ^ 1) * 0x20000 / 2] & 0xff;
 				if (color != 0)
-					*BITMAP_ADDR16(bitmap, y, x * 2 + 1) = color;
+					bitmap.pix16(y, x * 2 + 1) = color;
 
 				color = (state->m_bitmap1[count + (state->m_vbuffer ^ 1) * 0x20000 / 2] & 0xff00) >> 8;
 				if (color != 0)
-					*BITMAP_ADDR16(bitmap, y, x * 2 + 0) = color;
+					bitmap.pix16(y, x * 2 + 0) = color;
 			}
 
 			count++;
@@ -413,10 +413,9 @@ static MACHINE_CONFIG_START( pasha2, pasha2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0, 383, 0, 239)
-	MCFG_SCREEN_UPDATE(pasha2)
+	MCFG_SCREEN_UPDATE_STATIC(pasha2)
 
 	MCFG_PALETTE_LENGTH(0x200)
 

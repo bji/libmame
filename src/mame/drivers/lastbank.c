@@ -25,7 +25,7 @@ static VIDEO_START( lastbank )
 
 }
 
-static SCREEN_UPDATE( lastbank )
+static SCREEN_UPDATE_IND16( lastbank )
 {
 	return 0;
 }
@@ -121,10 +121,9 @@ static MACHINE_CONFIG_START( lastbank, lastbank_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(lastbank)
+	MCFG_SCREEN_UPDATE_STATIC(lastbank)
 
 
 	MCFG_GFXDECODE( lastbank )
@@ -158,4 +157,4 @@ ROM_START( lastbank )
 	ROM_LOAD( "7.u60", 0x40000, 0x80000, CRC(41be7146) SHA1(00f1c0d5809efccf888e27518a2a5876c4b633d8) )
 ROM_END
 
-GAME( 1994, lastbank,  0,   lastbank, lastbank,  0, ROT0, "Excellent Systems", "Last Bank", GAME_NOT_WORKING | GAME_NO_SOUND )
+GAME( 1994, lastbank,  0,   lastbank, lastbank,  0, ROT0, "Excellent Systems", "Last Bank", GAME_IS_SKELETON )

@@ -493,11 +493,11 @@ static VIDEO_START( vidadcba )
 }
 
 
-static SCREEN_UPDATE( videopkr )
+static SCREEN_UPDATE_IND16( videopkr )
 {
-	videopkr_state *state = screen->machine().driver_data<videopkr_state>();
-	tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	videopkr_state *state = screen.machine().driver_data<videopkr_state>();
+	state->m_bg_tilemap->mark_all_dirty();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -600,7 +600,7 @@ static WRITE8_HANDLER( videopkr_io_w )
 			state->m_n_offs = ((state->m_p1 & 0xc0) << 2 ) + offset;
 			state->m_color_ram[state->m_n_offs] = data & 0x0f;
 			state->m_video_ram[state->m_n_offs] = data;
-			tilemap_mark_tile_dirty(state->m_bg_tilemap, state->m_n_offs);
+			state->m_bg_tilemap->mark_tile_dirty(state->m_n_offs);
 			break;
 		}
 
@@ -617,7 +617,7 @@ static WRITE8_HANDLER( videopkr_io_w )
 		{
 			state->m_n_offs = ((state->m_p1 & 0xc0) << 2 ) + offset;
 			state->m_color_ram[state->m_n_offs] = data & 0x0f;
-			tilemap_mark_tile_dirty(state->m_bg_tilemap, state->m_n_offs);
+			state->m_bg_tilemap->mark_tile_dirty(state->m_n_offs);
 			break;
 		}
 
@@ -628,7 +628,7 @@ static WRITE8_HANDLER( videopkr_io_w )
 		{
 			state->m_n_offs = ((state->m_p1 & 0xc0) << 2 ) + offset;
 			state->m_video_ram[state->m_n_offs] = data;
-			tilemap_mark_tile_dirty(state->m_bg_tilemap, state->m_n_offs);
+			state->m_bg_tilemap->mark_tile_dirty(state->m_n_offs);
 			break;
 		}
 
@@ -1240,14 +1240,13 @@ static MACHINE_CONFIG_START( videopkr, videopkr_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(5*8, 31*8-1, 3*8, 29*8-1)
 
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(2080)
-	MCFG_SCREEN_UPDATE(videopkr)
+	MCFG_SCREEN_UPDATE_STATIC(videopkr)
 
 	MCFG_GFXDECODE(videopkr)
 	MCFG_PALETTE_INIT(videopkr)

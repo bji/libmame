@@ -73,19 +73,17 @@ static WRITE8_HANDLER( soundcommand_w )
 
 static WRITE8_HANDLER( irq0_ack_w )
 {
-	int bit = data & 1;
-
-	cpu_interrupt_enable(space->machine().device("maincpu"), bit);
-	if (!bit)
+	retofinv_state *state = space->machine().driver_data<retofinv_state>();
+	state->m_main_irq_mask = data & 1;
+	if (!state->m_main_irq_mask)
 		cputag_set_input_line(space->machine(), "maincpu", 0, CLEAR_LINE);
 }
 
 static WRITE8_HANDLER( irq1_ack_w )
 {
-	int bit = data & 1;
-
-	cpu_interrupt_enable(space->machine().device("sub"), bit);
-	if (!bit)
+	retofinv_state *state = space->machine().driver_data<retofinv_state>();
+	state->m_sub_irq_mask = data & 1;
+	if (!state->m_sub_irq_mask)
 		cputag_set_input_line(space->machine(), "sub", 0, CLEAR_LINE);
 }
 
@@ -334,18 +332,32 @@ static GFXDECODE_START( retofinv )
 	GFXDECODE_ENTRY( "gfx3", 0, bglayout,     64*16+256*2,  64 )
 GFXDECODE_END
 
+static INTERRUPT_GEN( main_vblank_irq )
+{
+	retofinv_state *state = device->machine().driver_data<retofinv_state>();
 
+	if(state->m_main_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
+
+static INTERRUPT_GEN( sub_vblank_irq )
+{
+	retofinv_state *state = device->machine().driver_data<retofinv_state>();
+
+	if(state->m_sub_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
 
 static MACHINE_CONFIG_START( retofinv, retofinv_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, 18432000/6)	/* 3.072 MHz? */
 	MCFG_CPU_PROGRAM_MAP(main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80, 18432000/6)	/* 3.072 MHz? */
 	MCFG_CPU_PROGRAM_MAP(sub_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", sub_vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, 18432000/6)	/* 3.072 MHz? */
 	MCFG_CPU_PROGRAM_MAP(sound_map)
@@ -360,10 +372,9 @@ static MACHINE_CONFIG_START( retofinv, retofinv_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(36*8, 28*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 36*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(retofinv)
+	MCFG_SCREEN_UPDATE_STATIC(retofinv)
 
 	MCFG_GFXDECODE(retofinv)
 	MCFG_PALETTE_LENGTH(256*2+64*16+64*16)

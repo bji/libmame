@@ -172,7 +172,7 @@ static void update_pixel(running_machine &machine, int x, int y)
 {
 	nbmj8991_state *state = machine.driver_data<nbmj8991_state>();
 	UINT8 color = state->m_videoram[(y * machine.primary_screen->width()) + x];
-	*BITMAP_ADDR16(state->m_tmpbitmap, y, x) = color;
+	state->m_tmpbitmap.pix16(y, x) = color;
 }
 
 static TIMER_CALLBACK( blitter_timer_callback )
@@ -296,27 +296,27 @@ VIDEO_START( nbmj8991 )
 	int width = machine.primary_screen->width();
 	int height = machine.primary_screen->height();
 
-	state->m_tmpbitmap = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap);
 	state->m_videoram = auto_alloc_array(machine, UINT8, width * height);
 	state->m_clut = auto_alloc_array(machine, UINT8, 0x800);
 	memset(state->m_videoram, 0x00, (width * height * sizeof(UINT8)));
 }
 
-SCREEN_UPDATE( nbmj8991_type1 )
+SCREEN_UPDATE_IND16( nbmj8991_type1 )
 {
-	nbmj8991_state *state = screen->machine().driver_data<nbmj8991_state>();
+	nbmj8991_state *state = screen.machine().driver_data<nbmj8991_state>();
 	int x, y;
 
 	if (state->m_screen_refresh)
 	{
-		int width = screen->machine().primary_screen->width();
-		int height = screen->machine().primary_screen->height();
+		int width = screen.machine().primary_screen->width();
+		int height = screen.machine().primary_screen->height();
 
 		state->m_screen_refresh = 0;
 
 		for (y = 0; y < height; y++)
 			for (x = 0; x < width; x++)
-				update_pixel(screen->machine(), x, y);
+				update_pixel(screen.machine(), x, y);
 	}
 
 	if (state->m_dispflag)
@@ -337,26 +337,26 @@ SCREEN_UPDATE( nbmj8991_type1 )
 		copyscrollbitmap(bitmap, state->m_tmpbitmap, 1, &scrollx, 1, &scrolly, cliprect);
 	}
 	else
-		bitmap_fill(bitmap, 0, 0);
+		bitmap.fill(0);
 
 	return 0;
 }
 
-SCREEN_UPDATE( nbmj8991_type2 )
+SCREEN_UPDATE_IND16( nbmj8991_type2 )
 {
-	nbmj8991_state *state = screen->machine().driver_data<nbmj8991_state>();
+	nbmj8991_state *state = screen.machine().driver_data<nbmj8991_state>();
 	int x, y;
 
 	if (state->m_screen_refresh)
 	{
-		int width = screen->width();
-		int height = screen->height();
+		int width = screen.width();
+		int height = screen.height();
 
 		state->m_screen_refresh = 0;
 
 		for (y = 0; y < height; y++)
 			for (x = 0; x < width; x++)
-				update_pixel(screen->machine(), x, y);
+				update_pixel(screen.machine(), x, y);
 	}
 
 	if (nb1413m3_inputport & 0x20)
@@ -377,7 +377,7 @@ SCREEN_UPDATE( nbmj8991_type2 )
 		copyscrollbitmap(bitmap, state->m_tmpbitmap, 1, &scrollx, 1, &scrolly, cliprect);
 	}
 	else
-		bitmap_fill(bitmap, 0, 0);
+		bitmap.fill(0);
 
 	return 0;
 }

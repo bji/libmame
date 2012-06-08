@@ -101,7 +101,6 @@ DSW2 stored @ $f237
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "cpu/m6805/m6805.h"
 #include "cpu/mcs51/mcs51.h"
 #include "sound/ay8910.h"
@@ -1014,20 +1013,32 @@ static const ay8910_interface bootleg_ay8910_interface_2 =
 	DEVCB_NULL
 };
 
-
-
-static INTERRUPT_GEN( sqix_interrupt )
+static INTERRUPT_GEN( vblank_irq )
 {
-	/* highly suspicious... */
-	if (cpu_getiloops(device) <= 3)
-		nmi_line_assert(device);
+	superqix_state *state = device->machine().driver_data<superqix_state>();
+
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
 }
 
-static INTERRUPT_GEN( bootleg_interrupt )
+static TIMER_DEVICE_CALLBACK( sqix_timer_irq )
 {
+	superqix_state *state = timer.machine().driver_data<superqix_state>();
+	int scanline = param;
+
 	/* highly suspicious... */
-	if (cpu_getiloops(device) <= 3)
-		nmi_line_pulse(device);
+	if (((scanline % 64) == 0) && state->m_nmi_mask)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, ASSERT_LINE);
+}
+
+static TIMER_DEVICE_CALLBACK( sqixbl_timer_irq )
+{
+	superqix_state *state = timer.machine().driver_data<superqix_state>();
+	int scanline = param;
+
+	/* highly suspicious... */
+	if (((scanline % 64) == 0) && state->m_nmi_mask)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 }
 
 
@@ -1036,7 +1047,7 @@ static MACHINE_CONFIG_START( pbillian, superqix_state )
 	MCFG_CPU_ADD("maincpu", Z80,12000000/2)		 /* 6 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(pbillian_port_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_START(pbillian)
 
@@ -1044,10 +1055,9 @@ static MACHINE_CONFIG_START( pbillian, superqix_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(pbillian)
+	MCFG_SCREEN_UPDATE_STATIC(pbillian)
 
 	MCFG_GFXDECODE(pbillian)
 	MCFG_PALETTE_LENGTH(512)
@@ -1069,7 +1079,7 @@ static MACHINE_CONFIG_START( hotsmash, superqix_state )
 	MCFG_CPU_ADD("maincpu", Z80,12000000/2)		 /* 6 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(hotsmash_port_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("mcu", M68705, 4000000) /* ???? */
 	MCFG_CPU_PROGRAM_MAP(m68705_map)
@@ -1080,10 +1090,9 @@ static MACHINE_CONFIG_START( hotsmash, superqix_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(pbillian)
+	MCFG_SCREEN_UPDATE_STATIC(pbillian)
 
 	MCFG_GFXDECODE(pbillian)
 	MCFG_PALETTE_LENGTH(512)
@@ -1107,7 +1116,7 @@ static MACHINE_CONFIG_START( sqix, superqix_state )
 	MCFG_CPU_ADD("maincpu", Z80, 12000000/2)	/* 6 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(sqix_port_map)
-	MCFG_CPU_VBLANK_INT_HACK(sqix_interrupt,6)	/* ??? */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sqix_timer_irq, "screen", 0, 1) /* ??? */
 
 	MCFG_CPU_ADD("mcu", I8751, 12000000/3)	/* ??? */
 	MCFG_CPU_IO_MAP(bootleg_mcu_io_map)
@@ -1120,10 +1129,9 @@ static MACHINE_CONFIG_START( sqix, superqix_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(superqix)
+	MCFG_SCREEN_UPDATE_STATIC(superqix)
 
 	MCFG_GFXDECODE(sqix)
 	MCFG_PALETTE_LENGTH(256)
@@ -1156,7 +1164,7 @@ static MACHINE_CONFIG_START( sqixbl, superqix_state )
 	MCFG_CPU_ADD("maincpu", Z80, 12000000/2)	/* 6 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(bootleg_port_map)
-	MCFG_CPU_VBLANK_INT_HACK(bootleg_interrupt,6)	/* ??? */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sqixbl_timer_irq, "screen", 0, 1) /* ??? */
 
 	MCFG_MACHINE_START(superqix)
 
@@ -1164,10 +1172,9 @@ static MACHINE_CONFIG_START( sqixbl, superqix_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(superqix)
+	MCFG_SCREEN_UPDATE_STATIC(superqix)
 
 	MCFG_GFXDECODE(sqix)
 	MCFG_PALETTE_LENGTH(256)

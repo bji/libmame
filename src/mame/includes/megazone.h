@@ -23,7 +23,7 @@ public:
 	size_t        m_videoram2_size;
 
 	/* video-related */
-	bitmap_t      *m_tmpbitmap;
+	bitmap_ind16      *m_tmpbitmap;
 	int           m_flipscreen;
 
 	/* misc */
@@ -33,6 +33,8 @@ public:
 	cpu_device *m_maincpu;
 	cpu_device *m_audiocpu;
 	cpu_device *m_daccpu;
+
+	UINT8         m_irq_mask;
 };
 
 
@@ -43,4 +45,4 @@ WRITE8_HANDLER( megazone_flipscreen_w );
 
 PALETTE_INIT( megazone );
 VIDEO_START( megazone );
-SCREEN_UPDATE( megazone );
+SCREEN_UPDATE_IND16( megazone );

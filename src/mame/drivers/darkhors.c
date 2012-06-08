@@ -56,7 +56,6 @@ To do:
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "machine/eeprom.h"
 #include "sound/okim6295.h"
 #include "sound/st0016.h"
@@ -68,7 +67,9 @@ class darkhors_state : public driver_device
 {
 public:
 	darkhors_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu")
+		{ }
 
 	tilemap_t *m_tmap;
 	tilemap_t *m_tmap2;
@@ -80,6 +81,8 @@ public:
 	UINT32* m_jclub2_tileram;
 	int m_jclub2_gfx_index;
 	UINT32 *m_spriteram;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -94,7 +97,7 @@ public:
 ***************************************************************************/
 
 static VIDEO_START( darkhors );
-static SCREEN_UPDATE( darkhors );
+static SCREEN_UPDATE_IND16( darkhors );
 
 
 static TILE_GET_INFO( get_tile_info_0 )
@@ -117,16 +120,16 @@ static WRITE32_HANDLER( darkhors_tmapram_w )
 {
 	darkhors_state *state = space->machine().driver_data<darkhors_state>();
 	COMBINE_DATA(&state->m_tmapram[offset]);
-	tilemap_mark_tile_dirty(state->m_tmap, offset);
+	state->m_tmap->mark_tile_dirty(offset);
 }
 static WRITE32_HANDLER( darkhors_tmapram2_w )
 {
 	darkhors_state *state = space->machine().driver_data<darkhors_state>();
 	COMBINE_DATA(&state->m_tmapram2[offset]);
-	tilemap_mark_tile_dirty(state->m_tmap2, offset);
+	state->m_tmap2->mark_tile_dirty(offset);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	darkhors_state *state = machine.driver_data<darkhors_state>();
 	UINT32 *s		=	state->m_spriteram;
@@ -170,39 +173,39 @@ static VIDEO_START( darkhors )
 	state->m_tmap2			=	tilemap_create(	machine, get_tile_info_1, tilemap_scan_rows,
 												16,16, 0x40,0x40	);
 
-	tilemap_set_transparent_pen(state->m_tmap, 0);
-	tilemap_set_transparent_pen(state->m_tmap2, 0);
+	state->m_tmap->set_transparent_pen(0);
+	state->m_tmap2->set_transparent_pen(0);
 
 	machine.gfx[0]->color_granularity = 64; /* 256 colour sprites with palette selectable on 64 colour boundaries */
 }
 
-static SCREEN_UPDATE( darkhors )
+static SCREEN_UPDATE_IND16( darkhors )
 {
-	darkhors_state *state = screen->machine().driver_data<darkhors_state>();
+	darkhors_state *state = screen.machine().driver_data<darkhors_state>();
 	int layers_ctrl = -1;
 
 #if DARKHORS_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int mask = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	mask |= 2;
-		if (screen->machine().input().code_pressed(KEYCODE_A))	mask |= 4;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	mask |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_A))	mask |= 4;
 		if (mask != 0) layers_ctrl &= mask;
 	}
 #endif
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
-	tilemap_set_scrollx(state->m_tmap,0, (state->m_tmapscroll[0] >> 16) - 5);
-	tilemap_set_scrolly(state->m_tmap,0, (state->m_tmapscroll[0] & 0xffff) - 0xff );
-	if (layers_ctrl & 1)	tilemap_draw(bitmap,cliprect, state->m_tmap, TILEMAP_DRAW_OPAQUE, 0);
+	state->m_tmap->set_scrollx(0, (state->m_tmapscroll[0] >> 16) - 5);
+	state->m_tmap->set_scrolly(0, (state->m_tmapscroll[0] & 0xffff) - 0xff );
+	if (layers_ctrl & 1)	state->m_tmap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
 
-	tilemap_set_scrollx(state->m_tmap2,0, (state->m_tmapscroll2[0] >> 16) - 5);
-	tilemap_set_scrolly(state->m_tmap2,0, (state->m_tmapscroll2[0] & 0xffff) - 0xff );
-	if (layers_ctrl & 2)	tilemap_draw(bitmap,cliprect, state->m_tmap2, 0, 0);
+	state->m_tmap2->set_scrollx(0, (state->m_tmapscroll2[0] >> 16) - 5);
+	state->m_tmap2->set_scrolly(0, (state->m_tmapscroll2[0] & 0xffff) - 0xff );
+	if (layers_ctrl & 2)	state->m_tmap2->draw(bitmap, cliprect, 0, 0);
 
-	if (layers_ctrl & 4)	draw_sprites(screen->machine(),bitmap,cliprect);
+	if (layers_ctrl & 4)	draw_sprites(screen.machine(),bitmap,cliprect);
 
 #if DARKHORS_DEBUG
 #if 0
@@ -636,20 +639,25 @@ GFXDECODE_END
 
 ***************************************************************************/
 
-static INTERRUPT_GEN( darkhors )
+static TIMER_DEVICE_CALLBACK( darkhors_irq )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line(device, 3, HOLD_LINE);	break;
-		case 1:	device_set_input_line(device, 4, HOLD_LINE);	break;
-		case 2:	device_set_input_line(device, 5, HOLD_LINE);	break;
-	}
+	darkhors_state *state = timer.machine().driver_data<darkhors_state>();
+	int scanline = param;
+
+	if(scanline == 248)
+		device_set_input_line(state->m_maincpu, 5, HOLD_LINE);
+
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
+
+	if(scanline >= 1 && scanline <= 247)
+		device_set_input_line(state->m_maincpu, 4, HOLD_LINE);
 }
 
 static MACHINE_CONFIG_START( darkhors, darkhors_state )
 	MCFG_CPU_ADD("maincpu", M68EC020, 12000000) // 36MHz/3 ??
 	MCFG_CPU_PROGRAM_MAP(darkhors_map)
-	MCFG_CPU_VBLANK_INT_HACK(darkhors,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", darkhors_irq, "screen", 0, 1)
 
 	MCFG_EEPROM_ADD("eeprom", eeprom_intf)
 
@@ -657,10 +665,9 @@ static MACHINE_CONFIG_START( darkhors, darkhors_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(0x190, 0x100)
+	MCFG_SCREEN_SIZE(0x190, 0x100+16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x190-1, 8, 0x100-8-1)
-	MCFG_SCREEN_UPDATE(darkhors)
+	MCFG_SCREEN_UPDATE_STATIC(darkhors)
 
 	MCFG_GFXDECODE(darkhors)
 	MCFG_PALETTE_LENGTH(0x10000)
@@ -692,7 +699,7 @@ static VIDEO_START(jclub2)
 
 }
 
-static SCREEN_UPDATE(jclub2)
+static SCREEN_UPDATE_IND16(jclub2)
 {
 	return 0;
 }
@@ -700,7 +707,7 @@ static SCREEN_UPDATE(jclub2)
 static MACHINE_CONFIG_START( jclub2, darkhors_state )
 	MCFG_CPU_ADD("maincpu", M68EC020, 12000000)
 	MCFG_CPU_PROGRAM_MAP(jclub2_map)
-	MCFG_CPU_VBLANK_INT_HACK(darkhors,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", darkhors_irq, "screen", 0, 1)
 
 	MCFG_EEPROM_ADD("eeprom", eeprom_intf)
 
@@ -708,10 +715,9 @@ static MACHINE_CONFIG_START( jclub2, darkhors_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(0x190, 0x100)
+	MCFG_SCREEN_SIZE(0x190, 0x100+16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x190-1, 8, 0x100-8-1)
-	MCFG_SCREEN_UPDATE(jclub2)
+	MCFG_SCREEN_UPDATE_STATIC(jclub2)
 
 	MCFG_GFXDECODE(jclub2)
 	MCFG_PALETTE_LENGTH(0x10000)
@@ -748,7 +754,7 @@ static VIDEO_START(jclub2o)
 
 }
 
-static SCREEN_UPDATE(jclub2o)
+static SCREEN_UPDATE_IND16(jclub2o)
 {
 	return 0;
 }
@@ -761,7 +767,6 @@ static MACHINE_CONFIG_START( jclub2o, darkhors_state )
 
 	MCFG_CPU_ADD("maincpu", M68EC020, 12000000)
 	MCFG_CPU_PROGRAM_MAP(jclub2o_map)
-	//MCFG_CPU_VBLANK_INT_HACK(darkhors,3)
 
 	MCFG_EEPROM_ADD("eeprom", eeprom_intf)
 
@@ -769,10 +774,9 @@ static MACHINE_CONFIG_START( jclub2o, darkhors_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x190, 0x100)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x190-1, 8, 0x100-8-1)
-	MCFG_SCREEN_UPDATE(jclub2o)
+	MCFG_SCREEN_UPDATE_STATIC(jclub2o)
 
 	MCFG_GFXDECODE(jclub2)
 	MCFG_PALETTE_LENGTH(0x10000)

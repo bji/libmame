@@ -81,7 +81,7 @@ Chips:
  Video: XC3042A (Sigma Xilinx FPGA gate array)
  Sound: OKI M6295
    OSC: 32MHz, 24MHz & 8.664MHz
- Other: SCN68681C1N40 (Serial controler chip)
+ Other: SCN68681C1N40 (Serial controller chip)
         DALLAS DS1225AB-85 Nonvolatile SRAM
         DALLAS DS1204V (used for security)
         DALLAS DS1232 (MicroMonitor Chip)
@@ -103,7 +103,6 @@ To Do:
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "sound/okim6295.h"
 #include "machine/eeprom.h"
 #include "machine/microtch.h"
@@ -121,11 +120,13 @@ class tmaster_state : public driver_device
 {
 public:
 	tmaster_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	int m_okibank;
 	UINT8 m_rtc_ram[8];
-	bitmap_t *m_bitmap[2][2];
+	bitmap_ind16 m_bitmap[2][2];
 	UINT16 *m_regs;
 	UINT16 m_color;
 	UINT16 m_addr;
@@ -138,6 +139,8 @@ public:
 	UINT8 m_palette_index;
 	UINT8 m_palette_data[3];
 	device_t *m_duart68681;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -296,8 +299,8 @@ static VIDEO_START( tmaster )
 	{
 		for (buffer = 0; buffer < 2; buffer++)
 		{
-			state->m_bitmap[layer][buffer] = machine.primary_screen->alloc_compatible_bitmap();
-			bitmap_fill(state->m_bitmap[layer][buffer], NULL, 0xff);
+			machine.primary_screen->register_screen_bitmap(state->m_bitmap[layer][buffer]);
+			state->m_bitmap[layer][buffer].fill(0xff);
 		}
 	}
 
@@ -311,23 +314,23 @@ static VIDEO_START( galgames )
 	state->m_compute_addr = galgames_compute_addr;
 }
 
-static SCREEN_UPDATE( tmaster )
+static SCREEN_UPDATE_IND16( tmaster )
 {
-	tmaster_state *state = screen->machine().driver_data<tmaster_state>();
+	tmaster_state *state = screen.machine().driver_data<tmaster_state>();
 	int layers_ctrl = -1;
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int mask = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	mask |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	mask |= 2;
 		if (mask != 0) layers_ctrl &= mask;
 	}
 #endif
 
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (layers_ctrl & 1)	copybitmap_trans(bitmap, state->m_bitmap[0][(state->m_regs[0x02/2]>>8)&1], 0,0,0,0, cliprect, 0xff);
 	if (layers_ctrl & 2)	copybitmap_trans(bitmap, state->m_bitmap[1][(state->m_regs[0x02/2]>>9)&1], 0,0,0,0, cliprect, 0xff);
@@ -356,8 +359,6 @@ static void tmaster_draw(running_machine &machine)
 
 	UINT16 pen;
 
-	bitmap_t *bitmap;
-
 	buffer	=	(state->m_regs[0x02/2] >> 8) & 3;	// 1 bit per layer, selects the currently displayed buffer
 	sw		=	 state->m_regs[0x04/2];
 	sx		=	 state->m_regs[0x06/2];
@@ -370,7 +371,7 @@ static void tmaster_draw(running_machine &machine)
 
 	layer	=	(mode >> 7) & 1;	// layer to draw to
 	buffer	=	((mode >> 6) & 1) ^ ((buffer >> layer) & 1);	// bit 6 selects whether to use the opposite buffer to that displayed
-	bitmap	=	state->m_bitmap[layer][buffer];
+	bitmap_ind16 &bitmap	=	state->m_bitmap[layer][buffer];
 
 	addr <<= 1;
 
@@ -422,7 +423,7 @@ static void tmaster_draw(running_machine &machine)
 							pen = dst_pen;
 
 						if ((pen != 0xff) && (sx + x >= 0) && (sx + x < 400) && (sy + y >= 0) && (sy + y < 256))
-							*BITMAP_ADDR16(bitmap, sy + y, sx + x) = pen + color;
+							bitmap.pix16(sy + y, sx + x) = pen + color;
 					}
 				}
 			}
@@ -437,7 +438,7 @@ static void tmaster_draw(running_machine &machine)
 						pen = gfxdata[addr++];
 
 						if ((pen != 0xff) && (sx + x >= 0) && (sx + x < 400) && (sy + y >= 0) && (sy + y < 256))
-							*BITMAP_ADDR16(bitmap, sy + y, sx + x) = pen + color;
+							bitmap.pix16(sy + y, sx + x) = pen + color;
 					}
 				}
 			}
@@ -454,7 +455,7 @@ static void tmaster_draw(running_machine &machine)
 				for (x = x0; x != x1; x += dx)
 				{
 					if ((sx + x >= 0) && (sx + x < 400) && (sy + y >= 0) && (sy + y < 256))
-						*BITMAP_ADDR16(bitmap, sy + y, sx + x) = pen;
+						bitmap.pix16(sy + y, sx + x) = pen;
 				}
 			}
 			break;
@@ -876,14 +877,17 @@ static MACHINE_RESET( tmaster )
 	state->m_duart68681 = machine.device( "duart68681" );
 }
 
-static INTERRUPT_GEN( tm3k_interrupt )
+static TIMER_DEVICE_CALLBACK( tm3k_interrupt )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:		device_set_input_line(device, 2, HOLD_LINE);	break;
-		case 1:		device_set_input_line(device, 3, HOLD_LINE);	break;
-		default:	device_set_input_line(device, 1, HOLD_LINE);	break;
-	}
+	tmaster_state *state = timer.machine().driver_data<tmaster_state>();
+	int scanline = param;
+
+	if(scanline == 0) // vblank, FIXME
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
+	else if((scanline % 16) == 0)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	// lev 2 triggered at the end of the blit
 }
 
 static const duart68681_config tmaster_duart68681_config =
@@ -898,7 +902,7 @@ static const duart68681_config tmaster_duart68681_config =
 static MACHINE_CONFIG_START( tm3k, tmaster_state )
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_24MHz / 2) /* 12MHz */
 	MCFG_CPU_PROGRAM_MAP(tmaster_map)
-	MCFG_CPU_VBLANK_INT_HACK(tm3k_interrupt,2+20) // ??
+	MCFG_TIMER_ADD_SCANLINE("scantimer", tm3k_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_START(tmaster)
 	MCFG_MACHINE_RESET(tmaster)
@@ -910,10 +914,9 @@ static MACHINE_CONFIG_START( tm3k, tmaster_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(400, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 400-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE(tmaster)
+	MCFG_SCREEN_UPDATE_STATIC(tmaster)
 
 	MCFG_PALETTE_LENGTH(0x1000)
 
@@ -931,17 +934,6 @@ static MACHINE_CONFIG_DERIVED( tm, tm3k )
 	MCFG_OKIM6295_REPLACE("oki", 1122000, OKIM6295_PIN7_HIGH) // clock frequency & pin 7 not verified
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 MACHINE_CONFIG_END
-
-
-static INTERRUPT_GEN( galgames_interrupt )
-{
-	switch (cpu_getiloops(device))
-	{
-		case 0:		device_set_input_line(device, 3, HOLD_LINE);	break;
-					// lev 2 triggered at the end of a blit
-		default:	device_set_input_line(device, 1, HOLD_LINE);	break;
-	}
-}
 
 static MACHINE_RESET( galgames )
 {
@@ -965,7 +957,7 @@ static MACHINE_RESET( galgames )
 static MACHINE_CONFIG_START( galgames, tmaster_state )
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_24MHz / 2)
 	MCFG_CPU_PROGRAM_MAP(galgames_map)
-	MCFG_CPU_VBLANK_INT_HACK(galgames_interrupt, 1+20)	// ??
+	MCFG_TIMER_ADD_SCANLINE("scantimer", tm3k_interrupt, "screen", 0, 1)
 
 	// 5 EEPROMs on the motherboard (for BIOS + 4 Carts)
 	MCFG_EEPROM_ADD(GALGAMES_EEPROM_BIOS,  galgames_eeprom_interface)
@@ -978,12 +970,11 @@ static MACHINE_CONFIG_START( galgames, tmaster_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(400, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 400-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE(tmaster)
+	MCFG_SCREEN_UPDATE_STATIC(tmaster)
 
 	MCFG_PALETTE_LENGTH(0x1000)	// only 0x100 used
 

@@ -21,8 +21,8 @@ public:
 		: driver_device(mconfig, type, tag) { }
 
 	/* video-related */
-	bitmap_t *m_tmpbitmap0;
-	bitmap_t *m_tmpbitmap1;
+	bitmap_ind16 *m_tmpbitmap0;
+	bitmap_ind16 *m_tmpbitmap1;
 	int  m_flip_screen;
 	int  m_video_enable;
 	int  m_screen_redraw;
@@ -61,8 +61,8 @@ public:
 static VIDEO_START( mjsister )
 {
 	mjsister_state *state = machine.driver_data<mjsister_state>();
-	state->m_tmpbitmap0 = auto_bitmap_alloc(machine, 256, 256, machine.primary_screen->format());
-	state->m_tmpbitmap1 = auto_bitmap_alloc(machine, 256, 256, machine.primary_screen->format());
+	state->m_tmpbitmap0 = auto_bitmap_ind16_alloc(machine, 256, 256);
+	state->m_tmpbitmap1 = auto_bitmap_ind16_alloc(machine, 256, 256);
 
 	state->save_item(NAME(state->m_videoram0));
 	state->save_item(NAME(state->m_videoram1));
@@ -79,8 +79,8 @@ static void mjsister_plot0( running_machine &machine, int offset, UINT8 data )
 	c1 = (data & 0x0f)        + state->m_colorbank * 0x20;
 	c2 = ((data & 0xf0) >> 4) + state->m_colorbank * 0x20;
 
-	*BITMAP_ADDR16(state->m_tmpbitmap0, y, x * 2 + 0) = c1;
-	*BITMAP_ADDR16(state->m_tmpbitmap0, y, x * 2 + 1) = c2;
+	state->m_tmpbitmap0->pix16(y, x * 2 + 0) = c1;
+	state->m_tmpbitmap0->pix16(y, x * 2 + 1) = c2;
 }
 
 static void mjsister_plot1( running_machine &machine, int offset, UINT8 data )
@@ -99,8 +99,8 @@ static void mjsister_plot1( running_machine &machine, int offset, UINT8 data )
 	if (c2)
 		c2 += state->m_colorbank * 0x20 + 0x10;
 
-	*BITMAP_ADDR16(state->m_tmpbitmap1, y, x * 2 + 0) = c1;
-	*BITMAP_ADDR16(state->m_tmpbitmap1, y, x * 2 + 1) = c2;
+	state->m_tmpbitmap1->pix16(y, x * 2 + 0) = c1;
+	state->m_tmpbitmap1->pix16(y, x * 2 + 1) = c2;
 }
 
 static WRITE8_HANDLER( mjsister_videoram_w )
@@ -118,9 +118,9 @@ static WRITE8_HANDLER( mjsister_videoram_w )
 	}
 }
 
-static SCREEN_UPDATE( mjsister )
+static SCREEN_UPDATE_IND16( mjsister )
 {
-	mjsister_state *state = screen->machine().driver_data<mjsister_state>();
+	mjsister_state *state = screen.machine().driver_data<mjsister_state>();
 	int flip = state->m_flip_screen;
 	int i, j;
 
@@ -130,8 +130,8 @@ static SCREEN_UPDATE( mjsister )
 
 		for (offs = 0; offs < 0x8000; offs++)
 		{
-			mjsister_plot0(screen->machine(), offs, state->m_videoram0[offs]);
-			mjsister_plot1(screen->machine(), offs, state->m_videoram1[offs]);
+			mjsister_plot0(screen.machine(), offs, state->m_videoram0[offs]);
+			mjsister_plot1(screen.machine(), offs, state->m_videoram1[offs]);
 		}
 		state->m_screen_redraw = 0;
 	}
@@ -140,13 +140,13 @@ static SCREEN_UPDATE( mjsister )
 	{
 		for (i = 0; i < 256; i++)
 			for (j = 0; j < 4; j++)
-				*BITMAP_ADDR16(bitmap, i, 256 + j) = state->m_colorbank * 0x20;
+				bitmap.pix16(i, 256 + j) = state->m_colorbank * 0x20;
 
-		copybitmap(bitmap, state->m_tmpbitmap0, flip, flip, 0, 0, cliprect);
-		copybitmap_trans(bitmap, state->m_tmpbitmap1, flip, flip, 2, 0, cliprect, 0);
+		copybitmap(bitmap, *state->m_tmpbitmap0, flip, flip, 0, 0, cliprect);
+		copybitmap_trans(bitmap, *state->m_tmpbitmap1, flip, flip, 2, 0, cliprect, 0);
 	}
 	else
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 	return 0;
 }
 
@@ -508,10 +508,9 @@ static MACHINE_CONFIG_START( mjsister, mjsister_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256+4, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255+4, 8, 247)
-	MCFG_SCREEN_UPDATE(mjsister)
+	MCFG_SCREEN_UPDATE_STATIC(mjsister)
 
 	MCFG_PALETTE_INIT(RRRR_GGGG_BBBB)
 	MCFG_PALETTE_LENGTH(256)

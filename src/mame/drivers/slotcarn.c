@@ -140,7 +140,7 @@ static MC6845_UPDATE_ROW( update_row )
 				col |= 0x03;
 
 			col = state->m_ram_palette[col & 0x3ff];
-			*BITMAP_ADDR32(bitmap, y, x) = pens[col ? col : (lscnblk ? 8 : 0)];
+			bitmap.pix32(y, x) = pens[col ? col : (lscnblk ? 8 : 0)];
 
 			x++;
 		}
@@ -535,15 +535,6 @@ GFXDECODE_END
 
 
 
-static SCREEN_UPDATE( slotcarn )
-{
-	mc6845_device *mc6845 = screen->machine().device<mc6845_device>("crtc");
-	mc6845->update(bitmap, cliprect);
-
-	return 0;
-}
-
-
 static MACHINE_START(merit)
 {
 	slotcarn_state *state = machine.driver_data<slotcarn_state>();
@@ -620,9 +611,8 @@ static MACHINE_CONFIG_START( slotcarn, slotcarn_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, 512, 0, 512, 256, 0, 256)	/* temporary, CRTC will configure screen */
-	MCFG_SCREEN_UPDATE(slotcarn)
+	MCFG_SCREEN_UPDATE_DEVICE("crtc", mc6845_device, screen_update)
 
 	MCFG_MC6845_ADD("crtc", MC6845, CRTC_CLOCK, mc6845_intf)
 

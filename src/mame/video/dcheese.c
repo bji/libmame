@@ -95,7 +95,7 @@ VIDEO_START( dcheese )
 	dcheese_state *state = machine.driver_data<dcheese_state>();
 
 	/* the destination bitmap is not directly accessible to the CPU */
-	state->m_dstbitmap = auto_bitmap_alloc(machine, DSTBITMAP_WIDTH, DSTBITMAP_HEIGHT, machine.primary_screen->format());
+	state->m_dstbitmap = auto_bitmap_ind16_alloc(machine, DSTBITMAP_WIDTH, DSTBITMAP_HEIGHT);
 
 	/* create a timer */
 	state->m_blitter_timer = machine.scheduler().timer_alloc(FUNC(blitter_scanline_callback));
@@ -116,18 +116,18 @@ VIDEO_START( dcheese )
  *
  *************************************/
 
-SCREEN_UPDATE( dcheese )
+SCREEN_UPDATE_IND16( dcheese )
 {
-	dcheese_state *state = screen->machine().driver_data<dcheese_state>();
+	dcheese_state *state = screen.machine().driver_data<dcheese_state>();
 	int x, y;
 
 	/* update the pixels */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
-		UINT16 *dest = BITMAP_ADDR16(bitmap, y, 0);
-		UINT16 *src = BITMAP_ADDR16(state->m_dstbitmap, (y + state->m_blitter_vidparam[0x28/2]) % DSTBITMAP_HEIGHT, 0);
+		UINT16 *dest = &bitmap.pix16(y);
+		UINT16 *src = &state->m_dstbitmap->pix16((y + state->m_blitter_vidparam[0x28/2]) % DSTBITMAP_HEIGHT);
 
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 			dest[x] = src[x];
 	}
 	return 0;
@@ -148,7 +148,7 @@ static void do_clear( running_machine &machine )
 
 	/* clear the requested scanlines */
 	for (y = state->m_blitter_vidparam[0x2c/2]; y < state->m_blitter_vidparam[0x2a/2]; y++)
-		memset(BITMAP_ADDR16(state->m_dstbitmap, y % DSTBITMAP_HEIGHT, 0), 0, DSTBITMAP_WIDTH * 2);
+		memset(&state->m_dstbitmap->pix16(y % DSTBITMAP_HEIGHT), 0, DSTBITMAP_WIDTH * 2);
 
 	/* signal an IRQ when done (timing is just a guess) */
 	machine.scheduler().timer_set(machine.primary_screen->scan_period(), FUNC(dcheese_signal_irq_callback), 1);
@@ -182,7 +182,7 @@ static void do_blit( running_machine &machine )
 	/* loop over target rows */
 	for (y = ystart; y <= yend; y++)
 	{
-		UINT16 *dst = BITMAP_ADDR16(state->m_dstbitmap, y % DSTBITMAP_HEIGHT, 0);
+		UINT16 *dst = &state->m_dstbitmap->pix16(y % DSTBITMAP_HEIGHT);
 
 		/* loop over target columns */
 		for (x = xstart; x <= xend; x++)

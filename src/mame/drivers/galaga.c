@@ -737,44 +737,43 @@ static WRITE8_HANDLER( bosco_flip_screen_w )
 static WRITE8_HANDLER( bosco_latch_w )
 {
 	galaga_state *state = space->machine().driver_data<galaga_state>();
-	int bit = data & 1;
 
 	switch (offset)
 	{
 		case 0x00:	/* IRQ1 */
-			cpu_interrupt_enable(space->machine().device("maincpu"), bit);
-			if (!bit)
+			state->m_main_irq_mask = data & 1;
+			if (!state->m_main_irq_mask)
 				cputag_set_input_line(space->machine(), "maincpu", 0, CLEAR_LINE);
 			break;
 
 		case 0x01:	/* IRQ2 */
-			cpu_interrupt_enable(space->machine().device("sub"), bit);
-			if (!bit)
+			state->m_sub_irq_mask = data & 1;
+			if (!state->m_sub_irq_mask)
 				cputag_set_input_line(space->machine(), "sub", 0, CLEAR_LINE);
 			break;
 
 		case 0x02:	/* NMION */
-			cpu_interrupt_enable(space->machine().device("sub2"), !bit);
+			state->m_sub2_nmi_mask = !(data & 1);
 			break;
 
 		case 0x03:	/* RESET */
-			cputag_set_input_line(space->machine(), "sub", INPUT_LINE_RESET, bit ? CLEAR_LINE : ASSERT_LINE);
-			cputag_set_input_line(space->machine(), "sub2", INPUT_LINE_RESET, bit ? CLEAR_LINE : ASSERT_LINE);
+			cputag_set_input_line(space->machine(), "sub", INPUT_LINE_RESET, (data & 1) ? CLEAR_LINE : ASSERT_LINE);
+			cputag_set_input_line(space->machine(), "sub2", INPUT_LINE_RESET, (data & 1) ? CLEAR_LINE : ASSERT_LINE);
 			break;
 
 		case 0x04:	/* n.c. */
 			break;
 
 		case 0x05:	/* MOD 0 (xevious: n.c.) */
-			state->m_custom_mod = (state->m_custom_mod & ~0x01) | (bit << 0);
+			state->m_custom_mod = (state->m_custom_mod & ~0x01) | ((data & 1) << 0);
 			break;
 
 		case 0x06:	/* MOD 1 (xevious: n.c.) */
-			state->m_custom_mod = (state->m_custom_mod & ~0x02) | (bit << 1);
+			state->m_custom_mod = (state->m_custom_mod & ~0x02) | ((data & 1) << 1);
 			break;
 
 		case 0x07:	/* MOD 2 (xevious: n.c.) */
-			state->m_custom_mod = (state->m_custom_mod & ~0x04) | (bit << 2);
+			state->m_custom_mod = (state->m_custom_mod & ~0x04) | ((data & 1) << 2);
 			break;
 	}
 }
@@ -865,7 +864,8 @@ static TIMER_CALLBACK( cpu3_interrupt_callback )
 	galaga_state *state = machine.driver_data<galaga_state>();
 	int scanline = param;
 
-	nmi_line_pulse(machine.device("sub2"));
+	if(state->m_sub2_nmi_mask)
+		nmi_line_pulse(machine.device("sub2"));
 
 	scanline = scanline + 128;
 	if (scanline >= 272)
@@ -884,6 +884,9 @@ static MACHINE_START( galaga )
 	state->m_cpu3_interrupt_timer = machine.scheduler().timer_alloc(FUNC(cpu3_interrupt_callback));
 	state->m_custom_mod = 0;
 	state_save_register_global(machine, state->m_custom_mod);
+	state->save_item(NAME(state->m_main_irq_mask));
+	state->save_item(NAME(state->m_sub_irq_mask));
+	state->save_item(NAME(state->m_sub2_nmi_mask));
 }
 
 static void bosco_latch_reset(running_machine &machine)
@@ -987,8 +990,8 @@ static ADDRESS_MAP_START( digdug_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x9000, 0x93ff) AM_RAM AM_SHARE("share3") AM_BASE_MEMBER(digdug_state, m_digdug_posram)	/* work RAM + sprite registers */
 	AM_RANGE(0x9800, 0x9bff) AM_RAM AM_SHARE("share4") AM_BASE_MEMBER(digdug_state, m_digdug_flpram)	/* work RAM + sprite registers */
 	AM_RANGE(0xa000, 0xa007) AM_READNOP AM_WRITE(digdug_PORT_w)		/* video latches (spurious reads when setting latch bits) */
-	AM_RANGE(0xb800, 0xb83f) AM_DEVREADWRITE("earom", atari_vg_earom_r, atari_vg_earom_w)	/* non volatile memory data */
-	AM_RANGE(0xb840, 0xb840) AM_DEVWRITE("earom", atari_vg_earom_ctrl_w)					/* non volatile memory control */
+	AM_RANGE(0xb800, 0xb83f) AM_DEVREADWRITE_MODERN("earom", atari_vg_earom_device, read, write)	/* non volatile memory data */
+	AM_RANGE(0xb840, 0xb840) AM_DEVWRITE_MODERN("earom", atari_vg_earom_device, ctrl_w)					/* non volatile memory control */
 ADDRESS_MAP_END
 
 
@@ -1625,8 +1628,8 @@ static const namco_interface namco_config =
 static const char *const battles_sample_names[] =
 {
 	"*battles",
-	"explo1.wav",	/* ground target explosion */
-	"explo2.wav",	/* Solvalou explosion */
+	"explo1",	/* ground target explosion */
+	"explo2",	/* Solvalou explosion */
 	0	/* end of array */
 };
 
@@ -1637,17 +1640,32 @@ static const samples_interface battles_samples_interface =
 };
 
 
+static INTERRUPT_GEN( main_vblank_irq )
+{
+	galaga_state *state = device->machine().driver_data<galaga_state>();
+
+	if(state->m_main_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
+
+static INTERRUPT_GEN( sub_vblank_irq )
+{
+	galaga_state *state = device->machine().driver_data<galaga_state>();
+
+	if(state->m_sub_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
 
 static MACHINE_CONFIG_START( bosco, bosco_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(bosco_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(bosco_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", sub_vblank_irq)
 
 	MCFG_CPU_ADD("sub2", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(bosco_map)
@@ -1669,10 +1687,9 @@ static MACHINE_CONFIG_START( bosco, bosco_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/3, 384, 0, 288, 264, 16, 224+16)
-	MCFG_SCREEN_UPDATE(bosco)
-	MCFG_SCREEN_EOF(bosco)
+	MCFG_SCREEN_UPDATE_STATIC(bosco)
+	MCFG_SCREEN_VBLANK_STATIC(bosco)
 
 	MCFG_GFXDECODE(bosco)
 	MCFG_PALETTE_LENGTH(64*4+64*4+4+64)
@@ -1699,11 +1716,11 @@ static MACHINE_CONFIG_START( galaga, galaga_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(galaga_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(galaga_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", sub_vblank_irq)
 
 	MCFG_CPU_ADD("sub2", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(galaga_map)
@@ -1721,10 +1738,9 @@ static MACHINE_CONFIG_START( galaga, galaga_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/3, 384, 0, 288, 264, 0, 224)
-	MCFG_SCREEN_UPDATE(galaga)
-	MCFG_SCREEN_EOF(galaga)
+	MCFG_SCREEN_UPDATE_STATIC(galaga)
+	MCFG_SCREEN_VBLANK_STATIC(galaga)
 
 	MCFG_GFXDECODE(galaga)
 	MCFG_PALETTE_LENGTH(64*4+64*4+64)
@@ -1768,11 +1784,11 @@ static MACHINE_CONFIG_START( xevious, xevious_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(xevious_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80,MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(xevious_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", sub_vblank_irq)
 
 	MCFG_CPU_ADD("sub2", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(xevious_map)
@@ -1791,9 +1807,8 @@ static MACHINE_CONFIG_START( xevious, xevious_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/3, 384, 0, 288, 264, 0, 224)
-	MCFG_SCREEN_UPDATE(xevious)
+	MCFG_SCREEN_UPDATE_STATIC(xevious)
 
 	MCFG_GFXDECODE(xevious)
 	MCFG_PALETTE_LENGTH(128*4+64*8+64*2)
@@ -1850,11 +1865,11 @@ static MACHINE_CONFIG_START( digdug, digdug_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(digdug_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(digdug_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", sub_vblank_irq)
 
 	MCFG_CPU_ADD("sub2", Z80, MASTER_CLOCK/6)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(digdug_map)
@@ -1873,9 +1888,8 @@ static MACHINE_CONFIG_START( digdug, digdug_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/3, 384, 0, 288, 264, 0, 224)
-	MCFG_SCREEN_UPDATE(digdug)
+	MCFG_SCREEN_UPDATE_STATIC(digdug)
 
 	MCFG_GFXDECODE(digdug)
 	MCFG_PALETTE_LENGTH(16*2+64*4+64*4)

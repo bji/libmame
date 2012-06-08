@@ -21,13 +21,6 @@
 #include "video/resnet.h"
 
 
-static const rectangle spritevisiblearea =
-{
-	2*8, 34*8-1,
-	0*8, 28*8-1
-};
-
-
 
 /***************************************************************************
 
@@ -177,6 +170,7 @@ VIDEO_START( pacman )
 	state->m_colortablebank = 0;
 	state->m_flipscreen = 0;
 	state->m_bgpriority = 0;
+	state->m_inv_spr = 0;
 
 	/* In the Pac Man based games (NOT Pengo) the first two sprites must be offset */
 	/* one pixel to the left to get a more correct placement */
@@ -184,74 +178,96 @@ VIDEO_START( pacman )
 
 	state->m_bg_tilemap = tilemap_create( machine, pacman_get_tile_info, pacman_scan_rows,  8, 8, 36, 28 );
 
-	tilemap_set_scrolldx( state->m_bg_tilemap, 0, 384 - 288 );
-	tilemap_set_scrolldy( state->m_bg_tilemap, 0, 264 - 224 );
+	state->m_bg_tilemap->set_scrolldx(0, 384 - 288 );
+	state->m_bg_tilemap->set_scrolldy(0, 264 - 224 );
+}
+
+VIDEO_START( birdiy )
+{
+	pacman_state *state = machine.driver_data<pacman_state>();
+
+	VIDEO_START_CALL( pacman );
+	state->m_xoffsethack = 0;
+	state->m_inv_spr = 1; // sprites are mirrored in X-axis compared to normal behaviour
 }
 
 WRITE8_HANDLER( pacman_videoram_w )
 {
 	pacman_state *state = space->machine().driver_data<pacman_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty( state->m_bg_tilemap, offset );
+	state->m_bg_tilemap->mark_tile_dirty(offset );
 }
 
 WRITE8_HANDLER( pacman_colorram_w )
 {
 	pacman_state *state = space->machine().driver_data<pacman_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty( state->m_bg_tilemap, offset );
+	state->m_bg_tilemap->mark_tile_dirty(offset );
 }
 
 WRITE8_HANDLER( pacman_flipscreen_w )
 {
 	pacman_state *state = space->machine().driver_data<pacman_state>();
 	state->m_flipscreen = data & 1;
-	tilemap_set_flip( state->m_bg_tilemap, state->m_flipscreen * ( TILEMAP_FLIPX + TILEMAP_FLIPY ) );
+	state->m_bg_tilemap->set_flip(state->m_flipscreen * ( TILEMAP_FLIPX + TILEMAP_FLIPY ) );
 }
 
 
-SCREEN_UPDATE( pacman )
+SCREEN_UPDATE_IND16( pacman )
 {
-	pacman_state *state = screen->machine().driver_data<pacman_state>();
+	pacman_state *state = screen.machine().driver_data<pacman_state>();
 	if (state->m_bgpriority != 0)
-		bitmap_fill(bitmap,cliprect,0);
+		bitmap.fill(0, cliprect);
 	else
-		tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,TILEMAP_DRAW_OPAQUE,0);
+		state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE,0);
 
-	if( screen->machine().generic.spriteram_size )
+	if( screen.machine().generic.spriteram_size )
 	{
-		UINT8 *spriteram = screen->machine().generic.spriteram.u8;
-		UINT8 *spriteram_2 = screen->machine().generic.spriteram2.u8;
+		UINT8 *spriteram = screen.machine().generic.spriteram.u8;
+		UINT8 *spriteram_2 = screen.machine().generic.spriteram2.u8;
 		int offs;
 
-		rectangle spriteclip = spritevisiblearea;
-		sect_rect(&spriteclip, cliprect);
+		rectangle spriteclip(2*8, 34*8-1, 0*8, 28*8-1);
+		spriteclip &= cliprect;
 
 		/* Draw the sprites. Note that it is important to draw them exactly in this */
 		/* order, to have the correct priorities. */
-		for (offs = screen->machine().generic.spriteram_size - 2;offs > 2*2;offs -= 2)
+		for (offs = screen.machine().generic.spriteram_size - 2;offs > 2*2;offs -= 2)
 		{
 			int color;
 			int sx,sy;
+			UINT8 fx,fy;
 
-			sx = 272 - spriteram_2[offs + 1];
-			sy = spriteram_2[offs] - 31;
+			if(state->m_inv_spr)
+			{
+				sx = spriteram_2[offs + 1];
+				sy = 240 - (spriteram_2[offs]);
+			}
+			else
+			{
+				sx = 272 - spriteram_2[offs + 1];
+				sy = spriteram_2[offs] - 31;
+			}
+
+			fx = (spriteram[offs] & 1) ^ state->m_inv_spr;
+			fy = (spriteram[offs] & 2) ^ ((state->m_inv_spr) << 1);
+
 			color = ( spriteram[offs + 1] & 0x1f ) | (state->m_colortablebank << 5) | (state->m_palettebank << 6 );
 
-			drawgfx_transmask(bitmap,&spriteclip,screen->machine().gfx[1],
+			drawgfx_transmask(bitmap,spriteclip,screen.machine().gfx[1],
 					( spriteram[offs] >> 2 ) | (state->m_spritebank << 6),
 					color,
-					spriteram[offs] & 1,spriteram[offs] & 2,
+					fx,fy,
 					sx,sy,
-					colortable_get_transpen_mask(screen->machine().colortable, screen->machine().gfx[1], color & 0x3f, 0));
+					colortable_get_transpen_mask(screen.machine().colortable, screen.machine().gfx[1], color & 0x3f, 0));
 
 			/* also plot the sprite with wraparound (tunnel in Crush Roller) */
-			drawgfx_transmask(bitmap,&spriteclip,screen->machine().gfx[1],
+			drawgfx_transmask(bitmap,spriteclip,screen.machine().gfx[1],
 					( spriteram[offs] >> 2 ) | (state->m_spritebank << 6),
 					color,
-					spriteram[offs] & 1,spriteram[offs] & 2,
+					fx,fy,
 					sx - 256,sy,
-					colortable_get_transpen_mask(screen->machine().colortable, screen->machine().gfx[1], color & 0x3f, 0));
+					colortable_get_transpen_mask(screen.machine().colortable, screen.machine().gfx[1], color & 0x3f, 0));
 		}
 		/* In the Pac Man based games (NOT Pengo) the first two sprites must be offset */
 		/* one pixel to the left to get a more correct placement */
@@ -259,30 +275,42 @@ SCREEN_UPDATE( pacman )
 		{
 			int color;
 			int sx,sy;
+			UINT8 fx,fy;
 
-			sx = 272 - spriteram_2[offs + 1];
-			sy = spriteram_2[offs] - 31;
+			if(state->m_inv_spr)
+			{
+				sx = spriteram_2[offs + 1];
+				sy = 240 - (spriteram_2[offs]);
+			}
+			else
+			{
+				sx = 272 - spriteram_2[offs + 1];
+				sy = spriteram_2[offs] - 31;
+			}
 			color = ( spriteram[offs + 1] & 0x1f ) | (state->m_colortablebank << 5) | (state->m_palettebank << 6 );
 
-			drawgfx_transmask(bitmap,&spriteclip,screen->machine().gfx[1],
+			fx = (spriteram[offs] & 1) ^ state->m_inv_spr;
+			fy = (spriteram[offs] & 2) ^ ((state->m_inv_spr) << 1);
+
+			drawgfx_transmask(bitmap,spriteclip,screen.machine().gfx[1],
 					( spriteram[offs] >> 2 ) | (state->m_spritebank << 6),
 					color,
-					spriteram[offs] & 1,spriteram[offs] & 2,
+					fx,fy,
 					sx,sy + state->m_xoffsethack,
-					colortable_get_transpen_mask(screen->machine().colortable, screen->machine().gfx[1], color & 0x3f, 0));
+					colortable_get_transpen_mask(screen.machine().colortable, screen.machine().gfx[1], color & 0x3f, 0));
 
 			/* also plot the sprite with wraparound (tunnel in Crush Roller) */
-			drawgfx_transmask(bitmap,&spriteclip,screen->machine().gfx[1],
+			drawgfx_transmask(bitmap,spriteclip,screen.machine().gfx[1],
 					( spriteram[offs] >> 2 ) | (state->m_spritebank << 6),
 					color,
-					spriteram[offs] & 2,spriteram[offs] & 1,
+					fy,fx,			//FIXME: flipping bits are really supposed to be inverted here?
 					sx - 256,sy + state->m_xoffsethack,
-					colortable_get_transpen_mask(screen->machine().colortable, screen->machine().gfx[1], color & 0x3f, 0));
+					colortable_get_transpen_mask(screen.machine().colortable, screen.machine().gfx[1], color & 0x3f, 0));
 		}
 	}
 
 	if (state->m_bgpriority != 0)
-		tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
+		state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -304,13 +332,13 @@ VIDEO_START( pengo )
 	state->m_colortablebank = 0;
 	state->m_flipscreen = 0;
 	state->m_bgpriority = 0;
-
+	state->m_inv_spr = 0;
 	state->m_xoffsethack = 0;
 
 	state->m_bg_tilemap = tilemap_create( machine, pacman_get_tile_info, pacman_scan_rows,  8, 8, 36, 28 );
 
-	tilemap_set_scrolldx( state->m_bg_tilemap, 0, 384 - 288 );
-	tilemap_set_scrolldy( state->m_bg_tilemap, 0, 264 - 224 );
+	state->m_bg_tilemap->set_scrolldx(0, 384 - 288 );
+	state->m_bg_tilemap->set_scrolldy(0, 264 - 224 );
 }
 
 WRITE8_HANDLER( pengo_palettebank_w )
@@ -319,7 +347,7 @@ WRITE8_HANDLER( pengo_palettebank_w )
 	if (state->m_palettebank != data)
 	{
 		state->m_palettebank = data;
-		tilemap_mark_all_tiles_dirty( state->m_bg_tilemap );
+		state->m_bg_tilemap ->mark_all_dirty();
 	}
 }
 
@@ -329,7 +357,7 @@ WRITE8_HANDLER( pengo_colortablebank_w )
 	if (state->m_colortablebank != data)
 	{
 		state->m_colortablebank = data;
-		tilemap_mark_all_tiles_dirty( state->m_bg_tilemap );
+		state->m_bg_tilemap ->mark_all_dirty();
 	}
 }
 
@@ -340,7 +368,7 @@ WRITE8_HANDLER( pengo_gfxbank_w )
 	{
 		state->m_spritebank = data & 1;
 		state->m_charbank = data & 1;
-		tilemap_mark_all_tiles_dirty( state->m_bg_tilemap );
+		state->m_bg_tilemap ->mark_all_dirty();
 	}
 }
 
@@ -375,24 +403,24 @@ VIDEO_START( s2650games )
 	state->m_colortablebank = 0;
 	state->m_flipscreen = 0;
 	state->m_bgpriority = 0;
-
+	state->m_inv_spr = 0;
 	state->m_xoffsethack = 1;
 
 	state->m_bg_tilemap = tilemap_create( machine, s2650_get_tile_info,tilemap_scan_rows,8,8,32,32 );
 
-	tilemap_set_scroll_cols(state->m_bg_tilemap, 32);
+	state->m_bg_tilemap->set_scroll_cols(32);
 }
 
-SCREEN_UPDATE( s2650games )
+SCREEN_UPDATE_IND16( s2650games )
 {
-	pacman_state *state = screen->machine().driver_data<pacman_state>();
-	UINT8 *spriteram = screen->machine().generic.spriteram.u8;
-	UINT8 *spriteram_2 = screen->machine().generic.spriteram2.u8;
+	pacman_state *state = screen.machine().driver_data<pacman_state>();
+	UINT8 *spriteram = screen.machine().generic.spriteram.u8;
+	UINT8 *spriteram_2 = screen.machine().generic.spriteram2.u8;
 	int offs;
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
 
-	for (offs = screen->machine().generic.spriteram_size - 2;offs > 2*2;offs -= 2)
+	for (offs = screen.machine().generic.spriteram_size - 2;offs > 2*2;offs -= 2)
 	{
 		int color;
 		int sx,sy;
@@ -403,12 +431,12 @@ SCREEN_UPDATE( s2650games )
 		color = spriteram[offs + 1] & 0x1f;
 
 		/* TODO: ?? */
-		drawgfx_transmask(bitmap,cliprect,screen->machine().gfx[1],
+		drawgfx_transmask(bitmap,cliprect,screen.machine().gfx[1],
 				(spriteram[offs] >> 2) | ((state->m_s2650games_spriteram[offs] & 3) << 6),
 				color,
 				spriteram[offs] & 1,spriteram[offs] & 2,
 				sx,sy,
-				colortable_get_transpen_mask(screen->machine().colortable, screen->machine().gfx[1], color & 0x3f, 0));
+				colortable_get_transpen_mask(screen.machine().colortable, screen.machine().gfx[1], color & 0x3f, 0));
 	}
 	/* In the Pac Man based games (NOT Pengo) the first two sprites must be offset */
 	/* one pixel to the left to get a more correct placement */
@@ -423,12 +451,12 @@ SCREEN_UPDATE( s2650games )
 		color = spriteram[offs + 1] & 0x1f;
 
 		/* TODO: ?? */
-		drawgfx_transmask(bitmap,cliprect,screen->machine().gfx[1],
+		drawgfx_transmask(bitmap,cliprect,screen.machine().gfx[1],
 				(spriteram[offs] >> 2) | ((state->m_s2650games_spriteram[offs] & 3)<<6),
 				color,
 				spriteram[offs] & 1,spriteram[offs] & 2,
 				sx,sy + state->m_xoffsethack,
-				colortable_get_transpen_mask(screen->machine().colortable, screen->machine().gfx[1], color & 0x3f, 0));
+				colortable_get_transpen_mask(screen.machine().colortable, screen.machine().gfx[1], color & 0x3f, 0));
 	}
 	return 0;
 }
@@ -437,7 +465,7 @@ WRITE8_HANDLER( s2650games_videoram_w )
 {
 	pacman_state *state = space->machine().driver_data<pacman_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( s2650games_colorram_w )
@@ -446,20 +474,20 @@ WRITE8_HANDLER( s2650games_colorram_w )
 	int i;
 	state->m_colorram[offset & 0x1f] = data;
 	for (i = offset; i < 0x0400; i += 32)
-		tilemap_mark_tile_dirty(state->m_bg_tilemap, i);
+		state->m_bg_tilemap->mark_tile_dirty(i);
 }
 
 WRITE8_HANDLER( s2650games_scroll_w )
 {
 	pacman_state *state = space->machine().driver_data<pacman_state>();
-	tilemap_set_scrolly(state->m_bg_tilemap, offset, data);
+	state->m_bg_tilemap->set_scrolly(offset, data);
 }
 
 WRITE8_HANDLER( s2650games_tilesbank_w )
 {
 	pacman_state *state = space->machine().driver_data<pacman_state>();
 	state->m_s2650games_tileram[offset] = data;
-	tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+	state->m_bg_tilemap->mark_all_dirty();
 }
 
 
@@ -525,18 +553,18 @@ static void jrpacman_mark_tile_dirty( running_machine &machine, int offset )
 		int i;
 		for( i = 2 * 0x20; i < 56 * 0x20; i += 0x20 )
 		{
-			tilemap_mark_tile_dirty( state->m_bg_tilemap, offset + i );
+			state->m_bg_tilemap->mark_tile_dirty(offset + i );
 		}
 	}
 	else if (offset < 1792)
 	{
 		/* tiles for playfield */
-		tilemap_mark_tile_dirty( state->m_bg_tilemap, offset );
+		state->m_bg_tilemap->mark_tile_dirty(offset );
 	}
 	else
 	{
 		/* tiles & colors for top and bottom two rows */
-		tilemap_mark_tile_dirty( state->m_bg_tilemap, offset & ~0x80 );
+		state->m_bg_tilemap->mark_tile_dirty(offset & ~0x80 );
 	}
 }
 
@@ -556,13 +584,13 @@ VIDEO_START( jrpacman )
 	state->m_colortablebank = 0;
 	state->m_flipscreen = 0;
 	state->m_bgpriority = 0;
-
+	state->m_inv_spr = 0;
 	state->m_xoffsethack = 1;
 
 	state->m_bg_tilemap = tilemap_create( machine, jrpacman_get_tile_info,jrpacman_scan_rows,8,8,36,54 );
 
-	tilemap_set_transparent_pen( state->m_bg_tilemap, 0 );
-	tilemap_set_scroll_cols( state->m_bg_tilemap, 36 );
+	state->m_bg_tilemap->set_transparent_pen(0 );
+	state->m_bg_tilemap->set_scroll_cols(36 );
 }
 
 WRITE8_HANDLER( jrpacman_videoram_w )
@@ -578,7 +606,7 @@ WRITE8_HANDLER( jrpacman_charbank_w )
 	if (state->m_charbank != (data & 1))
 	{
 		state->m_charbank = data & 1;
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 	}
 }
 
@@ -594,7 +622,7 @@ WRITE8_HANDLER( jrpacman_scroll_w )
 	int i;
 	for( i = 2; i < 34; i++ )
 	{
-		tilemap_set_scrolly( state->m_bg_tilemap, i, data );
+		state->m_bg_tilemap->set_scrolly(i, data );
 	}
 }
 

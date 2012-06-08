@@ -210,13 +210,13 @@ static VIDEO_START(roul)
 	state->m_videobuf = auto_alloc_array_clear(machine, UINT8, VIDEOBUF_SIZE);
 }
 
-static SCREEN_UPDATE(roul)
+static SCREEN_UPDATE_IND16(roul)
 {
-	roul_state *state = screen->machine().driver_data<roul_state>();
+	roul_state *state = screen.machine().driver_data<roul_state>();
 	int i,j;
 	for (i = 0; i < 256; i++)
 		for (j = 0; j < 256; j++)
-			*BITMAP_ADDR16(bitmap, j, i) = state->m_videobuf[j * 256 + 255 - i];
+			bitmap.pix16(j, i) = state->m_videobuf[j * 256 + 255 - i];
 	return 0;
 }
 
@@ -287,12 +287,11 @@ static MACHINE_CONFIG_START( roul, roul_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(roul)
+	MCFG_SCREEN_UPDATE_STATIC(roul)
 
 	MCFG_PALETTE_LENGTH(0x100)
 

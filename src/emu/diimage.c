@@ -40,7 +40,9 @@
 #include "emu.h"
 #include "ui.h"
 #include "zippath.h"
-
+#include "uimenu.h"
+#include "uiimage.h"
+#include "uiswlist.h"
 
 //**************************************************************************
 //  DEVICE CONFIG IMAGE INTERFACE
@@ -80,6 +82,7 @@ device_image_interface::device_image_interface(const machine_config &mconfig, de
 	  m_full_software_name(NULL),
 	  m_software_info_ptr(NULL),
 	  m_software_part_ptr(NULL),
+	  m_software_list_name(NULL),
       m_readonly(false),
       m_created(false),
 	  m_formatlist(NULL),
@@ -107,7 +110,7 @@ device_image_interface::~device_image_interface()
 
 //-------------------------------------------------
 //  find_device_type - search trough list of
-//  device types to extact data
+//  device types to extract data
 //-------------------------------------------------
 
 const image_device_type_info *device_image_interface::find_device_type(iodevice_t type)
@@ -182,7 +185,7 @@ void device_image_interface::device_compute_hash(hash_collection &hashes, const 
 image_error_t device_image_interface::set_image_filename(const char *filename)
 {
     m_image_name = filename;
-    zippath_parent(&m_working_directory, filename);
+    zippath_parent(m_working_directory, filename);
 	m_basename.cpy(m_image_name);
 
 	int loc1 = m_image_name.rchr(0,'\\');
@@ -190,7 +193,15 @@ image_error_t device_image_interface::set_image_filename(const char *filename)
 	int loc3 = m_image_name.rchr(0,':');
 	int loc = MAX(loc1,MAX(loc2,loc3));
 	if (loc!=-1) {
-		m_basename = m_basename.substr(loc + 1,m_basename.len()-loc);
+		if (loc == loc3)
+		{
+			// temp workaround for softlists now that m_image_name contains the part name too (e.g. list:gamename:cart)
+			astring tmpstr = astring(m_basename.substr(0,loc));
+			int tmploc = tmpstr.rchr(0,':');
+			m_basename = m_basename.substr(tmploc + 1,loc-tmploc);
+		}
+		else
+			m_basename = m_basename.substr(loc + 1,m_basename.len()-loc);
 	}
 	m_basename_noext = m_basename.cpy(m_basename);
 	m_filetype = "";
@@ -352,7 +363,7 @@ bool device_image_interface::try_change_working_directory(const char *subdir)
 
     /* did we successfully identify the directory? */
     if (success)
-        zippath_combine(&m_working_directory, m_working_directory, subdir);
+        zippath_combine(m_working_directory, m_working_directory, subdir);
 
     return success;
 }
@@ -532,10 +543,9 @@ UINT32 device_image_interface::crc()
 -------------------------------------------------*/
 void device_image_interface::battery_load(void *buffer, int length, int fill)
 {
-    astring *fname = astring_assemble_4(astring_alloc(), device().machine().system().name, PATH_SEPARATOR, m_basename_noext, ".nv");
+    astring fname(device().machine().system().name, PATH_SEPARATOR, m_basename_noext, ".nv");
 
-    image_battery_load_by_name(device().machine().options(), astring_c(fname), buffer, length, fill);
-    astring_free(fname);
+    image_battery_load_by_name(device().machine().options(), fname, buffer, length, fill);
 }
 
 /*-------------------------------------------------
@@ -546,10 +556,9 @@ void device_image_interface::battery_load(void *buffer, int length, int fill)
 -------------------------------------------------*/
 void device_image_interface::battery_save(const void *buffer, int length)
 {
-    astring *fname = astring_assemble_4(astring_alloc(), device().machine().system().name, PATH_SEPARATOR, m_basename_noext, ".nv");
+    astring fname(device().machine().system().name, PATH_SEPARATOR, m_basename_noext, ".nv");
 
-    image_battery_save_by_name(device().machine().options(), astring_c(fname), buffer, length);
-    astring_free(fname);
+    image_battery_save_by_name(device().machine().options(), fname, buffer, length);
 }
 
 //-------------------------------------------------
@@ -605,7 +614,7 @@ image_error_t device_image_interface::load_image_by_path(UINT32 open_flags, cons
     astring revised_path;
 
     /* attempt to read the file */
-    filerr = zippath_fopen(path, open_flags, &m_file, &revised_path);
+    filerr = zippath_fopen(path, open_flags, m_file, revised_path);
 
     /* did the open succeed? */
     switch(filerr)
@@ -614,6 +623,60 @@ image_error_t device_image_interface::load_image_by_path(UINT32 open_flags, cons
             /* success! */
             m_readonly = (open_flags & OPEN_FLAG_WRITE) ? 0 : 1;
             m_created = (open_flags & OPEN_FLAG_CREATE) ? 1 : 0;
+            err = IMAGE_ERROR_SUCCESS;
+            break;
+
+        case FILERR_NOT_FOUND:
+        case FILERR_ACCESS_DENIED:
+            /* file not found (or otherwise cannot open); continue */
+            err = IMAGE_ERROR_FILENOTFOUND;
+            break;
+
+        case FILERR_OUT_OF_MEMORY:
+            /* out of memory */
+            err = IMAGE_ERROR_OUTOFMEMORY;
+            break;
+
+        case FILERR_ALREADY_OPEN:
+            /* this shouldn't happen */
+            err = IMAGE_ERROR_ALREADYOPEN;
+            break;
+
+        case FILERR_FAILURE:
+        case FILERR_TOO_MANY_FILES:
+        case FILERR_INVALID_DATA:
+        default:
+            /* other errors */
+            err = IMAGE_ERROR_INTERNAL;
+            break;
+    }
+
+    /* if successful, set the file name */
+    if (filerr == FILERR_NONE)
+        set_image_filename(revised_path);
+
+    return err;
+}
+
+int device_image_interface::reopen_for_write(const char *path)
+{
+	if(m_file)
+		core_fclose(m_file);
+
+    file_error filerr = FILERR_NOT_FOUND;
+    image_error_t err = IMAGE_ERROR_FILENOTFOUND;
+    astring revised_path;
+
+    /* attempt to open the file for writing*/
+    filerr = zippath_fopen(path, OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE, m_file, revised_path);
+
+    /* did the open succeed? */
+    switch(filerr)
+    {
+        case FILERR_NONE:
+            /* success! */
+            m_readonly = 0;
+            m_created = 1;
             err = IMAGE_ERROR_SUCCESS;
             break;
 
@@ -811,11 +874,11 @@ bool device_image_interface::load_internal(const char *path, bool is_create, int
 	/* Check if there's a software list defined for this device and use that if we're not creating an image */
 	if (!filename_has_period)
 	{
-		softload = load_software_part( device().machine().options(), this, path, &m_software_info_ptr, &m_software_part_ptr, &m_full_software_name );
+		softload = load_software_part( device().machine().options(), this, path, &m_software_info_ptr, &m_software_part_ptr, &m_full_software_name, &m_software_list_name );
 		// if we had launched from softlist with a specified part, e.g. "shortname:part"
 		// we would have recorded the wrong name, so record it again based on software_info
-		if (m_software_info_ptr && m_software_info_ptr->shortname)
-			m_err = set_image_filename(m_software_info_ptr->shortname);
+		if (m_software_info_ptr && m_full_software_name)
+			m_err = set_image_filename(m_full_software_name);
 
 		m_from_swlist = TRUE;
 	}
@@ -991,6 +1054,7 @@ void device_image_interface::clear()
 	m_full_software_name = NULL;
 	m_software_info_ptr = NULL;
 	m_software_part_ptr = NULL;
+	m_software_list_name = NULL;
 }
 
 /*-------------------------------------------------
@@ -1013,18 +1077,18 @@ void device_image_interface::unload()
 
 void device_image_interface::update_names()
 {
-	const device_image_interface *image = NULL;
+	image_interface_iterator iter(device().mconfig().root_device());
 	int count = 0;
 	int index = -1;
-
-	for (bool gotone = device().mconfig().devicelist().first(image); gotone; gotone = image->next(image))
+	for (const device_image_interface *image = iter.first(); image != NULL; image = iter.next())
 	{
 		if (this == image)
 			index = count;
 		if (image->image_type() == image_type())
 			count++;
 	}
-	if (count > 1) {
+	if (count > 1)
+	{
 		m_instance_name.printf("%s%d", device_typename(image_type()), index + 1);
 		m_brief_instance_name.printf("%s%d", device_brieftypename(image_type()), index + 1);
 	}
@@ -1032,5 +1096,282 @@ void device_image_interface::update_names()
 	{
 		m_instance_name = device_typename(image_type());
 		m_brief_instance_name = device_brieftypename(image_type());
+	}
+}
+
+/*-------------------------------------------------
+    get_selection_menu - create the menu stack
+    for ui-level image selection
+-------------------------------------------------*/
+
+ui_menu *device_image_interface::get_selection_menu(running_machine &machine, render_container *container)
+{
+	return auto_alloc_clear(machine, ui_menu_control_device_image(machine, container, this));
+}
+
+ui_menu_control_device_image::ui_menu_control_device_image(running_machine &machine, render_container *container, device_image_interface *_image) : ui_menu(machine, container)
+{
+	image = _image;
+
+	sld = 0;
+	if (image->software_list_name()) {
+		software_list_device_iterator iter(machine.config().root_device());
+		for (const software_list_device *swlist = iter.first(); swlist != NULL; swlist = iter.next())
+		{
+			if (strcmp(swlist->list_name(),image->software_list_name())==0) sld = swlist;
+		}
+	}
+	swi = image->software_entry();
+	swp = image->part_entry();
+
+	if(swi)
+	{
+		state = START_OTHER_PART;
+		current_directory.cpy(image->working_directory());
+	}
+	else
+	{
+		state = START_FILE;
+
+		/* if the image exists, set the working directory to the parent directory */
+		if (image->exists())
+		{
+			current_file.cpy(image->filename());
+			zippath_parent(current_directory, current_file);
+		} else
+			current_directory.cpy(image->working_directory());
+
+		/* check to see if the path exists; if not clear it */
+		if (zippath_opendir(current_directory, NULL) != FILERR_NONE)
+			current_directory.reset();
+	}
+}
+
+ui_menu_control_device_image::~ui_menu_control_device_image()
+{
+}
+
+
+
+
+/*-------------------------------------------------
+    create_new_image - creates a new disk image
+-------------------------------------------------*/
+
+void ui_menu_control_device_image::test_create(bool &can_create, bool &need_confirm)
+{
+	astring path;
+	osd_directory_entry *entry;
+	osd_dir_entry_type file_type;
+
+	/* assemble the full path */
+	zippath_combine(path, current_directory, current_file);
+
+	/* does a file or a directory exist at the path */
+	entry = osd_stat(path);
+	file_type = (entry != NULL) ? entry->type : ENTTYPE_NONE;
+
+	switch(file_type)
+	{
+		case ENTTYPE_NONE:
+			/* no file/dir here - always create */
+			can_create = true;
+			need_confirm = false;
+			break;
+
+		case ENTTYPE_FILE:
+			/* a file exists here - ask for permission from the user */
+			can_create = true;
+			need_confirm = true;
+			break;
+
+		case ENTTYPE_DIR:
+			/* a directory exists here - we can't save over it */
+			ui_popup_time(5, "Cannot save over directory");
+			can_create = false;
+			need_confirm = false;
+			break;
+
+		default:
+			fatalerror("Unexpected");
+			can_create = false;
+			need_confirm = false;
+			break;
+	}
+}
+
+void ui_menu_control_device_image::load_software_part()
+{
+	astring temp_name(sld->list_name());
+	temp_name.cat(":");
+	temp_name.cat(swi->shortname);
+	temp_name.cat(":");
+	temp_name.cat(swp->name);
+	hook_load(temp_name, true);
+}
+
+void ui_menu_control_device_image::hook_load(astring name, bool softlist)
+{
+	image->load(name);
+	ui_menu::stack_pop(machine());
+}
+
+void ui_menu_control_device_image::populate()
+{
+}
+
+void ui_menu_control_device_image::handle()
+{
+	switch(state) {
+	case START_FILE: {
+		bool can_create = false;
+		if(image->is_creatable()) {
+			zippath_directory *directory = NULL;
+			file_error err = zippath_opendir(current_directory, &directory);
+			can_create = err == FILERR_NONE && !zippath_is_zip(directory);
+			if(directory)
+				zippath_closedir(directory);
+		}
+		submenu_result = -1;
+		ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_file_selector(machine(), container, image, current_directory, current_file, true, true, can_create, &submenu_result)));
+		state = SELECT_FILE;
+		break;
+	}
+
+	case START_SOFTLIST:
+		sld = 0;
+		ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_software(machine(), container, image->image_interface(), &sld)));
+		state = SELECT_SOFTLIST;
+		break;
+
+	case START_OTHER_PART: {
+		submenu_result = -1;
+		ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_software_parts(machine(), container, swi, swp->interface_, &swp, true, &submenu_result)));
+		state = SELECT_OTHER_PART;
+		break;
+	}
+
+	case SELECT_SOFTLIST:
+		if(!sld) {
+			ui_menu::stack_pop(machine());
+			break;
+		}
+		software_info_name = "";
+		ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_software_list(machine(), container, sld, image->image_interface(), software_info_name)));
+		state = SELECT_PARTLIST;
+		break;
+
+	case SELECT_PARTLIST:
+		swl = software_list_open(machine().options(), sld->list_name(), false, NULL);
+		swi = software_list_find(swl, software_info_name, NULL);
+		if(swinfo_has_multiple_parts(swi, image->image_interface())) {
+			submenu_result = -1;
+			swp = 0;
+			ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_software_parts(machine(), container, swi, image->image_interface(), &swp, false, &submenu_result)));
+			state = SELECT_ONE_PART;
+		} else {
+			swp = software_find_part(swi, NULL, NULL);
+			load_software_part();
+			software_list_close(swl);
+			ui_menu::stack_pop(machine());
+		}
+		break;
+
+	case SELECT_ONE_PART:
+		switch(submenu_result) {
+		case ui_menu_software_parts::T_ENTRY: {
+			load_software_part();
+			software_list_close(swl);
+			ui_menu::stack_pop(machine());
+			break;
+		}
+
+		case -1: // return to list
+			software_list_close(swl);
+			state = SELECT_SOFTLIST;
+			break;
+
+		}
+		break;
+
+	case SELECT_OTHER_PART:
+		switch(submenu_result) {
+		case ui_menu_software_parts::T_ENTRY: {
+			load_software_part();
+			break;
+		}
+
+		case ui_menu_software_parts::T_FMGR:
+			state = START_FILE;
+			handle();
+			break;
+
+		case -1: // return to system
+			ui_menu::stack_pop(machine());
+			break;
+
+		}
+		break;
+
+	case SELECT_FILE:
+		switch(submenu_result) {
+		case ui_menu_file_selector::R_EMPTY:
+			image->unload();
+			ui_menu::stack_pop(machine());
+			break;
+
+		case ui_menu_file_selector::R_FILE:
+			hook_load(current_file, false);
+			break;
+
+		case ui_menu_file_selector::R_CREATE:
+			ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_file_create(machine(), container, image, current_directory, current_file)));
+			state = CREATE_FILE;
+			break;
+
+		case ui_menu_file_selector::R_SOFTLIST:
+			state = START_SOFTLIST;
+			handle();
+			break;
+
+		case -1: // return to system
+			ui_menu::stack_pop(machine());
+			break;
+		}
+		break;
+
+	case CREATE_FILE: {
+		bool can_create, need_confirm;
+		test_create(can_create, need_confirm);
+		if(can_create) {
+			if(need_confirm) {
+				ui_menu::stack_push(auto_alloc_clear(machine(), ui_menu_confirm_save_as(machine(), container, &create_confirmed)));
+				state = CREATE_CONFIRM;
+			} else {
+				state = DO_CREATE;
+				handle();
+			}
+		} else {
+			state = START_FILE;
+			handle();
+		}
+		break;
+	}
+
+	case CREATE_CONFIRM: {
+		state = create_confirmed ? DO_CREATE : START_FILE;
+		handle();
+		break;
+	}
+
+	case DO_CREATE: {
+		astring path;
+		zippath_combine(path, current_directory, current_file);
+		int err = image->create(path, 0, NULL);
+		if (err != 0)
+			popmessage("Error: %s", image->error());
+		ui_menu::stack_pop(machine());
+		break;
+	}
 	}
 }

@@ -643,21 +643,17 @@ typedef enum
      **/
     LibMame_TextureFormat_PaletteA16    = 0x0020,
     /**
-     * 16 bpp 5-5-5 RGB
-     **/
-    LibMame_TextureFormat_RGB15         = 0x0030,
-    /**
      * 32 bpp 8-8-8 RGB
      **/
-    LibMame_TextureFormat_RGB32         = 0x0040,
+    LibMame_TextureFormat_RGB32         = 0x0030,
     /**
      * 32 bpp 8-8-8-8 ARGB
      **/
-    LibMame_TextureFormat_ARGB32        = 0x0050,
+    LibMame_TextureFormat_ARGB32        = 0x0040,
     /**
      * 16 bpp 8-8 Y/Cb, Y/Cr in sequence
      **/
-    LibMame_TextureFormat_YUY16         = 0x0060
+    LibMame_TextureFormat_YUY16         = 0x0050
 } LibMame_TextureFormat;
 
 

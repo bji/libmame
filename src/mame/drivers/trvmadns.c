@@ -204,7 +204,7 @@ static WRITE8_HANDLER( trvmadns_tileram_w )
 	}
 
 	state->m_tileram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset >> 1);
+	state->m_bg_tilemap->mark_tile_dirty(offset >> 1);
 }
 
 
@@ -272,7 +272,7 @@ static TILE_GET_INFO( get_bg_tile_info )
 
 	SET_TILE_INFO(0,tile,color,flag);
 
-	tileinfo->category = (attr & 0x20)>>5;
+	tileinfo.category = (attr & 0x20)>>5;
 }
 
 static VIDEO_START( trvmadns )
@@ -280,18 +280,18 @@ static VIDEO_START( trvmadns )
 	trvmadns_state *state = machine.driver_data<trvmadns_state>();
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 
-//  tilemap_set_transparent_pen(fg_tilemap,1);
+//  fg_tilemap->set_transparent_pen(1);
 
 	gfx_element_set_source(machine.gfx[0], state->m_gfxram);
 }
 
-static SCREEN_UPDATE( trvmadns )
+static SCREEN_UPDATE_IND16( trvmadns )
 {
-	trvmadns_state *state = screen->machine().driver_data<trvmadns_state>();
+	trvmadns_state *state = screen.machine().driver_data<trvmadns_state>();
 	int x,y,count;
-	const gfx_element *gfx = screen->machine().gfx[0];
+	const gfx_element *gfx = screen.machine().gfx[0];
 
-	bitmap_fill(bitmap,cliprect,0xd);
+	bitmap.fill(0xd, cliprect);
 
 	count = 0;
 
@@ -350,10 +350,9 @@ static MACHINE_CONFIG_START( trvmadns, trvmadns_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 31*8-1, 0*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(trvmadns)
+	MCFG_SCREEN_UPDATE_STATIC(trvmadns)
 
 	MCFG_GFXDECODE(trvmadns)
 	MCFG_PALETTE_LENGTH(16)

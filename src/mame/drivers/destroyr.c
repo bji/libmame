@@ -42,12 +42,12 @@ public:
 };
 
 
-static SCREEN_UPDATE( destroyr )
+static SCREEN_UPDATE_IND16( destroyr )
 {
-	destroyr_state *state = screen->machine().driver_data<destroyr_state>();
+	destroyr_state *state = screen.machine().driver_data<destroyr_state>();
 	int i, j;
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	/* draw major objects */
 	for (i = 0; i < 16; i++)
@@ -70,7 +70,7 @@ static SCREEN_UPDATE( destroyr )
 				continue;
 		}
 
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[2], num, 0, flipx, 0, horz, 16 * i, 0);
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[2], num, 0, flipx, 0, horz, 16 * i, 0);
 	}
 
 	/* draw alpha numerics */
@@ -80,7 +80,7 @@ static SCREEN_UPDATE( destroyr )
 		{
 			int num = state->m_alpha_num_ram[32 * i + j];
 
-			drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[0], num, 0, 0, 0, 8 * j, 8 * i, 0);
+			drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[0], num, 0, 0, 0, 8 * j, 8 * i, 0);
 		}
 	}
 
@@ -91,20 +91,20 @@ static SCREEN_UPDATE( destroyr )
 		int horz = 256 - state->m_minor_obj_ram[i + 2];
 		int vert = 256 - state->m_minor_obj_ram[i + 4];
 
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1], num, 0, 0, 0, horz, vert, 0);
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1], num, 0, 0, 0, horz, vert, 0);
 	}
 
 	/* draw waves */
 	for (i = 0; i < 4; i++)
 	{
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[3], state->m_wavemod ? 1 : 0, 0, 0, 0, 64 * i, 0x4e, 0);
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[3], state->m_wavemod ? 1 : 0, 0, 0, 0, 64 * i, 0x4e, 0);
 	}
 
 	/* draw cursor */
 	for (i = 0; i < 256; i++)
 	{
 		if (i & 4)
-			*BITMAP_ADDR16(bitmap, state->m_cursor ^ 0xff, i) = 7;
+			bitmap.pix16(state->m_cursor ^ 0xff, i) = 7;
 	}
 	return 0;
 }
@@ -454,10 +454,9 @@ static MACHINE_CONFIG_START( destroyr, destroyr_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 262)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 0, 239)
-	MCFG_SCREEN_UPDATE(destroyr)
+	MCFG_SCREEN_UPDATE_STATIC(destroyr)
 
 	MCFG_GFXDECODE(destroyr)
 	MCFG_PALETTE_LENGTH(8)

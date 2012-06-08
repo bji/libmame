@@ -341,7 +341,7 @@ device_scheduler::device_scheduler(running_machine &machine) :
 	m_executing_device(NULL),
 	m_execute_list(NULL),
 	m_basetime(attotime::zero),
-	m_cothread(co_active()),
+//  m_cothread(co_active()),
 	m_timer_list(NULL),
 	m_timer_allocator(machine.respool()),
 	m_callback_timer(NULL),
@@ -788,8 +788,8 @@ void device_scheduler::rebuild_execute_list()
 	device_execute_interface **suspend_tailptr = &suspend_list;
 
 	// iterate over all devices
-	device_execute_interface *exec = NULL;
-	for (bool gotone = machine().devicelist().first(exec); gotone; gotone = exec->next(exec))
+	execute_interface_iterator iter(machine().root_device());
+	for (device_execute_interface *exec = iter.first(); exec != NULL; exec = iter.next())
 	{
 		// append to the appropriate list
 		exec->m_nextexec = NULL;

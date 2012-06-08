@@ -113,7 +113,7 @@ static WRITE16_HANDLER( latch_w )
 	if ((oldword ^ state->m_latch_data) & 0x7000)
 	{
 		space->machine().primary_screen->update_partial(space->machine().primary_screen->vpos());
-		tilemap_mark_all_tiles_dirty(state->m_alpha_tilemap);
+		state->m_alpha_tilemap->mark_all_dirty();
 		state->m_alpha_tile_bank = (state->m_latch_data >> 12) & 7;
 	}
 }
@@ -249,11 +249,10 @@ static MACHINE_CONFIG_START( batman, batman_state )
 	MCFG_PALETTE_LENGTH(2048)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	/* note: these parameters are from published specs, not derived */
 	/* the board uses a VAD chip to generate video signals */
 	MCFG_SCREEN_RAW_PARAMS(ATARI_CLOCK_14MHz/2, 456, 0, 336, 262, 0, 240)
-	MCFG_SCREEN_UPDATE(batman)
+	MCFG_SCREEN_UPDATE_STATIC(batman)
 
 	MCFG_VIDEO_START(batman)
 

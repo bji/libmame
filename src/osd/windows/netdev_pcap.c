@@ -78,15 +78,17 @@ netdev_pcap::~netdev_pcap()
 
 static CREATE_NETDEV(create_pcap)
 {
-	class netdev_pcap *dev = new netdev_pcap(ifname, ifdev, rate);
+	class netdev_pcap *dev = global_alloc(netdev_pcap(ifname, ifdev, rate));
 	return dynamic_cast<netdev *>(dev);
 }
+
+static HMODULE handle = NULL;
 
 void init_pcap()
 {
 	pcap_if_t *devs;
 	char errbuf[PCAP_ERRBUF_SIZE];
-	HMODULE handle;
+	handle = NULL;
 
 	try
 	{
@@ -120,9 +122,17 @@ void init_pcap()
 		mame_printf_verbose("Unable to get network devices: %s\n", errbuf);
 		return;
 	}
-	while(devs->next)
+
+	while(devs)
 	{
-		add_netdev(devs->name, create_pcap);
+		add_netdev(devs->name, devs->description, create_pcap);
 		devs = devs->next;
 	}
 }
+
+void deinit_pcap()
+{
+	clear_netdev();
+	FreeLibrary(handle);
+}
+

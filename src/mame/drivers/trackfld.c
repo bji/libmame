@@ -191,6 +191,7 @@ MAIN BOARD:
 #include "includes/trackfld.h"
 #include "includes/konamipt.h"
 #include "machine/nvram.h"
+#include "includes/yiear.h"
 
 #define MASTER_CLOCK          XTAL_18_432MHz
 #define SOUND_CLOCK           XTAL_14_31818MHz
@@ -204,22 +205,23 @@ static WRITE8_HANDLER( coin_w )
 
 static WRITE8_HANDLER( questions_bank_w )
 {
-	if (!(data & 0x01))
-		memory_set_bank(space->machine(), "bank1", 0);
-	else if (!(data & 0x02))
-		memory_set_bank(space->machine(), "bank1", 1);
-	else if (!(data & 0x04))
-		memory_set_bank(space->machine(), "bank1", 2);
-	else if (!(data & 0x08))
-		memory_set_bank(space->machine(), "bank1", 3);
-	else if (!(data & 0x10))
-		memory_set_bank(space->machine(), "bank1", 4);
-	else if (!(data & 0x20))
-		memory_set_bank(space->machine(), "bank1", 5);
-	else if (!(data & 0x40))
-		memory_set_bank(space->machine(), "bank1", 6);
-	else if (!(data & 0x80))
-		memory_set_bank(space->machine(), "bank1", 7);
+	int i;
+
+	for(i=0;i<8;i++)
+	{
+		if((data & 1 << i) == 0) // check first bit active low, change ROM bank according to the correlated bit
+		{
+			memory_set_bank(space->machine(), "bank1", i);
+			return;
+		}
+	}
+}
+
+static WRITE8_HANDLER( irq_mask_w )
+{
+	trackfld_state *state = space->machine().driver_data<trackfld_state>();
+
+	state->m_irq_mask = data & 1;
 }
 
 static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
@@ -230,7 +232,7 @@ static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x1083, 0x1084) AM_MIRROR(0x0078) AM_WRITE(coin_w)					/* 24, 23 */
 	AM_RANGE(0x1085, 0x1085) AM_MIRROR(0x0078) AM_WRITENOP						/* CN3.2 */
 	AM_RANGE(0x1086, 0x1086) AM_MIRROR(0x0078) AM_WRITENOP						/* CN3.4 */
-	AM_RANGE(0x1087, 0x1087) AM_MIRROR(0x0078) AM_WRITE(interrupt_enable_w)		/* INT */
+	AM_RANGE(0x1087, 0x1087) AM_MIRROR(0x0078) AM_WRITE(irq_mask_w)				/* INT */
 	AM_RANGE(0x1100, 0x1100) AM_MIRROR(0x007f) AM_WRITE(soundlatch_w)			/* 32 */
 	AM_RANGE(0x1200, 0x1200) AM_MIRROR(0x007f) AM_READ_PORT("DSW2")
 	AM_RANGE(0x1280, 0x1280) AM_MIRROR(0x007c) AM_READ_PORT("SYSTEM")
@@ -250,16 +252,27 @@ static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x6000, 0xffff) AM_ROM
 ADDRESS_MAP_END
 
+static WRITE8_HANDLER( yieartf_nmi_mask_w )
+{
+	trackfld_state *state = space->machine().driver_data<trackfld_state>();
+
+	state->m_yieartf_nmi_mask = data & 1;
+}
+
 
 static ADDRESS_MAP_START( yieartf_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x0000, 0x0000) AM_DEVREAD("vlm", yiear_speech_r) AM_WRITE(konami_SN76496_latch_w)
+	AM_RANGE(0x0001, 0x0001) AM_DEVWRITE("snsnd", konami_SN76496_w)
+	AM_RANGE(0x0002, 0x0002) AM_DEVWRITE("vlm", yiear_VLM5030_control_w)
+	AM_RANGE(0x0003, 0x0003) AM_DEVWRITE("vlm", vlm5030_data_w)
 	AM_RANGE(0x1000, 0x1000) AM_MIRROR(0x007f) AM_WRITE(watchdog_reset_w)		/* AFE */
 	AM_RANGE(0x1080, 0x1080) AM_MIRROR(0x0078) AM_WRITE(trackfld_flipscreen_w)	/* FLIP */
 	AM_RANGE(0x1081, 0x1081) AM_MIRROR(0x0078) AM_WRITE(konami_sh_irqtrigger_w)	/* 26 */ /* cause interrupt on audio CPU */
-	AM_RANGE(0x1082, 0x1082) AM_MIRROR(0x0078) AM_WRITENOP						/* 25 */
+	AM_RANGE(0x1082, 0x1082) AM_MIRROR(0x0078) AM_WRITE(yieartf_nmi_mask_w)		/* 25 */
 	AM_RANGE(0x1083, 0x1084) AM_MIRROR(0x0078) AM_WRITE(coin_w)					/* 24, 23 */
 	AM_RANGE(0x1085, 0x1085) AM_MIRROR(0x0078) AM_WRITENOP						/* CN3.2 */
 	AM_RANGE(0x1086, 0x1086) AM_MIRROR(0x0078) AM_WRITENOP						/* CN3.4 */
-	AM_RANGE(0x1087, 0x1087) AM_MIRROR(0x0078) AM_WRITE(interrupt_enable_w)		/* INT */
+	AM_RANGE(0x1087, 0x1087) AM_MIRROR(0x0078) AM_WRITE(irq_mask_w)				/* INT */
 //  AM_RANGE(0x1100, 0x1100) AM_MIRROR(0x007f) AM_WRITE(soundlatch_w)           /* 32 */
 	AM_RANGE(0x1200, 0x1200) AM_MIRROR(0x007f) AM_READ_PORT("DSW2")
 	AM_RANGE(0x1280, 0x1280) AM_MIRROR(0x007c) AM_READ_PORT("SYSTEM")
@@ -286,7 +299,7 @@ static ADDRESS_MAP_START( reaktor_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x9080, 0x9080) AM_WRITE(trackfld_flipscreen_w)
 	AM_RANGE(0x9081, 0x9081) AM_WRITE(konami_sh_irqtrigger_w)  /* cause interrupt on audio CPU */
 	AM_RANGE(0x9083, 0x9084) AM_WRITE(coin_w)
-	AM_RANGE(0x9087, 0x9087) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x9087, 0x9087) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x9100, 0x9100) AM_WRITE(soundlatch_w)
 	AM_RANGE(0x9200, 0x9200) AM_READ_PORT("DSW2")
 	AM_RANGE(0x9280, 0x9280) AM_READ_PORT("SYSTEM")
@@ -317,9 +330,9 @@ ADDRESS_MAP_END
 static ADDRESS_MAP_START( mastkin_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x1000, 0x1000) AM_WRITE(watchdog_reset_w)
 	AM_RANGE(0x10b0, 0x10b0) AM_WRITE(trackfld_flipscreen_w)
-	AM_RANGE(0x10b1, 0x10b1) AM_WRITE(konami_sh_irqtrigger_w)
-	AM_RANGE(0x1083, 0x1084) AM_WRITE(coin_w)
-	AM_RANGE(0x1087, 0x1087) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x10b1, 0x10b1) AM_READNOP AM_WRITE(konami_sh_irqtrigger_w)
+	AM_RANGE(0x10b3, 0x10b4) AM_WRITE(coin_w) // actually not used
+	AM_RANGE(0x10b7, 0x10b7) AM_READNOP AM_WRITE(irq_mask_w)
 	AM_RANGE(0x1100, 0x1100) AM_WRITE(soundlatch_w)
 	AM_RANGE(0x1200, 0x1200) AM_READ_PORT("DSW2")
 	AM_RANGE(0x1280, 0x1280) AM_READ_PORT("SYSTEM")
@@ -332,6 +345,7 @@ static ADDRESS_MAP_START( mastkin_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x1c00, 0x1c3f) AM_RAM AM_BASE_SIZE_MEMBER(trackfld_state, m_spriteram, m_spriteram_size)
 	AM_RANGE(0x1c40, 0x1c5f) AM_RAM AM_BASE_MEMBER(trackfld_state, m_scroll2)
 	AM_RANGE(0x1c60, 0x1fff) AM_RAM
+	AM_RANGE(0x2000, 0x27ff) AM_RAM // initialized at POST
 	AM_RANGE(0x2800, 0x2bff) AM_RAM
 	AM_RANGE(0x2c00, 0x2fff) AM_RAM AM_SHARE("nvram")
 	AM_RANGE(0x3000, 0x37ff) AM_RAM_WRITE(trackfld_videoram_w) AM_BASE_MEMBER(trackfld_state, m_videoram)
@@ -345,7 +359,7 @@ static ADDRESS_MAP_START( wizzquiz_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x1080, 0x1080) AM_WRITE(trackfld_flipscreen_w)
 	AM_RANGE(0x1081, 0x1081) AM_WRITE(konami_sh_irqtrigger_w)  /* cause interrupt on audio CPU */
 	AM_RANGE(0x1083, 0x1084) AM_WRITE(coin_w)
-	AM_RANGE(0x1087, 0x1087) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x1087, 0x1087) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x1100, 0x1100) AM_WRITE(soundlatch_w)
 	AM_RANGE(0x1200, 0x1200) AM_READ_PORT("DSW2")
 	AM_RANGE(0x1280, 0x1280) AM_READ_PORT("SYSTEM")
@@ -367,13 +381,20 @@ static ADDRESS_MAP_START( wizzquiz_map, AS_PROGRAM, 8 )
 	AM_RANGE(0xe000, 0xffff) AM_ROM
 ADDRESS_MAP_END
 
+
+READ8_DEVICE_HANDLER( trackfld_SN76496_r )
+{
+	konami_SN76496_w(device, 0, 0);
+	return 0xff; // ?
+}
+
 static ADDRESS_MAP_START( sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x3fff) AM_ROM
 	AM_RANGE(0x4000, 0x43ff) AM_MIRROR(0x1c00) AM_RAM
 	AM_RANGE(0x6000, 0x6000) AM_MIRROR(0x1fff) AM_READ(soundlatch_r)
 	AM_RANGE(0x8000, 0x8000) AM_MIRROR(0x1fff) AM_READ(trackfld_sh_timer_r)
 	AM_RANGE(0xa000, 0xa000) AM_MIRROR(0x1fff) AM_WRITE(konami_SN76496_latch_w)
-	AM_RANGE(0xc000, 0xc000) AM_MIRROR(0x1fff) AM_DEVWRITE("snsnd", konami_SN76496_w)
+	AM_RANGE(0xc000, 0xc000) AM_MIRROR(0x1fff) AM_DEVREADWRITE("snsnd", trackfld_SN76496_r, konami_SN76496_w)
 	AM_RANGE(0xe000, 0xe000) AM_MIRROR(0x1ff8) AM_DEVWRITE("dac", dac_w)
 	AM_RANGE(0xe001, 0xe001) AM_MIRROR(0x1ff8) AM_NOP			/* watch dog ?; reaktor reads here */
 	AM_RANGE(0xe002, 0xe002) AM_MIRROR(0x1ff8) AM_DEVREAD("vlm", trackfld_speech_r)
@@ -387,7 +408,7 @@ static ADDRESS_MAP_START( hyprolyb_sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x6000, 0x6000) AM_MIRROR(0x1fff) AM_READ(soundlatch_r)
 	AM_RANGE(0x8000, 0x8000) AM_MIRROR(0x1fff) AM_READ(trackfld_sh_timer_r)
 	AM_RANGE(0xa000, 0xa000) AM_MIRROR(0x1fff) AM_WRITE(konami_SN76496_latch_w)
-	AM_RANGE(0xc000, 0xc000) AM_MIRROR(0x1fff) AM_DEVWRITE("snsnd", konami_SN76496_w)
+	AM_RANGE(0xc000, 0xc000) AM_MIRROR(0x1fff) AM_DEVREADWRITE("snsnd", trackfld_SN76496_r, konami_SN76496_w)
 	AM_RANGE(0xe000, 0xe000) AM_MIRROR(0x1ff8) AM_DEVWRITE("dac", dac_w)
 	AM_RANGE(0xe001, 0xe001) AM_MIRROR(0x1ff8) AM_NOP			/* watch dog ?; reaktor reads here */
 	AM_RANGE(0xe002, 0xe002) AM_MIRROR(0x1ff8) AM_DEVREAD("hyprolyb_adpcm", hyprolyb_adpcm_busy_r)
@@ -427,64 +448,31 @@ static INPUT_PORTS_START( trackfld )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x0f, 0x0f, DEF_STR( Coin_A ) )
-	PORT_DIPSETTING(    0x02, DEF_STR( 4C_1C ) )
-	PORT_DIPSETTING(    0x05, DEF_STR( 3C_1C ) )
-	PORT_DIPSETTING(    0x08, DEF_STR( 2C_1C ) )
-	PORT_DIPSETTING(    0x04, DEF_STR( 3C_2C ) )
-	PORT_DIPSETTING(    0x01, DEF_STR( 4C_3C ) )
-	PORT_DIPSETTING(    0x0f, DEF_STR( 1C_1C ) )
-	PORT_DIPSETTING(    0x03, DEF_STR( 3C_4C ) )
-	PORT_DIPSETTING(    0x07, DEF_STR( 2C_3C ) )
-	PORT_DIPSETTING(    0x0e, DEF_STR( 1C_2C ) )
-	PORT_DIPSETTING(    0x06, DEF_STR( 2C_5C ) )
-	PORT_DIPSETTING(    0x0d, DEF_STR( 1C_3C ) )
-	PORT_DIPSETTING(    0x0c, DEF_STR( 1C_4C ) )
-	PORT_DIPSETTING(    0x0b, DEF_STR( 1C_5C ) )
-	PORT_DIPSETTING(    0x0a, DEF_STR( 1C_6C ) )
-	PORT_DIPSETTING(    0x09, DEF_STR( 1C_7C ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( Free_Play ) )
-	PORT_DIPNAME( 0xf0, 0xf0, DEF_STR( Coin_B ) )
-	PORT_DIPSETTING(    0x20, DEF_STR( 4C_1C ) )
-	PORT_DIPSETTING(    0x50, DEF_STR( 3C_1C ) )
-	PORT_DIPSETTING(    0x80, DEF_STR( 2C_1C ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( 3C_2C ) )
-	PORT_DIPSETTING(    0x10, DEF_STR( 4C_3C ) )
-	PORT_DIPSETTING(    0xf0, DEF_STR( 1C_1C ) )
-	PORT_DIPSETTING(    0x30, DEF_STR( 3C_4C ) )
-	PORT_DIPSETTING(    0x70, DEF_STR( 2C_3C ) )
-	PORT_DIPSETTING(    0xe0, DEF_STR( 1C_2C ) )
-	PORT_DIPSETTING(    0x60, DEF_STR( 2C_5C ) )
-	PORT_DIPSETTING(    0xd0, DEF_STR( 1C_3C ) )
-	PORT_DIPSETTING(    0xc0, DEF_STR( 1C_4C ) )
-	PORT_DIPSETTING(    0xb0, DEF_STR( 1C_5C ) )
-	PORT_DIPSETTING(    0xa0, DEF_STR( 1C_6C ) )
-	PORT_DIPSETTING(    0x90, DEF_STR( 1C_7C ) )
-	PORT_DIPSETTING(    0x00, "No Coin B" )
+	KONAMI_COINAGE_LOC(DEF_STR( Free_Play ), "No Coin B", SW1)
 	/* "No Coin B" = coins produce sound, but no effect on coin counter */
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "1" )
 	PORT_DIPSETTING(    0x00, "2" )
-	PORT_DIPNAME( 0x02, 0x00, "After Last Event" )
+	PORT_DIPNAME( 0x02, 0x00, "After Last Event" )		PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x02, "Game Over" )
 	PORT_DIPSETTING(    0x00, "Game Continues" )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x08, 0x00, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, DEF_STR( None ) )
 	PORT_DIPSETTING(    0x00, "100000" )
-	PORT_DIPNAME( 0x10, 0x10, "World Records" )
+	PORT_DIPNAME( 0x10, 0x10, "World Records" )			PORT_DIPLOCATION("SW2:5")
 	PORT_DIPSETTING(    0x10, "Don't Erase" )
 	PORT_DIPSETTING(    0x00, "Erase on Reset" )
-	PORT_DIPNAME( 0x60, 0x60, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Difficult ) )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 INPUT_PORTS_END
@@ -513,10 +501,10 @@ static INPUT_PORTS_START( atlantol )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
 	PORT_MODIFY("DSW2")
-	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Allow_Continue ) )
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Allow_Continue ) )	PORT_DIPLOCATION("SW2:2")
 	PORT_DIPSETTING(    0x00, DEF_STR( No ) )
 	PORT_DIPSETTING(    0x02, DEF_STR( Yes ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Language ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Language ) )			PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( English ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Italian ) )
 INPUT_PORTS_END
@@ -550,18 +538,18 @@ static INPUT_PORTS_START( mastkin )
 	PORT_DIPSETTING(    0x02, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, "Fast" )
 	PORT_DIPNAME( 0x0c, 0x04, DEF_STR( Difficulty ) )	// "Damage"
-	PORT_DIPSETTING(    0x0c, DEF_STR( Easy ) )				//   0x03
-	PORT_DIPSETTING(    0x04, DEF_STR( Normal ) )			//   0x07
-	PORT_DIPSETTING(    0x08, DEF_STR( Hard ) )				//   0x0b
-	PORT_DIPSETTING(    0x00, DEF_STR( Very_Hard ) )			//   0x0f
+	PORT_DIPSETTING(    0x0c, DEF_STR( Easy ) )			//   0x03
+	PORT_DIPSETTING(    0x04, DEF_STR( Normal ) )		//   0x07
+	PORT_DIPSETTING(    0x08, DEF_STR( Hard ) )			//   0x0b
+	PORT_DIPSETTING(    0x00, DEF_STR( Very_Hard ) )	//   0x0f
 	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Lives ) )
 	PORT_DIPSETTING(    0x10, "4" )
 	PORT_DIPSETTING(    0x00, "5" )
 	PORT_DIPNAME( 0x20, 0x00, "Internal speed" )		// Check code at 0x8576
-	PORT_DIPSETTING(    0x20, "Slow" )				//   0x0c00
-	PORT_DIPSETTING(    0x00, "Fast" )				//   0x0a00
-	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNUSED )		// Stored at 0x284e but not read back
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED )		// Cocktail Mode, not used
+	PORT_DIPSETTING(    0x20, "Slow" )					//   0x0c00
+	PORT_DIPSETTING(    0x00, "Fast" )					//   0x0a00
+	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNUSED )			// Stored at 0x284e but not read back
+	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED )			// Cocktail Mode, not used
 
 	PORT_START("DSW2")
 	PORT_DIPNAME( 0x0f, 0x00, DEF_STR( Coin_B ) )
@@ -792,41 +780,42 @@ static INPUT_PORTS_START( yieartf )
 	PORT_START("IN1")
 	KONAMI8_COCKTAIL_B12_UNK
 
+	PORT_START("DSW1")
+	KONAMI_COINAGE_LOC(DEF_STR( Free_Play ), "Invalid", SW1)
+	/* "Invalid" = both coin slots disabled */
+
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x03, 0x01, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "1" )
 	PORT_DIPSETTING(    0x02, "2" )
 	PORT_DIPSETTING(    0x01, "3" )
 	PORT_DIPSETTING(    0x00, "5" )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW2:4")
 	PORT_DIPSETTING(    0x08, "30000 80000" )
 	PORT_DIPSETTING(    0x00, "40000 90000" )
-	PORT_DIPNAME( 0x30, 0x10, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x30, 0x10, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW2:5,6")
 	PORT_DIPSETTING(    0x30, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Difficult ) )
-	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )
+	PORT_DIPUNUSED_DIPLOC( 0x40, IP_ACTIVE_LOW, "SW2:7" )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 
 	PORT_START("DSW3")
-	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) )
+	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) )	PORT_DIPLOCATION("SW3:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, "Upright Controls" )
+	PORT_DIPNAME( 0x02, 0x02, "Upright Controls" )		PORT_DIPLOCATION("SW3:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Single ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Dual ) )
-	PORT_SERVICE( 0x04, IP_ACTIVE_LOW )
-	PORT_BIT( 0xf8, IP_ACTIVE_LOW, IPT_UNUSED )
-
-	PORT_START("DSW1")
-	KONAMI_COINAGE(DEF_STR( Free_Play ), "Invalid")
-	/* "Invalid" = both coin slots disabled */
+	PORT_SERVICE_DIPLOC( 0x04, IP_ACTIVE_LOW, "SW3:3" )
+	PORT_DIPUNUSED_DIPLOC( 0x08, IP_ACTIVE_LOW, "SW3:4" )
+	PORT_BIT( 0xf0, IP_ACTIVE_LOW, IPT_UNUSED )
 INPUT_PORTS_END
 
 
@@ -882,12 +871,29 @@ static MACHINE_RESET( trackfld )
 	state->m_old_gfx_bank = 0;
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	trackfld_state *state = device->machine().driver_data<trackfld_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
+static INTERRUPT_GEN( vblank_nmi )
+{
+	trackfld_state *state = device->machine().driver_data<trackfld_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
+
 static MACHINE_CONFIG_START( trackfld, trackfld_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, MASTER_CLOCK/6/2)	/* a guess for now */
 	MCFG_CPU_PROGRAM_MAP(main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, SOUND_CLOCK/4)
 	MCFG_CPU_PROGRAM_MAP(sound_map)
@@ -900,10 +906,9 @@ static MACHINE_CONFIG_START( trackfld, trackfld_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(trackfld)
+	MCFG_SCREEN_UPDATE_STATIC(trackfld)
 
 	MCFG_GFXDECODE(trackfld)
 	MCFG_PALETTE_LENGTH(16*16+16*16)
@@ -927,12 +932,21 @@ static MACHINE_CONFIG_START( trackfld, trackfld_state )
 MACHINE_CONFIG_END
 
 
+static INTERRUPT_GEN( yieartf_timer_irq )
+{
+	trackfld_state *state = device->machine().driver_data<trackfld_state>();
+
+	if (state->m_yieartf_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 static MACHINE_CONFIG_START( yieartf, trackfld_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, MASTER_CLOCK/6/2)	/* a guess for now */
 	MCFG_CPU_PROGRAM_MAP(yieartf_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
+	MCFG_CPU_PERIODIC_INT(yieartf_timer_irq,480)
 
 //  z80 isn't used
 //  MCFG_CPU_ADD("audiocpu", Z80, SOUND_CLOCK/4)
@@ -946,10 +960,9 @@ static MACHINE_CONFIG_START( yieartf, trackfld_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(trackfld)
+	MCFG_SCREEN_UPDATE_STATIC(trackfld)
 
 	MCFG_GFXDECODE(trackfld)
 	MCFG_PALETTE_LENGTH(16*16+16*16)
@@ -965,7 +978,7 @@ static MACHINE_CONFIG_START( yieartf, trackfld_state )
 	MCFG_SOUND_ADD("dac", DAC, 0)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
-	MCFG_SOUND_ADD("snsnd", SN76496, SOUND_CLOCK/8)
+	MCFG_SOUND_ADD("snsnd", SN76496, MASTER_CLOCK/6/2)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 
 	MCFG_SOUND_ADD("vlm", VLM5030, VLM_CLOCK)
@@ -1006,7 +1019,7 @@ static MACHINE_CONFIG_DERIVED( wizzquiz, trackfld )
 	// right cpu?
 	MCFG_CPU_REPLACE("maincpu",M6800,2048000)		/* 1.400 MHz ??? */
 	MCFG_CPU_PROGRAM_MAP(wizzquiz_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_nmi)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( reaktor, trackfld )
@@ -1015,7 +1028,7 @@ static MACHINE_CONFIG_DERIVED( reaktor, trackfld )
 	MCFG_CPU_REPLACE("maincpu",Z80,MASTER_CLOCK/6)
 	MCFG_CPU_PROGRAM_MAP(reaktor_map)
 	MCFG_CPU_IO_MAP(reaktor_io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 MACHINE_CONFIG_END
 
 
@@ -1485,9 +1498,9 @@ GAME( 1983, trackfldc, trackfld, trackfld, trackfld, trackfld, ROT0,  "Konami (C
 GAME( 1983, hyprolym,  trackfld, trackfld, trackfld, trackfld, ROT0,  "Konami", "Hyper Olympic", GAME_SUPPORTS_SAVE )
 GAME( 1983, hyprolymb, trackfld, hyprolyb, trackfld, trackfld, ROT0,  "bootleg", "Hyper Olympic (bootleg)", GAME_IMPERFECT_SOUND | GAME_SUPPORTS_SAVE )
 GAME( 1996, atlantol,  trackfld, atlantol, atlantol, atlantol, ROT0,  "bootleg", "Atlant Olimpic", GAME_SUPPORTS_SAVE )
-GAME( 1988, mastkin,   0,        mastkin,  mastkin,  mastkin,  ROT0,  "Du Tech", "The Masters of Kin", GAME_WRONG_COLORS | GAME_SUPPORTS_SAVE )
 GAME( 1982, trackfldnz,trackfld, trackfld, trackfld, trackfld, ROT0,  "bootleg? (Goldberg Enterprizes Inc.)", "Track & Field (NZ bootleg?)", GAME_NOT_WORKING)
+GAME( 1988, mastkin,   0,        mastkin,  mastkin,  mastkin,  ROT0,  "Du Tech", "The Masters of Kin", GAME_WRONG_COLORS | GAME_SUPPORTS_SAVE )
 GAME( 1985, wizzquiz,  0,        wizzquiz, wizzquiz, wizzquiz, ROT0,  "Zilec-Zenitone (Konami license)", "Wizz Quiz (Konami version)", GAME_SUPPORTS_SAVE )
 GAME( 1985, wizzquiza, wizzquiz, wizzquiz, wizzquiz, wizzquiz, ROT0,  "Zilec-Zenitone", "Wizz Quiz (version 4)", GAME_SUPPORTS_SAVE )
 GAME( 1987, reaktor,   0,        reaktor,  reaktor,  0,        ROT90, "Zilec", "Reaktor (Track & Field conversion)", GAME_SUPPORTS_SAVE )
-GAME( 1985, yieartf,   yiear,    yieartf,  yieartf, 0,         ROT0,  "Konami", "Yie Ar Kung-Fu (GX361 conversion)", GAME_NO_SOUND | GAME_SUPPORTS_SAVE ) // the conversion looks of bootleg quality, but the code is clearly a very different revision to either original hardware set...
+GAME( 1985, yieartf,   yiear,    yieartf,  yieartf,  0,        ROT0,  "Konami", "Yie Ar Kung-Fu (GX361 conversion)", GAME_SUPPORTS_SAVE ) // the conversion looks of bootleg quality, but the code is clearly a very different revision to either original hardware set...

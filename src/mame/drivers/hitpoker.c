@@ -75,13 +75,13 @@ static VIDEO_START(hitpoker)
 	state->m_colorram = auto_alloc_array(machine, UINT8, 0x2000);
 }
 
-static SCREEN_UPDATE(hitpoker)
+static SCREEN_UPDATE_IND16(hitpoker)
 {
-	hitpoker_state *state = screen->machine().driver_data<hitpoker_state>();
+	hitpoker_state *state = screen.machine().driver_data<hitpoker_state>();
 	int count = 0;
 	int y,x;
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	for (y=0;y<31;y++)
 	{
@@ -93,7 +93,7 @@ static SCREEN_UPDATE(hitpoker)
 			gfx_bpp = (state->m_colorram[count] & 0x80)>>7; //flag between 4 and 8 bpp
 			color = gfx_bpp ? ((state->m_colorram[count] & 0x70)>>4) : (state->m_colorram[count] & 0xf);
 
-			drawgfx_opaque(bitmap,cliprect,screen->machine().gfx[gfx_bpp],tile,color,0,0,x*8,y*8);
+			drawgfx_opaque(bitmap,cliprect,screen.machine().gfx[gfx_bpp],tile,color,0,0,x*8,y*8);
 
 			count+=2;
 		}
@@ -494,10 +494,9 @@ static MACHINE_CONFIG_START( hitpoker, hitpoker_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500)) // not accurate
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(648, 480) //setted by the CRTC
 	MCFG_SCREEN_VISIBLE_AREA(0, 648-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE(hitpoker)
+	MCFG_SCREEN_UPDATE_STATIC(hitpoker)
 
 	MCFG_MC6845_ADD("crtc", H46505, CRTC_CLOCK/2, mc6845_intf)	/* hand tuned to get ~60 fps */
 

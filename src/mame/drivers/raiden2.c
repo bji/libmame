@@ -629,7 +629,7 @@ static void combine32(UINT32 *val, int offset, UINT16 data, UINT16 mem_mask)
 
 /* SPRITE DRAWING (move to video file) */
 
-void raiden2_state::draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect ,int pri_mask )
+void raiden2_state::draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect ,int pri_mask )
 {
 	UINT16 *source = sprites + sprites_cur_start/2 - 4;
 
@@ -724,25 +724,25 @@ void raiden2_state::draw_sprites(running_machine &machine, bitmap_t *bitmap, con
 WRITE16_MEMBER(raiden2_state::raiden2_background_w)
 {
 	COMBINE_DATA(&back_data[offset]);
-	tilemap_mark_tile_dirty(background_layer, offset);
+	background_layer->mark_tile_dirty(offset);
 }
 
 WRITE16_MEMBER(raiden2_state::raiden2_midground_w)
 {
 	COMBINE_DATA(&mid_data[offset]);
-	tilemap_mark_tile_dirty(midground_layer,offset);
+	midground_layer->mark_tile_dirty(offset);
 }
 
 WRITE16_MEMBER(raiden2_state::raiden2_foreground_w)
 {
 	COMBINE_DATA(&fore_data[offset]);
-	tilemap_mark_tile_dirty(foreground_layer,offset);
+	foreground_layer->mark_tile_dirty(offset);
 }
 
 WRITE16_MEMBER(raiden2_state::raiden2_text_w)
 {
 	COMBINE_DATA(&text_data[offset]);
-	tilemap_mark_tile_dirty(text_layer, offset);
+	text_layer->mark_tile_dirty(offset);
 }
 
 WRITE16_MEMBER(raiden2_state::tilemap_enable_w)
@@ -762,9 +762,9 @@ WRITE16_MEMBER(raiden2_state::tile_scroll_w)
 	case 2: tm = foreground_layer; break;
 	}
 	if(offset & 1)
-		tilemap_set_scrolly(tm, 0, data);
+		tm->set_scrolly(0, data);
 	else
-		tilemap_set_scrollx(tm, 0, data);
+		tm->set_scrollx(0, data);
 }
 
 WRITE16_MEMBER(raiden2_state::tile_bank_01_w)
@@ -774,13 +774,13 @@ WRITE16_MEMBER(raiden2_state::tile_bank_01_w)
 		new_bank = 0 | ((data & 1)<<1);
 		if(new_bank != bg_bank) {
 			bg_bank = new_bank;
-			tilemap_mark_all_tiles_dirty(background_layer);
+			background_layer->mark_all_dirty();
 		}
 
 		new_bank = 1 | (data & 2);
 		if(new_bank != mid_bank) {
 			mid_bank = new_bank;
-			tilemap_mark_all_tiles_dirty(midground_layer);
+			midground_layer->mark_all_dirty();
 		}
 	}
 }
@@ -798,7 +798,7 @@ WRITE16_MEMBER(raiden2_state::cop_tile_bank_2_w)
 		int new_bank = 4 | (data >> 14);
 		if(new_bank != fg_bank) {
 			fg_bank = new_bank;
-			tilemap_mark_all_tiles_dirty(foreground_layer);
+			foreground_layer->mark_all_dirty();
 		}
 	}
 }
@@ -811,7 +811,7 @@ WRITE16_MEMBER(raiden2_state::raidendx_cop_bank_2_w)
 		int new_bank = 4 | ((cop_bank >> 10) & 3);
 		if(new_bank != fg_bank) {
 			fg_bank = new_bank;
-			tilemap_mark_all_tiles_dirty(foreground_layer);
+			foreground_layer->mark_all_dirty();
 		}
 
 		/* probably bit 3 is from 6c9 */
@@ -879,46 +879,46 @@ static VIDEO_START( raiden2 )
 	state->midground_layer  = tilemap_create(machine, get_mid_tile_info,  tilemap_scan_rows, 16,16, 32,32 );
 	state->foreground_layer = tilemap_create(machine, get_fore_tile_info, tilemap_scan_rows, 16,16, 32,32 );
 
-	tilemap_set_transparent_pen(state->midground_layer, 15);
-	tilemap_set_transparent_pen(state->foreground_layer, 15);
-	tilemap_set_transparent_pen(state->text_layer, 15);
+	state->midground_layer->set_transparent_pen(15);
+	state->foreground_layer->set_transparent_pen(15);
+	state->text_layer->set_transparent_pen(15);
 }
 
-/* SCREEN_UPDATE (move to video file) */
+/* SCREEN_UPDATE_IND16 (move to video file) */
 
-static SCREEN_UPDATE( raiden2 )
+static SCREEN_UPDATE_IND16( raiden2 )
 {
-	raiden2_state *state = screen->machine().driver_data<raiden2_state>();
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	raiden2_state *state = screen.machine().driver_data<raiden2_state>();
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
-	//if (!screen->machine().input().code_pressed(KEYCODE_Q))
+	//if (!screen.machine().input().code_pressed(KEYCODE_Q))
 	{
 		if (!(state->raiden2_tilemap_enable & 1))
-			tilemap_draw(bitmap, cliprect, state->background_layer, 0, 0);
+			state->background_layer->draw(bitmap, cliprect, 0, 0);
 	}
 
-	//if (!screen->machine().input().code_pressed(KEYCODE_W))
+	//if (!screen.machine().input().code_pressed(KEYCODE_W))
 	{
 		if (!(state->raiden2_tilemap_enable & 2))
-			tilemap_draw(bitmap, cliprect, state->midground_layer, 0, 0);
+			state->midground_layer->draw(bitmap, cliprect, 0, 0);
 	}
 
-	//if (!screen->machine().input().code_pressed(KEYCODE_E))
+	//if (!screen.machine().input().code_pressed(KEYCODE_E))
 	{
 		if (!(state->raiden2_tilemap_enable & 4))
-			tilemap_draw(bitmap, cliprect, state->foreground_layer, 0, 0);
+			state->foreground_layer->draw(bitmap, cliprect, 0, 0);
 	}
 
-	//if (!screen->machine().input().code_pressed(KEYCODE_S))
+	//if (!screen.machine().input().code_pressed(KEYCODE_S))
 	{
 		//if (!(raiden2_tilemap_enable & 0x10))
-			state->draw_sprites(screen->machine(), bitmap, cliprect, 0);
+			state->draw_sprites(screen.machine(), bitmap, cliprect, 0);
 	}
 
-	//if (!screen->machine().input().code_pressed(KEYCODE_A))
+	//if (!screen.machine().input().code_pressed(KEYCODE_A))
 	{
 		if (!(state->raiden2_tilemap_enable & 8))
-			tilemap_draw(bitmap, cliprect, state->text_layer, 0, 0);
+			state->text_layer->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;
@@ -1665,10 +1665,9 @@ static MACHINE_CONFIG_START( raiden2, raiden2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(55.47)    /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate *//2)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0, 30*8-1)
-	MCFG_SCREEN_UPDATE(raiden2)
+	MCFG_SCREEN_UPDATE_STATIC(raiden2)
 	MCFG_GFXDECODE(raiden2)
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -1676,6 +1675,7 @@ static MACHINE_CONFIG_START( raiden2, raiden2_state )
 
 	/* sound hardware */
 	SEIBU_SOUND_SYSTEM_YM2151_RAIDEN2_INTERFACE(XTAL_28_63636MHz/8,XTAL_28_63636MHz/28,1,2)
+	// the sound z80 has /NMI, /BUSREQ and /WAIT tied high/unused
 
 
 /* Sound hardware infos: Z80 and YM2151 are clocked at XTAL_28_63636MHz/8 */
@@ -1721,10 +1721,9 @@ static MACHINE_CONFIG_START( zeroteam, raiden2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(55.47)    /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate *//2)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0, 32*8-1)
-	MCFG_SCREEN_UPDATE(raiden2)
+	MCFG_SCREEN_UPDATE_STATIC(raiden2)
 	MCFG_GFXDECODE(raiden2)
 	MCFG_PALETTE_LENGTH(2048)
 

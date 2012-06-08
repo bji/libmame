@@ -11,7 +11,7 @@
  - reel scroll / reel enable / reel colours
  - are the colours correct even on the text layer? they look odd in places, and there are unused bits
  - dunno where / how is the service mode bit is connected (I've accessed it once, but dunno how I've did it)
-
+ - graphics in 7smash are quite off (encrypted ROM?)
 
  Lucky Girl
  Wing 1991
@@ -118,14 +118,14 @@ static WRITE8_HANDLER( luckgrln_reel1_ram_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel1_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel1_tilemap,offset);
+	state->m_reel1_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( luckgrln_reel1_attr_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel1_attr[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel1_tilemap,offset);
+	state->m_reel1_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -152,14 +152,14 @@ static WRITE8_HANDLER( luckgrln_reel2_ram_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel2_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel2_tilemap,offset);
+	state->m_reel2_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( luckgrln_reel2_attr_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel2_attr[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel2_tilemap,offset);
+	state->m_reel2_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -184,14 +184,14 @@ static WRITE8_HANDLER( luckgrln_reel3_ram_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel3_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel3_tilemap,offset);
+	state->m_reel3_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( luckgrln_reel3_attr_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel3_attr[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel3_tilemap,offset);
+	state->m_reel3_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -215,14 +215,14 @@ static WRITE8_HANDLER( luckgrln_reel4_ram_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel4_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel4_tilemap,offset);
+	state->m_reel4_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( luckgrln_reel4_attr_w )
 {
 	luckgrln_state *state = space->machine().driver_data<luckgrln_state>();
 	state->m_reel4_attr[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel4_tilemap,offset);
+	state->m_reel4_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -250,40 +250,35 @@ static VIDEO_START(luckgrln)
 	state->m_reel3_tilemap = tilemap_create(machine,get_luckgrln_reel3_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 	state->m_reel4_tilemap = tilemap_create(machine,get_luckgrln_reel4_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel4_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
+	state->m_reel2_tilemap->set_scroll_cols(64);
+	state->m_reel3_tilemap->set_scroll_cols(64);
+	state->m_reel4_tilemap->set_scroll_cols(64);
 
-	tilemap_set_transparent_pen( state->m_reel1_tilemap, 0 );
-	tilemap_set_transparent_pen( state->m_reel2_tilemap, 0 );
-	tilemap_set_transparent_pen( state->m_reel3_tilemap, 0 );
-	tilemap_set_transparent_pen( state->m_reel4_tilemap, 0 );
+	state->m_reel1_tilemap->set_transparent_pen(0 );
+	state->m_reel2_tilemap->set_transparent_pen(0 );
+	state->m_reel3_tilemap->set_transparent_pen(0 );
+	state->m_reel4_tilemap->set_transparent_pen(0 );
 }
 
-static SCREEN_UPDATE(luckgrln)
+static SCREEN_UPDATE_IND16(luckgrln)
 {
-	luckgrln_state *state = screen->machine().driver_data<luckgrln_state>();
+	luckgrln_state *state = screen.machine().driver_data<luckgrln_state>();
 	int y,x;
 	int count = 0;
-	const rectangle &visarea = screen->visible_area();
+	const rectangle &visarea = screen.visible_area();
 	int i;
 
-	rectangle clip;
+	rectangle clip = visarea;
 
-	clip.min_x = visarea.min_x;
-	clip.max_x = visarea.max_x;
-	clip.min_y = visarea.min_y;
-	clip.max_y = visarea.max_y;
-
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	for (i= 0;i < 64;i++)
 	{
-		tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
-		tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i]);
-		tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i]);
-		tilemap_set_scrolly(state->m_reel4_tilemap, i, state->m_reel4_scroll[i]);
+		state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
+		state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i]);
+		state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i]);
+		state->m_reel4_tilemap->set_scrolly(i, state->m_reel4_scroll[i]);
 	}
 
 
@@ -335,26 +330,26 @@ static SCREEN_UPDATE(luckgrln)
 #if 0 // treat bit as fg enable
 			if (tileattr&0x04)
 			{
-				if (bgenable==0) tilemap_draw(bitmap, &clip, state->m_reel1_tilemap, 0, 0);
-				if (bgenable==1) tilemap_draw(bitmap, &clip, state->m_reel2_tilemap, 0, 0);
-				if (bgenable==2) tilemap_draw(bitmap, &clip, state->m_reel3_tilemap, 0, 0);
-				if (bgenable==3) tilemap_draw(bitmap, &clip, state->m_reel4_tilemap, 0, 0);
+				if (bgenable==0) state->m_reel1_tilemap->draw(bitmap, clip, 0, 0);
+				if (bgenable==1) state->m_reel2_tilemap->draw(bitmap, clip, 0, 0);
+				if (bgenable==2) state->m_reel3_tilemap->draw(bitmap, clip, 0, 0);
+				if (bgenable==3) state->m_reel4_tilemap->draw(bitmap, clip, 0, 0);
 			}
 
-			if (tileattr&0x08) drawgfx_transpen(bitmap,clip,screen->machine().gfx[region],tile,col,0,0,x*8,y*8, 0);
+			if (tileattr&0x08) drawgfx_transpen(bitmap,clip,screen.machine().gfx[region],tile,col,0,0,x*8,y*8, 0);
 
 #else // treat it as priority flag instead (looks better in non-adult title screen - needs verifying)
-			if (!(tileattr&0x08)) drawgfx_transpen(bitmap,&clip,screen->machine().gfx[region],tile,col,0,0,x*8,y*8, 0);
+			if (!(tileattr&0x08)) drawgfx_transpen(bitmap,clip,screen.machine().gfx[region],tile,col,0,0,x*8,y*8, 0);
 
 			if (tileattr&0x04)
 			{
-				if (bgenable==0) tilemap_draw(bitmap, &clip, state->m_reel1_tilemap, 0, 0);
-				if (bgenable==1) tilemap_draw(bitmap, &clip, state->m_reel2_tilemap, 0, 0);
-				if (bgenable==2) tilemap_draw(bitmap, &clip, state->m_reel3_tilemap, 0, 0);
-				if (bgenable==3) tilemap_draw(bitmap, &clip, state->m_reel4_tilemap, 0, 0);
+				if (bgenable==0) state->m_reel1_tilemap->draw(bitmap, clip, 0, 0);
+				if (bgenable==1) state->m_reel2_tilemap->draw(bitmap, clip, 0, 0);
+				if (bgenable==2) state->m_reel3_tilemap->draw(bitmap, clip, 0, 0);
+				if (bgenable==3) state->m_reel4_tilemap->draw(bitmap, clip, 0, 0);
 			}
 
-			if ((tileattr&0x08)) drawgfx_transpen(bitmap,&clip,screen->machine().gfx[region],tile,col,0,0,x*8,y*8, 0);
+			if ((tileattr&0x08)) drawgfx_transpen(bitmap,clip,screen.machine().gfx[region],tile,col,0,0,x*8,y*8, 0);
 #endif
 
 			count++;
@@ -398,6 +393,12 @@ static ADDRESS_MAP_START( mainmap, AS_PROGRAM, 8 )
 	AM_RANGE(0xf0000, 0xfffff) AM_RAM
 ADDRESS_MAP_END
 
+static ADDRESS_MAP_START( _7smash_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x00000, 0x0bfff) AM_ROM
+	AM_IMPORT_FROM( mainmap )
+	AM_RANGE(0x10000, 0x2ffff) AM_UNMAP
+	AM_RANGE(0xf0000, 0xfffff) AM_UNMAP
+ADDRESS_MAP_END
 
 static WRITE8_HANDLER( output_w )
 {
@@ -543,7 +544,7 @@ static WRITE8_HANDLER(counters_w)
 
 /* are some of these reads / writes mirrored? there seem to be far too many */
 static ADDRESS_MAP_START( portmap, AS_IO, 8 )
-	ADDRESS_MAP_GLOBAL_MASK(0xff) // i think
+	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE(0x0000, 0x003f) AM_RAM // Z180 internal regs
 	AM_RANGE(0x0060, 0x0060) AM_WRITE(output_w)
 
@@ -596,6 +597,16 @@ static ADDRESS_MAP_START( portmap, AS_IO, 8 )
 
 ADDRESS_MAP_END
 
+/* reads a bit 1 status there after every round played */
+static READ8_HANDLER( test_r )
+{
+	return 0xff;
+}
+
+static ADDRESS_MAP_START( _7smash_io, AS_IO, 8 )
+	AM_RANGE(0x66, 0x66) AM_READ(test_r)
+	AM_IMPORT_FROM( portmap )
+ADDRESS_MAP_END
 
 static INPUT_PORTS_START( luckgrln )
 	PORT_START("IN0")
@@ -797,6 +808,120 @@ static INPUT_PORTS_START( luckgrln )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 INPUT_PORTS_END
 
+static INPUT_PORTS_START( _7smash )
+	PORT_START("DSW1")
+	PORT_BIT( 0xff, IP_ACTIVE_LOW,  IPT_UNUSED )
+
+	PORT_START("DSW2")
+	PORT_DIPNAME( 0x01, 0x01, "DSW2" )
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+
+	PORT_START("DSW3")
+	PORT_DIPNAME( 0x01, 0x01, "DSW3" )
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+
+	PORT_START("DSW4")
+	PORT_DIPNAME( 0x01, 0x01, "DSW4" )
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+
+	PORT_START("DSW5")
+	PORT_BIT( 0xff, IP_ACTIVE_LOW,  IPT_UNUSED  )
+
+	PORT_START("IN0")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW,  IPT_START1 )
+	PORT_BIT( 0x02, IP_ACTIVE_LOW,  IPT_SLOT_STOP3 ) PORT_NAME("Slot 3 / Odds")
+	PORT_BIT( 0x04, IP_ACTIVE_LOW,  IPT_SLOT_STOP2 ) PORT_NAME("Slot 2 / Bet")
+	PORT_BIT( 0x08, IP_ACTIVE_LOW,  IPT_SLOT_STOP1 ) PORT_NAME("Slot 1")
+	PORT_BIT( 0xf0, IP_ACTIVE_LOW,  IPT_UNUSED  )
+
+	PORT_START("IN1")
+	PORT_BIT( 0x10, IP_ACTIVE_LOW,  IPT_SERVICE1 ) PORT_NAME("Service SW")
+	PORT_BIT( 0xef, IP_ACTIVE_LOW,  IPT_UNUSED  )
+
+	PORT_START("IN2")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW,  IPT_COIN1  )
+	PORT_BIT( 0x02, IP_ACTIVE_LOW,  IPT_GAMBLE_KEYIN )
+	PORT_BIT( 0x04, IP_ACTIVE_LOW,  IPT_COIN2  )
+	PORT_BIT( 0x08, IP_ACTIVE_LOW,  IPT_COIN3  )
+	PORT_BIT( 0xf0, IP_ACTIVE_LOW,  IPT_UNUSED  )
+
+	PORT_START("IN3")
+	PORT_BIT( 0x01, IP_ACTIVE_LOW,  IPT_SERVICE2 ) PORT_NAME("Reset SW")
+	PORT_BIT( 0x02, IP_ACTIVE_LOW,  IPT_UNUSED  )
+	PORT_BIT( 0x04, IP_ACTIVE_LOW,  IPT_UNUSED ) //PORT_NAME("Hopper Coin SW")
+	PORT_BIT( 0x08, IP_ACTIVE_LOW,  IPT_UNUSED ) //PORT_NAME("Hopper Coin Empty SW")
+	PORT_BIT( 0x10, IP_ACTIVE_LOW,  IPT_GAMBLE_KEYOUT )
+	PORT_BIT( 0x20, IP_ACTIVE_LOW,  IPT_GAMBLE_PAYOUT )
+	PORT_SERVICE( 0x40, IP_ACTIVE_LOW )
+	PORT_BIT( 0x80, IP_ACTIVE_LOW,  IPT_GAMBLE_BOOK )
+INPUT_PORTS_END
+
 
 static const gfx_layout tiles8x8_layout =
 {
@@ -857,10 +982,9 @@ static MACHINE_CONFIG_START( luckgrln, luckgrln_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE(luckgrln)
+	MCFG_SCREEN_UPDATE_STATIC(luckgrln)
 
 	MCFG_GFXDECODE(luckgrln)
 	MCFG_PALETTE_LENGTH(0x8000)
@@ -869,6 +993,12 @@ static MACHINE_CONFIG_START( luckgrln, luckgrln_state )
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( _7smash, luckgrln )
+	MCFG_CPU_MODIFY("maincpu")
+	MCFG_CPU_PROGRAM_MAP(_7smash_map)
+	MCFG_CPU_IO_MAP(_7smash_io)
 MACHINE_CONFIG_END
 
 static DRIVER_INIT( luckgrln )
@@ -924,6 +1054,25 @@ ROM_START( luckgrln )
 	ROM_LOAD( "falcon.6", 0x40000, 0x20000, CRC(bfb02c87) SHA1(1b5ca562ed76eb3f1b4a52d379a6af07e79b6ee5) )
 ROM_END
 
+ROM_START( 7smash )
+	ROM_REGION( 0x20000, "maincpu", ROMREGION_ERASE00 )
+	ROM_LOAD( "eagle.8",      0x000000, 0x020000, CRC(b115c5d5) SHA1(3f80613886b7f8092ec914c9bfb416078aca82a3) )
+	ROM_LOAD( "7smash.bin",   0x000000, 0x004000, CRC(58396efa) SHA1(b957d28e321a5c4f9a90e0a7eaf8f01450662c0e) ) // internal Z180 rom
+
+	ROM_REGION( 0x20000, "rom_data", ROMREGION_ERASEFF ) // external data / cpu rom
+
+
+	ROM_REGION( 0x60000, "reels", ROMREGION_ERASE00 ) // reel gfxs
+	ROM_LOAD( "eagle.3",      0x40000, 0x020000, CRC(d75b3b2f) SHA1(1d90bc17f9e645966126fa19c42a7c4d54098776) )
+	ROM_LOAD( "eagle.2",      0x20000, 0x020000, CRC(211b5acb) SHA1(e35ae6c93a1daa9d3aa46970c5c3d39788f948bb) )
+	ROM_LOAD( "eagle.1",      0x00000, 0x020000, CRC(21317c37) SHA1(7706045b85f86f6e58cc67c2d7dee01d80df3422) )  // half unused, 5bpp
+
+	ROM_REGION( 0x60000, "gfx2", ROMREGION_ERASE00 )
+	ROM_LOAD( "eagle.6",      0x40000, 0x20000, CRC(2c4416d4) SHA1(25d04d4d08ab491a9684b8e6f21e57479711ee87) )
+	ROM_LOAD( "eagle.5",      0x20000, 0x20000, CRC(cd8bc456) SHA1(cefe211492158f445ceaaa9015e1143ea9afddbb) )
+	ROM_LOAD( "eagle.4",      0x00000, 0x20000, CRC(dcf92dca) SHA1(87c7d88dc35981ad636376b53264cee87ccdaa71) )  // half unused, 5bpp
+ROM_END
+
 
 /*********************************************
 *                Game Drivers                *
@@ -931,4 +1080,5 @@ ROM_END
 
        YEAR  NAME      PARENT  MACHINE   INPUT     INIT      ROT    COMPANY           FULLNAME                                 FLAGS                                  LAYOUT  */
 GAMEL( 1991, luckgrln, 0,      luckgrln, luckgrln, luckgrln, ROT0, "Wing Co., Ltd.", "Lucky Girl (newer Z180 based hardware)", GAME_NO_SOUND, layout_luckgrln )
+GAMEL( 1993, 7smash, 0,        _7smash,  _7smash,  0,        ROT0, "Sovic",          "7 Smash", GAME_IMPERFECT_GRAPHICS | GAME_NOT_WORKING | GAME_NO_SOUND, layout_luckgrln )
 

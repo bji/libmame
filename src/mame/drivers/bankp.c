@@ -267,13 +267,21 @@ static MACHINE_RESET( bankp )
 	state->m_priority = 0;
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	bankp_state *state = device->machine().driver_data<bankp_state>();
+
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 static MACHINE_CONFIG_START( bankp, bankp_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, BANKP_CPU_CLOCK)
 	MCFG_CPU_PROGRAM_MAP(bankp_map)
 	MCFG_CPU_IO_MAP(bankp_io_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_RESET(bankp)
 
@@ -281,10 +289,9 @@ static MACHINE_CONFIG_START( bankp, bankp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(3*8, 31*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(bankp)
+	MCFG_SCREEN_UPDATE_STATIC(bankp)
 
 	MCFG_GFXDECODE(bankp)
 	MCFG_PALETTE_LENGTH(32*4+16*8)

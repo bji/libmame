@@ -2,7 +2,7 @@
 //
 //  sdlmain.c - main file for SDLMAME.
 //
-//  Copyright (c) 1996-2011, Nicola Salmoria and the MAME Team.
+//  Copyright (c) 1996-2012, Nicola Salmoria and the MAME Team.
 //  Visit http://mamedev.org for licensing and usage restrictions.
 //
 //  SDLMAME by Olivier Galibert and R. Belmont
@@ -24,9 +24,10 @@
 #endif
 
 // standard includes
-#ifdef MESS
+#if !defined(SDLMAME_WIN32) && !defined(SDLMAME_OS2)
 #include <unistd.h>
 #endif
+
 #ifdef SDLMAME_OS2
 #define INCL_DOS
 #include <os2.h>
@@ -64,11 +65,7 @@
 #if defined(SDLMAME_WIN32) || defined(SDLMAME_MACOSX) || defined(SDLMAME_OS2)
 	#define INI_PATH ".;ini"
 #else
-#ifdef MESS
-	#define INI_PATH "$HOME/.mess;.;ini"
-#else
-	#define INI_PATH "$HOME/.mame;.;ini"
-#endif // MESS
+	#define INI_PATH "$HOME/.APP_NAME;.;ini"
 #endif // MACOSX
 #endif // INI_PATH
 
@@ -196,13 +193,11 @@ const options_entry sdl_options::s_option_entries[] =
 	{ NULL, 		                          NULL,  OPTION_HEADER,     "SDL KEYBOARD MAPPING" },
 	{ SDLOPTION_KEYMAP,                      "0",    OPTION_BOOLEAN,    "enable keymap" },
 	{ SDLOPTION_KEYMAP_FILE,                 "keymap.dat", OPTION_STRING, "keymap filename" },
-#ifdef MESS
 #ifdef SDLMAME_MACOSX
-	{ SDLOPTION_UIMODEKEY,					 "DELETE", OPTION_STRING,   "Key to toggle MESS keyboard mode" },
+	{ SDLOPTION_UIMODEKEY,					 "DELETE", OPTION_STRING,   "Key to toggle keyboard mode" },
 #else
-	{ SDLOPTION_UIMODEKEY,			         "SCRLOCK", OPTION_STRING,  "Key to toggle MESS keyboard mode" },
+	{ SDLOPTION_UIMODEKEY,			         "SCRLOCK", OPTION_STRING,  "Key to toggle keyboard mode" },
 #endif	// SDLMAME_MACOSX
-#endif	// MESS
 
 	// joystick mapping
 	{ NULL, 		                         NULL,   OPTION_HEADER,     "SDL JOYSTICK MAPPING" },
@@ -275,7 +270,10 @@ void MorphToPM()
 
 sdl_options::sdl_options()
 {
+	astring ini_path(INI_PATH);
 	add_entries(s_option_entries);
+	ini_path.replace(0, "APP_NAME", emulator_info::get_appname_lower());
+	set_default_value(SDLOPTION_INIPATH, ini_path.cstr());
 }
 
 
@@ -413,6 +411,9 @@ sdl_osd_interface::~sdl_osd_interface()
 
 void sdl_osd_interface::osd_exit(running_machine &machine)
 {
+	#ifdef SDLMAME_NETWORK
+		sdlnetdev_deinit(machine);
+	#endif
 
 	if (!SDLMAME_INIT_IN_WORKER_THREAD)
 		SDL_Quit();
@@ -705,7 +706,7 @@ osd_font sdl_osd_interface::font_open(const char *_name, int &height)
 
 	/* handle bdf fonts in the core */
 	if (name.len() > 4)
-		if (name.toupper().substr(name.len()-4,4) == ".BDF" )
+		if (name.makeupper().substr(name.len()-4,4) == ".BDF" )
 			return NULL;
 
 	font_name = CFStringCreateWithCString( NULL, _name, kCFStringEncodingUTF8 );
@@ -768,11 +769,10 @@ void sdl_osd_interface::font_close(osd_font font)
 //  pixel of a black & white font
 //-------------------------------------------------
 
-bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, INT32 &width, INT32 &xoffs, INT32 &yoffs)
+bool sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, bitmap_argb32 &bitmap, INT32 &width, INT32 &xoffs, INT32 &yoffs)
 {
    UniChar uni_char;
    CGGlyph glyph;
-   bitmap_t *bitmap = (bitmap_t *)NULL;
    CTFontRef ct_font = (CTFontRef)font;
    const CFIndex count = 1;
    CGRect bounding_rect, success_rect;
@@ -813,9 +813,9 @@ bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, 
       color_space = CGColorSpaceCreateDeviceRGB();
       bits_per_component = 8;
 
-      bitmap = auto_alloc(machine(), bitmap_t(bitmap_width, bitmap_height, BITMAP_FORMAT_ARGB32));
+      bitmap.allocate(bitmap_width, bitmap_height);
 
-      context_ref = CGBitmapContextCreate( bitmap->base, bitmap_width, bitmap_height, bits_per_component, bitmap->rowpixels*4, color_space, bitmap_info );
+      context_ref = CGBitmapContextCreate( bitmap.raw_pixptr(0), bitmap_width, bitmap_height, bits_per_component, bitmap.rowpixels()*4, color_space, bitmap_info );
 
       if( context_ref != NULL )
       {
@@ -833,7 +833,7 @@ bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, 
       CGColorSpaceRelease( color_space );
    }
 
-   return bitmap;
+   return bitmap.valid();
 }
 #else // UNIX but not OSX
 
@@ -849,6 +849,22 @@ static TTF_Font * TTF_OpenFont_Magic(astring name, int fsize)
 			return NULL;
 	}
 	return TTF_OpenFont(name.cstr(), POINT_SIZE);
+}
+
+static bool BDF_Check_Magic(astring name)
+{
+    emu_file file(OPEN_FLAG_READ);
+    if (file.open(name) == FILERR_NONE)
+    {
+		unsigned char buffer[9];
+		unsigned char magic[9] = { 'S', 'T', 'A', 'R', 'T', 'F', 'O', 'N', 'T' };
+		file.read(buffer, 9);
+        file.close();
+		if (!memcmp(buffer, magic, 9))
+			return true;
+    }
+
+    return false;
 }
 
 static TTF_Font *search_font_config(astring name, bool bold, bool italic, bool underline, bool &bakedstyles)
@@ -1009,7 +1025,10 @@ osd_font sdl_osd_interface::font_open(const char *_name, int &height)
 
 	if (!font)
 	{
-		printf("WARNING: Couldn't find/open TrueType font %s, using MAME default\n", name.cstr());
+        if (!BDF_Check_Magic(name))
+        {
+            printf("WARNING: font %s, is not TrueType or BDF, using MAME default\n", name.cstr());
+        }
 		return NULL;
 	}
 
@@ -1056,10 +1075,9 @@ void sdl_osd_interface::font_close(osd_font font)
 //  pixel of a black & white font
 //-------------------------------------------------
 
-bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, INT32 &width, INT32 &xoffs, INT32 &yoffs)
+bool sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, bitmap_argb32 &bitmap, INT32 &width, INT32 &xoffs, INT32 &yoffs)
 {
 	TTF_Font *ttffont;
-	bitmap_t *bitmap = (bitmap_t *)NULL;
 	SDL_Surface *drawsurf;
 	SDL_Color fcol = { 0xff, 0xff, 0xff };
 	UINT16 ustr[16];
@@ -1074,12 +1092,12 @@ bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, 
 	if (drawsurf)
 	{
 		// allocate a MAME destination bitmap
-		bitmap = auto_alloc(machine(), bitmap_t(drawsurf->w, drawsurf->h, BITMAP_FORMAT_ARGB32));
+		bitmap.allocate(drawsurf->w, drawsurf->h);
 
 		// copy the rendered character image into it
-		for (int y = 0; y < bitmap->height; y++)
+		for (int y = 0; y < bitmap.height(); y++)
 		{
-			UINT32 *dstrow = BITMAP_ADDR32(bitmap, y, 0);
+			UINT32 *dstrow = &bitmap.pix32(y);
 			UINT8 *srcrow = (UINT8 *)drawsurf->pixels;
 
 			srcrow += (y * drawsurf->pitch);
@@ -1097,7 +1115,7 @@ bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, 
 		SDL_FreeSurface(drawsurf);
 	}
 
-	return bitmap;
+	return bitmap.valid();
 }
 #endif	// not OSX
 #else	// not UNIX
@@ -1128,8 +1146,8 @@ void sdl_osd_interface::font_close(osd_font font)
 //  pixel of a black & white font
 //-------------------------------------------------
 
-bitmap_t *sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, INT32 &width, INT32 &xoffs, INT32 &yoffs)
+bool sdl_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, bitmap_argb32 &bitmap, INT32 &width, INT32 &xoffs, INT32 &yoffs)
 {
-	return (bitmap_t *)NULL;
+	return false;
 }
 #endif

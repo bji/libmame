@@ -17,6 +17,8 @@
         * what are the writes to $08DB and $08E8 for?
           (guess: a discrete sound effect)
 
+    ** driver should probably be merged with timelimt.c
+
 ****************************************************************************
 
     PCB Layout
@@ -370,10 +372,9 @@ static MACHINE_CONFIG_START( suprridr, suprridr_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(suprridr)
+	MCFG_SCREEN_UPDATE_STATIC(suprridr)
 
 	MCFG_GFXDECODE(suprridr)
 	MCFG_PALETTE_LENGTH(96)
@@ -444,4 +445,4 @@ ROM_END
  *
  *************************************/
 
-GAME( 1983, suprridr, 0, suprridr, suprridr, 0, ROT90, "Venture Line (Taito Corporation license)", "Super Rider", GAME_IMPERFECT_SOUND )
+GAME( 1983, suprridr, 0, suprridr, suprridr, 0, ROT90, "Taito Corporation (Venture Line license)", "Super Rider", GAME_IMPERFECT_SOUND )

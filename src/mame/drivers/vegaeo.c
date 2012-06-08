@@ -14,7 +14,6 @@
 
 #include "emu.h"
 #include "cpu/e132xs/e132xs.h"
-#include "deprecat.h"
 #include "machine/at28c16.h"
 #include "includes/eolithsp.h"
 
@@ -147,9 +146,9 @@ static VIDEO_START( vega )
 	state->m_vega_vram = auto_alloc_array(machine, UINT32, 0x14000*2/4);
 }
 
-static SCREEN_UPDATE( vega )
+static SCREEN_UPDATE_IND16( vega )
 {
-	vegaeo_state *state = screen->machine().driver_data<vegaeo_state>();
+	vegaeo_state *state = screen.machine().driver_data<vegaeo_state>();
 	int x,y,count;
 	int color;
 
@@ -159,16 +158,16 @@ static SCREEN_UPDATE( vega )
 		for (x=0;x < 320/4;x++)
 		{
 			color = state->m_vega_vram[count + (0x14000/4) * (state->m_vega_vbuffer ^ 1)] & 0xff;
-			*BITMAP_ADDR16(bitmap, y, x*4 + 3) = color;
+			bitmap.pix16(y, x*4 + 3) = color;
 
 			color = (state->m_vega_vram[count + (0x14000/4) * (state->m_vega_vbuffer ^ 1)] & 0xff00) >> 8;
-			*BITMAP_ADDR16(bitmap, y, x*4 + 2) = color;
+			bitmap.pix16(y, x*4 + 2) = color;
 
 			color = (state->m_vega_vram[count + (0x14000/4) * (state->m_vega_vbuffer ^ 1)] & 0xff0000) >> 16;
-			*BITMAP_ADDR16(bitmap, y, x*4 + 1) = color;
+			bitmap.pix16(y, x*4 + 1) = color;
 
 			color = (state->m_vega_vram[count + (0x14000/4) * (state->m_vega_vbuffer ^ 1)] & 0xff000000) >> 24;
-			*BITMAP_ADDR16(bitmap, y, x*4 + 0) = color;
+			bitmap.pix16(y, x*4 + 0) = color;
 
 			count++;
 		}
@@ -180,7 +179,7 @@ static SCREEN_UPDATE( vega )
 static MACHINE_CONFIG_START( vega, vegaeo_state )
 	MCFG_CPU_ADD("maincpu", GMS30C2132, 55000000)	/* 55 MHz */
 	MCFG_CPU_PROGRAM_MAP(vega_map)
-	MCFG_CPU_VBLANK_INT_HACK(eolith_speedup,262)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", eolith_speedup, "screen", 0, 1)
 
 	/* sound cpu */
 
@@ -188,10 +187,9 @@ static MACHINE_CONFIG_START( vega, vegaeo_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(512, 512)
+	MCFG_SCREEN_SIZE(512, 262)
 	MCFG_SCREEN_VISIBLE_AREA(0, 319, 0, 239)
-	MCFG_SCREEN_UPDATE(vega)
+	MCFG_SCREEN_UPDATE_STATIC(vega)
 
 	MCFG_PALETTE_LENGTH(256)
 

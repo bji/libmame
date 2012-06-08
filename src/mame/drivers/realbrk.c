@@ -43,7 +43,6 @@ To Do:
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "machine/tmp68301.h"
 #include "includes/realbrk.h"
 #include "sound/2413intf.h"
@@ -667,13 +666,8 @@ GFXDECODE_END
 
 static INTERRUPT_GEN( realbrk_interrupt )
 {
-	switch ( cpu_getiloops(device) )
-	{
-		case 0:
-			/* VBlank is connected to INT1 (external interrupts pin 1) */
-			tmp68301_external_interrupt_1(device->machine());
-			break;
-	}
+	/* VBlank is connected to INT1 (external interrupts pin 1) */
+	tmp68301_external_interrupt_1(device->machine());
 }
 
 static MACHINE_CONFIG_START( realbrk, realbrk_state )
@@ -690,10 +684,9 @@ static MACHINE_CONFIG_START( realbrk, realbrk_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x140, 0xe0)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x140-1, 0, 0xe0-1)
-	MCFG_SCREEN_UPDATE(realbrk)
+	MCFG_SCREEN_UPDATE_STATIC(realbrk)
 
 	MCFG_GFXDECODE(realbrk)
 	MCFG_PALETTE_LENGTH(0x8000)
@@ -728,7 +721,7 @@ static MACHINE_CONFIG_DERIVED( dai2kaku, realbrk )
 
 	MCFG_GFXDECODE(dai2kaku)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(dai2kaku)
+	MCFG_SCREEN_UPDATE_STATIC(dai2kaku)
 MACHINE_CONFIG_END
 
 

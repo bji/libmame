@@ -169,10 +169,18 @@ static ADDRESS_MAP_START( tp84b_cpu1_map, AS_PROGRAM, 8 )
 ADDRESS_MAP_END
 
 
+static WRITE8_HANDLER( sub_irq_mask_w )
+{
+	tp84_state *state = space->machine().driver_data<tp84_state>();
+
+	state->m_sub_irq_mask = data & 1;
+}
+
+
 static ADDRESS_MAP_START( cpu2_map, AS_PROGRAM, 8 )
 //  AM_RANGE(0x0000, 0x0000) AM_RAM /* Watch dog ?*/
 	AM_RANGE(0x2000, 0x2000) AM_READ(tp84_scanline_r) /* beam position */
-	AM_RANGE(0x4000, 0x4000) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x4000, 0x4000) AM_WRITE(sub_irq_mask_w)
 	AM_RANGE(0x6000, 0x679f) AM_RAM
 	AM_RANGE(0x67a0, 0x67ff) AM_RAM_WRITE(tp84_spriteram_w) AM_BASE_MEMBER(tp84_state, m_spriteram)
 	AM_RANGE(0x8000, 0x87ff) AM_RAM AM_SHARE("share1")
@@ -205,29 +213,29 @@ static INPUT_PORTS_START( tp84 )
 	KONAMI8_COCKTAIL_B12_UNK
 
 	PORT_START("DSW1")
-	KONAMI_COINAGE(DEF_STR( Free_Play ), "Invalid")
+	KONAMI_COINAGE_LOC(DEF_STR( Free_Play ), "Invalid", SW1)
 	/* "Invalid" = both coin slots disabled */
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x03, 0x02, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x03, 0x02, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "2" )
 	PORT_DIPSETTING(    0x02, "3" )
 	PORT_DIPSETTING(    0x01, "5" )
 	PORT_DIPSETTING(    0x00, "7" )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x18, 0x10, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x18, 0x10, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(    0x18, "10000 and every 50000" )
 	PORT_DIPSETTING(    0x10, "20000 and every 60000" )
 	PORT_DIPSETTING(    0x08, "30000 and every 70000" )
 	PORT_DIPSETTING(    0x00, "40000 and every 80000" )
-	PORT_DIPNAME( 0x60, 0x20, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x60, 0x20, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
-	PORT_DIPSETTING(    0x20, DEF_STR( Hard ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) ) // JP default
+	PORT_DIPSETTING(    0x20, DEF_STR( Hard ) )   // US default
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 INPUT_PORTS_END
@@ -236,7 +244,7 @@ static INPUT_PORTS_START( tp84a )
 	PORT_INCLUDE( tp84 )
 
 	PORT_MODIFY("DSW2")
-	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "3" )
 	PORT_DIPSETTING(    0x02, "4" )
 	PORT_DIPSETTING(    0x01, "5" )
@@ -273,6 +281,13 @@ static GFXDECODE_START( tp84 )
 	GFXDECODE_ENTRY( "gfx2", 0, spritelayout, 64*4*8, 16*8 )
 GFXDECODE_END
 
+static INTERRUPT_GEN( sub_vblank_irq )
+{
+	tp84_state *state = device->machine().driver_data<tp84_state>();
+
+	if(state->m_sub_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
 
 
 static MACHINE_CONFIG_START( tp84, tp84_state )
@@ -284,7 +299,7 @@ static MACHINE_CONFIG_START( tp84, tp84_state )
 
 	MCFG_CPU_ADD("sub", M6809, XTAL_18_432MHz/12)	/* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(cpu2_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", sub_vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80,XTAL_14_31818MHz/4) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(audio_map)
@@ -298,10 +313,9 @@ static MACHINE_CONFIG_START( tp84, tp84_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(tp84)
+	MCFG_SCREEN_UPDATE_STATIC(tp84)
 
 	MCFG_GFXDECODE(tp84)
 	MCFG_PALETTE_LENGTH(4096)
@@ -312,13 +326,13 @@ static MACHINE_CONFIG_START( tp84, tp84_state )
 	/* audio hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("sn1", SN76489A, XTAL_14_31818MHz/8) /* verified on pcb */
+	MCFG_SOUND_ADD("sn1", Y2404, XTAL_14_31818MHz/8) /* verified on pcb */
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "filter1", 0.75)
 
-	MCFG_SOUND_ADD("sn2", SN76489A, XTAL_14_31818MHz/8) /* verified on pcb */
+	MCFG_SOUND_ADD("sn2", Y2404, XTAL_14_31818MHz/8) /* verified on pcb */
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "filter2", 0.75)
 
-	MCFG_SOUND_ADD("sn3", SN76489A, XTAL_14_31818MHz/8) /* verified on pcb */
+	MCFG_SOUND_ADD("sn3", Y2404, XTAL_14_31818MHz/8) /* verified on pcb */
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "filter3", 0.75)
 
 	MCFG_SOUND_ADD("filter1", FILTER_RC, 0)

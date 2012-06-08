@@ -14,6 +14,8 @@ public:
 
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
+
+	UINT8 m_sound_nmi_mask;
 };
 
 
@@ -29,4 +31,4 @@ WRITE8_HANDLER( ssozumo_flipscreen_w );
 
 PALETTE_INIT( ssozumo );
 VIDEO_START( ssozumo );
-SCREEN_UPDATE( ssozumo );
+SCREEN_UPDATE_IND16( ssozumo );

@@ -21,7 +21,8 @@ public:
 	UINT8 *m_spriteram;
 	UINT8 *m_spriteram2;
 	size_t m_spriteram_size;
-	UINT8 m_nmi_mask;
+	UINT8 m_main_nmi_mask;
+	UINT8 m_sound_nmi_mask;
 };
 
 
@@ -35,6 +36,6 @@ WRITE8_HANDLER( wiz_flipy_w );
 
 VIDEO_START( wiz );
 PALETTE_INIT( wiz );
-SCREEN_UPDATE( wiz );
-SCREEN_UPDATE( stinger );
-SCREEN_UPDATE( kungfut );
+SCREEN_UPDATE_IND16( wiz );
+SCREEN_UPDATE_IND16( stinger );
+SCREEN_UPDATE_IND16( kungfut );

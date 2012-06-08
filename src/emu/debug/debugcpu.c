@@ -51,9 +51,6 @@
 #include "xmlfile.h"
 #include <ctype.h>
 #include <zlib.h>
-#if defined(SDLMAME_FREEBSD) || defined(SDLMAME_NETBSD) || defined(SDLMAME_OS2)
-# undef tolower
-#endif
 
 
 /***************************************************************************
@@ -204,7 +201,8 @@ void debug_cpu_flush_traces(running_machine &machine)
 {
 	/* this can be called on exit even when no debugging is enabled, so
      make sure the devdebug is valid before proceeding */
-	for (device_t *device = machine.devicelist().first(); device != NULL; device = device->next())
+    device_iterator iter(machine.root_device());
+	for (device_t *device = iter.first(); device != NULL; device = iter.next())
 		if (device->debug() != NULL)
 			device->debug()->trace_flush();
 }
@@ -340,8 +338,9 @@ bool debug_comment_save(running_machine &machine)
 		xml_set_attribute(systemnode, "name", machine.system().name);
 
 		// for each device
+		device_iterator iter(machine.root_device());
 		bool found_comments = false;
-		for (device_t *device = machine.devicelist().first(); device != NULL; device = device->next())
+		for (device_t *device = iter.first(); device != NULL; device = iter.next())
 			if (device->debug()->comment_count() > 0)
 			{
 				// create a node for this device
@@ -1084,7 +1083,8 @@ static void on_vblank(running_machine &machine, screen_device &device, bool vbla
 static void reset_transient_flags(running_machine &machine)
 {
 	/* loop over CPUs and reset the transient flags */
-	for (device_t *device = machine.devicelist().first(); device != NULL; device = device->next())
+	device_iterator iter(machine.root_device());
+	for (device_t *device = iter.first(); device != NULL; device = iter.next())
 		device->debug()->reset_transient_flag();
 	machine.debugcpu_data->m_stop_when_not_device = NULL;
 }
@@ -1147,13 +1147,10 @@ static void process_source_file(running_machine &machine)
 
 static device_t *expression_get_device(running_machine &machine, const char *tag)
 {
-	device_t *device;
-
-	for (device = machine.devicelist().first(); device != NULL; device = device->next())
-		if (mame_stricmp(device->tag(), tag) == 0)
-			return device;
-
-	return NULL;
+	// convert to lowercase then lookup the name (tags are enforced to be all lower case)
+	astring fullname(tag);
+	fullname.makelower();
+	return machine.device(fullname);
 }
 
 
@@ -1633,15 +1630,8 @@ static UINT64 get_cpunum(symbol_table &table, void *ref)
 	running_machine &machine = *reinterpret_cast<running_machine *>(table.globalref());
 	device_t *target = machine.debugcpu_data->visiblecpu;
 
-	device_execute_interface *exec = NULL;
-	int index = 0;
-	for (bool gotone = machine.devicelist().first(exec); gotone; gotone = exec->next(exec))
-	{
-		if (&exec->device() == target)
-			return index;
-		index++;
-	}
-	return 0;
+	execute_interface_iterator iter(machine.root_device());
+	return iter.indexof(target->execute());
 }
 
 
@@ -1682,6 +1672,8 @@ device_debug::device_debug(device_t &device)
 	memset(m_pc_history, 0, sizeof(m_pc_history));
 	memset(m_wplist, 0, sizeof(m_wplist));
 
+	m_comment_change = 0;
+
 	// find out which interfaces we have to work with
 	device.interface(m_exec);
 	device.interface(m_memory);
@@ -1691,9 +1683,12 @@ device_debug::device_debug(device_t &device)
 	// set up state-related stuff
 	if (m_state != NULL)
 	{
-		// add a global symbol for the current instruction pointer
+		// add global symbol for cycles and totalcycles
 		if (m_exec != NULL)
+		{
 			m_symtable.add("cycles", NULL, get_cycles);
+			m_symtable.add("totalcycles", NULL, get_totalcycles);
+		}
 
 		// add entries to enable/disable unmap reporting for each space
 		if (m_memory != NULL)
@@ -1709,7 +1704,7 @@ device_debug::device_debug(device_t &device)
 		// add all registers into it
 		astring tempstr;
 		for (const device_state_entry *entry = m_state->state_first(); entry != NULL; entry = entry->next())
-			m_symtable.add(tempstr.cpy(entry->symbol()).tolower(), (void *)(FPTR)entry->index(), get_state, set_state);
+			m_symtable.add(tempstr.cpy(entry->symbol()).makelower(), (void *)(FPTR)entry->index(), get_state, set_state);
 	}
 
 	// set up execution-related stuff
@@ -1731,6 +1726,8 @@ device_debug::device_debug(device_t &device)
 
 device_debug::~device_debug()
 {
+	auto_free(m_device.machine(), m_trace);
+
 	// free breakpoints and watchpoints
 	breakpoint_clear_all();
 	watchpoint_clear_all();
@@ -3053,8 +3050,7 @@ UINT32 device_debug::dasm_wrapped(astring &buffer, offs_t pc)
 	}
 
 	// disassemble to our buffer
-	buffer.expand(200);
-	return disassemble(buffer.text, pc, opbuf, argbuf);
+	return disassemble(buffer.stringbuffer(200), pc, opbuf, argbuf);
 }
 
 
@@ -3079,6 +3075,18 @@ UINT64 device_debug::get_cycles(symbol_table &table, void *ref)
 {
 	device_t *device = reinterpret_cast<device_t *>(table.globalref());
 	return device->debug()->m_exec->cycles_remaining();
+}
+
+
+//-------------------------------------------------
+//  get_totalcycles - getter callback for the
+//  'totalcycles' symbol
+//-------------------------------------------------
+
+UINT64 device_debug::get_totalcycles(symbol_table &table, void *ref)
+{
+	device_t *device = reinterpret_cast<device_t *>(table.globalref());
+	return device->debug()->m_exec->total_cycles();
 }
 
 

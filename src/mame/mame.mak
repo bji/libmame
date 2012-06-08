@@ -572,6 +572,8 @@ $(MAMEOBJ)/bfm.a: $(DRVLIBOBJ_BFM)
 DRVLIBOBJ_BMC = \
 	$(DRIVERS)/bmcbowl.o \
 	$(DRIVERS)/koftball.o \
+	$(DRIVERS)/popobear.o \
+	$(DRIVERS)/bmcpokr.o \
 
 DRVLIBOBJS += $(DRVLIBOBJ_BMC)
 
@@ -883,6 +885,7 @@ DRVLIBOBJ_IGS = \
 	$(DRIVERS)/iqblock.o $(VIDEO)/iqblock.o \
 	$(DRIVERS)/lordgun.o $(VIDEO)/lordgun.o \
 	$(DRIVERS)/pgm.o $(VIDEO)/pgm.o \
+	$(DRIVERS)/pgm2.o \
 	$(DRIVERS)/spoker.o \
 	$(MACHINE)/pgmcrypt.o \
 	$(MACHINE)/pgmprot.o \
@@ -1368,6 +1371,7 @@ $(MAMEOBJ)/pacman.a: $(DRVLIBOBJ_PACMAN)
 DRVLIBOBJ_PCE = \
 	$(DRIVERS)/ggconnie.o \
 	$(DRIVERS)/paranoia.o \
+	$(DRIVERS)/tourvis.o \
 	$(DRIVERS)/uapce.o \
 	$(MACHINE)/pcecommn.o $(VIDEO)/vdc.o \
 
@@ -1456,6 +1460,7 @@ DRVLIBOBJ_SEGA = \
 	$(DRIVERS)/megaplay.o \
 	$(DRIVERS)/megatech.o \
 	$(DRIVERS)/model1.o $(MACHINE)/model1.o $(VIDEO)/model1.o \
+    $(AUDIO)/dsbz80.o \
 	$(DRIVERS)/model2.o $(VIDEO)/model2.o \
 	$(DRIVERS)/model3.o $(VIDEO)/model3.o $(MACHINE)/model3.o \
 	$(DRIVERS)/naomi.o $(MACHINE)/dc.o $(VIDEO)/dc.o $(MACHINE)/naomi.o \
@@ -1465,6 +1470,7 @@ DRVLIBOBJ_SEGA = \
 	$(DRIVERS)/puckpkmn.o \
 	$(DRIVERS)/segac2.o \
 	$(DRIVERS)/segae.o $(MACHINE)/segamsys.o \
+	$(DRIVERS)/shtzone.o \
 	$(DRIVERS)/segag80r.o $(MACHINE)/segag80.o $(AUDIO)/segag80r.o $(VIDEO)/segag80r.o \
 	$(DRIVERS)/segag80v.o $(AUDIO)/segag80v.o $(VIDEO)/segag80v.o \
 	$(DRIVERS)/segahang.o $(VIDEO)/segahang.o \
@@ -2064,6 +2070,7 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/coinmstr.o \
 	$(DRIVERS)/coinmvga.o \
 	$(DRIVERS)/comebaby.o \
+	$(DRIVERS)/bntyhunt.o \
 	$(DRIVERS)/coolpool.o \
 	$(DRIVERS)/corona.o \
 	$(DRIVERS)/crystal.o $(VIDEO)/vrender0.o \
@@ -2112,6 +2119,7 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/homedata.o $(VIDEO)/homedata.o \
 	$(DRIVERS)/hotblock.o \
 	$(DRIVERS)/hotstuff.o \
+	$(DRIVERS)/ichiban.o \
 	$(DRIVERS)/imolagp.o \
 	$(DRIVERS)/intrscti.o \
 	$(DRIVERS)/istellar.o \
@@ -2204,13 +2212,14 @@ DRVLIBOBJ_MISC = \
 	$(DRIVERS)/sstrangr.o \
 	$(DRIVERS)/statriv2.o \
 	$(DRIVERS)/stellafr.o \
+	$(DRIVERS)/su2000.o \
 	$(DRIVERS)/summit.o \
 	$(DRIVERS)/sumt8035.o \
 	$(DRIVERS)/supertnk.o \
 	$(DRIVERS)/superwng.o \
 	$(DRIVERS)/tapatune.o \
 	$(DRIVERS)/tattack.o \
-	$(DRIVERS)/taxidrvr.o $(VIDEO)/taxidrvr.o \
+	$(DRIVERS)/taxidriv.o $(VIDEO)/taxidriv.o \
 	$(DRIVERS)/tcl.o \
 	$(DRIVERS)/thayers.o \
 	$(DRIVERS)/thedeep.o $(VIDEO)/thedeep.o \
@@ -2290,6 +2299,8 @@ $(DRIVERS)/avalnche.o:	$(LAYOUT)/avalnche.lh
 
 $(DRIVERS)/balsente.o:	$(LAYOUT)/stocker.lh
 
+$(DRIVERS)/beaminv.o:	$(LAYOUT)/beaminv.lh
+
 $(DRIVERS)/bfm_sc1.o:	$(LAYOUT)/bfm_sc1.lh
 
 $(DRIVERS)/bfm_sc2.o:	$(LAYOUT)/bfm_sc2.lh \
@@ -2342,6 +2353,8 @@ $(DRIVERS)/destroyr.o:	$(LAYOUT)/destroyr.lh
 $(DRIVERS)/dlair.o:	$(LAYOUT)/dlair.lh
 
 $(DRIVERS)/firebeat.o:	$(LAYOUT)/firebeat.lh
+
+$(DRIVERS)/fortecar.o:	$(LAYOUT)/fortecrd.lh
 
 $(DRIVERS)/funworld.o:	$(LAYOUT)/jollycrd.lh \
 			$(LAYOUT)/bigdeal.lh \
@@ -2548,6 +2561,9 @@ $(MACHINE)/nes_mmc.o:	$(MAMESRC)/machine/nes_ines.c \
 			$(MAMESRC)/machine/nes_unif.c
 $(VIDEO)/jaguar.o:	$(MAMESRC)/video/jagobj.c \
 			$(MAMESRC)/video/jagblit.c
+$(DRIVERS)/model1.o: $(MAMESRC)/includes/model1.h $(MAMESRC)/audio/dsbz80.h
+$(VIDEO)/model1.o: $(MAMESRC)/includes/model1.h $(MAMESRC)/audio/dsbz80.h
+$(MACHINE)/model1.o: $(MAMESRC)/includes/model1.h $(MAMESRC)/audio/dsbz80.h
 $(VIDEO)/model2.o:	$(MAMESRC)/video/model2rd.c
 $(VIDEO)/model3.o:	$(MAMESRC)/video/m3raster.c
 $(VIDEO)/n64.o:		$(MAMESRC)/video/rdpfiltr.c

@@ -131,16 +131,16 @@ static VIDEO_START( bmcbowl )
 {
 }
 
-static SCREEN_UPDATE( bmcbowl )
+static SCREEN_UPDATE_IND16( bmcbowl )
 {
-	bmcbowl_state *state = screen->machine().driver_data<bmcbowl_state>();
+	bmcbowl_state *state = screen.machine().driver_data<bmcbowl_state>();
 /*
       280x230,4 bitmap layers, 8bpp,
         missing scroll and priorities   (maybe fixed ones)
 */
 
 	int x,y,z,pixdat;
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	z=0;
 	for (y=0;y<230;y++)
@@ -150,30 +150,30 @@ static SCREEN_UPDATE( bmcbowl )
 			pixdat = state->m_vid2[0x8000+z];
 
 			if(pixdat&0xff)
-				*BITMAP_ADDR16(bitmap, y, x+1) = (pixdat&0xff);
+				bitmap.pix16(y, x+1) = (pixdat&0xff);
 			if(pixdat>>8)
-				*BITMAP_ADDR16(bitmap, y, x) = (pixdat>>8);
+				bitmap.pix16(y, x) = (pixdat>>8);
 
 			pixdat = state->m_vid2[z];
 
 			if(pixdat&0xff)
-				*BITMAP_ADDR16(bitmap, y, x+1) = (pixdat&0xff);
+				bitmap.pix16(y, x+1) = (pixdat&0xff);
 			if(pixdat>>8)
-				*BITMAP_ADDR16(bitmap, y, x) = (pixdat>>8);
+				bitmap.pix16(y, x) = (pixdat>>8);
 
 			pixdat = state->m_vid1[0x8000+z];
 
 			if(pixdat&0xff)
-				*BITMAP_ADDR16(bitmap, y, x+1) = (pixdat&0xff);
+				bitmap.pix16(y, x+1) = (pixdat&0xff);
 			if(pixdat>>8)
-				*BITMAP_ADDR16(bitmap, y, x) = (pixdat>>8);
+				bitmap.pix16(y, x) = (pixdat>>8);
 
 			pixdat = state->m_vid1[z];
 
 			if(pixdat&0xff)
-				*BITMAP_ADDR16(bitmap, y, x+1) = (pixdat&0xff);
+				bitmap.pix16(y, x+1) = (pixdat&0xff);
 			if(pixdat>>8)
-				*BITMAP_ADDR16(bitmap, y, x) = (pixdat>>8);
+				bitmap.pix16(y, x) = (pixdat>>8);
 
 			z++;
 		}
@@ -495,10 +495,9 @@ static MACHINE_CONFIG_START( bmcbowl, bmcbowl_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(35*8, 30*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 35*8-1, 0*8, 29*8-1)
-	MCFG_SCREEN_UPDATE(bmcbowl)
+	MCFG_SCREEN_UPDATE_STATIC(bmcbowl)
 
 	MCFG_PALETTE_LENGTH(256)
 

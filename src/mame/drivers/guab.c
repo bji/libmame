@@ -243,7 +243,7 @@ static VIDEO_START( guab )
 }
 
 
-static SCREEN_UPDATE( guab )
+static SCREEN_UPDATE_IND16( guab )
 {
 	int x, y;
 	struct tms34061_display state;
@@ -253,22 +253,22 @@ static SCREEN_UPDATE( guab )
 	/* If blanked, fill with black */
 	if (state.blanked)
 	{
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 		return 0;
 	}
 
-	for (y = cliprect->min_y; y <= cliprect->max_y; ++y)
+	for (y = cliprect.min_y; y <= cliprect.max_y; ++y)
 	{
 		UINT8 *src = &state.vram[256 * y];
-		UINT16 *dest = BITMAP_ADDR16(bitmap, y, 0);
+		UINT16 *dest = &bitmap.pix16(y);
 
-		for (x = cliprect->min_x; x <= cliprect->max_x; x += 2)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x += 2)
 		{
 			UINT8 pen = src[x >> 1];
 
 			/* Draw two 4-bit pixels */
-			*dest++ = screen->machine().pens[pen >> 4];
-			*dest++ = screen->machine().pens[pen & 0x0f];
+			*dest++ = screen.machine().pens[pen >> 4];
+			*dest++ = screen.machine().pens[pen & 0x0f];
 		}
 	}
 
@@ -797,10 +797,9 @@ static MACHINE_CONFIG_START( guab, guab_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 64*8-1, 0, 32*8-1)
-	MCFG_SCREEN_UPDATE(guab)
+	MCFG_SCREEN_UPDATE_STATIC(guab)
 
 	MCFG_PALETTE_LENGTH(16)
 

@@ -275,7 +275,7 @@ VIDEO_START( glfgreat )
 	tmnt_state *state = machine.driver_data<tmnt_state>();
 
 	state->m_roz_tilemap = tilemap_create(machine, glfgreat_get_roz_tile_info, tilemap_scan_rows, 16, 16, 512, 512);
-	tilemap_set_transparent_pen(state->m_roz_tilemap,0);
+	state->m_roz_tilemap->set_transparent_pen(0);
 
 	state->m_glfgreat_roz_rom_bank = 0;
 	state->m_glfgreat_roz_char_bank = 0;
@@ -290,7 +290,7 @@ VIDEO_START( prmrsocr )
 	tmnt_state *state = machine.driver_data<tmnt_state>();
 
 	state->m_roz_tilemap = tilemap_create(machine, prmrsocr_get_roz_tile_info, tilemap_scan_rows, 16, 16, 512, 256);
-	tilemap_set_transparent_pen(state->m_roz_tilemap,0);
+	state->m_roz_tilemap->set_transparent_pen(0);
 
 	state->m_prmrsocr_sprite_bank = 0;
 	state->m_glfgreat_roz_char_bank = 0;
@@ -341,7 +341,7 @@ WRITE16_HANDLER( tmnt_0a0000_w )
 		state->m_last = data & 0x08;
 
 		/* bit 5 = irq enable */
-		interrupt_enable_w(space, 0, data & 0x20);
+		state->m_irq5_mask = data & 0x20;
 
 		/* bit 7 = enable char ROM reading through the video RAM */
 		k052109_set_rmrd_line(state->m_k052109, (data & 0x80) ? ASSERT_LINE : CLEAR_LINE);
@@ -408,7 +408,7 @@ WRITE16_HANDLER( blswhstl_700300_w )
 		if (state->m_blswhstl_rombank != ((data & 0x80) >> 7))
 		{
 			state->m_blswhstl_rombank = (data & 0x80) >> 7;
-			tilemap_mark_all_tiles_dirty_all(space->machine());
+			space->machine().tilemap().mark_all_dirty();
 		}
 
 		/* other bits unknown */
@@ -448,7 +448,7 @@ WRITE16_HANDLER( glfgreat_122000_w )
 		if (state->m_glfgreat_roz_rom_bank != (data & 0x20) >> 5)
 		{
 			state->m_glfgreat_roz_rom_bank = (data & 0x20) >> 5;
-			tilemap_mark_all_tiles_dirty(state->m_roz_tilemap);
+			state->m_roz_tilemap->mark_all_dirty();
 		}
 
 		/* bit 6,7 = 53596 char bank selection for ROM test */
@@ -576,9 +576,9 @@ WRITE16_HANDLER( tmnt_priority_w )
 
 ***************************************************************************/
 
-SCREEN_UPDATE( mia )
+SCREEN_UPDATE_IND16( mia )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 
 	k052109_tilemap_update(state->m_k052109);
 
@@ -591,9 +591,9 @@ SCREEN_UPDATE( mia )
 	return 0;
 }
 
-SCREEN_UPDATE( tmnt )
+SCREEN_UPDATE_IND16( tmnt )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 
 	k052109_tilemap_update(state->m_k052109);
 
@@ -607,9 +607,9 @@ SCREEN_UPDATE( tmnt )
 }
 
 
-SCREEN_UPDATE( punkshot )
+SCREEN_UPDATE_IND16( punkshot )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 
 	state->m_sprite_colorbase = k053251_get_palette_index(state->m_k053251, K053251_CI1);
 	state->m_layer_colorbase[0] = k053251_get_palette_index(state->m_k053251, K053251_CI2);
@@ -627,7 +627,7 @@ SCREEN_UPDATE( punkshot )
 
 	konami_sortlayers3(state->m_sorted_layer, state->m_layerpri);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[0], TILEMAP_DRAW_OPAQUE, 1);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[1], 0, 2);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[2], 0, 4);
@@ -637,9 +637,9 @@ SCREEN_UPDATE( punkshot )
 }
 
 
-SCREEN_UPDATE( lgtnfght )
+SCREEN_UPDATE_IND16( lgtnfght )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 	int bg_colorbase;
 
 	bg_colorbase = k053251_get_palette_index(state->m_k053251, K053251_CI0);
@@ -659,8 +659,8 @@ SCREEN_UPDATE( lgtnfght )
 
 	konami_sortlayers3(state->m_sorted_layer, state->m_layerpri);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
-	bitmap_fill(bitmap, cliprect, 16 * bg_colorbase);
+	screen.machine().priority_bitmap.fill(0, cliprect);
+	bitmap.fill(16 * bg_colorbase, cliprect);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[0], 0, 1);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[1], 0, 2);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[2], 0, 4);
@@ -684,9 +684,9 @@ popmessage("%04x", state->m_glfgreat_pixel);
 		return state->m_glfgreat_pixel & 0xff;
 }
 
-SCREEN_UPDATE( glfgreat )
+SCREEN_UPDATE_IND16( glfgreat )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 	int bg_colorbase;
 
 	bg_colorbase = k053251_get_palette_index(state->m_k053251, K053251_CI0);
@@ -708,14 +708,14 @@ SCREEN_UPDATE( glfgreat )
 
 	/* not sure about the 053936 priority, but it seems to work */
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
-	bitmap_fill(bitmap, cliprect,16 * bg_colorbase);
+	screen.machine().priority_bitmap.fill(0, cliprect);
+	bitmap.fill(16 * bg_colorbase, cliprect);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[0], 0, 1);
 
 	if (state->m_layerpri[0] >= 0x30 && state->m_layerpri[1] < 0x30)
 	{
 		k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, 0, 1, 1);
-		state->m_glfgreat_pixel = *BITMAP_ADDR16(bitmap, 0x80, 0x105);
+		state->m_glfgreat_pixel = bitmap.pix16(0x80, 0x105);
 	}
 
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[1], 0, 2);
@@ -723,7 +723,7 @@ SCREEN_UPDATE( glfgreat )
 	if (state->m_layerpri[1] >= 0x30 && state->m_layerpri[2] < 0x30)
 	{
 		k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, 0, 1, 1);
-		state->m_glfgreat_pixel = *BITMAP_ADDR16(bitmap, 0x80, 0x105);
+		state->m_glfgreat_pixel = bitmap.pix16(0x80, 0x105);
 	}
 
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[2], 0, 4);
@@ -731,16 +731,16 @@ SCREEN_UPDATE( glfgreat )
 	if (state->m_layerpri[2] >= 0x30)
 	{
 		k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, 0, 1, 1);
-		state->m_glfgreat_pixel = *BITMAP_ADDR16(bitmap, 0x80, 0x105);
+		state->m_glfgreat_pixel = bitmap.pix16(0x80, 0x105);
 	}
 
 	k053245_sprites_draw(state->m_k053245, bitmap, cliprect);
 	return 0;
 }
 
-SCREEN_UPDATE( tmnt2 )
+SCREEN_UPDATE_IND16( tmnt2 )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 	double brt;
 	int i, newdim, newen, cb, ce;
 
@@ -769,31 +769,31 @@ SCREEN_UPDATE( tmnt2 )
 
 		// dim all colors before it
 		for (i = 0; i < cb; i++)
-			palette_set_pen_contrast(screen->machine(), i, brt);
+			palette_set_pen_contrast(screen.machine(), i, brt);
 
 		// reset all colors in range
 		for (i = cb; i < ce; i++)
-			palette_set_pen_contrast(screen->machine(), i, 1.0);
+			palette_set_pen_contrast(screen.machine(), i, 1.0);
 
 		// dim all colors after it
 		for (i = ce; i < 2048; i++)
-			palette_set_pen_contrast(screen->machine(), i, brt);
+			palette_set_pen_contrast(screen.machine(), i, brt);
 
 		// toggle shadow/highlight
 		if (~state->m_dim_c & 0x10)
-			palette_set_shadow_mode(screen->machine(), 1);
+			palette_set_shadow_mode(screen.machine(), 1);
 		else
-			palette_set_shadow_mode(screen->machine(), 0);
+			palette_set_shadow_mode(screen.machine(), 0);
 	}
 
-	SCREEN_UPDATE_CALL(lgtnfght);
+	SCREEN_UPDATE16_CALL(lgtnfght);
 	return 0;
 }
 
 
-SCREEN_UPDATE( thndrx2 )
+SCREEN_UPDATE_IND16( thndrx2 )
 {
-	tmnt_state *state = screen->machine().driver_data<tmnt_state>();
+	tmnt_state *state = screen.machine().driver_data<tmnt_state>();
 	int bg_colorbase;
 
 	bg_colorbase = k053251_get_palette_index(state->m_k053251, K053251_CI0);
@@ -813,8 +813,8 @@ SCREEN_UPDATE( thndrx2 )
 
 	konami_sortlayers3(state->m_sorted_layer, state->m_layerpri);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
-	bitmap_fill(bitmap, cliprect, 16 * bg_colorbase);
+	screen.machine().priority_bitmap.fill(0, cliprect);
+	bitmap.fill(16 * bg_colorbase, cliprect);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[0], 0, 1);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[1], 0, 2);
 	k052109_tilemap_draw(state->m_k052109, bitmap, cliprect, state->m_sorted_layer[2], 0, 4);
@@ -831,8 +831,12 @@ SCREEN_UPDATE( thndrx2 )
 
 ***************************************************************************/
 
-SCREEN_EOF( blswhstl )
+SCREEN_VBLANK( blswhstl )
 {
-	tmnt_state *state = machine.driver_data<tmnt_state>();
-	k053245_clear_buffer(state->m_k053245);
+	// on rising edge
+	if (vblank_on)
+	{
+		tmnt_state *state = screen.machine().driver_data<tmnt_state>();
+		k053245_clear_buffer(state->m_k053245);
+	}
 }

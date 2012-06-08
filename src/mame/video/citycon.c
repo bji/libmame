@@ -58,8 +58,8 @@ VIDEO_START( citycon )
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, citycon_scan, 8, 8, 128, 32);
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, citycon_scan, 8, 8, 128, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
-	tilemap_set_scroll_rows(state->m_fg_tilemap, 32);
+	state->m_fg_tilemap->set_transparent_pen(0);
+	state->m_fg_tilemap->set_scroll_rows(32);
 }
 
 
@@ -74,7 +74,7 @@ WRITE8_HANDLER( citycon_videoram_w )
 {
 	citycon_state *state = space->machine().driver_data<citycon_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -93,7 +93,7 @@ WRITE8_HANDLER( citycon_background_w )
 	if (state->m_bg_image != (data >> 4))
 	{
 		state->m_bg_image = (data >> 4);
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 	}
 
 	/* bit 0 flips screen */
@@ -106,7 +106,7 @@ WRITE8_HANDLER( citycon_background_w )
 
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	citycon_state *state = machine.driver_data<citycon_state>();
 	int offs;
@@ -140,9 +140,9 @@ INLINE void changecolor_RRRRGGGGBBBBxxxx( running_machine &machine, int color, i
 	palette_set_color_rgb(machine, color, pal4bit(data >> 12), pal4bit(data >> 8), pal4bit(data >> 4));
 }
 
-SCREEN_UPDATE( citycon )
+SCREEN_UPDATE_IND16( citycon )
 {
-	citycon_state *state = screen->machine().driver_data<citycon_state>();
+	citycon_state *state = screen.machine().driver_data<citycon_state>();
 	int offs, scroll;
 
 	/* Update the virtual palette to support text color code changing on every scanline. */
@@ -152,17 +152,17 @@ SCREEN_UPDATE( citycon )
 		int i;
 
 		for (i = 0; i < 4; i++)
-			changecolor_RRRRGGGGBBBBxxxx(screen->machine(), 640 + 4 * offs + i, 512 + 4 * indx + i);
+			changecolor_RRRRGGGGBBBBxxxx(screen.machine(), 640 + 4 * offs + i, 512 + 4 * indx + i);
 	}
 
 
 	scroll = state->m_scroll[0] * 256 + state->m_scroll[1];
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, scroll >> 1);
+	state->m_bg_tilemap->set_scrollx(0, scroll >> 1);
 	for (offs = 6; offs < 32; offs++)
-		tilemap_set_scrollx(state->m_fg_tilemap, offs, scroll);
+		state->m_fg_tilemap->set_scrollx(offs, scroll);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

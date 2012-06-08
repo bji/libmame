@@ -1,6 +1,9 @@
 /*
     Williams System 6a
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
@@ -8,18 +11,28 @@ class williams_s6a_state : public driver_device
 {
 public:
 	williams_s6a_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( williams_s6a_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( williams_s6a_map, AS_PROGRAM, 8, williams_s6a_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( williams_s6a )
 INPUT_PORTS_END
 
-static MACHINE_RESET( williams_s6a )
+void williams_s6a_state::machine_reset()
 {
 }
 
@@ -31,8 +44,6 @@ static MACHINE_CONFIG_START( williams_s6a, williams_s6a_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(williams_s6a_map)
-
-	MCFG_MACHINE_RESET( williams_s6a )
 MACHINE_CONFIG_END
 
 /*--------------------------
@@ -114,7 +125,7 @@ ROM_START(alpok_f6)
 ROM_END
 
 
-GAME(1980,	algar_l1,		0,			williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Algar (L-1)",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	alpok_l6,		0,			williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Alien Poker (L-6)",						GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	alpok_l2,		alpok_l6,	williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Alien Poker (L-2)",						GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	alpok_f6,		alpok_l6,	williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Alien Poker (L-6 French speech)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1980,	algar_l1,		0,			williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Algar (L-1)",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	alpok_l6,		0,			williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Alien Poker (L-6)",						GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	alpok_l2,		alpok_l6,	williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Alien Poker (L-2)",						GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	alpok_f6,		alpok_l6,	williams_s6a,	williams_s6a,	williams_s6a,	ROT0,	"Williams",				"Alien Poker (L-6 French speech)",			GAME_IS_SKELETON_MECHANICAL)

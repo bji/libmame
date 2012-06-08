@@ -31,19 +31,19 @@ void rf2_set_layer_banks(running_machine &machine, int banks)
 	if (state->m_rf2_layer_bank[0] != BIT(banks,0))
 	{
 		state->m_rf2_layer_bank[0] = BIT(banks,0);
-		tilemap_mark_all_tiles_dirty(state->m_back_layer);
+		state->m_back_layer->mark_all_dirty();
 	}
 
 	if (state->m_rf2_layer_bank[1] != BIT(banks,1))
 	{
 		state->m_rf2_layer_bank[1] = BIT(banks,1);
-		tilemap_mark_all_tiles_dirty(state->m_mid_layer);
+		state->m_mid_layer->mark_all_dirty();
 	}
 
 	if (state->m_rf2_layer_bank[2] != BIT(banks,2))
 	{
 		state->m_rf2_layer_bank[2] = BIT(banks,2);
-		tilemap_mark_all_tiles_dirty(state->m_fore_layer);
+		state->m_fore_layer->mark_all_dirty();
 	}
 }
 
@@ -59,9 +59,9 @@ WRITE32_HANDLER( spi_layer_enable_w )
 {
 	seibuspi_state *state = space->machine().driver_data<seibuspi_state>();
 	COMBINE_DATA( &state->m_layer_enable );
-	tilemap_set_enable(state->m_back_layer, (state->m_layer_enable & 0x1) ^ 0x1);
-	tilemap_set_enable(state->m_mid_layer, ((state->m_layer_enable >> 1) & 0x1) ^ 0x1);
-	tilemap_set_enable(state->m_fore_layer, ((state->m_layer_enable >> 2) & 0x1) ^ 0x1);
+	state->m_back_layer->enable((state->m_layer_enable & 0x1) ^ 0x1);
+	state->m_mid_layer->enable(((state->m_layer_enable >> 1) & 0x1) ^ 0x1);
+	state->m_fore_layer->enable(((state->m_layer_enable >> 2) & 0x1) ^ 0x1);
 }
 
 WRITE32_HANDLER( tilemap_dma_start_w )
@@ -79,8 +79,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i] != tile) {
 					state->m_tilemap_ram[i] = tile;
-					tilemap_mark_tile_dirty( state->m_back_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_back_layer, (i * 2) + 1 );
+					state->m_back_layer->mark_tile_dirty((i * 2) );
+					state->m_back_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -94,8 +94,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i+state->m_fore_layer_offset] != tile) {
 					state->m_tilemap_ram[i+state->m_fore_layer_offset] = tile;
-					tilemap_mark_tile_dirty( state->m_fore_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_fore_layer, (i * 2) + 1 );
+					state->m_fore_layer->mark_tile_dirty((i * 2) );
+					state->m_fore_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -109,8 +109,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i+state->m_mid_layer_offset] != tile) {
 					state->m_tilemap_ram[i+state->m_mid_layer_offset] = tile;
-					tilemap_mark_tile_dirty( state->m_mid_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_mid_layer, (i * 2) + 1 );
+					state->m_mid_layer->mark_tile_dirty((i * 2) );
+					state->m_mid_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -124,8 +124,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i+state->m_text_layer_offset] != tile) {
 					state->m_tilemap_ram[i+state->m_text_layer_offset] = tile;
-					tilemap_mark_tile_dirty( state->m_text_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_text_layer, (i * 2) + 1 );
+					state->m_text_layer->mark_tile_dirty((i * 2) );
+					state->m_text_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -137,8 +137,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i] != tile) {
 					state->m_tilemap_ram[i] = tile;
-					tilemap_mark_tile_dirty( state->m_back_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_back_layer, (i * 2) + 1 );
+					state->m_back_layer->mark_tile_dirty((i * 2) );
+					state->m_back_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -148,8 +148,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i+state->m_fore_layer_offset] != tile) {
 					state->m_tilemap_ram[i+state->m_fore_layer_offset] = tile;
-					tilemap_mark_tile_dirty( state->m_fore_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_fore_layer, (i * 2) + 1 );
+					state->m_fore_layer->mark_tile_dirty((i * 2) );
+					state->m_fore_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -159,8 +159,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i+state->m_mid_layer_offset] != tile) {
 					state->m_tilemap_ram[i+state->m_mid_layer_offset] = tile;
-					tilemap_mark_tile_dirty( state->m_mid_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_mid_layer, (i * 2) + 1 );
+					state->m_mid_layer->mark_tile_dirty((i * 2) );
+					state->m_mid_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -170,8 +170,8 @@ WRITE32_HANDLER( tilemap_dma_start_w )
 				UINT32 tile = state->m_spimainram[index];
 				if (state->m_tilemap_ram[i+state->m_text_layer_offset] != tile) {
 					state->m_tilemap_ram[i+state->m_text_layer_offset] = tile;
-					tilemap_mark_tile_dirty( state->m_text_layer, (i * 2) );
-					tilemap_mark_tile_dirty( state->m_text_layer, (i * 2) + 1 );
+					state->m_text_layer->mark_tile_dirty((i * 2) );
+					state->m_text_layer->mark_tile_dirty((i * 2) + 1 );
 				}
 				index++;
 			}
@@ -218,7 +218,7 @@ WRITE32_HANDLER( video_dma_address_w )
 	COMBINE_DATA( &state->m_video_dma_address );
 }
 
-static void drawgfx_blend(bitmap_t *bitmap, const rectangle *cliprect, const gfx_element *gfx, UINT32 code, UINT32 color, int flipx, int flipy, int sx, int sy)
+static void drawgfx_blend(bitmap_rgb32 &bitmap, const rectangle &cliprect, const gfx_element *gfx, UINT32 code, UINT32 color, int flipx, int flipy, int sx, int sy)
 {
 	seibuspi_state *state = gfx->machine().driver_data<seibuspi_state>();
 	const pen_t *pens = &gfx->machine().pens[gfx->color_base];
@@ -237,11 +237,11 @@ static void drawgfx_blend(bitmap_t *bitmap, const rectangle *cliprect, const gfx
 	y1 = sy;
 	y2 = sy + height - 1;
 
-	if (x1 > cliprect->max_x || x2 < cliprect->min_x)
+	if (x1 > cliprect.max_x || x2 < cliprect.min_x)
 	{
 		return;
 	}
-	if (y1 > cliprect->max_y || y2 < cliprect->min_y)
+	if (y1 > cliprect.max_y || y2 < cliprect.min_y)
 	{
 		return;
 	}
@@ -261,39 +261,39 @@ static void drawgfx_blend(bitmap_t *bitmap, const rectangle *cliprect, const gfx
 	}
 
 	// clip x
-	if (x1 < cliprect->min_x)
+	if (x1 < cliprect.min_x)
 	{
 		if (flipx)
 		{
-			px = width - (cliprect->min_x - x1) - 1;
+			px = width - (cliprect.min_x - x1) - 1;
 		}
 		else
 		{
-			px = (cliprect->min_x - x1);
+			px = (cliprect.min_x - x1);
 		}
-		x1 = cliprect->min_x;
+		x1 = cliprect.min_x;
 	}
-	if (x2 > cliprect->max_x)
+	if (x2 > cliprect.max_x)
 	{
-		x2 = cliprect->max_x;
+		x2 = cliprect.max_x;
 	}
 
 	// clip y
-	if (y1 < cliprect->min_y)
+	if (y1 < cliprect.min_y)
 	{
 		if (flipy)
 		{
-			py = height - (cliprect->min_y - y1) - 1;
+			py = height - (cliprect.min_y - y1) - 1;
 		}
 		else
 		{
-			py = (cliprect->min_y - y1);
+			py = (cliprect.min_y - y1);
 		}
-		y1 = cliprect->min_y;
+		y1 = cliprect.min_y;
 	}
-	if (y2 > cliprect->max_y)
+	if (y2 > cliprect.max_y)
 	{
-		y2 = cliprect->max_y;
+		y2 = cliprect.max_y;
 	}
 
 	if (gfx->total_elements <= 0x10000)
@@ -306,7 +306,7 @@ static void drawgfx_blend(bitmap_t *bitmap, const rectangle *cliprect, const gfx
 	// draw
 	for (j=y1; j <= y2; j++)
 	{
-		UINT32 *p = BITMAP_ADDR32(bitmap, j, 0);
+		UINT32 *p = &bitmap.pix32(j);
 		UINT8 trans_pen = (1 << state->m_sprite_bpp) - 1;
 		int dp_i = (py * width) + px;
 		py += yd;
@@ -343,7 +343,7 @@ static const int sprite_ytable[2][8] =
 	{ 7*16, 6*16, 5*16, 4*16, 3*16, 2*16, 1*16, 0*16 }
 };
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int pri_mask)
+static void draw_sprites(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect, int pri_mask)
 {
 	seibuspi_state *state = machine.driver_data<seibuspi_state>();
 	INT16 xpos, ypos;
@@ -481,9 +481,9 @@ VIDEO_START( spi )
 	state->m_mid_layer	= tilemap_create( machine, get_mid_tile_info, tilemap_scan_cols,  16,16,32,32 );
 	state->m_fore_layer	= tilemap_create( machine, get_fore_tile_info, tilemap_scan_cols,  16,16,32,32 );
 
-	tilemap_set_transparent_pen(state->m_text_layer, 31);
-	tilemap_set_transparent_pen(state->m_mid_layer, 63);
-	tilemap_set_transparent_pen(state->m_fore_layer, 63);
+	state->m_text_layer->set_transparent_pen(31);
+	state->m_mid_layer->set_transparent_pen(63);
+	state->m_fore_layer->set_transparent_pen(63);
 
 	state->m_tilemap_ram = auto_alloc_array_clear(machine, UINT32, 0x4000/4);
 	state->m_palette_ram = auto_alloc_array_clear(machine, UINT32, 0x3000/4);
@@ -540,11 +540,11 @@ static void set_rowscroll(tilemap_t *layer, int scroll, INT16* rows)
 	int i;
 	int x = state->m_spi_scrollram[scroll] & 0xffff;
 	int y = (state->m_spi_scrollram[scroll] >> 16) & 0xffff;
-	tilemap_set_scroll_rows(layer, 512);
+	layer->set_scroll_rows(512);
 	for( i=0; i < 512; i++ ) {
-		tilemap_set_scrollx(layer, i, x + rows[i]);
+		layer->set_scrollx(i, x + rows[i]);
 	}
-	tilemap_set_scrolly(layer, 0, y);
+	layer->set_scrolly(0, y);
 }
 
 static void set_scroll(tilemap_t *layer, int scroll)
@@ -552,13 +552,13 @@ static void set_scroll(tilemap_t *layer, int scroll)
 	seibuspi_state *state = machine.driver_data<seibuspi_state>();
 	int x = state->m_spi_scrollram[scroll] & 0xffff;
 	int y = (state->m_spi_scrollram[scroll] >> 16) & 0xffff;
-	tilemap_set_scrollx(layer, 0, x);
-	tilemap_set_scrolly(layer, 0, y);
+	layer->set_scrollx(0, x);
+	layer->set_scrolly(0, y);
 }
 #endif
 
 
-static void combine_tilemap(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, tilemap_t *tile, int x, int y, int opaque, INT16 *rowscroll)
+static void combine_tilemap(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect, tilemap_t *tile, int x, int y, int opaque, INT16 *rowscroll)
 {
 	seibuspi_state *state = machine.driver_data<seibuspi_state>();
 	int i,j;
@@ -566,15 +566,13 @@ static void combine_tilemap(running_machine &machine, bitmap_t *bitmap, const re
 	UINT32 *d;
 	UINT8 *t;
 	UINT32 xscroll_mask, yscroll_mask;
-	bitmap_t *pen_bitmap;
-	bitmap_t *flags_bitmap;
 
-	pen_bitmap = tilemap_get_pixmap(tile);
-	flags_bitmap = tilemap_get_flagsmap(tile);
-	xscroll_mask = pen_bitmap->width - 1;
-	yscroll_mask = pen_bitmap->height - 1;
+	bitmap_ind16 &pen_bitmap = tile->pixmap();
+	bitmap_ind8 &flags_bitmap = tile->flagsmap();
+	xscroll_mask = pen_bitmap.width() - 1;
+	yscroll_mask = pen_bitmap.height() - 1;
 
-	for (j=cliprect->min_y; j <= cliprect->max_y; j++)
+	for (j=cliprect.min_y; j <= cliprect.max_y; j++)
 	{
 		int rx = x;
 		if (rowscroll)
@@ -582,10 +580,10 @@ static void combine_tilemap(running_machine &machine, bitmap_t *bitmap, const re
 			rx += rowscroll[(j+y) & yscroll_mask];
 		}
 
-		d = BITMAP_ADDR32(bitmap, j, 0);
-		s = BITMAP_ADDR16(pen_bitmap, (j+y) & yscroll_mask, 0);
-		t = BITMAP_ADDR8(flags_bitmap, (j+y) & yscroll_mask, 0);
-		for (i=cliprect->min_x+rx; i <= cliprect->max_x+rx; i++)
+		d = &bitmap.pix32(j);
+		s = &pen_bitmap.pix16((j+y) & yscroll_mask);
+		t = &flags_bitmap.pix8((j+y) & yscroll_mask);
+		for (i=cliprect.min_x+rx; i <= cliprect.max_x+rx; i++)
 		{
 			if (opaque || (t[i & xscroll_mask] & (TILEMAP_PIXEL_LAYER0 | TILEMAP_PIXEL_LAYER1)))
 			{
@@ -607,9 +605,9 @@ static void combine_tilemap(running_machine &machine, bitmap_t *bitmap, const re
 
 
 
-SCREEN_UPDATE( spi )
+SCREEN_UPDATE_RGB32( spi )
 {
-	seibuspi_state *state = screen->machine().driver_data<seibuspi_state>();
+	seibuspi_state *state = screen.machine().driver_data<seibuspi_state>();
 	INT16 *back_rowscroll, *mid_rowscroll, *fore_rowscroll;
 	if( state->m_layer_bank & 0x80000000 ) {
 		back_rowscroll	= (INT16*)&state->m_tilemap_ram[0x200];
@@ -622,32 +620,32 @@ SCREEN_UPDATE( spi )
 	}
 
 	if( state->m_layer_enable & 0x1 )
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(0, cliprect);
 
 	if (!(state->m_layer_enable & 0x1))
-		combine_tilemap(screen->machine(), bitmap, cliprect, state->m_back_layer, state->m_spi_scrollram[0] & 0xffff, (state->m_spi_scrollram[0] >> 16) & 0xffff, 1, back_rowscroll);
+		combine_tilemap(screen.machine(), bitmap, cliprect, state->m_back_layer, state->m_spi_scrollram[0] & 0xffff, (state->m_spi_scrollram[0] >> 16) & 0xffff, 1, back_rowscroll);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 0);
 
 	// if fore layer is enabled, draw priority 1 sprites behind mid layer
 	if (!(state->m_layer_enable & 0x4))
-		draw_sprites(screen->machine(), bitmap, cliprect, 1);
+		draw_sprites(screen.machine(), bitmap, cliprect, 1);
 
 	if (!(state->m_layer_enable & 0x2))
-		combine_tilemap(screen->machine(), bitmap, cliprect, state->m_mid_layer, state->m_spi_scrollram[1] & 0xffff, (state->m_spi_scrollram[1] >> 16) & 0xffff, 0, mid_rowscroll);
+		combine_tilemap(screen.machine(), bitmap, cliprect, state->m_mid_layer, state->m_spi_scrollram[1] & 0xffff, (state->m_spi_scrollram[1] >> 16) & 0xffff, 0, mid_rowscroll);
 
 	// if fore layer is disabled, draw priority 1 sprites above mid layer
 	if ((state->m_layer_enable & 0x4))
-		draw_sprites(screen->machine(), bitmap, cliprect, 1);
+		draw_sprites(screen.machine(), bitmap, cliprect, 1);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 2);
+	draw_sprites(screen.machine(), bitmap, cliprect, 2);
 
 	if (!(state->m_layer_enable & 0x4))
-		combine_tilemap(screen->machine(), bitmap, cliprect, state->m_fore_layer, state->m_spi_scrollram[2] & 0xffff, (state->m_spi_scrollram[2] >> 16) & 0xffff, 0, fore_rowscroll);
+		combine_tilemap(screen.machine(), bitmap, cliprect, state->m_fore_layer, state->m_spi_scrollram[2] & 0xffff, (state->m_spi_scrollram[2] >> 16) & 0xffff, 0, fore_rowscroll);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 3);
+	draw_sprites(screen.machine(), bitmap, cliprect, 3);
 
-	combine_tilemap(screen->machine(), bitmap, cliprect, state->m_text_layer, 0, 0, 0, NULL);
+	combine_tilemap(screen.machine(), bitmap, cliprect, state->m_text_layer, 0, 0, 0, NULL);
 	return 0;
 }
 
@@ -670,12 +668,12 @@ VIDEO_START( sys386f2 )
 	memset(state->m_alpha_table, 0, 8192 * sizeof(UINT8));
 }
 
-SCREEN_UPDATE( sys386f2 )
+SCREEN_UPDATE_RGB32( sys386f2 )
 {
-	bitmap_fill(bitmap, cliprect, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect, 1);
-	draw_sprites(screen->machine(), bitmap, cliprect, 2);
-	draw_sprites(screen->machine(), bitmap, cliprect, 3);
+	bitmap.fill(0, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 1);
+	draw_sprites(screen.machine(), bitmap, cliprect, 2);
+	draw_sprites(screen.machine(), bitmap, cliprect, 3);
 	return 0;
 }

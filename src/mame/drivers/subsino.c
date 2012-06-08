@@ -270,7 +270,7 @@ static WRITE8_HANDLER( subsino_tiles_offset_w )
 {
 	subsino_state *state = space->machine().driver_data<subsino_state>();
 	state->m_tiles_offset = (data & 1) ? 0x1000: 0;
-	tilemap_mark_tile_dirty(state->m_tmap, offset);
+	state->m_tmap->mark_tile_dirty(offset);
 //  popmessage("gfx %02x",data);
 }
 
@@ -278,14 +278,14 @@ static WRITE8_HANDLER( subsino_videoram_w )
 {
 	subsino_state *state = space->machine().driver_data<subsino_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tmap, offset);
+	state->m_tmap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( subsino_colorram_w )
 {
 	subsino_state *state = space->machine().driver_data<subsino_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tmap, offset);
+	state->m_tmap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_tile_info )
@@ -311,7 +311,7 @@ static VIDEO_START( subsino )
 {
 	subsino_state *state = machine.driver_data<subsino_state>();
 	state->m_tmap = tilemap_create(	machine, get_tile_info, tilemap_scan_rows, 8,8, 0x40,0x20 );
-	tilemap_set_transparent_pen( state->m_tmap, 0 );
+	state->m_tmap->set_transparent_pen(0 );
 	state->m_tiles_offset = 0;
 }
 
@@ -321,7 +321,7 @@ static WRITE8_HANDLER( subsino_reel1_ram_w )
 {
 	subsino_state *state = space->machine().driver_data<subsino_state>();
 	state->m_reel1_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel1_tilemap,offset);
+	state->m_reel1_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_subsino_reel1_tile_info )
@@ -355,7 +355,7 @@ static WRITE8_HANDLER( subsino_reel2_ram_w )
 {
 	subsino_state *state = space->machine().driver_data<subsino_state>();
 	state->m_reel2_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel2_tilemap,offset);
+	state->m_reel2_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_subsino_reel2_tile_info )
@@ -388,7 +388,7 @@ static WRITE8_HANDLER( subsino_reel3_ram_w )
 {
 	subsino_state *state = space->machine().driver_data<subsino_state>();
 	state->m_reel3_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel3_tilemap,offset);
+	state->m_reel3_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_subsino_reel3_tile_info )
@@ -427,9 +427,9 @@ static VIDEO_START( subsino_reels )
 	state->m_reel2_tilemap = tilemap_create(machine,get_subsino_reel2_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_subsino_reel3_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
+	state->m_reel2_tilemap->set_scroll_cols(64);
+	state->m_reel3_tilemap->set_scroll_cols(64);
 
 }
 
@@ -437,91 +437,91 @@ static VIDEO_START( stisub )
 {
 	subsino_state *state = machine.driver_data<subsino_state>();
 	state->m_tmap = tilemap_create(	machine, get_stisub_tile_info, tilemap_scan_rows, 8,8, 0x40,0x20 );
-	tilemap_set_transparent_pen( state->m_tmap, 0 );
+	state->m_tmap->set_transparent_pen(0 );
 
 	state->m_reel1_tilemap = tilemap_create(machine,get_stisub_reel1_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 	state->m_reel2_tilemap = tilemap_create(machine,get_stisub_reel2_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_stisub_reel3_tile_info,tilemap_scan_rows, 8, 32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
+	state->m_reel2_tilemap->set_scroll_cols(64);
+	state->m_reel3_tilemap->set_scroll_cols(64);
 
 	state->m_out_c = 0x08;
 }
 
 
-static SCREEN_UPDATE( subsino )
+static SCREEN_UPDATE_IND16( subsino )
 {
-	subsino_state *state = screen->machine().driver_data<subsino_state>();
-	bitmap_fill(bitmap,cliprect,0);
-	tilemap_draw(bitmap,cliprect, state->m_tmap, 0, 0);
+	subsino_state *state = screen.machine().driver_data<subsino_state>();
+	bitmap.fill(0, cliprect);
+	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
-// are these hardcoded, or registers?
-static const rectangle visible1 = { 0*8, (14+48)*8-1,  4*8,  (4+7)*8-1 };
-static const rectangle visible2 = { 0*8, (14+48)*8-1, 10*8, (10+7)*8-1 };
-static const rectangle visible3 = { 0*8, (14+48)*8-1, 18*8, (18+7)*8-1 };
-
-static SCREEN_UPDATE( subsino_reels )
+static SCREEN_UPDATE_IND16( subsino_reels )
 {
-	subsino_state *state = screen->machine().driver_data<subsino_state>();
+	subsino_state *state = screen.machine().driver_data<subsino_state>();
 	int i;
-	bitmap_fill(bitmap,cliprect,0);
+	bitmap.fill(0, cliprect);
 
 	for (i= 0;i < 64;i++)
 	{
-		tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
-		tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i]);
-		tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i]);
+		state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
+		state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i]);
+		state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i]);
 	}
 
 	if (state->m_out_c&0x08)
 	{
-		tilemap_draw(bitmap, &visible1, state->m_reel1_tilemap, 0, 0);
-		tilemap_draw(bitmap, &visible2, state->m_reel2_tilemap, 0, 0);
-		tilemap_draw(bitmap, &visible3, state->m_reel3_tilemap, 0, 0);
+		// are these hardcoded, or registers?
+		const rectangle visible1(0*8, (14+48)*8-1,  4*8,  (4+7)*8-1);
+		const rectangle visible2(0*8, (14+48)*8-1, 10*8, (10+7)*8-1);
+		const rectangle visible3(0*8, (14+48)*8-1, 18*8, (18+7)*8-1);
+
+		state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+		state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+		state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 	}
 
-	tilemap_draw(bitmap,cliprect, state->m_tmap, 0, 0);
+	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
-// areas based on d-up game in attract mode
-static const rectangle stisub_visible1 = { 0, 511,  0,  87 };
-static const rectangle stisub_visible2 = { 0, 511,  88, 143 };
-static const rectangle stisub_visible3 = { 0, 511,  144, 223 };
 
-
-static SCREEN_UPDATE( stisub_reels )
+static SCREEN_UPDATE_IND16( stisub_reels )
 {
-	subsino_state *state = screen->machine().driver_data<subsino_state>();
+	subsino_state *state = screen.machine().driver_data<subsino_state>();
 	int i;
-	bitmap_fill(bitmap,cliprect,0);
+	bitmap.fill(0, cliprect);
 
 	if (state->m_reel1_attr)
 	{
-		tilemap_mark_all_tiles_dirty (state->m_reel1_tilemap);
-		tilemap_mark_all_tiles_dirty (state->m_reel2_tilemap);
-		tilemap_mark_all_tiles_dirty (state->m_reel3_tilemap);
+		state->m_reel1_tilemap->mark_all_dirty();
+		state->m_reel2_tilemap->mark_all_dirty();
+		state->m_reel3_tilemap->mark_all_dirty();
 	}
 
 	for (i= 0;i < 64;i++)
 	{
-		tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
-		tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i]);
-		tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i]);
+		state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
+		state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i]);
+		state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i]);
 	}
 
 	if (state->m_out_c&0x08)
 	{
-		tilemap_draw(bitmap, &stisub_visible1, state->m_reel1_tilemap, 0, 0);
-		tilemap_draw(bitmap, &stisub_visible2, state->m_reel2_tilemap, 0, 0);
-		tilemap_draw(bitmap, &stisub_visible3, state->m_reel3_tilemap, 0, 0);
+		// areas based on d-up game in attract mode
+		const rectangle visible1(0, 511,  0,  87);
+		const rectangle visible2(0, 511,  88, 143);
+		const rectangle visible3(0, 511,  144, 223);
+
+		state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+		state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+		state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 	}
 
-	tilemap_draw(bitmap,cliprect, state->m_tmap, 0, 0);
+	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -977,9 +977,9 @@ static WRITE8_HANDLER( subsino_out_c_w )
 	// c = reel colour bank?
 	state->m_out_c = data;
 
-	tilemap_mark_all_tiles_dirty (state->m_reel1_tilemap);
-	tilemap_mark_all_tiles_dirty (state->m_reel2_tilemap);
-	tilemap_mark_all_tiles_dirty (state->m_reel3_tilemap);
+	state->m_reel1_tilemap->mark_all_dirty();
+	state->m_reel2_tilemap->mark_all_dirty();
+	state->m_reel3_tilemap->mark_all_dirty();
 //  popmessage("data %02x\n",data);
 }
 
@@ -2629,10 +2629,9 @@ static MACHINE_CONFIG_START( victor21, subsino_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(subsino)
+	MCFG_SCREEN_UPDATE_STATIC(subsino)
 
 	MCFG_GFXDECODE(subsino_depth3)
 
@@ -2670,10 +2669,9 @@ static MACHINE_CONFIG_START( crsbingo, subsino_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(subsino)
+	MCFG_SCREEN_UPDATE_STATIC(subsino)
 
 	MCFG_GFXDECODE(subsino_depth4)
 
@@ -2700,10 +2698,9 @@ static MACHINE_CONFIG_START( srider, subsino_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(subsino)
+	MCFG_SCREEN_UPDATE_STATIC(subsino)
 
 	MCFG_GFXDECODE(subsino_depth4)
 
@@ -2740,10 +2737,9 @@ static MACHINE_CONFIG_START( tisub, subsino_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(subsino_reels)
+	MCFG_SCREEN_UPDATE_STATIC(subsino_reels)
 
 	MCFG_GFXDECODE(subsino_depth4_reels)
 
@@ -2769,10 +2765,9 @@ static MACHINE_CONFIG_START( stisub, subsino_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(stisub_reels)
+	MCFG_SCREEN_UPDATE_STATIC(stisub_reels)
 
 	MCFG_GFXDECODE(subsino_stisub)
 

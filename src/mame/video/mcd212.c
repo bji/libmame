@@ -87,8 +87,8 @@ static const UINT16 cdi220_lcd_char[20*22] =
 static void cdi220_draw_lcd(running_machine &machine, int y)
 {
     cdi_state *state = machine.driver_data<cdi_state>();
-    bitmap_t *bitmap = state->m_lcdbitmap;
-    UINT32 *scanline = BITMAP_ADDR32(bitmap, y, 0);
+    bitmap_rgb32 &bitmap = state->m_lcdbitmap;
+    UINT32 *scanline = &bitmap.pix32(y);
     int x = 0;
     int lcd = 0;
 
@@ -1331,12 +1331,11 @@ static void mcd212_draw_cursor(mcd212_regs_t *mcd212, UINT32 *scanline, int y)
 
 static void mcd212_draw_scanline(mcd212_regs_t *mcd212, int y)
 {
-    running_machine &machine = mcd212->machine();
-    bitmap_t *bitmap = machine.generic.tmpbitmap;
+    bitmap_rgb32 &bitmap = mcd212->m_bitmap;
     UINT8 plane_a_r[768], plane_a_g[768], plane_a_b[768];
     UINT8 plane_b_r[768], plane_b_g[768], plane_b_b[768];
     UINT32 out[768];
-    UINT32 *scanline = BITMAP_ADDR32(bitmap, y, 0);
+    UINT32 *scanline = &bitmap.pix32(y);
     int x;
 
     mcd212_process_vsr(mcd212, 0, plane_a_r, plane_a_g, plane_a_b);
@@ -1512,6 +1511,7 @@ TIMER_CALLBACK( mcd212_perform_scan )
 void mcd212_init(running_machine &machine, mcd212_regs_t *mcd212)
 {
     mcd212->m_machine = &machine;
+    machine.primary_screen->register_screen_bitmap(mcd212->m_bitmap);
 
     int index = 0;
     for(index = 0; index < 2; index++)
@@ -1523,9 +1523,9 @@ void mcd212_init(running_machine &machine, mcd212_regs_t *mcd212)
         mcd212->channel[index].ddr = 0;
         mcd212->channel[index].dcp = 0;
         mcd212->channel[index].dca = 0;
-        memset(mcd212->channel[index].clut_r, 0, 768);
-        memset(mcd212->channel[index].clut_g, 0, 768);
-        memset(mcd212->channel[index].clut_b, 0, 768);
+        memset(mcd212->channel[index].clut_r, 0, 256);
+        memset(mcd212->channel[index].clut_g, 0, 256);
+        memset(mcd212->channel[index].clut_b, 0, 256);
         mcd212->channel[index].image_coding_method = 0;
         mcd212->channel[index].transparency_control = 0;
         mcd212->channel[index].plane_order = 0;
@@ -1652,24 +1652,25 @@ VIDEO_START( cdimono1 )
 {
     cdi_state *state = machine.driver_data<cdi_state>();
 
-    VIDEO_START_CALL(generic_bitmapped);
     mcd212_ab_init(&state->m_mcd212_ab);
     mcd212_init(machine, &state->m_mcd212_regs);
     state->m_mcd212_regs.scan_timer = machine.scheduler().timer_alloc(FUNC(mcd212_perform_scan));
     state->m_mcd212_regs.scan_timer->adjust(machine.primary_screen->time_until_pos(0, 0));
 
-    state->m_lcdbitmap = downcast<screen_device *>(machine.device("lcd"))->alloc_compatible_bitmap();
+	screen_device *screen = downcast<screen_device *>(machine.device("lcd"));
+    screen->register_screen_bitmap(state->m_lcdbitmap);
 }
 
-SCREEN_UPDATE( cdimono1 )
+SCREEN_UPDATE_RGB32( cdimono1 )
 {
-    copybitmap(bitmap, screen->machine().generic.tmpbitmap, 0, 0, 0, 0, cliprect);
+    cdi_state *state = screen.machine().driver_data<cdi_state>();
+    copybitmap(bitmap, state->m_mcd212_regs.m_bitmap, 0, 0, 0, 0, cliprect);
     return 0;
 }
 
-SCREEN_UPDATE( cdimono1_lcd )
+SCREEN_UPDATE_RGB32( cdimono1_lcd )
 {
-    cdi_state *state = screen->machine().driver_data<cdi_state>();
+    cdi_state *state = screen.machine().driver_data<cdi_state>();
     copybitmap(bitmap, state->m_lcdbitmap, 0, 0, 0, 0, cliprect);
     return 0;
 }

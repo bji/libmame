@@ -34,11 +34,11 @@ ifdef STATIC
 # makefile hackery.
 
 LIBMAME = $(OBJ)/libmame.a
-LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRVLIBOBJS)            \
-                       $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) $(DASMOBJS)   \
-                       $(SOUNDOBJS) $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS)  \
-                       $(COTHREADOBJS) $(ZLIBOBJS) $(SOFTFLOATOBJS)          \
-                       $(DRIVLISTOBJ) $(DEVLISTOBJ) 
+LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ)            \
+                       $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) \
+                       $(DASMOBJS) $(SOUNDOBJS) $(LIBFLACOBJS)               \
+                       $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS)   \
+                       $(SOFTFLOATOBJS) $(DRIVLISTOBJ) $(DEVLISTOBJ) 
 
 $(OBJ)/libmame/libmame_arargs:
 		$(shell rm -f $(OBJ)/libmame/libmame_arargs)
@@ -62,19 +62,21 @@ LIBMAME = $(OBJ)/libmame$(SHLIB)
 
 ifdef SYMBOLS
 
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ)        \
-            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND)  \
-            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD)      \
-            $(LIBOCORE) $(ZLIB)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ)        \
+            $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU)           \
+            $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT)          \
+            $(JPEG_LIB) $(FLAC_LIB) $(FORMATS_LIB) $(LIBOCORE) $(ZLIB)       \
+            $(RESFILE)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -o $@ $^ -lpthread
 
 else
 
-$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ)        \
-            $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND)  \
-            $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD)      \
-            $(LIBOCORE) $(ZLIB)
+$(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ)        \
+            $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU)           \
+            $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT)          \
+            $(JPEG_LIB) $(FLAC_LIB) $(FORMATS_LIB) $(LIBOCORE) $(ZLIB)       \
+            $(RESFILE)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT)  \
                 -o $@ $^ -lpthread

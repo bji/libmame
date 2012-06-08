@@ -6,7 +6,9 @@ class suna8_state : public driver_device
 {
 public:
 	suna8_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT8 m_rombank;
 	UINT8 m_spritebank;
@@ -33,6 +35,8 @@ public:
 
 	INT16 *m_samplebuf;
 	int m_sample;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -57,4 +61,4 @@ WRITE8_HANDLER( brickzn_banked_paletteram_w );
 VIDEO_START( suna8_textdim0 );
 VIDEO_START( suna8_textdim8 );
 VIDEO_START( suna8_textdim12 );
-SCREEN_UPDATE( suna8 );
+SCREEN_UPDATE_IND16( suna8 );

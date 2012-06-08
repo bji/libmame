@@ -5,11 +5,7 @@
 *************************************************************************/
 
 #ifndef ENABLE_SPEEDUP_HACKS
-#ifndef MESS
 #define ENABLE_SPEEDUP_HACKS 1
-#else
-#define ENABLE_SPEEDUP_HACKS 0
-#endif /* MESS */
 #endif
 
 /* CoJag and Jaguar have completely different XTALs, pixel clock in Jaguar is the same as the GPU one */
@@ -26,6 +22,7 @@ extern UINT32 *jaguar_gpu_ram;
 extern UINT32 *jaguar_gpu_clut;
 extern UINT32 *jaguar_dsp_ram;
 extern UINT32 *jaguar_wave_rom;
+extern bool jaguar_hacks_enabled;
 
 /*----------- defined in audio/jaguar.c -----------*/
 
@@ -69,4 +66,4 @@ READ32_HANDLER( cojag_gun_input_r );
 
 VIDEO_START( cojag );
 VIDEO_START( jaguar );
-SCREEN_UPDATE( cojag );
+SCREEN_UPDATE_RGB32( cojag );

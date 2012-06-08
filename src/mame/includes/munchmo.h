@@ -19,14 +19,12 @@ public:
 	UINT8 *      m_videoram;
 
 	/* video-related */
-	bitmap_t     *m_tmpbitmap;
+	bitmap_ind16     *m_tmpbitmap;
 	int          m_palette_bank;
 	int          m_flipscreen;
 
 	/* misc */
 	int          m_nmi_enable;
-	int          m_which;
-	UINT8        m_sound_nmi_enable;
 
 	/* devices */
 	device_t *m_maincpu;
@@ -41,4 +39,4 @@ WRITE8_HANDLER( mnchmobl_flipscreen_w );
 
 PALETTE_INIT( mnchmobl );
 VIDEO_START( mnchmobl );
-SCREEN_UPDATE( mnchmobl );
+SCREEN_UPDATE_IND16( mnchmobl );

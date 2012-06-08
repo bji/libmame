@@ -58,6 +58,8 @@ public:
 	size_t	m_spriteram_size;
 	tilemap_t *m_bg_tilemap;
 	int m_monitor;
+
+	UINT8   m_nmi_mask;
 };
 
 /*----------- defined in video/mario.c -----------*/
@@ -70,7 +72,7 @@ WRITE8_HANDLER( mario_flip_w );
 
 PALETTE_INIT( mario );
 VIDEO_START( mario );
-SCREEN_UPDATE( mario );
+SCREEN_UPDATE_IND16( mario );
 
 
 /*----------- defined in audio/mario.c -----------*/

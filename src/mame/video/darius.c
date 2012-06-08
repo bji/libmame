@@ -4,7 +4,7 @@
 
 /***************************************************************************/
 
-INLINE void actual_get_fg_tile_info( running_machine &machine, tile_data *tileinfo, int tile_index, UINT16 *ram, int gfxnum )
+INLINE void actual_get_fg_tile_info( running_machine &machine, tile_data &tileinfo, int tile_index, UINT16 *ram, int gfxnum )
 {
 	UINT16 code = (ram[tile_index + 0x2000] & 0x7ff);
 	UINT16 attr = ram[tile_index];
@@ -30,7 +30,7 @@ VIDEO_START( darius )
 
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info,tilemap_scan_rows,8,8,128,64);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
 /***************************************************************************/
@@ -41,12 +41,12 @@ WRITE16_HANDLER( darius_fg_layer_w )
 
 	COMBINE_DATA(&state->m_fg_ram[offset]);
 	if (offset < 0x4000)
-		tilemap_mark_tile_dirty(state->m_fg_tilemap, (offset & 0x1fff));
+		state->m_fg_tilemap->mark_tile_dirty((offset & 0x1fff));
 }
 
 /***************************************************************************/
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int primask, int x_offs, int y_offs )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int primask, int x_offs, int y_offs )
 {
 	darius_state *state = machine.driver_data<darius_state>();
 	UINT16 *spriteram = state->m_spriteram;
@@ -92,17 +92,9 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 
 
 
-SCREEN_UPDATE( darius )
+static UINT32 update_screen(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, int xoffs)
 {
-	darius_state *state = screen->machine().driver_data<darius_state>();
-	int xoffs = 0;
-
-	if (screen == state->m_lscreen)
-		xoffs = 36 * 8 * 0;
-	else if (screen == state->m_mscreen)
-		xoffs = 36 * 8 * 1;
-	else if (screen == state->m_rscreen)
-		xoffs = 36 * 8 * 2;
+	darius_state *state = screen.machine().driver_data<darius_state>();
 
 	pc080sn_tilemap_update(state->m_pc080sn);
 
@@ -110,16 +102,21 @@ SCREEN_UPDATE( darius )
 	pc080sn_tilemap_draw_offset(state->m_pc080sn, bitmap, cliprect, 0, TILEMAP_DRAW_OPAQUE, 0, -xoffs, 0);
 
 	/* Sprites can be under/over the layer below text layer */
-	draw_sprites(screen->machine(), bitmap, cliprect, 0, xoffs, -8); // draw sprites with priority 0 which are under the mid layer
+	draw_sprites(screen.machine(), bitmap, cliprect, 0, xoffs, -8); // draw sprites with priority 0 which are under the mid layer
 
 	// draw middle layer
 	pc080sn_tilemap_draw_offset(state->m_pc080sn, bitmap, cliprect, 1, 0, 0, -xoffs, 0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 1, xoffs, -8); // draw sprites with priority 1 which are over the mid layer
+	draw_sprites(screen.machine(), bitmap, cliprect, 1, xoffs, -8); // draw sprites with priority 1 which are over the mid layer
 
 	/* top(text) layer is in fixed position */
-	tilemap_set_scrollx(state->m_fg_tilemap, 0, 0 + xoffs);
-	tilemap_set_scrolly(state->m_fg_tilemap, 0, -8);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	state->m_fg_tilemap->set_scrollx(0, 0 + xoffs);
+	state->m_fg_tilemap->set_scrolly(0, -8);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
+
+SCREEN_UPDATE_IND16( darius_left ) { return update_screen(screen, bitmap, cliprect, 36 * 8 * 0); }
+SCREEN_UPDATE_IND16( darius_middle ) { return update_screen(screen, bitmap, cliprect, 36 * 8 * 1); }
+SCREEN_UPDATE_IND16( darius_right ) { return update_screen(screen, bitmap, cliprect, 36 * 8 * 2); }
+

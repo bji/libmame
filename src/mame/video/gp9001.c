@@ -152,21 +152,21 @@ static WRITE16_DEVICE_HANDLER( gp9001_bg_tmap_w )
 {
 	gp9001vdp_device *vdp = (gp9001vdp_device*)device;
 	COMBINE_DATA(&vdp->bg.vram16[offset]);
-	tilemap_mark_tile_dirty(vdp->bg.tmap,offset/2);
+	vdp->bg.tmap->mark_tile_dirty(offset/2);
 }
 
 static WRITE16_DEVICE_HANDLER( gp9001_fg_tmap_w )
 {
 	gp9001vdp_device *vdp = (gp9001vdp_device*)device;
 	COMBINE_DATA(&vdp->fg.vram16[offset]);
-	tilemap_mark_tile_dirty(vdp->fg.tmap,offset/2);
+	vdp->fg.tmap->mark_tile_dirty(offset/2);
 }
 
 static WRITE16_DEVICE_HANDLER( gp9001_top_tmap_w )
 {
 	gp9001vdp_device *vdp = (gp9001vdp_device*)device;
 	COMBINE_DATA(&vdp->top.vram16[offset]);
-	tilemap_mark_tile_dirty(vdp->top.tmap,offset/2);
+	vdp->top.tmap->mark_tile_dirty(offset/2);
 }
 
 static READ16_DEVICE_HANDLER( gp9001_bg_tmap_r )
@@ -224,10 +224,8 @@ void gp9001vdp_device::static_set_gfx_region(device_t &device, int gfxregion)
 	vdp.m_gfxregion = gfxregion;
 }
 
-bool gp9001vdp_device::device_validity_check(emu_options &options, const game_driver &driver) const
+void gp9001vdp_device::device_validity_check(validity_checker &valid) const
 {
-	bool error = false;
-	return error;
 }
 
 const address_space_config *gp9001vdp_device::memory_space_config(address_spacenum spacenum) const
@@ -259,7 +257,7 @@ static TILE_GET_INFO_DEVICE( get_top0_tile_info )
 			tile_number,
 			color,
 			0);
-	//tileinfo->category = (attrib & 0x0f00) >> 8;
+	//tileinfo.category = (attrib & 0x0f00) >> 8;
 }
 
 
@@ -286,7 +284,7 @@ static TILE_GET_INFO_DEVICE( get_fg0_tile_info )
 			tile_number,
 			color,
 			0);
-	//tileinfo->category = (attrib & 0x0f00) >> 8;
+	//tileinfo.category = (attrib & 0x0f00) >> 8;
 }
 
 static TILE_GET_INFO_DEVICE( get_bg0_tile_info )
@@ -309,7 +307,7 @@ static TILE_GET_INFO_DEVICE( get_bg0_tile_info )
 			tile_number,
 			color,
 			0);
-	//tileinfo->category = (attrib & 0x0f00) >> 8;
+	//tileinfo.category = (attrib & 0x0f00) >> 8;
 }
 
 void gp9001vdp_device::create_tilemaps(int region)
@@ -320,9 +318,9 @@ void gp9001vdp_device::create_tilemaps(int region)
 	fg.tmap = tilemap_create_device(this, get_fg0_tile_info,tilemap_scan_rows,16,16,32,32);
 	bg.tmap = tilemap_create_device(this, get_bg0_tile_info,tilemap_scan_rows,16,16,32,32);
 
-	tilemap_set_transparent_pen(top.tmap,0);
-	tilemap_set_transparent_pen(fg.tmap,0);
-	tilemap_set_transparent_pen(bg.tmap,0);
+	top.tmap->set_transparent_pen(0);
+	fg.tmap->set_transparent_pen(0);
+	bg.tmap->set_transparent_pen(0);
 }
 
 
@@ -473,14 +471,14 @@ static void gp9001_set_scrollx_and_flip_reg(gp9001tilemaplayer* layer, UINT16 da
 	if (flip)
 	{
 		layer->flip |= TILEMAP_FLIPX;
-		tilemap_set_scrollx(layer->tmap,0,-(layer->scrollx+layer->extra_xoffset.flipped));
+		layer->tmap->set_scrollx(0,-(layer->scrollx+layer->extra_xoffset.flipped));
 	}
 	else
 	{
 		layer->flip &= (~TILEMAP_FLIPX);
-		tilemap_set_scrollx(layer->tmap,0,layer->scrollx+layer->extra_xoffset.normal);
+		layer->tmap->set_scrollx(0,layer->scrollx+layer->extra_xoffset.normal);
 	}
-	tilemap_set_flip(layer->tmap,layer->flip);
+	layer->tmap->set_flip(layer->flip);
 }
 
 static void gp9001_set_scrolly_and_flip_reg(gp9001tilemaplayer* layer, UINT16 data, UINT16 mem_mask, int flip)
@@ -490,16 +488,16 @@ static void gp9001_set_scrolly_and_flip_reg(gp9001tilemaplayer* layer, UINT16 da
 	if (flip)
 	{
 		layer->flip |= TILEMAP_FLIPY;
-		tilemap_set_scrolly(layer->tmap,0,-(layer->scrolly+layer->extra_yoffset.flipped));
+		layer->tmap->set_scrolly(0,-(layer->scrolly+layer->extra_yoffset.flipped));
 
 	}
 	else
 	{
 		layer->flip &= (~TILEMAP_FLIPY);
-		tilemap_set_scrolly(layer->tmap,0,layer->scrolly+layer->extra_yoffset.normal);
+		layer->tmap->set_scrolly(0,layer->scrolly+layer->extra_yoffset.normal);
 	}
 
-	tilemap_set_flip(layer->tmap,layer->flip);
+	layer->tmap->set_flip(layer->flip);
 }
 
 static void gp9001_set_sprite_scrollx_and_flip_reg(gp9001spritelayer* layer, UINT16 data, UINT16 mem_mask, int flip)
@@ -758,7 +756,7 @@ WRITE16_DEVICE_HANDLER( pipibibi_bootleg_spriteram16_w )
     Sprite Handlers
 ***************************************************************************/
 
-void gp9001vdp_device::draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, const UINT8* primap )
+void gp9001vdp_device::draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, const UINT8* primap )
 {
 	const gfx_element *gfx = machine.gfx[tile_region+1];
 
@@ -914,11 +912,11 @@ void gp9001vdp_device::draw_sprites( running_machine &machine, bitmap_t *bitmap,
 							{
 								int drawxx = xx+sx;
 
-								if (drawxx>=cliprect->min_x && drawxx<=cliprect->max_x && drawyy>=cliprect->min_y && drawyy<=cliprect->max_y)
+								if (cliprect.contains(drawxx, drawyy))
 								{
 									UINT8 pix = srcdata[count];
-									UINT16* dstptr = BITMAP_ADDR16(bitmap,drawyy,drawxx);
-									UINT8* dstpri = BITMAP_ADDR8(this->custom_priority_bitmap, drawyy, drawxx);
+									UINT16* dstptr = &bitmap.pix16(drawyy, drawxx);
+									UINT8* dstpri = &this->custom_priority_bitmap->pix8(drawyy, drawxx);
 
 									if (priority >= dstpri[0])
 									{
@@ -948,29 +946,29 @@ void gp9001vdp_device::draw_sprites( running_machine &machine, bitmap_t *bitmap,
 
 
 /***************************************************************************
-    Draw the game screen in the given bitmap_t.
+    Draw the game screen in the given bitmap_ind16.
 ***************************************************************************/
 
-void gp9001vdp_device::gp9001_draw_custom_tilemap(running_machine& machine, bitmap_t* bitmap, tilemap_t* tilemap, const UINT8* priremap, const UINT8* pri_enable )
+void gp9001vdp_device::gp9001_draw_custom_tilemap(running_machine& machine, bitmap_ind16 &bitmap, tilemap_t* tilemap, const UINT8* priremap, const UINT8* pri_enable )
 {
 	int width = machine.primary_screen->width();
 	int height = machine.primary_screen->height();
 	int y,x;
-	bitmap_t *tmb = tilemap_get_pixmap(tilemap);
+	bitmap_ind16 &tmb = tilemap->pixmap();
 	UINT16* srcptr;
 	UINT16* dstptr;
 	UINT8* dstpriptr;
 
-	int scrollx = tilemap_get_scrollx(tilemap, 0);
-	int scrolly = tilemap_get_scrolly(tilemap, 0);
+	int scrollx = tilemap->scrollx(0);
+	int scrolly = tilemap->scrolly(0);
 
 	for (y=0;y<height;y++)
 	{
 		int realy = (y+scrolly)&0x1ff;
 
-		srcptr = BITMAP_ADDR16(tmb, realy, 0);
-		dstptr = BITMAP_ADDR16(bitmap, y, 0);
-		dstpriptr = BITMAP_ADDR8(this->custom_priority_bitmap, y, 0);
+		srcptr = &tmb.pix16(realy);
+		dstptr = &bitmap.pix16(y);
+		dstpriptr = &this->custom_priority_bitmap->pix8(y);
 
 		for (x=0;x<width;x++)
 		{
@@ -1004,12 +1002,12 @@ static const UINT8 gp9001_sprprimap1[16] =  { 0x00, 0x04, 0x08, 0x0c, 0x10, 0x14
 
 static const UINT8 batsugun_prienable0[16]={ 1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1 };
 
-void gp9001vdp_device::gp9001_render_vdp(running_machine& machine, bitmap_t* bitmap, const rectangle* cliprect)
+void gp9001vdp_device::gp9001_render_vdp(running_machine& machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	if (gp9001_gfxrom_is_banked && gp9001_gfxrom_bank_dirty)
 	{
-		tilemap_mark_all_tiles_dirty(bg.tmap);
-		tilemap_mark_all_tiles_dirty(fg.tmap);
+		bg.tmap->mark_all_dirty();
+		fg.tmap->mark_all_dirty();
 		gp9001_gfxrom_bank_dirty = 0;
 	}
 

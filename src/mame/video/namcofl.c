@@ -80,20 +80,20 @@ static void TilemapCB(running_machine &machine, UINT16 code, int *tile, int *mas
 }
 
 
-SCREEN_UPDATE( namcofl )
+SCREEN_UPDATE_IND16( namcofl )
 {
 	int pri;
 
-	namcofl_install_palette(screen->machine());
+	namcofl_install_palette(screen.machine());
 
-	bitmap_fill( bitmap, cliprect , get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect );
 
 	for( pri=0; pri<16; pri++ )
 	{
 		namco_roz_draw( bitmap,cliprect,pri );
 		if((pri&1)==0)
 			namco_tilemap_draw( bitmap, cliprect, pri>>1 );
-		namco_obj_draw(screen->machine(), bitmap, cliprect, pri );
+		namco_obj_draw(screen.machine(), bitmap, cliprect, pri );
 	}
 
 	return 0;

@@ -215,14 +215,10 @@ device_t *legacy_device_creator(const machine_config &mconfig, const char *tag, 
 // reduced macros that are easier to use, and map to the above two macros
 #define DECLARE_LEGACY_DEVICE(name, basename) _DECLARE_LEGACY_DEVICE(name, basename, basename##_device, legacy_device_base)
 #define DECLARE_LEGACY_SOUND_DEVICE(name, basename) _DECLARE_LEGACY_DEVICE(name, basename, basename##_device, legacy_sound_device_base)
-#define DECLARE_LEGACY_MEMORY_DEVICE(name, basename) _DECLARE_LEGACY_DEVICE(name, basename, basename##_device, legacy_memory_device_base)
-#define DECLARE_LEGACY_NVRAM_DEVICE(name, basename) _DECLARE_LEGACY_DEVICE(name, basename, basename##_device, legacy_nvram_device_base)
 #define DECLARE_LEGACY_IMAGE_DEVICE(name, basename) _DECLARE_LEGACY_DEVICE(name, basename, basename##_device, legacy_image_device_base)
 
 #define DEFINE_LEGACY_DEVICE(name, basename) _DEFINE_LEGACY_DEVICE(name, basename, basename##_device, legacy_device_base)
 #define DEFINE_LEGACY_SOUND_DEVICE(name, basename) _DEFINE_LEGACY_DEVICE(name, basename, basename##_device, legacy_sound_device_base)
-#define DEFINE_LEGACY_MEMORY_DEVICE(name, basename) _DEFINE_LEGACY_DEVICE(name, basename, basename##_device, legacy_memory_device_base)
-#define DEFINE_LEGACY_NVRAM_DEVICE(name, basename) _DEFINE_LEGACY_DEVICE(name, basename, basename##_device, legacy_nvram_device_base)
 #define DEFINE_LEGACY_IMAGE_DEVICE(name, basename) _DEFINE_LEGACY_DEVICE(name, basename, basename##_device, legacy_image_device_base)
 
 
@@ -250,11 +246,6 @@ device_t *legacy_device_creator(const machine_config &mconfig, const char *tag, 
 #define DEVICE_EXECUTE_NAME(name)	device_execute_##name
 #define DEVICE_EXECUTE(name)		INT32 DEVICE_EXECUTE_NAME(name)(device_t *device, INT32 clocks)
 #define DEVICE_EXECUTE_CALL(name)	DEVICE_EXECUTE_NAME(name)(device, clocks)
-
-#define DEVICE_NVRAM_NAME(name)		device_nvram_##name
-#define DEVICE_NVRAM(name)			void DEVICE_NVRAM_NAME(name)(device_t *device, emu_file *file, int read_or_write)
-#define DEVICE_NVRAM_CALL(name)		DEVICE_NVRAM_NAME(name)(device, file, read_or_write)
-
 
 
 //**************************************************************************
@@ -429,7 +420,7 @@ protected:
 	virtual const rom_entry *device_rom_region() const { return reinterpret_cast<const rom_entry *>(get_legacy_ptr(DEVINFO_PTR_ROM_REGION)); }
 	virtual machine_config_constructor device_mconfig_additions() const { return reinterpret_cast<machine_config_constructor>(get_legacy_ptr(DEVINFO_PTR_MACHINE_CONFIG)); }
 	virtual ioport_constructor device_input_ports() const { return reinterpret_cast<ioport_constructor>(get_legacy_ptr(DEVINFO_PTR_INPUT_PORTS)); }
-	virtual bool device_validity_check(emu_options &options, const game_driver &driver) const;
+	virtual void device_validity_check(validity_checker &valid) const;
 	virtual void device_start();
 	virtual void device_reset();
 	virtual void device_stop();
@@ -466,46 +457,6 @@ protected:
 
 
 
-// ======================> legacy_memory_device_base
-
-// legacy_memory_device is a legacy_device_base with a memory interface
-class legacy_memory_device_base :	public legacy_device_base,
-									public device_memory_interface
-{
-protected:
-	// construction/destruction
-	legacy_memory_device_base(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, UINT32 clock, device_get_config_func get_config);
-
-	// device overrides
-	virtual void device_config_complete();
-
-	// device_memory_interface overrides
-	virtual const address_space_config *memory_space_config(address_spacenum spacenum = AS_0) const { return (spacenum == 0) ? &m_space_config : NULL; }
-
-	// internal state
-	address_space_config m_space_config;
-};
-
-
-
-// ======================> legacy_nvram_device
-
-// legacy_nvram_device is a legacy_device_base with a nvram interface
-class legacy_nvram_device_base :	public legacy_device_base,
-									public device_nvram_interface
-{
-protected:
-	// construction/destruction
-	legacy_nvram_device_base(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, UINT32 clock, device_get_config_func get_config);
-
-	// device_nvram_interface overrides
-	virtual void nvram_default();
-	virtual void nvram_read(emu_file &file);
-	virtual void nvram_write(emu_file &file);
-};
-
-
-
 // ======================> legacy_image_device
 
 // legacy_image_device is a legacy_device_base with a image interface
@@ -521,7 +472,6 @@ public:
 	virtual void call_display_info();
 	virtual device_image_partialhash_func get_partial_hash() const;
 	virtual void call_get_devices();
-	virtual void *get_device_specific_call();
 
 	virtual iodevice_t image_type() const { return static_cast<iodevice_t>(get_legacy_int(DEVINFO_INT_IMAGE_TYPE)); }
 

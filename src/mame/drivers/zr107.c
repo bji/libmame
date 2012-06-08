@@ -202,12 +202,12 @@ static VIDEO_START( jetwave )
 }
 
 
-static SCREEN_UPDATE( jetwave )
+static SCREEN_UPDATE_RGB32( jetwave )
 {
-	zr107_state *state = screen->machine().driver_data<zr107_state>();
-	device_t *k001604 = screen->machine().device("k001604");
+	zr107_state *state = screen.machine().driver_data<zr107_state>();
+	device_t *k001604 = screen.machine().device("k001604");
 
-	bitmap_fill(bitmap, cliprect, screen->machine().pens[0]);
+	bitmap.fill(screen.machine().pens[0], cliprect);
 
 	K001005_draw(bitmap, cliprect);
 
@@ -216,7 +216,7 @@ static SCREEN_UPDATE( jetwave )
 	draw_7segment_led(bitmap, 3, 3, state->m_led_reg0);
 	draw_7segment_led(bitmap, 9, 3, state->m_led_reg1);
 
-	sharc_set_flag_input(screen->machine().device("dsp"), 1, ASSERT_LINE);
+	sharc_set_flag_input(screen.machine().device("dsp"), 1, ASSERT_LINE);
 	return 0;
 }
 
@@ -255,11 +255,11 @@ static VIDEO_START( zr107 )
 	K001005_init(machine);
 }
 
-static SCREEN_UPDATE( zr107 )
+static SCREEN_UPDATE_RGB32( zr107 )
 {
-	zr107_state *state = screen->machine().driver_data<zr107_state>();
-	device_t *k056832 = screen->machine().device("k056832");
-	bitmap_fill(bitmap, cliprect, screen->machine().pens[0]);
+	zr107_state *state = screen.machine().driver_data<zr107_state>();
+	device_t *k056832 = screen.machine().device("k056832");
+	bitmap.fill(screen.machine().pens[0], cliprect);
 
 	k056832_tilemap_draw(k056832, bitmap, cliprect, 1, 0, 0);
 	K001005_draw(bitmap, cliprect);
@@ -268,7 +268,7 @@ static SCREEN_UPDATE( zr107 )
 	draw_7segment_led(bitmap, 3, 3, state->m_led_reg0);
 	draw_7segment_led(bitmap, 9, 3, state->m_led_reg1);
 
-	sharc_set_flag_input(screen->machine().device("dsp"), 1, ASSERT_LINE);
+	sharc_set_flag_input(screen.machine().device("dsp"), 1, ASSERT_LINE);
 	return 0;
 }
 
@@ -760,10 +760,9 @@ static MACHINE_CONFIG_START( zr107, zr107_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(64*8, 48*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 48*8-1)
-	MCFG_SCREEN_UPDATE(zr107)
+	MCFG_SCREEN_UPDATE_STATIC(zr107)
 
 	MCFG_PALETTE_LENGTH(65536)
 
@@ -821,10 +820,9 @@ static MACHINE_CONFIG_START( jetwave, zr107_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(64*8, 48*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 48*8-1)
-	MCFG_SCREEN_UPDATE(jetwave)
+	MCFG_SCREEN_UPDATE_STATIC(jetwave)
 
 	MCFG_PALETTE_LENGTH(65536)
 

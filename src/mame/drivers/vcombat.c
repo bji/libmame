@@ -72,7 +72,7 @@ TODO :  This is a partially working driver.  Most of the memory maps for
                Might this be a HW blank bit so things look clean when
                the i860's do their updates?
                The two other times I see it read are just before
-               and after one of the pallette setups is done.
+               and after one of the palette setups is done.
          0x600018: ? No info yet.
          0x704000: (VC only) Likely analog axis for VR headset
          0x703000: (VC only) Likely analog axis for VR headset
@@ -104,31 +104,29 @@ public:
 	int m_crtc_select;
 };
 
-
-static SCREEN_UPDATE( vcombat )
+static UINT32 update_screen(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect, int index)
 {
-	vcombat_state *state = screen->machine().driver_data<vcombat_state>();
+	vcombat_state *state = screen.machine().driver_data<vcombat_state>();
 	int y;
-	const rgb_t *const pens = tlc34076_get_pens(screen->machine().device("tlc34076"));
-	device_t *aux = screen->machine().device("aux");
+	const rgb_t *const pens = tlc34076_get_pens(screen.machine().device("tlc34076"));
 
 	UINT16 *m68k_buf = state->m_m68k_framebuffer[(*state->m_framebuffer_ctrl & 0x20) ? 1 : 0];
-	UINT16 *i860_buf = state->m_i860_framebuffer[(screen == aux) ? 1 : 0][0];
+	UINT16 *i860_buf = state->m_i860_framebuffer[index][0];
 
 	/* TODO: It looks like the leftmost chunk of the ground should really be on the right side? */
 	/*       But the i860 draws the background correctly, so it may be an original game issue. */
 	/*       There's also some garbage in the upper-left corner. Might be related to this 'wraparound'. */
 	/*       Or maybe it's related to the 68k's alpha?  It might come from the 68k side of the house.  */
 
-	for (y = cliprect->min_y; y <= cliprect->max_y; ++y)
+	for (y = cliprect.min_y; y <= cliprect.max_y; ++y)
 	{
 		int x;
 		int src_addr = 256/2 * y;
 		const UINT16 *m68k_src = &m68k_buf[src_addr];
 		const UINT16 *i860_src = &i860_buf[src_addr];
-		UINT32 *dst = BITMAP_ADDR32(bitmap, y, cliprect->min_x);
+		UINT32 *dst = &bitmap.pix32(y, cliprect.min_x);
 
-		for (x = cliprect->min_x; x <= cliprect->max_x; x += 2)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x += 2)
 		{
 			int i;
 			UINT16 m68k_pix = *m68k_src++;
@@ -154,6 +152,9 @@ static SCREEN_UPDATE( vcombat )
 
 	return 0;
 }
+
+static SCREEN_UPDATE_RGB32( vcombat_main ) { return update_screen(screen, bitmap, cliprect, 0); }
+static SCREEN_UPDATE_RGB32( vcombat_aux ) { return update_screen(screen, bitmap, cliprect, 1); }
 
 
 static WRITE16_HANDLER( main_video_write )
@@ -597,14 +598,12 @@ static MACHINE_CONFIG_START( vcombat, vcombat_state )
 	MCFG_DEFAULT_LAYOUT(layout_dualhsxs)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(XTAL_12MHz / 2, 400, 0, 256, 291, 0, 208)
-	MCFG_SCREEN_UPDATE(vcombat)
+	MCFG_SCREEN_UPDATE_STATIC(vcombat_main)
 
 	MCFG_SCREEN_ADD("aux", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(XTAL_12MHz / 2, 400, 0, 256, 291, 0, 208)
-	MCFG_SCREEN_UPDATE(vcombat)
+	MCFG_SCREEN_UPDATE_STATIC(vcombat_aux)
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
@@ -634,9 +633,8 @@ static MACHINE_CONFIG_START( shadfgtr, vcombat_state )
 	MCFG_MC6845_ADD("crtc", MC6845, XTAL_20MHz / 4 / 16, mc6845_intf)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(XTAL_20MHz / 4, 320, 0, 256, 277, 0, 224)
-	MCFG_SCREEN_UPDATE(vcombat)
+	MCFG_SCREEN_UPDATE_STATIC(vcombat_main)
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 

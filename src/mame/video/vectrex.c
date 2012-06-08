@@ -153,21 +153,21 @@ static TIMER_CALLBACK(vectrex_refresh)
 {
 	vectrex_state *state = machine.driver_data<vectrex_state>();
 	/* Refresh only marks the range of vectors which will be drawn
-     * during the next SCREEN_UPDATE. */
+     * during the next SCREEN_UPDATE_RGB32. */
 	state->m_display_start = state->m_display_end;
 	state->m_display_end = state->m_point_index;
 }
 
 
-SCREEN_UPDATE(vectrex)
+SCREEN_UPDATE_RGB32(vectrex)
 {
-	vectrex_state *state = screen->machine().driver_data<vectrex_state>();
+	vectrex_state *state = screen.machine().driver_data<vectrex_state>();
 	int i;
 
-	vectrex_configuration(screen->machine());
+	vectrex_configuration(screen.machine());
 
 	/* start black */
-	vector_add_point(screen->machine(),
+	vector_add_point(screen.machine(),
 					 state->m_points[state->m_display_start].x,
 					 state->m_points[state->m_display_start].y,
 					 state->m_points[state->m_display_start].col,
@@ -175,14 +175,14 @@ SCREEN_UPDATE(vectrex)
 
 	for (i = state->m_display_start; i != state->m_display_end; i = (i + 1) % NVECT)
 	{
-		vector_add_point(screen->machine(),
+		vector_add_point(screen.machine(),
 						 state->m_points[i].x,
 						 state->m_points[i].y,
 						 state->m_points[i].col,
 						 state->m_points[i].intensity);
 	}
 
-	SCREEN_UPDATE_CALL(vector);
+	SCREEN_UPDATE32_CALL(vector);
 	vector_clear_list();
 	return 0;
 }
@@ -284,8 +284,8 @@ VIDEO_START(vectrex)
 	screen_device *screen = machine.first_screen();
 	const rectangle &visarea = screen->visible_area();
 
-	state->m_x_center=((visarea.max_x - visarea.min_x) / 2) << 16;
-	state->m_y_center=((visarea.max_y - visarea.min_y) / 2) << 16;
+	state->m_x_center=(visarea.width() / 2) << 16;
+	state->m_y_center=(visarea.height() / 2) << 16;
 	state->m_x_max = visarea.max_x << 16;
 	state->m_y_max = visarea.max_y << 16;
 
@@ -484,8 +484,8 @@ VIDEO_START(raaspec)
 	screen_device *screen = machine.first_screen();
 	const rectangle &visarea = screen->visible_area();
 
-	state->m_x_center=((visarea.max_x - visarea.min_x) / 2) << 16;
-	state->m_y_center=((visarea.max_y - visarea.min_y) / 2) << 16;
+	state->m_x_center=(visarea.width() / 2) << 16;
+	state->m_y_center=(visarea.height() / 2) << 16;
 	state->m_x_max = visarea.max_x << 16;
 	state->m_y_max = visarea.max_y << 16;
 

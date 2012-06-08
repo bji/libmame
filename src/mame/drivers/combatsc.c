@@ -140,11 +140,11 @@ static WRITE8_HANDLER( combatsc_vreg_w )
 	combatsc_state *state = space->machine().driver_data<combatsc_state>();
 	if (data != state->m_vreg)
 	{
-		tilemap_mark_all_tiles_dirty(state->m_textlayer);
+		state->m_textlayer->mark_all_dirty();
 		if ((data & 0x0f) != (state->m_vreg & 0x0f))
-			tilemap_mark_all_tiles_dirty(state->m_bg_tilemap[0]);
+			state->m_bg_tilemap[0]->mark_all_dirty();
 		if ((data >> 4) != (state->m_vreg >> 4))
-			tilemap_mark_all_tiles_dirty(state->m_bg_tilemap[1]);
+			state->m_bg_tilemap[1]->mark_all_dirty();
 		state->m_vreg = data;
 	}
 }
@@ -770,10 +770,9 @@ static MACHINE_CONFIG_START( combatsc, combatsc_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(combatsc)
+	MCFG_SCREEN_UPDATE_STATIC(combatsc)
 
 	MCFG_GFXDECODE(combatsc)
 	MCFG_PALETTE_LENGTH(8*16*16)
@@ -823,10 +822,9 @@ static MACHINE_CONFIG_START( combatscb, combatsc_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(combatscb)
+	MCFG_SCREEN_UPDATE_STATIC(combatscb)
 
 	MCFG_GFXDECODE(combatscb)
 	MCFG_PALETTE_LENGTH(8*16*16)

@@ -16,8 +16,8 @@ cheats:
 - [0xb0-0xb3] timer
 
 lamps:
-?OK???!! = really OK! (91+)
-???????? = pretty good (80+)
+?OK???!! = really OK! (91+) (0x81)
+???????? = pretty good (80+) (0x82)
 ???~??? = not bad (70+) (0x84)
 ??? = normal (55+) (0x88)
 ????? = pretty bad (40+) (0x90)
@@ -65,7 +65,7 @@ static VIDEO_START( 30test )
 
 }
 
-static SCREEN_UPDATE( 30test )
+static SCREEN_UPDATE_IND16( 30test )
 {
 	return 0;
 }
@@ -277,10 +277,9 @@ static MACHINE_CONFIG_START( 30test, namco_30test_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(30test)
+	MCFG_SCREEN_UPDATE_STATIC(30test)
 
 //  MCFG_PALETTE_INIT(30test)
 	MCFG_PALETTE_LENGTH(2)

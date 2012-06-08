@@ -117,13 +117,22 @@ static MACHINE_START( cheekyms )
 	state->m_dac = machine.device("dac");
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	cheekyms_state *state = device->machine().driver_data<cheekyms_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
+
 static MACHINE_CONFIG_START( cheekyms, cheekyms_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80,5000000/2)  /* 2.5 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_START(cheekyms)
 
@@ -131,10 +140,9 @@ static MACHINE_CONFIG_START( cheekyms, cheekyms_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 4*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(cheekyms)
+	MCFG_SCREEN_UPDATE_STATIC(cheekyms)
 
 	MCFG_GFXDECODE(cheekyms)
 	MCFG_PALETTE_LENGTH(0xc0)

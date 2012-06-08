@@ -421,13 +421,21 @@ static MACHINE_RESET( appoooh )
 	state->m_priority = 0;
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	appoooh_state *state = device->machine().driver_data<appoooh_state>();
+
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 static MACHINE_CONFIG_START( appoooh_common, appoooh_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80,18432000/6)	/* ??? the main xtal is 18.432 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(main_portmap)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_START(appoooh)
 	MCFG_MACHINE_RESET(appoooh)
@@ -456,10 +464,9 @@ static MACHINE_CONFIG_DERIVED( appoooh, appoooh_common )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(appoooh)
+	MCFG_SCREEN_UPDATE_STATIC(appoooh)
 
 	MCFG_GFXDECODE(appoooh)
 	MCFG_PALETTE_LENGTH(32*8+32*8)
@@ -475,10 +482,9 @@ static MACHINE_CONFIG_DERIVED( robowres, appoooh_common )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(robowres)
+	MCFG_SCREEN_UPDATE_STATIC(robowres)
 
 	MCFG_GFXDECODE(robowres)
 	MCFG_PALETTE_LENGTH(32*8+32*8)

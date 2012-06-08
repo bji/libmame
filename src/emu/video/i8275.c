@@ -201,10 +201,7 @@ static void i8275_recompute_parameters(device_t *device)
 		vert_pix_total *= 2; // Use of spaced rows
 	}
 
-	visarea.min_x = 0;
-	visarea.min_y = 0;
-	visarea.max_x = horiz_pix_total - 1;
-	visarea.max_y = vert_pix_total - 1;
+	visarea.set(0, horiz_pix_total - 1, 0, vert_pix_total - 1);
 
 	i8275->screen->configure(horiz_pix_total, vert_pix_total, visarea,
 				i8275->screen->frame_period().attoseconds);
@@ -460,7 +457,7 @@ WRITE8_DEVICE_HANDLER( i8275_dack_w )
 }
 
 /* Screen Update */
-void i8275_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect)
+void i8275_update(device_t *device, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	i8275_t *i8275 = get_safe_token(device);
 	i8275->ypos = 0;
@@ -474,7 +471,7 @@ void i8275_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect)
 	i8275->fifo_write = 0;
 
 	if ((i8275->status_reg & I8275_STATUS_VIDEO_ENABLE)==0) {
-		bitmap_fill(bitmap, cliprect, get_black_pen(device->machine()));
+		bitmap.fill(get_black_pen(device->machine()), cliprect);
 	} else {
 		// if value < 16 it is visible otherwise not
 		i8275->cursor_blink_cnt++;

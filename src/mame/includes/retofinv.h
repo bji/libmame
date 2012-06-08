@@ -25,6 +25,9 @@ public:
 	int m_bg_bank;
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
+
+	UINT8 m_main_irq_mask;
+	UINT8 m_sub_irq_mask;
 };
 
 
@@ -48,7 +51,7 @@ READ8_HANDLER( retofinv_mcu_status_r );
 
 VIDEO_START( retofinv );
 PALETTE_INIT( retofinv );
-SCREEN_UPDATE( retofinv );
+SCREEN_UPDATE_IND16( retofinv );
 WRITE8_HANDLER( retofinv_bg_videoram_w );
 WRITE8_HANDLER( retofinv_fg_videoram_w );
 WRITE8_HANDLER( retofinv_gfx_ctrl_w );

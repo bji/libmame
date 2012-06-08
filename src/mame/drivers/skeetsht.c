@@ -58,12 +58,12 @@ static VIDEO_START ( skeetsht )
 {
 }
 
-static void skeetsht_scanline_update(screen_device &screen, bitmap_t *bitmap, int scanline, const tms34010_display_params *params)
+static void skeetsht_scanline_update(screen_device &screen, bitmap_rgb32 &bitmap, int scanline, const tms34010_display_params *params)
 {
 	skeetsht_state *state = screen.machine().driver_data<skeetsht_state>();
 	const rgb_t *const pens = tlc34076_get_pens(screen.machine().device("tlc34076"));
 	UINT16 *vram = &state->m_tms_vram[(params->rowaddr << 8) & 0x3ff00];
-	UINT32 *dest = BITMAP_ADDR32(bitmap, scanline, 0);
+	UINT32 *dest = &bitmap.pix32(scanline);
 	int coladdr = params->coladdr;
 	int x;
 
@@ -232,7 +232,8 @@ static const tms34010_config tms_config =
 	"screen",                   /* the screen operated on */
 	48000000 / 8,               /* pixel clock */
 	1,                          /* pixels per clock */
-	skeetsht_scanline_update,   /* scanline updater */
+	NULL,						/* scanline updater (indexed16) */
+	skeetsht_scanline_update,   /* scanline updater (rgb32) */
 	skeetsht_tms_irq,           /* generate interrupt */
 	NULL,                       /* write to shiftreg function */
 	NULL                        /* read from shiftreg function */
@@ -262,9 +263,8 @@ static MACHINE_CONFIG_START( skeetsht, skeetsht_state )
 	MCFG_TLC34076_ADD("tlc34076", TLC34076_6_BIT)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(48000000 / 8, 156*4, 0, 100*4, 328, 0, 300) // FIXME
-	MCFG_SCREEN_UPDATE(tms340x0)
+	MCFG_SCREEN_UPDATE_STATIC(tms340x0_rgb32)
 
 	MCFG_VIDEO_START(skeetsht)
 

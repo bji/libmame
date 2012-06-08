@@ -17,6 +17,8 @@ public:
 	UINT8 *m_flipscreen_y;
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
+
+	UINT8 m_sub_irq_mask;
 };
 
 
@@ -27,4 +29,4 @@ READ8_HANDLER( tp84_scanline_r );
 
 PALETTE_INIT( tp84 );
 VIDEO_START( tp84 );
-SCREEN_UPDATE( tp84 );
+SCREEN_UPDATE_IND16( tp84 );

@@ -227,11 +227,11 @@ bool emu_options::add_slot_options(bool isfirst)
 	// iterate through all slot devices
 	options_entry entry[2] = { { 0 }, { 0 } };
 	bool first = true;
-	const device_slot_interface *slot = NULL;
 	// create the configuration
 	machine_config config(*cursystem, *this);
 	bool added = false;
-	for (bool gotone = config.devicelist().first(slot); gotone; gotone = slot->next(slot))
+	slot_interface_iterator iter(config.root_device());
+	for (const device_slot_interface *slot = iter.first(); slot != NULL; slot = iter.next())
 	{
 		// first device? add the header as to be pretty
 		if (first && isfirst)
@@ -245,16 +245,13 @@ bool emu_options::add_slot_options(bool isfirst)
 		first = false;
 
 		// retrieve info about the device instance
-		astring option_name;
-		option_name.printf("%s;%s", slot->device().tag(), slot->device().tag());
-
-		if (!exists(slot->device().tag())) {
+		if (!exists(slot->device().tag() + 1)) {
 
 			// add the option
-			entry[0].name = slot->device().tag();
+			entry[0].name = slot->device().tag() + 1;
 			entry[0].description = NULL;
 			entry[0].flags = OPTION_STRING | OPTION_FLAG_DEVICE;
-			entry[0].defvalue = (slot->get_slot_interfaces() != NULL) ? slot->get_default_card(config.devicelist(),*this) : NULL;
+			entry[0].defvalue = (slot->get_slot_interfaces() != NULL) ? slot->get_default_card(config,*this) : NULL;
 			add_entries(entry, true);
 
 			added = true;
@@ -263,6 +260,33 @@ bool emu_options::add_slot_options(bool isfirst)
 	return added;
 }
 
+//-------------------------------------------------
+//  update_slot_options - update slot values
+//  depending of image mounted
+//-------------------------------------------------
+
+void emu_options::update_slot_options()
+{
+	// look up the system configured by name; if no match, do nothing
+	const game_driver *cursystem = system();
+	if (cursystem == NULL)
+		return;
+
+	// iterate through all slot devices
+	// create the configuration
+	machine_config config(*cursystem, *this);
+	slot_interface_iterator iter(config.root_device());
+	for (const device_slot_interface *slot = iter.first(); slot != NULL; slot = iter.next())
+	{
+		// retrieve info about the device instance
+		if (exists(slot->device().tag()+1)) {
+			if (slot->get_slot_interfaces() != NULL) {
+				const char *def = slot->get_default_card_software(config,*this);
+				if (def) set_default_value(slot->device().tag()+1,def);
+			}
+		}
+	}
+}
 //-------------------------------------------------
 //  add_device_options - add all of the device
 //  options for the configured system
@@ -279,9 +303,9 @@ void emu_options::add_device_options(bool isfirst)
 	options_entry entry[2] = { { 0 }, { 0 } };
 	bool first = true;
 	// iterate through all image devices
-	const device_image_interface *image = NULL;
 	machine_config config(*cursystem, *this);
-	for (bool gotone = config.devicelist().first(image); gotone; gotone = image->next(image))
+	image_interface_iterator iter(config.root_device());
+	for (const device_image_interface *image = iter.first(); image != NULL; image = iter.next())
 	{
 		// first device? add the header as to be pretty
 		if (first && isfirst)
@@ -337,7 +361,6 @@ void emu_options::remove_device_options()
 
 bool emu_options::parse_slot_devices(int argc, char *argv[], astring &error_string, const char *name, const char *value)
 {
-	remove_device_options();
 	bool isfirst = true;
 	bool result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
 	while (add_slot_options(isfirst)) {
@@ -349,6 +372,7 @@ bool emu_options::parse_slot_devices(int argc, char *argv[], astring &error_stri
 		set_value(name, value, OPTION_PRIORITY_CMDLINE, error_string);
 	}
 	result = core_options::parse_command_line(argc, argv, OPTION_PRIORITY_CMDLINE, error_string);
+	update_slot_options();
 	return result;
 }
 
@@ -369,6 +393,7 @@ bool emu_options::parse_command_line(int argc, char *argv[], astring &error_stri
 	if (old_system_name != system_name())
 	{
 		// remove any existing device options
+		remove_device_options();
 		result = parse_slot_devices(argc, argv, error_string, NULL, NULL);
 	}
 	return result;
@@ -387,8 +412,8 @@ void emu_options::parse_standard_inis(astring &error_string)
 
 	// parse the INI file defined by the platform (e.g., "mame.ini")
 	// we do this twice so that the first file can change the INI path
-	parse_one_ini(CONFIGNAME, OPTION_PRIORITY_MAME_INI);
-	parse_one_ini(CONFIGNAME, OPTION_PRIORITY_MAME_INI, &error_string);
+	parse_one_ini(emulator_info::get_configname(), OPTION_PRIORITY_MAME_INI);
+	parse_one_ini(emulator_info::get_configname(), OPTION_PRIORITY_MAME_INI, &error_string);
 
 	// debug mode: parse "debug.ini" as well
 	if (debug())
@@ -408,7 +433,8 @@ void emu_options::parse_standard_inis(astring &error_string)
 	// parse "vector.ini" for vector games
 	{
 		machine_config config(*cursystem, *this);
-		for (const screen_device *device = config.first_screen(); device != NULL; device = device->next_screen())
+		screen_device_iterator iter(config.root_device());
+		for (const screen_device *device = iter.first(); device != NULL; device = iter.next())
 			if (device->screen_type() == SCREEN_TYPE_VECTOR)
 			{
 				parse_one_ini("vector", OPTION_PRIORITY_VECTOR_INI, &error_string);
@@ -418,10 +444,10 @@ void emu_options::parse_standard_inis(astring &error_string)
 
 	// next parse "source/<sourcefile>.ini"; if that doesn't exist, try <sourcefile>.ini
 	astring sourcename;
-	core_filename_extract_base(&sourcename, cursystem->source_file, TRUE)->ins(0, "source" PATH_SEPARATOR);
+	core_filename_extract_base(sourcename, cursystem->source_file, true).ins(0, "source" PATH_SEPARATOR);
 	if (!parse_one_ini(sourcename, OPTION_PRIORITY_SOURCE_INI, &error_string))
 	{
-		core_filename_extract_base(&sourcename, cursystem->source_file, TRUE);
+		core_filename_extract_base(sourcename, cursystem->source_file, true);
 		parse_one_ini(sourcename, OPTION_PRIORITY_SOURCE_INI, &error_string);
 	}
 
@@ -444,7 +470,7 @@ void emu_options::parse_standard_inis(astring &error_string)
 const game_driver *emu_options::system() const
 {
 	astring tempstr;
-	int index = driver_list::find(*core_filename_extract_base(&tempstr, system_name(), TRUE));
+	int index = driver_list::find(core_filename_extract_base(tempstr, system_name(), true));
 	return (index != -1) ? &driver_list::driver(index) : NULL;
 }
 
@@ -474,6 +500,7 @@ void emu_options::set_system_name(const char *name)
 		}
 		// then add the options
 		add_device_options(true);
+		update_slot_options();
 	}
 }
 

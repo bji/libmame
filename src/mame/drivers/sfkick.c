@@ -56,19 +56,20 @@ YM2203C
 #include "video/v9938.h"
 #include "machine/8255ppi.h"
 #include "sound/2203intf.h"
-#include "deprecat.h"
 
 
 class sfkick_state : public driver_device
 {
 public:
 	sfkick_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_v9938(*this, "v9938") { }
 
 	UINT8 *m_main_mem;
 	int m_bank_cfg;
 	int m_bank[8];
 	int m_input_mux;
+	required_device<v9938_device> m_v9938;
 };
 
 
@@ -332,10 +333,7 @@ static ADDRESS_MAP_START( sfkick_io_map, AS_IO, 8)
 	ADDRESS_MAP_UNMAP_HIGH
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
 	AM_RANGE( 0xa0, 0xa7) AM_WRITE( soundlatch_w )
-	AM_RANGE( 0x98, 0x98) AM_READWRITE( v9938_0_vram_r , v9938_0_vram_w)
-	AM_RANGE( 0x99, 0x99) AM_READWRITE( v9938_0_status_r, v9938_0_command_w )
-	AM_RANGE( 0x9a, 0x9a) AM_WRITE( v9938_0_palette_w )
-	AM_RANGE( 0x9b, 0x9b) AM_WRITE( v9938_0_register_w )
+	AM_RANGE( 0x98, 0x9b) AM_DEVREADWRITE_MODERN( "v9938", v9938_device, read, write)
 	AM_RANGE( 0xa8, 0xab) AM_DEVREADWRITE("ppi8255", ppi8255_r, ppi8255_w)
 	AM_RANGE( 0xb4, 0xb5) AM_RAM /* loopback ? req by sfkicka (MSX Bios leftover)*/
 ADDRESS_MAP_END
@@ -430,22 +428,14 @@ static INPUT_PORTS_START( sfkick )
     PORT_DIPSETTING(    0x08, DEF_STR( 1C_5C ) )
 INPUT_PORTS_END
 
-static void sfkick_vdp_interrupt(running_machine &machine, int i)
+static void sfkick_vdp_interrupt(device_t *, v99x8_device &device, int i)
 {
-	cputag_set_input_line (machine, "maincpu", 0, (i ? HOLD_LINE : CLEAR_LINE));
-}
-
-static VIDEO_START( sfkick )
-{
-	VIDEO_START_CALL(generic_bitmapped);
-	v9938_init (machine, 0, *machine.primary_screen, machine.generic.tmpbitmap, MODEL_V9938, 0x80000, sfkick_vdp_interrupt);
-	v9938_reset(0);
+	cputag_set_input_line (device.machine(), "maincpu", 0, (i ? HOLD_LINE : CLEAR_LINE));
 }
 
 static MACHINE_RESET(sfkick)
 {
 	sfkick_state *state = machine.driver_data<sfkick_state>();
-	v9938_reset(0);
 	state->m_bank_cfg=0;
 	state->m_bank[0]=0;
 	state->m_bank[1]=0;
@@ -458,10 +448,12 @@ static MACHINE_RESET(sfkick)
 	sfkick_remap_banks(machine);
 }
 
-static INTERRUPT_GEN( sfkick_interrupt )
+static TIMER_DEVICE_CALLBACK( sfkick_interrupt )
 {
-	v9938_interrupt(device->machine(), 0);
+	sfkick_state *state = timer.machine().driver_data<sfkick_state>();
+	state->m_v9938->interrupt();
 }
+
 static void irqhandler(device_t *device, int irq)
 {
 	cputag_set_input_line_and_vector(device->machine(), "soundcpu", 0, irq ? ASSERT_LINE : CLEAR_LINE, 0xff);
@@ -482,7 +474,7 @@ static MACHINE_CONFIG_START( sfkick, sfkick_state )
 	MCFG_CPU_ADD("maincpu",Z80,MASTER_CLOCK/6)
 	MCFG_CPU_PROGRAM_MAP(sfkick_map)
 	MCFG_CPU_IO_MAP(sfkick_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(sfkick_interrupt,262)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sfkick_interrupt, "screen", 0, 1)
 
 	MCFG_QUANTUM_TIME(attotime::from_hz(60000))
 
@@ -490,13 +482,15 @@ static MACHINE_CONFIG_START( sfkick, sfkick_state )
 	MCFG_CPU_PROGRAM_MAP(sfkick_sound_map)
 	MCFG_CPU_IO_MAP(sfkick_sound_io_map)
 
+	MCFG_V9938_ADD("v9938", "screen", 0x80000)
+	MCFG_V99X8_INTERRUPT_CALLBACK_STATIC(sfkick_vdp_interrupt)
+
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
+	MCFG_SCREEN_UPDATE_DEVICE("v9938", v9938_device, screen_update)
 	MCFG_SCREEN_SIZE(MSX2_TOTAL_XRES_PIXELS, MSX2_TOTAL_YRES_PIXELS)
 	MCFG_SCREEN_VISIBLE_AREA(MSX2_XBORDER_PIXELS - MSX2_VISIBLE_XBORDER_PIXELS, MSX2_TOTAL_XRES_PIXELS - MSX2_XBORDER_PIXELS + MSX2_VISIBLE_XBORDER_PIXELS - 1, MSX2_YBORDER_PIXELS - MSX2_VISIBLE_YBORDER_PIXELS, MSX2_TOTAL_YRES_PIXELS - MSX2_YBORDER_PIXELS + MSX2_VISIBLE_YBORDER_PIXELS - 1)
-	MCFG_SCREEN_UPDATE(generic_bitmapped)
 
 	MCFG_PALETTE_LENGTH(512)
 
@@ -505,8 +499,6 @@ static MACHINE_CONFIG_START( sfkick, sfkick_state )
 	MCFG_MACHINE_RESET(sfkick)
 
 	MCFG_PALETTE_INIT( v9938 )
-
-	MCFG_VIDEO_START(sfkick)
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 	MCFG_SOUND_ADD("ym1", YM2203, MASTER_CLOCK/6)

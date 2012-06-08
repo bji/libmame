@@ -1,3 +1,36 @@
+/***************************************************************************
+
+    Copyright Olivier Galibert
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in
+          the documentation and/or other materials provided with the
+          distribution.
+        * Neither the name 'MAME' nor the names of its contributors may be
+          used to endorse or promote products derived from this software
+          without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY AARON GILES ''AS IS'' AND ANY EXPRESS OR
+    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL AARON GILES BE LIABLE FOR ANY DIRECT,
+    INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+    IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+
 #include "emu.h"
 #include "mfi_dsk.h"
 #include <zlib.h>
@@ -48,7 +81,19 @@
   An unformatted track is equivalent to one big MG_N cell covering a
   whole turn, but is encoded as zero-size.
 
-  TODO: big-endian support, cleanup pll, move it where it belongs.
+  The "track splice" information indicates where to start writing
+  if you try to rewrite a physical disk with the data.  Some
+  preservation formats encode that information, it is guessed for
+  others.  The write track function of fdcs should set it.  The
+  representation is the angular position relative to the index.
+
+  The media type is divided in two parts.  The first half
+  indicate the physical form factor, i.e. all medias with that
+  form factor can be physically inserted in a reader that handles
+  it.  The second half indicates the variants which are usually
+  detectable by the reader, such as density and number of sides.
+
+  TODO: big-endian support
 */
 
 const char mfi_format::sign[16] = "MESSFLOPPYIMAGE"; // Includes the final \0
@@ -77,24 +122,27 @@ bool mfi_format::supports_save() const
 	return true;
 }
 
-int mfi_format::identify(io_generic *io)
+int mfi_format::identify(io_generic *io, UINT32 form_factor)
 {
 	header h;
 
 	io_generic_read(io, &h, 0, sizeof(header));
 	if(memcmp( h.sign, sign, 16 ) == 0 &&
-	   h.cyl_count > 0 && h.cyl_count <= 84 &&
-	   h.head_count > 0 && h.head_count <= 2)
+	   h.cyl_count <= 160 &&
+	   h.head_count <= 2 &&
+	   (!form_factor || h.form_factor == form_factor))
 		return 100;
 	return 0;
 }
 
-bool mfi_format::load(io_generic *io, floppy_image *image)
+bool mfi_format::load(io_generic *io, UINT32 form_factor, floppy_image *image)
 {
 	header h;
 	entry entries[84*2];
 	io_generic_read(io, &h, 0, sizeof(header));
 	io_generic_read(io, &entries, sizeof(header), h.cyl_count*h.head_count*sizeof(entry));
+
+	image->set_variant(h.variant);
 
 	UINT8 *compressed = 0;
 	int compressed_size = 0;
@@ -161,6 +209,8 @@ bool mfi_format::save(io_generic *io, floppy_image *image)
 	memcpy(h.sign, sign, 16);
 	h.cyl_count = tracks;
 	h.head_count = heads;
+	h.form_factor = image->get_form_factor();
+	h.variant = image->get_variant();
 
 	io_generic_write(io, &h, 0, sizeof(header));
 
@@ -194,6 +244,7 @@ bool mfi_format::save(io_generic *io, floppy_image *image)
 			entries[epos].offset = pos;
 			entries[epos].uncompressed_size = tsize*4;
 			entries[epos].compressed_size = csize;
+			entries[epos].write_splice = image->get_write_splice_position(track, head);
 			epos++;
 
 			io_generic_write(io, postcomp, pos, csize);

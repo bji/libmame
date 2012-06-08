@@ -8,8 +8,8 @@ class ipf_format : public floppy_image_format_t
 public:
 	ipf_format();
 
-	virtual int identify(io_generic *io);
-	virtual bool load(io_generic *io, floppy_image *image);
+	virtual int identify(io_generic *io, UINT32 form_factor);
+	virtual bool load(io_generic *io, UINT32 form_factor, floppy_image *image);
 
 	virtual const char *name() const;
 	virtual const char *description() const;
@@ -63,8 +63,8 @@ private:
 	bool gap_description_to_reserved_size(const UINT8 *&data, const UINT8 *dlimit, UINT32 &res_size);
 	bool generate_gap_from_description(const UINT8 *&data, const UINT8 *dlimit, UINT32 *track, UINT32 size, bool pre, bool &context);
 	bool generate_block_gap_0(UINT32 gap_cells, UINT8 pattern, UINT32 &spos, UINT32 ipos, UINT32 *track, bool &context);
-	bool generate_block_gap_1(UINT32 gap_cells, UINT32 &spos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context);
-	bool generate_block_gap_2(UINT32 gap_cells, UINT32 &spos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context);
+	bool generate_block_gap_1(UINT32 gap_cells, UINT32 &spos, UINT32 ipos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context);
+	bool generate_block_gap_2(UINT32 gap_cells, UINT32 &spos, UINT32 ipos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context);
 	bool generate_block_gap_3(UINT32 gap_cells, UINT32 &spos, UINT32 ipos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context);
 	bool generate_block_gap(UINT32 gap_type, UINT32 gap_cells, UINT8 pattern, UINT32 &spos, UINT32 ipos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context);
 
@@ -75,7 +75,7 @@ private:
 	bool generate_timings(track_info *t, UINT32 *track, const UINT32 *data_pos, const UINT32 *gap_pos);
 
 	void rotate(UINT32 *track, UINT32 offset, UINT32 size);
-	void mark_track_splice(UINT32 *t);
+	void mark_track_splice(UINT32 *track, UINT32 offset, UINT32 size);
 	bool generate_track(track_info *t, floppy_image *image);
 	bool generate_tracks(floppy_image *image);
 

@@ -9,6 +9,8 @@ public:
 	UINT8 *m_videoram;
 	UINT8 *m_colorram;
 	tilemap_t *m_bg_tilemap;
+
+	UINT8 m_irq_mask;
 };
 
 
@@ -18,4 +20,4 @@ WRITE8_HANDLER( trucocl_videoram_w );
 WRITE8_HANDLER( trucocl_colorram_w );
 PALETTE_INIT( trucocl );
 VIDEO_START( trucocl );
-SCREEN_UPDATE( trucocl );
+SCREEN_UPDATE_IND16( trucocl );

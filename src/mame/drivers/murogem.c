@@ -199,13 +199,13 @@ GFXDECODE_END
 static PALETTE_INIT(murogem)
 {}
 
-static SCREEN_UPDATE(murogem)
+static SCREEN_UPDATE_IND16(murogem)
 {
-	murogem_state *state = screen->machine().driver_data<murogem_state>();
+	murogem_state *state = screen.machine().driver_data<murogem_state>();
 	int xx,yy,count;
 	count = 0x000;
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	for (yy=0;yy<32;yy++)
 	{
@@ -214,7 +214,7 @@ static SCREEN_UPDATE(murogem)
 			int tileno = state->m_videoram[count]&0x3f;
 			int attr = state->m_videoram[count+0x400]&0x0f;
 
-			drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],tileno,attr,0,0,xx*8,yy*8,0);
+			drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],tileno,attr,0,0,xx*8,yy*8,0);
 
 			count++;
 
@@ -250,10 +250,9 @@ static MACHINE_CONFIG_START( murogem, murogem_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((39+1)*8, (38+1)*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(murogem)
+	MCFG_SCREEN_UPDATE_STATIC(murogem)
 
 	MCFG_GFXDECODE(murogem)
 	MCFG_PALETTE_LENGTH(0x100)

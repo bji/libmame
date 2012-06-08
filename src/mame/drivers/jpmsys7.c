@@ -4,6 +4,8 @@
 /* I don't think this is Pluto, or other known platforms */
 
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
 
@@ -11,12 +13,18 @@ class jpmsys7_state : public driver_device
 {
 public:
 	jpmsys7_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
 
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
 };
 
 
-static ADDRESS_MAP_START( jpmsys7_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( jpmsys7_map, AS_PROGRAM, 32, jpmsys7_state )
 	AM_RANGE(0x000000, 0x2fffff) AM_ROM
 ADDRESS_MAP_END
 
@@ -195,16 +203,15 @@ ROM_START( j7bullio )
 ROM_END
 
 
-
-GAME( 200?, j7bmagic		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Black Magic (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7cexprs		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Cash Xpress (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7crztrl		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Crazy Trails (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7fantaz		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Fantaztec (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7kerchn		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Ker - Chinq (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7razzma		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Razzamataz (Jpm) (set 1)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7razzmaa		,j7razzma,	jpmsys7, jpmsys7, 0, ROT0, "Jpm","Razzamataz (Jpm) (set 2)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7r2roll		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Ready To Roll (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7tubgld		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Turbo Gold (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7wldwkd		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Wild 'N' Wicked (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7bullio		,0,			jpmsys7, jpmsys7, 0, ROT0, "Ace","Bullionaire (Ace)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, j7clbmag		,0,			jpmsys7, jpmsys7, 0, ROT0, "Qps","Club Magic (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 200?, j7bmagic		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Black Magic (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7cexprs		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Cash Xpress (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7crztrl		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Crazy Trails (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7fantaz		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Fantaztec (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7kerchn		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Ker - Chinq (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7razzma		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Razzamataz (Jpm) (set 1)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7razzmaa		,j7razzma,	jpmsys7, jpmsys7, 0, ROT0, "Jpm","Razzamataz (Jpm) (set 2)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7r2roll		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Ready To Roll (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7tubgld		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Turbo Gold (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7wldwkd		,0,			jpmsys7, jpmsys7, 0, ROT0, "Jpm","Wild 'N' Wicked (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7bullio		,0,			jpmsys7, jpmsys7, 0, ROT0, "Ace","Bullionaire (Ace)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, j7clbmag		,0,			jpmsys7, jpmsys7, 0, ROT0, "Qps","Club Magic (Jpm)", GAME_IS_SKELETON_MECHANICAL )

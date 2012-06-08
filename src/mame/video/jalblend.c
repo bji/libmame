@@ -84,7 +84,8 @@ rgb_t jal_blend_func(rgb_t dest, rgb_t addMe, UINT8 alpha)
 	return MAKE_RGB(r,g,b);
 }
 
-void jal_blend_drawgfx(bitmap_t *dest_bmp,const rectangle *clip,const gfx_element *gfx,
+template<class _BitmapClass>
+void jal_blend_drawgfx_common(_BitmapClass &dest_bmp,const rectangle &clip,const gfx_element *gfx,
 							UINT32 code,UINT32 color,int flipx,int flipy,int offsx,int offsy,
 							int transparent_color)
 {
@@ -117,96 +118,67 @@ void jal_blend_drawgfx(bitmap_t *dest_bmp,const rectangle *clip,const gfx_elemen
 		ex = sx + gfx->width;
 		ey = sy + gfx->height;
 
-		if (clip)
-		{
-			if (sx < clip->min_x)
-			{ /* clip left */
-				int pixels = clip->min_x-sx;
-				sx += pixels;
-				x_index_base += xinc*pixels;
-			}
-			if (sy < clip->min_y)
-			{ /* clip top */
-				int pixels = clip->min_y-sy;
-				sy += pixels;
-				y_index += yinc*pixels;
-			}
-			/* NS 980211 - fixed incorrect clipping */
-			if (ex > clip->max_x+1)
-			{ /* clip right */
-				ex = clip->max_x+1;
-			}
-			if (ey > clip->max_y+1)
-			{ /* clip bottom */
-				ey = clip->max_y+1;
-			}
+		if (sx < clip.min_x)
+		{ /* clip left */
+			int pixels = clip.min_x-sx;
+			sx += pixels;
+			x_index_base += xinc*pixels;
+		}
+		if (sy < clip.min_y)
+		{ /* clip top */
+			int pixels = clip.min_y-sy;
+			sy += pixels;
+			y_index += yinc*pixels;
+		}
+		/* NS 980211 - fixed incorrect clipping */
+		if (ex > clip.max_x+1)
+		{ /* clip right */
+			ex = clip.max_x+1;
+		}
+		if (ey > clip.max_y+1)
+		{ /* clip bottom */
+			ey = clip.max_y+1;
 		}
 
 		if (ex > sx)
 		{ /* skip if inner loop doesn't draw anything */
 			int x, y;
 
-			/* 32-bit destination bitmap */
-			if (dest_bmp->bpp == 32)
+			/* taken from case 7: TRANSPARENCY_ALPHARANGE */
+			for (y = sy; y < ey; y++)
 			{
-				/* taken from case 7: TRANSPARENCY_ALPHARANGE */
-				for (y = sy; y < ey; y++)
+				const UINT8 *source = source_base + y_index*gfx->line_modulo;
+				typename _BitmapClass::pixel_t *dest = &dest_bmp.pix(y);
+				int x_index = x_index_base;
+				for (x = sx; x < ex; x++)
 				{
-					const UINT8 *source = source_base + y_index*gfx->line_modulo;
-					UINT32 *dest = BITMAP_ADDR32(dest_bmp, y, 0);
-					int x_index = x_index_base;
-					for (x = sx; x < ex; x++)
+					int c = source[x_index];
+					if (c != transparent_color)
 					{
-						int c = source[x_index];
-						if (c != transparent_color)
+						if (alpha[c] & 8)
 						{
-							if (alpha[c] & 8)
-							{
-								/* Comp with clamp */
-								dest[x] = jal_blend_func(dest[x], pal[c], alpha[c]);
-							}
-							else
-							{
-								/* Skip the costly alpha step altogether */
-								dest[x] = pal[c];
-							}
+							/* Comp with clamp */
+							dest[x] = jal_blend_func(dest[x], pal[c], alpha[c]);
 						}
-						x_index += xinc;
-					}
-					y_index += yinc;
-				}
-			}
-
-			/* 16-bit destination bitmap */
-			else
-			{
-				/* taken from case 7: TRANSPARENCY_ALPHARANGE */
-				for (y = sy; y < ey; y++)
-				{
-					const UINT8 *source = source_base + y_index*gfx->line_modulo;
-					UINT16 *dest = BITMAP_ADDR16(dest_bmp, y, 0);
-					int x_index = x_index_base;
-					for (x = sx; x < ex; x++)
-					{
-						int c = source[x_index];
-						if (c != transparent_color)
+						else
 						{
-							if (alpha[c] & 8)
-							{
-								/* Comp with clamp */
-								dest[x] = jal_blend_func(dest[x], pal[c], alpha[c]);
-							}
-							else
-							{
-								/* Skip the costly alpha step altogether */
-								dest[x] = pal[c];
-							}
+							/* Skip the costly alpha step altogether */
+							dest[x] = pal[c];
 						}
-						x_index += xinc;
 					}
-					y_index += yinc;
+					x_index += xinc;
 				}
+				y_index += yinc;
 			}
 		}
 	}
 }
+
+void jal_blend_drawgfx(bitmap_ind16 &dest_bmp,const rectangle &clip,const gfx_element *gfx,
+							UINT32 code,UINT32 color,int flipx,int flipy,int offsx,int offsy,
+							int transparent_color)
+{ jal_blend_drawgfx_common(dest_bmp, clip, gfx, code, color, flipx, flipy, offsx, offsy, transparent_color); }
+void jal_blend_drawgfx(bitmap_rgb32 &dest_bmp,const rectangle &clip,const gfx_element *gfx,
+							UINT32 code,UINT32 color,int flipx,int flipy,int offsx,int offsy,
+							int transparent_color)
+{ jal_blend_drawgfx_common(dest_bmp, clip, gfx, code, color, flipx, flipy, offsx, offsy, transparent_color); }

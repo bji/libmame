@@ -188,16 +188,16 @@ int tms9927_upscroll_offset(device_t *device)
 }
 
 
-int tms9927_cursor_bounds(device_t *device, rectangle *bounds)
+int tms9927_cursor_bounds(device_t *device, rectangle &bounds)
 {
 	tms9927_state *tms = get_safe_token(device);
 	int cursorx = CURSOR_CHAR_ADDRESS(tms);
 	int cursory = CURSOR_ROW_ADDRESS(tms);
 
-	bounds->min_x = cursorx * tms->hpixels_per_column;
-	bounds->max_x = bounds->min_x + tms->hpixels_per_column - 1;
-	bounds->min_y = cursory * SCANS_PER_DATA_ROW(tms);
-	bounds->max_y = bounds->min_y + SCANS_PER_DATA_ROW(tms) - 1;
+	bounds.min_x = cursorx * tms->hpixels_per_column;
+	bounds.max_x = bounds.min_x + tms->hpixels_per_column - 1;
+	bounds.min_y = cursory * SCANS_PER_DATA_ROW(tms);
+	bounds.max_y = bounds.min_y + SCANS_PER_DATA_ROW(tms) - 1;
 
 	return (cursorx < HCOUNT(tms) && cursory <= LAST_DISP_DATA_ROW(tms));
 }
@@ -240,10 +240,7 @@ static void recompute_parameters(tms9927_state *tms, int postload)
 
 	/* create a visible area */
 	/* fix me: how do the offsets fit in here? */
-	visarea.min_x = 0;
-	visarea.max_x = tms->visible_hpix - 1;
-	visarea.min_y = 0;
-	visarea.max_y = tms->visible_vpix - 1;
+	visarea.set(0, tms->visible_hpix - 1, 0, tms->visible_vpix - 1);
 
 	refresh = HZ_TO_ATTOSECONDS(tms->clock) * tms->total_hpix * tms->total_vpix;
 

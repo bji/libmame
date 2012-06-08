@@ -62,42 +62,42 @@ static VIDEO_START(monzagp)
 	state->m_vram = auto_alloc_array(machine, UINT8, 0x10000);
 }
 
-static SCREEN_UPDATE(monzagp)
+static SCREEN_UPDATE_IND16(monzagp)
 {
-	monzagp_state *state = screen->machine().driver_data<monzagp_state>();
+	monzagp_state *state = screen.machine().driver_data<monzagp_state>();
 	int x,y;
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_Z))
+	if(screen.machine().input().code_pressed_once(KEYCODE_Z))
 		state->m_bank--;
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_X))
+	if(screen.machine().input().code_pressed_once(KEYCODE_X))
 		state->m_bank++;
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_Q))
+	if(screen.machine().input().code_pressed_once(KEYCODE_Q))
 	{
 		state->m_screenw--;
 		printf("%x\n",state->m_screenw);
 	}
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_W))
+	if(screen.machine().input().code_pressed_once(KEYCODE_W))
 	{
 		state->m_screenw++;
 		printf("%x\n",state->m_screenw);
 	}
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_A))
+	if(screen.machine().input().code_pressed_once(KEYCODE_A))
 	{
 		FILE * p=fopen("vram.bin","wb");
 		fwrite(&state->m_vram[0],1,0x10000,p);
 		fclose(p);
 	}
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 	for(y=0;y<256;y++)
 	{
 		for(x=0;x<256;x++)
 		{
-			drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[state->m_bank&1],
+			drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[state->m_bank&1],
 				state->m_vram[y*state->m_screenw+x],
 				//(state->m_vram[y*state->m_screenw+x]&0x3f)+(state->m_bank>>1)*64,
 				0,
@@ -260,10 +260,9 @@ static MACHINE_CONFIG_START( monzagp, monzagp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(monzagp)
+	MCFG_SCREEN_UPDATE_STATIC(monzagp)
 
 	MCFG_PALETTE_LENGTH(0x200)
 	MCFG_PALETTE_INIT(monzagp)

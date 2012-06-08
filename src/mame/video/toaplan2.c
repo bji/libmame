@@ -61,9 +61,9 @@ static void truxton2_create_tx_tilemap(running_machine &machine)
 	toaplan2_state *state = machine.driver_data<toaplan2_state>();
 
 	state->m_tx_tilemap = tilemap_create(machine, get_text_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
-	tilemap_set_scroll_rows(state->m_tx_tilemap, 8*32);	/* line scrolling */
-	tilemap_set_scroll_cols(state->m_tx_tilemap, 1);
-	tilemap_set_transparent_pen(state->m_tx_tilemap, 0);
+	state->m_tx_tilemap->set_scroll_rows(8*32);	/* line scrolling */
+	state->m_tx_tilemap->set_scroll_cols(1);
+	state->m_tx_tilemap->set_transparent_pen(0);
 }
 
 static void register_state_save(running_machine &machine)
@@ -82,26 +82,24 @@ static void truxton2_postload(running_machine &machine)
 VIDEO_START( toaplan2 )
 {
 	toaplan2_state *state = machine.driver_data<toaplan2_state>();
-	int width = machine.primary_screen->width();
-	int height = machine.primary_screen->height();
 
 	/* cache the VDP device */
 	state->m_vdp0 = machine.device<gp9001vdp_device>("gp9001vdp0");
 	state->m_vdp1 = machine.device<gp9001vdp_device>("gp9001vdp1");
 
 	/* our current VDP implementation needs this bitmap to work with */
-	state->m_custom_priority_bitmap = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED8);
+	machine.primary_screen->register_screen_bitmap(state->m_custom_priority_bitmap);
 
 	if (state->m_vdp0 != NULL)
 	{
-		state->m_secondary_render_bitmap = NULL;
-		state->m_vdp0->custom_priority_bitmap = state->m_custom_priority_bitmap;
+		state->m_secondary_render_bitmap.reset();
+		state->m_vdp0->custom_priority_bitmap = &state->m_custom_priority_bitmap;
 	}
 
 	if (state->m_vdp1 != NULL)
 	{
-		state->m_secondary_render_bitmap = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED16);
-		state->m_vdp1->custom_priority_bitmap = state->m_custom_priority_bitmap;
+		machine.primary_screen->register_screen_bitmap(state->m_secondary_render_bitmap);
+		state->m_vdp1->custom_priority_bitmap = &state->m_custom_priority_bitmap;
 	}
 
 	register_state_save(machine);
@@ -118,7 +116,7 @@ VIDEO_START( truxton2 )
 	machine.save().register_postload(save_prepost_delegate(FUNC(truxton2_postload), &machine));
 
 	truxton2_create_tx_tilemap(machine);
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0x1d4 +1, 0x2a);
+	state->m_tx_tilemap->set_scrolldx(0x1d4 +1, 0x2a);
 }
 
 VIDEO_START( fixeightbl )
@@ -145,7 +143,7 @@ VIDEO_START( fixeightbl )
 
 	state->m_vdp0->init_scroll_regs();
 
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0, 0);
+	state->m_tx_tilemap->set_scrolldx(0, 0);
 }
 
 VIDEO_START( bgaregga )
@@ -156,7 +154,7 @@ VIDEO_START( bgaregga )
 
 	/* Create the Text tilemap for this game */
 	truxton2_create_tx_tilemap(machine);
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0x1d4, 0x2a);
+	state->m_tx_tilemap->set_scrolldx(0x1d4, 0x2a);
 }
 
 VIDEO_START( batrider )
@@ -173,7 +171,7 @@ VIDEO_START( batrider )
 	machine.save().register_postload(save_prepost_delegate(FUNC(truxton2_postload), &machine));
 
 	truxton2_create_tx_tilemap(machine);
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0x1d4, 0x2a);
+	state->m_tx_tilemap->set_scrolldx(0x1d4, 0x2a);
 
 	/* Has special banking */
 	state->m_vdp0->gp9001_gfxrom_is_banked = 1;
@@ -185,13 +183,13 @@ WRITE16_HANDLER( toaplan2_txvideoram16_w )
 
 	COMBINE_DATA(&state->m_txvideoram16[offset]);
 	if (offset < (state->m_tx_vram_size/4))
-		tilemap_mark_tile_dirty(state->m_tx_tilemap, offset);
+		state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER( toaplan2_txvideoram16_offs_w )
 {
 	// FIXME: implement line select and per-line flipping for all games
-	// see SCREEN_UPDATE( batrider )
+	// see SCREEN_UPDATE_IND16( batrider )
 
 	toaplan2_state *state = space->machine().driver_data<toaplan2_state>();
 	UINT16 oldword = state->m_txvideoram16_offs[offset];
@@ -203,14 +201,14 @@ WRITE16_HANDLER( toaplan2_txvideoram16_offs_w )
 			if (data & 0x8000)		/* Flip off */
 			{
 				state->m_tx_flip = 0;
-				tilemap_set_flip(state->m_tx_tilemap, state->m_tx_flip);
-				tilemap_set_scrolly(state->m_tx_tilemap, 0, 0);
+				state->m_tx_tilemap->set_flip(state->m_tx_flip);
+				state->m_tx_tilemap->set_scrolly(0, 0);
 			}
 			else					/* Flip on */
 			{
 				state->m_tx_flip = (TILEMAP_FLIPY | TILEMAP_FLIPX);
-				tilemap_set_flip(state->m_tx_tilemap, state->m_tx_flip);
-				tilemap_set_scrolly(state->m_tx_tilemap, 0, -16);
+				state->m_tx_tilemap->set_flip(state->m_tx_flip);
+				state->m_tx_tilemap->set_scrolly(0, -16);
 			}
 		}
 		COMBINE_DATA(&state->m_txvideoram16_offs[offset]);
@@ -225,7 +223,7 @@ WRITE16_HANDLER( toaplan2_txscrollram16_w )
 	toaplan2_state *state = space->machine().driver_data<toaplan2_state>();
 	int data_tx = data;
 
-	tilemap_set_scrollx(state->m_tx_tilemap, offset, data_tx);
+	state->m_tx_tilemap->set_scrollx(offset, data_tx);
 
 //  logerror("Writing %04x to text scroll RAM offset %04x\n",data,offset);
 	COMBINE_DATA(&state->m_txscrollram16[offset]);
@@ -291,21 +289,21 @@ WRITE16_HANDLER( batrider_objectbank_w )
 }
 
 // Dogyuun doesn't appear to require fancy mixing?
-SCREEN_UPDATE( toaplan2_dual )
+SCREEN_UPDATE_IND16( toaplan2_dual )
 {
-	toaplan2_state *state = screen->machine().driver_data<toaplan2_state>();
+	toaplan2_state *state = screen.machine().driver_data<toaplan2_state>();
 
 	if (state->m_vdp1)
 	{
-		bitmap_fill(bitmap,cliprect,0);
-		bitmap_fill(state->m_custom_priority_bitmap, cliprect, 0);
-		state->m_vdp1->gp9001_render_vdp(screen->machine(), bitmap, cliprect);
+		bitmap.fill(0, cliprect);
+		state->m_custom_priority_bitmap.fill(0, cliprect);
+		state->m_vdp1->gp9001_render_vdp(screen.machine(), bitmap, cliprect);
 	}
 	if (state->m_vdp0)
 	{
-	//  bitmap_fill(bitmap,cliprect,0);
-		bitmap_fill(state->m_custom_priority_bitmap, cliprect, 0);
-		state->m_vdp0->gp9001_render_vdp(screen->machine(), bitmap, cliprect);
+	//  bitmap.fill(0, cliprect);
+		state->m_custom_priority_bitmap.fill(0, cliprect);
+		state->m_vdp0->gp9001_render_vdp(screen.machine(), bitmap, cliprect);
 	}
 
 
@@ -314,24 +312,24 @@ SCREEN_UPDATE( toaplan2_dual )
 
 
 // renders to 2 bitmaps, and mixes output
-SCREEN_UPDATE( toaplan2_mixed )
+SCREEN_UPDATE_IND16( toaplan2_mixed )
 {
-	toaplan2_state *state = screen->machine().driver_data<toaplan2_state>();
+	toaplan2_state *state = screen.machine().driver_data<toaplan2_state>();
 
-//  bitmap_fill(bitmap,cliprect,0);
-//  bitmap_fill(gp9001_custom_priority_bitmap, cliprect, 0);
+//  bitmap.fill(0, cliprect);
+//  gp9001_custom_priority_bitmap->fill(0, cliprect);
 
 	if (state->m_vdp0)
 	{
-		bitmap_fill(bitmap,cliprect,0);
-		bitmap_fill(state->m_custom_priority_bitmap, cliprect, 0);
-		state->m_vdp0->gp9001_render_vdp(screen->machine(), bitmap, cliprect);
+		bitmap.fill(0, cliprect);
+		state->m_custom_priority_bitmap.fill(0, cliprect);
+		state->m_vdp0->gp9001_render_vdp(screen.machine(), bitmap, cliprect);
 	}
 	if (state->m_vdp1)
 	{
-		bitmap_fill(state->m_secondary_render_bitmap,cliprect,0);
-		bitmap_fill(state->m_custom_priority_bitmap, cliprect, 0);
-		state->m_vdp1->gp9001_render_vdp(screen->machine(), state->m_secondary_render_bitmap, cliprect);
+		state->m_secondary_render_bitmap.fill(0, cliprect);
+		state->m_custom_priority_bitmap.fill(0, cliprect);
+		state->m_vdp1->gp9001_render_vdp(screen.machine(), state->m_secondary_render_bitmap, cliprect);
 	}
 
 
@@ -348,16 +346,16 @@ SCREEN_UPDATE( toaplan2_mixed )
 
 	if (state->m_vdp0 && state->m_vdp1)
 	{
-		int width = screen->width();
-		int height = screen->height();
+		int width = screen.width();
+		int height = screen.height();
 		int y,x;
 		UINT16* src_vdp0; // output buffer of vdp0
 		UINT16* src_vdp1; // output buffer of vdp1
 
 		for (y=0;y<height;y++)
 		{
-			src_vdp0 = BITMAP_ADDR16(bitmap, y, 0);
-			src_vdp1 = BITMAP_ADDR16(state->m_secondary_render_bitmap, y, 0);
+			src_vdp0 = &bitmap.pix16(y);
+			src_vdp1 = &state->m_secondary_render_bitmap.pix16(y);
 
 			for (x=0;x<width;x++)
 			{
@@ -414,49 +412,41 @@ SCREEN_UPDATE( toaplan2_mixed )
 	return 0;
 }
 
-SCREEN_UPDATE( toaplan2 )
+SCREEN_UPDATE_IND16( toaplan2 )
 {
-	toaplan2_state *state = screen->machine().driver_data<toaplan2_state>();
+	toaplan2_state *state = screen.machine().driver_data<toaplan2_state>();
 
 	if (state->m_vdp0)
 	{
-		device_t *screen1  = screen->machine().device("screen");
-
-		if (screen == screen1)
-		{
-			bitmap_fill(bitmap,cliprect,0);
-			bitmap_fill(state->m_custom_priority_bitmap, cliprect, 0);
-			state->m_vdp0->gp9001_render_vdp(screen->machine(), bitmap, cliprect);
-		}
+		bitmap.fill(0, cliprect);
+		state->m_custom_priority_bitmap.fill(0, cliprect);
+		state->m_vdp0->gp9001_render_vdp(screen.machine(), bitmap, cliprect);
 	}
 
 	return 0;
 }
 
-SCREEN_UPDATE( truxton2 )
+SCREEN_UPDATE_IND16( truxton2 )
 {
-	toaplan2_state *state = screen->machine().driver_data<toaplan2_state>();
+	toaplan2_state *state = screen.machine().driver_data<toaplan2_state>();
 
-	SCREEN_UPDATE_CALL(toaplan2);
-	tilemap_draw(bitmap, cliprect, state->m_tx_tilemap, 0, 0);
+	SCREEN_UPDATE16_CALL(toaplan2);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
 
-SCREEN_UPDATE( batrider )
+SCREEN_UPDATE_IND16( batrider )
 {
-	toaplan2_state *state = screen->machine().driver_data<toaplan2_state>();
+	toaplan2_state *state = screen.machine().driver_data<toaplan2_state>();
 
-	SCREEN_UPDATE_CALL( toaplan2 );
+	SCREEN_UPDATE16_CALL( toaplan2 );
 
 	int line;
 	rectangle clip;
-	const rectangle &visarea = screen->visible_area();
+	const rectangle &visarea = screen.visible_area();
 
-	clip.min_x = visarea.min_x;
-	clip.max_x = visarea.max_x;
-	clip.min_y = visarea.min_y;
-	clip.max_y = visarea.max_y;
+	clip = visarea;
 
 	/* used for 'for use in' and '8ing' screen on bbakraid, raizing on batrider */
 	for (line = 0; line < 256;line++)
@@ -464,35 +454,39 @@ SCREEN_UPDATE( batrider )
 		if (state->m_tx_flip)
 		{
 			clip.min_y = clip.max_y = 256 - line;
-			tilemap_set_scrolly(state->m_tx_tilemap, 0, 256 - line + state->m_txvideoram16_offs[256 - line]);
+			state->m_tx_tilemap->set_scrolly(0, 256 - line + state->m_txvideoram16_offs[256 - line]);
 		}
 		else
 		{
 			clip.min_y = clip.max_y = line;
-			tilemap_set_scrolly(state->m_tx_tilemap, 0,     - line + state->m_txvideoram16_offs[      line]);
+			state->m_tx_tilemap->set_scrolly(0,     - line + state->m_txvideoram16_offs[      line]);
 		}
-		tilemap_draw(bitmap, &clip, state->m_tx_tilemap, 0, 0);
+		state->m_tx_tilemap->draw(bitmap, clip, 0, 0);
 	}
 	return 0;
 }
 
 
 
-SCREEN_UPDATE( dogyuun )
+SCREEN_UPDATE_IND16( dogyuun )
 {
-	SCREEN_UPDATE_CALL( toaplan2_dual );
+	SCREEN_UPDATE16_CALL( toaplan2_dual );
 	return 0;
 }
 
-SCREEN_UPDATE( batsugun )
+SCREEN_UPDATE_IND16( batsugun )
 {
-	SCREEN_UPDATE_CALL( toaplan2_mixed );
+	SCREEN_UPDATE16_CALL( toaplan2_mixed );
 	return 0;
 }
 
-SCREEN_EOF( toaplan2 )
+SCREEN_VBLANK( toaplan2 )
 {
-	toaplan2_state *state = machine.driver_data<toaplan2_state>();
-	if (state->m_vdp0) state->m_vdp0->gp9001_screen_eof();
-	if (state->m_vdp1) state->m_vdp1->gp9001_screen_eof();
+	// rising edge
+	if (vblank_on)
+	{
+		toaplan2_state *state = screen.machine().driver_data<toaplan2_state>();
+		if (state->m_vdp0) state->m_vdp0->gp9001_screen_eof();
+		if (state->m_vdp1) state->m_vdp1->gp9001_screen_eof();
+	}
 }

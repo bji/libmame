@@ -45,10 +45,10 @@ WRITE8_HANDLER( mnchmobl_flipscreen_w )
 VIDEO_START( mnchmobl )
 {
 	munchmo_state *state = machine.driver_data<munchmo_state>();
-	state->m_tmpbitmap = auto_bitmap_alloc(machine, 512, 512, machine.primary_screen->format());
+	state->m_tmpbitmap = auto_bitmap_ind16_alloc(machine, 512, 512);
 }
 
-static void draw_status( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_status( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	munchmo_state *state = machine.driver_data<munchmo_state>();
 	const gfx_element *gfx = machine.gfx[0];
@@ -76,7 +76,7 @@ static void draw_status( running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-static void draw_background( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_background( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 /*
     ROM B1.2C contains 256 tilemaps defining 4x4 configurations of
@@ -98,7 +98,7 @@ static void draw_background( running_machine &machine, bitmap_t *bitmap, const r
 		{
 			for (col = 0; col < 4; col++)
 			{
-				drawgfx_opaque(state->m_tmpbitmap, 0, gfx,
+				drawgfx_opaque(*state->m_tmpbitmap, state->m_tmpbitmap->cliprect(), gfx,
 					rom[col + tile_number * 4 + row * 0x400],
 					state->m_palette_bank,
 					0,0, /* flip */
@@ -111,11 +111,11 @@ static void draw_background( running_machine &machine, bitmap_t *bitmap, const r
 		int scrollx = -(state->m_vreg[6] *2 + (state->m_vreg[7] >> 7)) - 64 - 128 - 16;
 		int scrolly = 0;
 
-		copyscrollbitmap(bitmap, state->m_tmpbitmap, 1, &scrollx, 1, &scrolly, cliprect);
+		copyscrollbitmap(bitmap, *state->m_tmpbitmap, 1, &scrollx, 1, &scrolly, cliprect);
 	}
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	munchmo_state *state = machine.driver_data<munchmo_state>();
 	int scroll = state->m_vreg[6];
@@ -150,10 +150,10 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-SCREEN_UPDATE( mnchmobl )
+SCREEN_UPDATE_IND16( mnchmobl )
 {
-	draw_background(screen->machine(), bitmap, cliprect);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	draw_status(screen->machine(), bitmap, cliprect);
+	draw_background(screen.machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	draw_status(screen.machine(), bitmap, cliprect);
 	return 0;
 }

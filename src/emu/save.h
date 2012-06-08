@@ -238,8 +238,6 @@ private:
 	simple_list<state_entry> m_entry_list;			// list of reigstered entries
 	simple_list<state_callback> m_presave_list;		// list of pre-save functions
 	simple_list<state_callback> m_postload_list;	// list of post-load functions
-
-	static const char s_magic_num[8];				// magic number for header
 };
 
 
@@ -270,9 +268,27 @@ ALLOW_SAVE_TYPE(endianness_t);
 //-------------------------------------------------
 
 template<>
-inline void save_manager::save_item(const char *module, const char *tag, int index, bitmap_t &value, const char *name)
+inline void save_manager::save_item(const char *module, const char *tag, int index, bitmap_ind8 &value, const char *name)
 {
-	save_memory(module, tag, index, name, value.base, value.bpp / 8, value.rowpixels * value.height);
+	save_memory(module, tag, index, name, &value.pix(0), value.bpp() / 8, value.rowpixels() * value.height());
+}
+
+template<>
+inline void save_manager::save_item(const char *module, const char *tag, int index, bitmap_ind16 &value, const char *name)
+{
+	save_memory(module, tag, index, name, &value.pix(0), value.bpp() / 8, value.rowpixels() * value.height());
+}
+
+template<>
+inline void save_manager::save_item(const char *module, const char *tag, int index, bitmap_ind32 &value, const char *name)
+{
+	save_memory(module, tag, index, name, &value.pix(0), value.bpp() / 8, value.rowpixels() * value.height());
+}
+
+template<>
+inline void save_manager::save_item(const char *module, const char *tag, int index, bitmap_rgb32 &value, const char *name)
+{
+	save_memory(module, tag, index, name, &value.pix(0), value.bpp() / 8, value.rowpixels() * value.height());
 }
 
 

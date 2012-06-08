@@ -455,10 +455,9 @@ static MACHINE_CONFIG_START( galivan, galivan_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(galivan)
+	MCFG_SCREEN_UPDATE_STATIC(galivan)
 
 	MCFG_GFXDECODE(galivan)
 	MCFG_PALETTE_LENGTH(8*16+16*16+256*16)
@@ -499,10 +498,9 @@ static MACHINE_CONFIG_START( ninjemak, galivan_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(ninjemak)
+	MCFG_SCREEN_UPDATE_STATIC(ninjemak)
 
 	MCFG_GFXDECODE(ninjemak)
 	MCFG_PALETTE_LENGTH(8*16+16*16+256*16)
@@ -1114,5 +1112,5 @@ GAME( 1986, dangarb,  dangar,   galivan,  dangarb,  0, ROT270, "bootleg", "Danga
 GAME( 1986, ninjemak, 0,        ninjemak, ninjemak, 0, ROT270, "Nichibutsu", "Ninja Emaki (US)", GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION )
 GAME( 1986, youma,    ninjemak, ninjemak, ninjemak, 0, ROT270, "Nichibutsu", "Youma Ninpou Chou (Japan)", GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION )
 GAME( 1986, youma2,   ninjemak, ninjemak, ninjemak, 0, ROT270, "Nichibutsu", "Youma Ninpou Chou (Japan, alt)", GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION )
-GAME( 1986, youmab,   ninjemak, ninjemak, ninjemak, youmab, ROT270, "bootleg", "Youma Ninpou Chou (Game Electronics bootleg, set 1)", GAME_NOT_WORKING|GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION ) // scrolling doesn't work
-GAME( 1986, youmab2,  ninjemak, ninjemak, ninjemak, youmab, ROT270, "bootleg", "Youma Ninpou Chou (Game Electronics bootleg, set 2)", GAME_NOT_WORKING|GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION ) // scrolling doesn't work
+GAME( 1986, youmab,   ninjemak, ninjemak, ninjemak, youmab, ROT270, "bootleg", "Youma Ninpou Chou (Game Electronics bootleg, set 1)", GAME_NOT_WORKING|GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION ) // player is invincible
+GAME( 1986, youmab2,  ninjemak, ninjemak, ninjemak, youmab, ROT270, "bootleg", "Youma Ninpou Chou (Game Electronics bootleg, set 2)", GAME_NOT_WORKING|GAME_SUPPORTS_SAVE|GAME_UNEMULATED_PROTECTION ) // ""

@@ -78,7 +78,7 @@ static WRITE32_HANDLER( tmmjprd_tilemap3_w )
 	COMBINE_DATA(&state->m_tilemap_ram[3][offset]);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int screen)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int screen)
 {
 	tmmjprd_state *state = machine.driver_data<tmmjprd_state>();
 	int xpos,ypos,tileno,xflip,yflip, colr;
@@ -155,7 +155,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-static void ttmjprd_draw_tile(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int x,int y,int sizex,int sizey, UINT32 tiledata, UINT8* rom)
+static void ttmjprd_draw_tile(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int x,int y,int sizex,int sizey, UINT32 tiledata, UINT8* rom)
 {
 	/* note, it's tile address _NOT_ tile number, 'sub-tile' access is possible, hence using the custom rendering */
 	int tileaddr = (tiledata&0x000fffff)>>0;
@@ -167,19 +167,19 @@ static void ttmjprd_draw_tile(running_machine &machine, bitmap_t *bitmap, const 
 	int count;
 
 	// entirely off right
-	if (x > cliprect->max_x)
+	if (x > cliprect.max_x)
 		return;
 
 	// entirely off left
-	if ((x+sizex) < cliprect->min_x)
+	if ((x+sizex) < cliprect.min_x)
 		return;
 
 	// entirely off bottom
-	if (y > cliprect->max_y)
+	if (y > cliprect.max_y)
 		return;
 
 	// entirely off bottom
-	if ((y+sizey) < cliprect->min_y)
+	if ((y+sizey) < cliprect.min_y)
 		return;
 
 	count = 0;
@@ -192,24 +192,24 @@ static void ttmjprd_draw_tile(running_machine &machine, bitmap_t *bitmap, const 
 
 			if (!depth)
 			{
-				if ((drawx < cliprect->max_x) && (drawx > cliprect->min_x) && (drawy < cliprect->max_y) && (drawy > cliprect->min_y))
+				if (cliprect.contains(drawx, drawy))
 				{
 					dat = (rom[(tileaddr*32)+count] & 0xf0)>>4;
 					if (dat!=15)
 					{
 						//dat += (colour<<8);
-						dst = BITMAP_ADDR16(bitmap, drawy, drawx);
+						dst = &bitmap.pix16(drawy, drawx);
 						dst[0] = dat;
 					}
 				}
 				drawx++;
-				if ((drawx < cliprect->max_x) && (drawx > cliprect->min_x) && (drawy < cliprect->max_y) && (drawy > cliprect->min_y))
+				if (cliprect.contains(drawx, drawy))
 				{
 					dat = (rom[(tileaddr*32)+count] & 0x0f);
 					if (dat!=15)
 					{
 						//dat += (colour<<8);
-						dst = BITMAP_ADDR16(bitmap, drawy, drawx);
+						dst = &bitmap.pix16(drawy, drawx);
 						dst[0] = dat;
 					}
 				}
@@ -218,13 +218,13 @@ static void ttmjprd_draw_tile(running_machine &machine, bitmap_t *bitmap, const 
 			}
 			else
 			{
-				if ((drawx < cliprect->max_x) && (drawx > cliprect->min_x) && (drawy < cliprect->max_y) && (drawy > cliprect->min_y))
+				if (cliprect.contains(drawx, drawy))
 				{
 					dat = (rom[(tileaddr*32)+count] & 0xff);
 					if (dat!=255)
 					{
 						dat += (colour<<8) & 0xf00;
-						dst = BITMAP_ADDR16(bitmap, drawy, drawx);
+						dst = &bitmap.pix16(drawy, drawx);
 						dst[0] = dat;
 					}
 				}
@@ -234,7 +234,7 @@ static void ttmjprd_draw_tile(running_machine &machine, bitmap_t *bitmap, const 
 	}
 }
 
-static void ttmjprd_draw_tilemap(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, UINT32*tileram, UINT32*tileregs, UINT8*rom )
+static void ttmjprd_draw_tilemap(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, UINT32*tileram, UINT32*tileregs, UINT8*rom )
 {
 	int y,x;
 	int count;
@@ -275,27 +275,16 @@ static void ttmjprd_draw_tilemap(running_machine &machine, bitmap_t *bitmap, con
 
 }
 
-static SCREEN_UPDATE( tmmjprd )
+static SCREEN_UPDATE_IND16( tmmjprd_left )
 {
-	tmmjprd_state *state = screen->machine().driver_data<tmmjprd_state>();
-	UINT8* gfxroms = screen->machine().region("gfx2")->base();
-	device_t *left_screen  = screen->machine().device("lscreen");
-	device_t *right_screen = screen->machine().device("rscreen");
+	tmmjprd_state *state = screen.machine().driver_data<tmmjprd_state>();
+	UINT8* gfxroms = screen.machine().region("gfx2")->base();
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
-	if (screen == left_screen)
-	{
-		ttmjprd_draw_tilemap( screen->machine(), bitmap, cliprect, state->m_tilemap_ram[3], state->m_tilemap_regs[3], gfxroms );
-		draw_sprites(screen->machine(),bitmap,cliprect, 1);
-		ttmjprd_draw_tilemap( screen->machine(), bitmap, cliprect, state->m_tilemap_ram[2], state->m_tilemap_regs[2], gfxroms );
-	}
-	if (screen == right_screen)
-	{
-		ttmjprd_draw_tilemap( screen->machine(), bitmap, cliprect, state->m_tilemap_ram[1], state->m_tilemap_regs[1], gfxroms );
-		draw_sprites(screen->machine(),bitmap,cliprect, 0);
-		ttmjprd_draw_tilemap( screen->machine(), bitmap, cliprect, state->m_tilemap_ram[0], state->m_tilemap_regs[0], gfxroms );
-	}
+	ttmjprd_draw_tilemap( screen.machine(), bitmap, cliprect, state->m_tilemap_ram[3], state->m_tilemap_regs[3], gfxroms );
+	draw_sprites(screen.machine(),bitmap,cliprect, 1);
+	ttmjprd_draw_tilemap( screen.machine(), bitmap, cliprect, state->m_tilemap_ram[2], state->m_tilemap_regs[2], gfxroms );
 
 	/*
     popmessage("%08x %08x %08x %08x %08x %08x",
@@ -317,6 +306,20 @@ static SCREEN_UPDATE( tmmjprd )
     state->m_spriteregs[5],
     state->m_spriteregs[6]);
 */
+
+	return 0;
+}
+
+static SCREEN_UPDATE_IND16( tmmjprd_right )
+{
+	tmmjprd_state *state = screen.machine().driver_data<tmmjprd_state>();
+	UINT8* gfxroms = screen.machine().region("gfx2")->base();
+
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+
+	ttmjprd_draw_tilemap( screen.machine(), bitmap, cliprect, state->m_tilemap_ram[1], state->m_tilemap_regs[1], gfxroms );
+	draw_sprites(screen.machine(),bitmap,cliprect, 0);
+	ttmjprd_draw_tilemap( screen.machine(), bitmap, cliprect, state->m_tilemap_ram[0], state->m_tilemap_regs[0], gfxroms );
 
 	return 0;
 }
@@ -427,7 +430,7 @@ static void tmmjprd_do_blit(running_machine &machine)
 					blt_source+=2;
 					writeoffs=blt_oddflg+blt_column;
 					state->m_tilemap_ram[blt_tilemp][writeoffs]=(state->m_tilemap_ram[blt_tilemp][writeoffs]&mask)|(blt_value<<shift);
-					tilemap_mark_tile_dirty(tmmjprd_tilemap[blt_tilemp],writeoffs);
+					tmmjprd_tilemap[blt_tilemp]->mark_tile_dirty(writeoffs);
 
 					blt_column++;
 					blt_column&=0x7f;
@@ -444,7 +447,7 @@ static void tmmjprd_do_blit(running_machine &machine)
 				{
 					writeoffs=blt_oddflg+blt_column;
 					state->m_tilemap_ram[blt_tilemp][writeoffs]=(state->m_tilemap_ram[blt_tilemp][writeoffs]&mask)|(blt_value<<shift);
-					tilemap_mark_tile_dirty(tmmjprd_tilemap[blt_tilemp],writeoffs);
+					tmmjprd_tilemap[blt_tilemp]->mark_tile_dirty(writeoffs);
 					blt_column++;
 					blt_column&=0x7f;
 				}
@@ -749,7 +752,7 @@ static MACHINE_CONFIG_START( tmmjprd, tmmjprd_state )
 //  MCFG_SCREEN_ADD("screen", RASTER)
 //  MCFG_SCREEN_REFRESH_RATE(60)
 //  MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-//  MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
+//  MCFG_SCREEN_UPDATE_DRIVER(tmmjprd_state, screen_update)
 //  MCFG_SCREEN_SIZE(64*16, 64*16)
 //  MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 28*8-1)
 	MCFG_PALETTE_LENGTH(0x1000)
@@ -758,22 +761,20 @@ static MACHINE_CONFIG_START( tmmjprd, tmmjprd_state )
 	MCFG_DEFAULT_LAYOUT(layout_dualhsxs)
 
 	MCFG_SCREEN_ADD("lscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(64*16, 64*16)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 28*8-1)
 	//MCFG_SCREEN_VISIBLE_AREA(0*8, 64*16-1, 0*8, 64*16-1)
-	MCFG_SCREEN_UPDATE(tmmjprd)
+	MCFG_SCREEN_UPDATE_STATIC(tmmjprd_left)
 
 	MCFG_SCREEN_ADD("rscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(64*16, 64*16)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 28*8-1)
 	//MCFG_SCREEN_VISIBLE_AREA(0*8, 64*16-1, 0*8, 64*16-1)
-	MCFG_SCREEN_UPDATE(tmmjprd)
+	MCFG_SCREEN_UPDATE_STATIC(tmmjprd_right)
 
 	MCFG_VIDEO_START(tmmjprd)
 MACHINE_CONFIG_END

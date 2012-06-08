@@ -73,7 +73,6 @@ TODO:
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "includes/dynax.h"
 #include "cpu/tlcs90/tlcs90.h"
 #include "machine/msm6242.h"
@@ -360,7 +359,9 @@ static WRITE8_HANDLER( yarunara_palette_w )
 
 		case 0x1c:	// RTC
 		{
-			msm6242_w(state->m_rtc, offset, data);
+			msm6242_device *rtc = space->machine().device<msm6242_device>("rtc");
+
+			rtc->write(*space, offset,data);
 		}
 		return;
 
@@ -766,10 +767,15 @@ static READ8_HANDLER( yarunara_input_r )
 
 static WRITE8_HANDLER( yarunara_rombank_w )
 {
-	dynax_state *state = space->machine().driver_data<dynax_state>();
-	memory_set_bank(space->machine(), "bank1", data);
+       dynax_state *state = space->machine().driver_data<dynax_state>();
+       int bank_n = (space->machine().region("maincpu")->bytes() - 0x10000) / 0x8000;
 
-	state->m_hnoridur_bank = data;
+       //logerror("%04x: rom bank = %02x\n", cpu_get_pc(&space->device()), data);
+       if (data < bank_n)
+               memory_set_bank(space->machine(), "bank1", data);
+       else
+               logerror("rom_bank = %02x (larger than the maximum bank %02x)\n",data, bank_n);
+       state->m_hnoridur_bank = data;
 }
 
 static WRITE8_HANDLER( yarunara_flipscreen_w )
@@ -1246,7 +1252,7 @@ static ADDRESS_MAP_START( htengoku_io_map, AS_IO, 8 )
 	AM_RANGE( 0x42, 0x42 ) AM_DEVREAD("aysnd", ay8910_r)		//
 	AM_RANGE( 0x44, 0x44 ) AM_DEVWRITE("aysnd", ay8910_data_w)	//
 	AM_RANGE( 0x46, 0x47 ) AM_DEVWRITE("ymsnd", ym2413_w)		//
-	AM_RANGE( 0x80, 0x8f ) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE( 0x80, 0x8f ) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE( 0xa0, 0xa3 ) AM_WRITE(ddenlovr_palette_base_w)	// ddenlovr mixer chip
 	AM_RANGE( 0xa4, 0xa7 ) AM_WRITE(ddenlovr_palette_mask_w)
 	AM_RANGE( 0xa8, 0xab ) AM_WRITE(ddenlovr_transparency_pen_w)
@@ -1470,7 +1476,11 @@ static READ8_HANDLER( tenkai_8000_r )
 	if (state->m_rombank < 0x10)
 		return state->m_romptr[offset];
 	else if ((state->m_rombank == 0x10) && (offset < 0x10))
-		return msm6242_r(state->m_rtc, offset);
+	{
+		msm6242_device *rtc = space->machine().device<msm6242_device>("rtc");
+
+		return rtc->read(*space, offset);
+	}
 	else if (state->m_rombank == 0x12)
 		return tenkai_palette_r(space, offset);
 
@@ -1484,7 +1494,9 @@ static WRITE8_HANDLER( tenkai_8000_w )
 
 	if ((state->m_rombank == 0x10) && (offset < 0x10))
 	{
-		msm6242_w(state->m_rtc, offset, data);
+		msm6242_device *rtc = space->machine().device<msm6242_device>("rtc");
+
+		rtc->write(*space, offset, data);
 		return;
 	}
 	else if (state->m_rombank == 0x12)
@@ -4351,10 +4363,9 @@ static MACHINE_CONFIG_START( hanamai, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1-4, 16+8, 255-8)
-	MCFG_SCREEN_UPDATE(hanamai)
+	MCFG_SCREEN_UPDATE_STATIC(hanamai)
 
 	MCFG_PALETTE_LENGTH(512)
 
@@ -4409,10 +4420,9 @@ static MACHINE_CONFIG_START( hnoridur, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(512, 256)
+	MCFG_SCREEN_SIZE(512, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1-4, 16, 256-1)
-	MCFG_SCREEN_UPDATE(hnoridur)
+	MCFG_SCREEN_UPDATE_STATIC(hnoridur)
 
 	MCFG_PALETTE_LENGTH(16*256)
 
@@ -4455,10 +4465,9 @@ static MACHINE_CONFIG_START( hjingi, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1-4, 16, 256-1)
-	MCFG_SCREEN_UPDATE(hnoridur)
+	MCFG_SCREEN_UPDATE_STATIC(hnoridur)
 
 	MCFG_PALETTE_LENGTH(16*256)
 
@@ -4514,10 +4523,9 @@ static MACHINE_CONFIG_START( sprtmtch, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(sprtmtch)
+	MCFG_SCREEN_UPDATE_STATIC(sprtmtch)
 
 	MCFG_PALETTE_LENGTH(512)
 
@@ -4557,10 +4565,9 @@ static MACHINE_CONFIG_START( mjfriday, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(mjdialq2)
+	MCFG_SCREEN_UPDATE_STATIC(mjdialq2)
 
 	MCFG_PALETTE_LENGTH(512)
 
@@ -4608,6 +4615,11 @@ static INTERRUPT_GEN( yarunara_clock_interrupt )
 	sprtmtch_update_irq(device->machine());
 }
 
+static MSM6242_INTERFACE( yarunara_rtc_intf )
+{
+	DEVCB_NULL
+};
+
 static MACHINE_CONFIG_DERIVED( yarunara, hnoridur )
 
 	/* basic machine hardware */
@@ -4619,11 +4631,10 @@ static MACHINE_CONFIG_DERIVED( yarunara, hnoridur )
 	MCFG_NVRAM_REPLACE_0FILL("nvram")
 
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 8, 256-1-8-1)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", yarunara_rtc_intf)
 MACHINE_CONFIG_END
 
 
@@ -4688,6 +4699,12 @@ static MACHINE_START( jantouki )
 	MACHINE_START_CALL(dynax);
 }
 
+static MSM6242_INTERFACE( jantouki_rtc_intf )
+{
+	DEVCB_NULL
+};
+
+
 static MACHINE_CONFIG_START( jantouki, dynax_state )
 
 	/* basic machine hardware */
@@ -4711,20 +4728,18 @@ static MACHINE_CONFIG_START( jantouki, dynax_state )
 	MCFG_DEFAULT_LAYOUT(layout_dualhuov)
 
 	MCFG_SCREEN_ADD("top", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(jantouki)
+	MCFG_SCREEN_UPDATE_STATIC(jantouki_top)
 
 	MCFG_SCREEN_ADD("bottom", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(jantouki)
+	MCFG_SCREEN_UPDATE_STATIC(jantouki_bottom)
 
 	MCFG_PALETTE_INIT(sprtmtch)			// static palette
 	MCFG_VIDEO_START(jantouki)
@@ -4747,7 +4762,7 @@ static MACHINE_CONFIG_START( jantouki, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", jantouki_rtc_intf)
 MACHINE_CONFIG_END
 
 
@@ -4800,24 +4815,24 @@ void neruton_update_irq( running_machine &machine )
 	device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0x42);
 }
 
-static INTERRUPT_GEN( neruton_vblank_interrupt )
+static TIMER_DEVICE_CALLBACK( neruton_irq_scanline )
 {
-	dynax_state *state = device->machine().driver_data<dynax_state>();
+	dynax_state *state = timer.machine().driver_data<dynax_state>();
+	int scanline = param;
 
 	// This is a kludge to avoid losing blitter interrupts
 	// there should be a vblank ack mechanism
 	if (state->m_blitter_irq)	return;
 
-	switch (cpu_getiloops(device))
-	{
-		case 0:  device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x40);	break;
-		default: device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x46);	break;
-	}
+	if(scanline == 256)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0x40);
+	else if((scanline % 32) == 0)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0x46);
 }
 
 static MACHINE_CONFIG_DERIVED( neruton, mjelctrn )
 	MCFG_CPU_MODIFY("maincpu")
-	MCFG_CPU_VBLANK_INT_HACK(neruton_vblank_interrupt,1+10)	/* IM 2 needs a vector on the data bus */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", neruton_irq_scanline, "screen", 0, 1)
 
 	MCFG_VIDEO_START(neruton)
 MACHINE_CONFIG_END
@@ -4829,21 +4844,25 @@ MACHINE_CONFIG_END
 /*  It runs in IM 2, thus needs a vector on the data bus:
     0x42 and 0x44 are very similar, they should be triggered by the blitter
     0x40 is vblank  */
-static INTERRUPT_GEN( majxtal7_vblank_interrupt )
+
+static TIMER_DEVICE_CALLBACK( majxtal7_vblank_interrupt )
 {
-	dynax_state *state = device->machine().driver_data<dynax_state>();
+	dynax_state *state = timer.machine().driver_data<dynax_state>();
+	int scanline = param;
 
 	// This is a kludge to avoid losing blitter interrupts
 	// there should be a vblank ack mechanism
 	if (state->m_blitter_irq)	return;
 
-	device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x40);
+	if(scanline == 256)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0x40);
+	else if((scanline % 32) == 0)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0x44); // temp kludge
 }
 
 static MACHINE_CONFIG_DERIVED( majxtal7, neruton )
-	MCFG_CPU_MODIFY("maincpu")
-	MCFG_CPU_VBLANK_INT("screen", majxtal7_vblank_interrupt)	/* IM 2 needs a vector on the data bus */
-
+	MCFG_TIMER_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(majxtal7_vblank_interrupt)
 MACHINE_CONFIG_END
 
 
@@ -4859,6 +4878,12 @@ static const ay8910_interface htengoku_ay8910_interface =
 	DEVCB_HANDLER(htengoku_dsw_r),	DEVCB_NULL,							// R
 	DEVCB_NULL,						DEVCB_HANDLER(htengoku_dsw_w)		// W
 };
+
+static MSM6242_INTERFACE( htengoku_rtc_intf )
+{
+	DEVCB_NULL
+};
+
 
 static MACHINE_CONFIG_START( htengoku, dynax_state )
 
@@ -4878,10 +4903,9 @@ static MACHINE_CONFIG_START( htengoku, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 0+8, 256-1-8)
-	MCFG_SCREEN_UPDATE(htengoku)
+	MCFG_SCREEN_UPDATE_STATIC(htengoku)
 
 	MCFG_PALETTE_LENGTH(16*256)
 
@@ -4899,7 +4923,7 @@ static MACHINE_CONFIG_START( htengoku, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", htengoku_rtc_intf)
 MACHINE_CONFIG_END
 
 
@@ -4907,14 +4931,16 @@ MACHINE_CONFIG_END
                                Mahjong Tenkaigen
 ***************************************************************************/
 
-static INTERRUPT_GEN( tenkai_interrupt )
+static TIMER_DEVICE_CALLBACK( tenkai_interrupt )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0: device_set_input_line(device, INPUT_LINE_IRQ0, HOLD_LINE);	break;
-		case 1: device_set_input_line(device, INPUT_LINE_IRQ1, HOLD_LINE);	break;
-		case 2: device_set_input_line(device, INPUT_LINE_IRQ2, HOLD_LINE);	break;
-	}
+	dynax_state *state = timer.machine().driver_data<dynax_state>();
+	int scanline = param;
+
+	if(scanline == 256)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_IRQ0, HOLD_LINE);
+
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_IRQ1, HOLD_LINE);
 }
 
 static const ay8910_interface tenkai_ay8910_interface =
@@ -4933,13 +4959,25 @@ static MACHINE_START( tenkai )
 	machine.save().register_postload(save_prepost_delegate(FUNC(tenkai_update_rombank), &machine));
 }
 
+static WRITE_LINE_DEVICE_HANDLER(tenkai_rtc_irq)
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	device_set_input_line(drvstate->m_maincpu, INPUT_LINE_IRQ2, HOLD_LINE);
+}
+
+static MSM6242_INTERFACE( tenkai_rtc_intf )
+{
+	DEVCB_LINE(tenkai_rtc_irq)
+};
+
 static MACHINE_CONFIG_START( tenkai, dynax_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu",TMP91640, 21472700 / 2)
 	MCFG_CPU_PROGRAM_MAP(tenkai_map)
 	MCFG_CPU_IO_MAP(tenkai_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(tenkai_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", tenkai_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_START(tenkai)
 	MCFG_MACHINE_RESET(dynax)
@@ -4950,10 +4988,9 @@ static MACHINE_CONFIG_START( tenkai, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(512, 256)
+	MCFG_SCREEN_SIZE(512, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(4, 512-1, 4, 255-8-4)	// hide first 4 horizontal pixels (see scroll of gal 4 in test mode)
-	MCFG_SCREEN_UPDATE(hnoridur)
+	MCFG_SCREEN_UPDATE_STATIC(hnoridur)
 
 	MCFG_PALETTE_LENGTH(16*256)
 
@@ -4970,7 +5007,7 @@ static MACHINE_CONFIG_START( tenkai, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", tenkai_rtc_intf)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( majrjhdx, tenkai )
@@ -5020,10 +5057,9 @@ static MACHINE_CONFIG_START( gekisha, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(2, 256-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(mjdialq2)
+	MCFG_SCREEN_UPDATE_STATIC(mjdialq2)
 
 	MCFG_PALETTE_LENGTH(512)
 	MCFG_PALETTE_INIT(sprtmtch)			// static palette

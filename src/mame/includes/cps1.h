@@ -93,7 +93,6 @@ public:
 	int          m_scanline1;
 	int          m_scanline2;
 	int          m_scancalls;
-	int          m_scancount;
 
 	int          m_scroll1x;
 	int          m_scroll1y;
@@ -132,8 +131,7 @@ public:
 	int          m_palette_align;
 	int          m_palette_size;
 	int          m_stars_rom_size;
-	UINT8        m_empty_tile8x8[8*8];
-	UINT8        m_empty_tile[32*32/2];
+	UINT8        m_empty_tile[32*32];
 	int          m_cps_version;
 
 	/* devices */
@@ -175,8 +173,8 @@ WRITE16_HANDLER( cps2_objram2_w );
 
 VIDEO_START( cps1 );
 VIDEO_START( cps2 );
-SCREEN_UPDATE( cps1 );
-SCREEN_EOF( cps1 );
+SCREEN_UPDATE_IND16( cps1 );
+SCREEN_VBLANK( cps1 );
 
 void cps1_get_video_base(running_machine &machine);
 void cps2_set_sprite_priorities(running_machine &machine);

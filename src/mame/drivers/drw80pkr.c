@@ -134,7 +134,7 @@ static WRITE8_HANDLER( drw80pkr_io_w )
 			state->m_video_ram[n_offs] += ((data & 0xf0) << 4 ); // high address
 		}
 
-		tilemap_mark_tile_dirty(state->m_bg_tilemap, n_offs);
+		state->m_bg_tilemap->mark_tile_dirty(n_offs);
 	}
 
 	if (state->m_p2 == 0xc7)
@@ -337,10 +337,10 @@ static VIDEO_START( drw80pkr )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 24, 27);
 }
 
-static SCREEN_UPDATE( drw80pkr )
+static SCREEN_UPDATE_IND16( drw80pkr )
 {
-	drw80pkr_state *state = screen->machine().driver_data<drw80pkr_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	drw80pkr_state *state = screen.machine().driver_data<drw80pkr_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -473,10 +473,9 @@ static MACHINE_CONFIG_START( drw80pkr, drw80pkr_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((31+1)*8, (31+1)*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 24*8-1, 0*8, 27*8-1)
-	MCFG_SCREEN_UPDATE(drw80pkr)
+	MCFG_SCREEN_UPDATE_STATIC(drw80pkr)
 
 	MCFG_GFXDECODE(drw80pkr)
 	MCFG_PALETTE_LENGTH(16*16)

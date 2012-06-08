@@ -141,7 +141,7 @@ Note: press Z to show some info on each sprite (debug builds only)
 #endif
 
 
-static void ssv_drawgfx(	bitmap_t *bitmap, const rectangle *cliprect, const gfx_element *gfx,
+static void ssv_drawgfx(	bitmap_ind16 &bitmap, const rectangle &cliprect, const gfx_element *gfx,
 					UINT32 code,UINT32 color,int flipx,int flipy,int x0,int y0,
 					int shadow )
 {
@@ -164,16 +164,16 @@ static void ssv_drawgfx(	bitmap_t *bitmap, const rectangle *cliprect, const gfx_
 #define SSV_DRAWGFX(SETPIXELCOLOR)												\
 	for ( sy = y0; sy != y1; sy += dy )											\
 	{																			\
-		if ( sy >= cliprect->min_y && sy <= cliprect->max_y )					\
+		if ( sy >= cliprect.min_y && sy <= cliprect.max_y )					\
 		{																		\
 			source	=	addr;													\
-			dest	=	BITMAP_ADDR16(bitmap, sy, 0);							\
+			dest	=	&bitmap.pix16(sy);							\
 																				\
 			for ( sx = x0; sx != x1; sx += dx )									\
 			{																	\
 				pen = *source++;												\
 																				\
-				if ( pen && sx >= cliprect->min_x && sx <= cliprect->max_x )	\
+				if ( pen && sx >= cliprect.min_x && sx <= cliprect.max_x )	\
 					SETPIXELCOLOR												\
 			}																	\
 		}																		\
@@ -221,7 +221,7 @@ WRITE16_HANDLER( gdfs_tmapram_w )
 	ssv_state *state = space->machine().driver_data<ssv_state>();
 
 	COMBINE_DATA(&state->m_gdfs_tmapram[offset]);
-	tilemap_mark_tile_dirty(state->m_gdfs_tmap, offset);
+	state->m_gdfs_tmap->mark_tile_dirty(offset);
 }
 
 VIDEO_START( gdfs )
@@ -238,7 +238,7 @@ VIDEO_START( gdfs )
 	state->m_gdfs_tmap			=	tilemap_create(	machine, get_tile_info_0, tilemap_scan_rows,
 											 16,16, 0x100,0x100	);
 
-	tilemap_set_transparent_pen(state->m_gdfs_tmap, 0);
+	state->m_gdfs_tmap->set_transparent_pen(0);
 }
 
 /***************************************************************************
@@ -606,7 +606,7 @@ From the above some noteworthy cases are:
 
 /* Draw a tilemap sprite */
 
-static void draw_row(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int sx, int sy, int scroll)
+static void draw_row(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int sx, int sy, int scroll)
 {
 	ssv_state *state = machine.driver_data<ssv_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -628,24 +628,21 @@ static void draw_row(running_machine &machine, bitmap_t *bitmap, const rectangle
 
 	/* Set up a clipping region for the tilemap slice .. */
 
-	clip.min_x = sx;
-	clip.max_x = sx + xnum * 0x10 - 1;
-	clip.min_y = sy;
-	clip.max_y = sy + ynum * 0x8  - 1;
+	clip.set(sx, sx + xnum * 0x10 - 1, sy, sy + ynum * 0x8  - 1);
 
 	/* .. and clip it against the visible screen */
 
-	if (clip.min_x > cliprect->max_x)	return;
-	if (clip.min_y > cliprect->max_y)	return;
+	if (clip.min_x > cliprect.max_x)	return;
+	if (clip.min_y > cliprect.max_y)	return;
 
-	if (clip.max_x < cliprect->min_x)	return;
-	if (clip.max_y < cliprect->min_y)	return;
+	if (clip.max_x < cliprect.min_x)	return;
+	if (clip.max_y < cliprect.min_y)	return;
 
-	if (clip.min_x < cliprect->min_x)	clip.min_x = cliprect->min_x;
-	if (clip.max_x > cliprect->max_x)	clip.max_x = cliprect->max_x;
+	if (clip.min_x < cliprect.min_x)	clip.min_x = cliprect.min_x;
+	if (clip.max_x > cliprect.max_x)	clip.max_x = cliprect.max_x;
 
-	if (clip.min_y < cliprect->min_y)	clip.min_y = cliprect->min_y;
-	if (clip.max_y > cliprect->max_y)	clip.max_y = cliprect->max_y;
+	if (clip.min_y < cliprect.min_y)	clip.min_y = cliprect.min_y;
+	if (clip.max_y > cliprect.max_y)	clip.max_y = cliprect.max_y;
 
 	/* Get the scroll data */
 	x    = ssv_scroll[ scroll * 4 + 0 ];	// x scroll
@@ -725,7 +722,7 @@ static void draw_row(running_machine &machine, bitmap_t *bitmap, const rectangle
 			{
 				for (ty = ystart; ty != yend; ty += yinc)
 				{
-					ssv_drawgfx( bitmap, &clip, machine.gfx[gfx],
+					ssv_drawgfx( bitmap, clip, machine.gfx[gfx],
 											code++,
 											color,
 											flipx, flipy,
@@ -741,7 +738,7 @@ static void draw_row(running_machine &machine, bitmap_t *bitmap, const rectangle
 
 /* Draw the "background layer" using multiple tilemap sprites */
 
-static void draw_layer(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int  nr)
+static void draw_layer(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int  nr)
 {
 	int sy;
 	for ( sy = 0; sy <= machine.primary_screen->visible_area().max_y; sy += 0x40 )
@@ -750,7 +747,7 @@ static void draw_layer(running_machine &machine, bitmap_t *bitmap, const rectang
 
 /* Draw sprites in the sprites list */
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	/* Sprites list */
 	ssv_state *state = machine.driver_data<ssv_state>();
@@ -984,9 +981,9 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 
 ***************************************************************************/
 
-SCREEN_UPDATE( eaglshot )
+SCREEN_UPDATE_IND16( eaglshot )
 {
-	return SCREEN_UPDATE_CALL(ssv);
+	return SCREEN_UPDATE16_CALL(ssv);
 }
 
 /*
@@ -1042,7 +1039,7 @@ SCREEN_UPDATE( eaglshot )
         E.h                             Unused
 
 */
-static void gdfs_draw_zooming_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int priority)
+static void gdfs_draw_zooming_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int priority)
 {
 	/* Sprites list */
 
@@ -1165,19 +1162,19 @@ static void gdfs_draw_zooming_sprites(running_machine &machine, bitmap_t *bitmap
 	}	/* sprites list */
 }
 
-SCREEN_UPDATE( gdfs )
+SCREEN_UPDATE_IND16( gdfs )
 {
-	ssv_state *state = screen->machine().driver_data<ssv_state>();
+	ssv_state *state = screen.machine().driver_data<ssv_state>();
 	int pri;
 
-	SCREEN_UPDATE_CALL(ssv);
+	SCREEN_UPDATE16_CALL(ssv);
 
 	for (pri = 0; pri <= 0xf; pri++)
-		gdfs_draw_zooming_sprites(screen->machine(), bitmap, cliprect, pri);
+		gdfs_draw_zooming_sprites(screen.machine(), bitmap, cliprect, pri);
 
-	tilemap_set_scrollx(state->m_gdfs_tmap, 0, state->m_gdfs_tmapscroll[0x0c/2]);
-	tilemap_set_scrolly(state->m_gdfs_tmap, 0, state->m_gdfs_tmapscroll[0x10/2]);
-	tilemap_draw(bitmap,cliprect, state->m_gdfs_tmap, 0, 0);
+	state->m_gdfs_tmap->set_scrollx(0, state->m_gdfs_tmapscroll[0x0c/2]);
+	state->m_gdfs_tmap->set_scrolly(0, state->m_gdfs_tmapscroll[0x10/2]);
+	state->m_gdfs_tmap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -1189,11 +1186,11 @@ void ssv_enable_video(running_machine &machine, int enable)
 	state->m_enable_video = enable;
 }
 
-SCREEN_UPDATE( ssv )
+SCREEN_UPDATE_IND16( ssv )
 {
-	rectangle clip = { 0, 0, 0, 0 };
+	rectangle clip;
 
-	ssv_state *state = screen->machine().driver_data<ssv_state>();
+	ssv_state *state = screen.machine().driver_data<ssv_state>();
 
 	// Shadow
 	if (state->m_scroll[0x76/2] & 0x0080)
@@ -1209,20 +1206,20 @@ SCREEN_UPDATE( ssv )
 	state->m_shadow_pen_mask = (1 << state->m_shadow_pen_shift) - 1;
 
 	/* The background color is the first one in the palette */
-	bitmap_fill(bitmap,cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	// used by twineag2 and ultrax
-	clip.min_x = (cliprect->max_x / 2 + state->m_scroll[0x62/2]) * 2 - state->m_scroll[0x64/2] * 2 + 2;
-	clip.max_x = (cliprect->max_x / 2 + state->m_scroll[0x62/2]) * 2 - state->m_scroll[0x62/2] * 2 + 1;
-	clip.min_y = (cliprect->max_y     + state->m_scroll[0x6a/2])     - state->m_scroll[0x6c/2]     + 1;
-	clip.max_y = (cliprect->max_y     + state->m_scroll[0x6a/2])     - state->m_scroll[0x6a/2]        ;
+	clip.min_x = (cliprect.max_x / 2 + state->m_scroll[0x62/2]) * 2 - state->m_scroll[0x64/2] * 2 + 2;
+	clip.max_x = (cliprect.max_x / 2 + state->m_scroll[0x62/2]) * 2 - state->m_scroll[0x62/2] * 2 + 1;
+	clip.min_y = (cliprect.max_y     + state->m_scroll[0x6a/2])     - state->m_scroll[0x6c/2]     + 1;
+	clip.max_y = (cliprect.max_y     + state->m_scroll[0x6a/2])     - state->m_scroll[0x6a/2]        ;
 
 //  printf("%04x %04x %04x %04x\n",clip.min_x, clip.max_x, clip.min_y, clip.max_y);
 
 	if (clip.min_x < 0) clip.min_x = 0;
 	if (clip.min_y < 0) clip.min_y = 0;
-	if (clip.max_x > cliprect->max_x) clip.max_x = cliprect->max_x;
-	if (clip.max_y > cliprect->max_y) clip.max_y = cliprect->max_y;
+	if (clip.max_x > cliprect.max_x) clip.max_x = cliprect.max_x;
+	if (clip.max_y > cliprect.max_y) clip.max_y = cliprect.max_y;
 
 	if (clip.min_x > clip.max_x)
 		clip.min_x = clip.max_x;
@@ -1232,9 +1229,9 @@ SCREEN_UPDATE( ssv )
 	if (!state->m_enable_video)
 		return 0;
 
-	draw_layer(screen->machine(), bitmap, &clip, 0);	// "background layer"
+	draw_layer(screen.machine(), bitmap, clip, 0);	// "background layer"
 
-	draw_sprites(screen->machine(), bitmap, &clip);	// sprites list
+	draw_sprites(screen.machine(), bitmap, clip);	// sprites list
 
 
 	return 0;

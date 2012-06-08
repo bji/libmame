@@ -104,6 +104,7 @@ static READ16_HANDLER( m107_sound_status_r )
 
 static READ16_HANDLER( m107_soundlatch_r )
 {
+	cputag_set_input_line(space->machine(), "soundcpu", NEC_INPUT_LINE_INTP1, CLEAR_LINE);
 	return soundlatch_r(space, offset) | 0xff00;
 }
 
@@ -788,10 +789,9 @@ static MACHINE_CONFIG_START( firebarr, m107_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(80, 511-112, 8, 247) /* 320 x 240 */
-	MCFG_SCREEN_UPDATE(m107)
+	MCFG_SCREEN_UPDATE_STATIC(m107)
 
 	MCFG_GFXDECODE(firebarr)
 	MCFG_PALETTE_LENGTH(2048)

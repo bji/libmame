@@ -203,44 +203,27 @@ static VIDEO_START( cybertnk )
 {
 	cybertnk_state *state = machine.driver_data<cybertnk_state>();
 	state->m_tx_tilemap = tilemap_create(machine, get_tx_tile_info,tilemap_scan_rows,8,8,128,32);
-	tilemap_set_transparent_pen(state->m_tx_tilemap,0);
+	state->m_tx_tilemap->set_transparent_pen(0);
 }
 
-static void draw_pixel( bitmap_t* bitmap, const rectangle *cliprect, int y, int x, int pen)
+static void draw_pixel( bitmap_ind16 &bitmap, const rectangle &cliprect, int y, int x, int pen)
 {
-	if (x>cliprect->max_x) return;
-	if (x<cliprect->min_x) return;
-	if (y>cliprect->max_y) return;
-	if (y<cliprect->min_y) return;
-
-	*BITMAP_ADDR16(bitmap, y, x) = pen;
+	if (cliprect.contains(x, y))
+		bitmap.pix16(y, x) = pen;
 }
 
-static SCREEN_UPDATE( cybertnk )
+static UINT32 update_screen(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, int screen_shift)
 {
-	cybertnk_state *state = screen->machine().driver_data<cybertnk_state>();
-	device_t *left_screen  = screen->machine().device("lscreen");
-	device_t *right_screen = screen->machine().device("rscreen");
-	int screen_shift = 0;
+	cybertnk_state *state = screen.machine().driver_data<cybertnk_state>();
 
-	if (screen==left_screen)
-	{
-		screen_shift = 0;
-
-	}
-	else if (screen==right_screen)
-	{
-		screen_shift = -256;
-	}
-
-	tilemap_set_scrolldx(state->m_tx_tilemap, screen_shift, screen_shift);
+	state->m_tx_tilemap->set_scrolldx(screen_shift, screen_shift);
 
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	{
 		int i;
-		const gfx_element *gfx = screen->machine().gfx[3];
+		const gfx_element *gfx = screen.machine().gfx[3];
 
 
 		for (i=0;i<0x1000/4;i+=4)
@@ -258,7 +241,7 @@ static SCREEN_UPDATE( cybertnk )
 
 	{
 		int count,x,y;
-		const gfx_element *gfx = screen->machine().gfx[2];
+		const gfx_element *gfx = screen.machine().gfx[2];
 
 		count = 0;
 
@@ -279,7 +262,7 @@ static SCREEN_UPDATE( cybertnk )
 
 	{
 		int count,x,y;
-		const gfx_element *gfx = screen->machine().gfx[1];
+		const gfx_element *gfx = screen.machine().gfx[1];
 
 		count = 0;
 
@@ -301,7 +284,7 @@ static SCREEN_UPDATE( cybertnk )
 	/* non-tile based spriteram (BARE-BONES, looks pretty complex) */
 	if(1)
 	{
-		const UINT8 *blit_ram = screen->machine().region("spr_gfx")->base();
+		const UINT8 *blit_ram = screen.machine().region("spr_gfx")->base();
 		int offs,x,y,z,xsize,ysize,yi,xi,col_bank,fx,zoom;
 		UINT32 spr_offs,spr_offs_helper;
 		int xf,yf,xz,yz;
@@ -354,11 +337,11 @@ static SCREEN_UPDATE( cybertnk )
 							dot|= col_bank<<4;
 							if(fx)
 							{
-								draw_pixel(bitmap, cliprect, y+yz, x+xsize-(xz)+screen_shift, screen->machine().pens[dot]);
+								draw_pixel(bitmap, cliprect, y+yz, x+xsize-(xz)+screen_shift, screen.machine().pens[dot]);
 							}
 							else
 							{
-								draw_pixel(bitmap, cliprect, y+yz, x+xz+screen_shift, screen->machine().pens[dot]);
+								draw_pixel(bitmap, cliprect, y+yz, x+xz+screen_shift, screen.machine().pens[dot]);
 							}
 						}
 						xf+=zoom;
@@ -386,11 +369,11 @@ static SCREEN_UPDATE( cybertnk )
 							dot|= col_bank<<4;
 							if(fx)
 							{
-								draw_pixel(bitmap, cliprect, y+yz, x+xsize-(xz)+screen_shift, screen->machine().pens[dot]);
+								draw_pixel(bitmap, cliprect, y+yz, x+xsize-(xz)+screen_shift, screen.machine().pens[dot]);
 							}
 							else
 							{
-								draw_pixel(bitmap, cliprect, y+yz, x+xz+screen_shift, screen->machine().pens[dot]);
+								draw_pixel(bitmap, cliprect, y+yz, x+xz+screen_shift, screen.machine().pens[dot]);
 							}
 						}
 						xf+=zoom;
@@ -422,58 +405,58 @@ static SCREEN_UPDATE( cybertnk )
 		}
 	}
 
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 
 
 //0x62 0x9a 1c2d0
 //0x62 0x9a 1e1e4
 //0x20 0x9c 2011c
-	if (screen==left_screen)
+	if (screen_shift == 0)
 	{
 		if(0) //sprite gfx debug viewer
 		{
 			int x,y,count;
-			const UINT8 *blit_ram = screen->machine().region("spr_gfx")->base();
+			const UINT8 *blit_ram = screen.machine().region("spr_gfx")->base();
 
-			if(screen->machine().input().code_pressed(KEYCODE_Z))
+			if(screen.machine().input().code_pressed(KEYCODE_Z))
 			state->m_test_x++;
 
-			if(screen->machine().input().code_pressed(KEYCODE_X))
+			if(screen.machine().input().code_pressed(KEYCODE_X))
 			state->m_test_x--;
 
-			if(screen->machine().input().code_pressed(KEYCODE_A))
+			if(screen.machine().input().code_pressed(KEYCODE_A))
 			state->m_test_y++;
 
-			if(screen->machine().input().code_pressed(KEYCODE_S))
+			if(screen.machine().input().code_pressed(KEYCODE_S))
 			state->m_test_y--;
 
-			if(screen->machine().input().code_pressed(KEYCODE_Q))
+			if(screen.machine().input().code_pressed(KEYCODE_Q))
 			state->m_start_offs+=0x200;
 
-			if(screen->machine().input().code_pressed(KEYCODE_W))
+			if(screen.machine().input().code_pressed(KEYCODE_W))
 			state->m_start_offs-=0x200;
 
-			if(screen->machine().input().code_pressed_once(KEYCODE_T))
+			if(screen.machine().input().code_pressed_once(KEYCODE_T))
 			state->m_start_offs+=0x20000;
 
-			if(screen->machine().input().code_pressed_once(KEYCODE_Y))
+			if(screen.machine().input().code_pressed_once(KEYCODE_Y))
 			state->m_start_offs-=0x20000;
 
-			if(screen->machine().input().code_pressed(KEYCODE_E))
+			if(screen.machine().input().code_pressed(KEYCODE_E))
 			state->m_start_offs+=4;
 
-			if(screen->machine().input().code_pressed(KEYCODE_R))
+			if(screen.machine().input().code_pressed(KEYCODE_R))
 			state->m_start_offs-=4;
 
-			if(screen->machine().input().code_pressed(KEYCODE_D))
+			if(screen.machine().input().code_pressed(KEYCODE_D))
 			state->m_color_pen++;
 
-			if(screen->machine().input().code_pressed(KEYCODE_F))
+			if(screen.machine().input().code_pressed(KEYCODE_F))
 			state->m_color_pen--;
 
 			popmessage("%02x %02x %04x %02x",state->m_test_x,state->m_test_y,state->m_start_offs,state->m_color_pen);
 
-			bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+			bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 			count = (state->m_start_offs);
 
@@ -490,28 +473,28 @@ static SCREEN_UPDATE( cybertnk )
 					color|= ((blit_ram[count+3] & 0xff) << 0);
 
 					dot = (color & 0xf0000000) >> 28;
-					*BITMAP_ADDR16(bitmap, y, x+0) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+0) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x0f000000) >> 24;
-					*BITMAP_ADDR16(bitmap, y, x+4) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+4) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x00f00000) >> 20;
-					*BITMAP_ADDR16(bitmap, y, x+1) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+1) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x000f0000) >> 16;
-					*BITMAP_ADDR16(bitmap, y, x+5) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+5) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x0000f000) >> 12;
-					*BITMAP_ADDR16(bitmap, y, x+2) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+2) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x00000f00) >> 8;
-					*BITMAP_ADDR16(bitmap, y, x+6) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+6) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x000000f0) >> 4;
-					*BITMAP_ADDR16(bitmap, y, x+3) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+3) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					dot = (color & 0x0000000f) >> 0;
-					*BITMAP_ADDR16(bitmap, y, x+7) = screen->machine().pens[dot+(state->m_color_pen<<4)];
+					bitmap.pix16(y, x+7) = screen.machine().pens[dot+(state->m_color_pen<<4)];
 
 					count+=4;
 				}
@@ -523,12 +506,15 @@ static SCREEN_UPDATE( cybertnk )
 	return 0;
 }
 
+static SCREEN_UPDATE_IND16( cybertnk_left ) { return update_screen(screen, bitmap, cliprect, 0); }
+static SCREEN_UPDATE_IND16( cybertnk_right ) { return update_screen(screen, bitmap, cliprect, -256); }
+
 
 static WRITE16_HANDLER( tx_vram_w )
 {
 	cybertnk_state *state = space->machine().driver_data<cybertnk_state>();
 	COMBINE_DATA(&state->m_tx_vram[offset]);
-	tilemap_mark_tile_dirty(state->m_tx_tilemap,offset);
+	state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 static READ16_HANDLER( io_r )
@@ -853,7 +839,19 @@ static const gfx_layout tile_8x8x4 =
     8*8
 };
 
-static GFXLAYOUT_RAW( roadlayout, 4, 1024, 1, 1024*4, 1024*4 ) // could be wrong.. needs to be 512 wide, might not be 8bpp
+// could be wrong.. needs to be 512 wide, might not be 8bpp
+static const UINT32 xoffsets[] = { STEP1024(0,4) };
+static const gfx_layout roadlayout =
+{
+	1024,1,
+	RGN_FRAC(1,1),
+	4,
+	{ STEP4(0,1) },
+	EXTENDED_XOFFS,
+	{ 0 },
+	1024*4,
+	xoffsets
+};
 
 static GFXDECODE_START( cybertnk )
 	GFXDECODE_ENTRY( "gfx1", 0, tile_8x8x4,     0x1400, 16 ) /*Pal offset???*/
@@ -862,25 +860,6 @@ static GFXDECODE_START( cybertnk )
 	GFXDECODE_ENTRY( "road_data", 0, roadlayout,     0,      0x400 )
 GFXDECODE_END
 
-#if 0
-static INTERRUPT_GEN( master_irq )
-{
-	switch(cpu_getiloops(device))
-	{
-		case 0: device_set_input_line(device,1,HOLD_LINE); break;
-		case 1: device_set_input_line(device,3,HOLD_LINE); break;
-	}
-}
-
-static INTERRUPT_GEN( slave_irq )
-{
-	switch(cpu_getiloops(device))
-	{
-		case 0: device_set_input_line(device,3,HOLD_LINE); break;
-		case 1: device_set_input_line(device,1,HOLD_LINE); break;
-	}
-}
-#endif
 
 static const y8950_interface y8950_config = {
 	0 /* TODO */
@@ -904,20 +883,18 @@ static MACHINE_CONFIG_START( cybertnk, cybertnk_state )
 	MCFG_DEFAULT_LAYOUT(layout_dualhsxs)
 
 	MCFG_SCREEN_ADD("lscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(cybertnk)
+	MCFG_SCREEN_UPDATE_STATIC(cybertnk_left)
 
 	MCFG_SCREEN_ADD("rscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(cybertnk)
+	MCFG_SCREEN_UPDATE_STATIC(cybertnk_right)
 
 	MCFG_GFXDECODE(cybertnk)
 	MCFG_PALETTE_LENGTH(0x4000)

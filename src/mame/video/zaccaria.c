@@ -136,7 +136,7 @@ VIDEO_START( zaccaria )
 	zaccaria_state *state = machine.driver_data<zaccaria_state>();
 	state->m_bg_tilemap = tilemap_create(machine, get_tile_info,tilemap_scan_rows,8,8,32,32);
 
-	tilemap_set_scroll_cols(state->m_bg_tilemap,32);
+	state->m_bg_tilemap->set_scroll_cols(32);
 }
 
 
@@ -151,7 +151,7 @@ WRITE8_HANDLER( zaccaria_videoram_w )
 {
 	zaccaria_state *state = space->machine().driver_data<zaccaria_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset & 0x3ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 WRITE8_HANDLER( zaccaria_attributes_w )
@@ -164,11 +164,11 @@ WRITE8_HANDLER( zaccaria_attributes_w )
 			int i;
 
 			for (i = offset / 2;i < 0x400;i += 32)
-				tilemap_mark_tile_dirty(state->m_bg_tilemap,i);
+				state->m_bg_tilemap->mark_tile_dirty(i);
 		}
 	}
 	else
-		tilemap_set_scrolly(state->m_bg_tilemap,offset / 2,data);
+		state->m_bg_tilemap->set_scrolly(offset / 2,data);
 
 	state->m_attributesram[offset] = data;
 }
@@ -206,7 +206,7 @@ WRITE8_HANDLER( zaccaria_flip_screen_y_w )
 offsets 1 and 2 are swapped if accessed from spriteram2
 
 */
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect,UINT8 *spriteram,int color,int section)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect,UINT8 *spriteram,int color,int section)
 {
 	int offs,o1 = 1,o2 = 2;
 
@@ -243,16 +243,16 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 	}
 }
 
-SCREEN_UPDATE( zaccaria )
+SCREEN_UPDATE_IND16( zaccaria )
 {
-	zaccaria_state *state = screen->machine().driver_data<zaccaria_state>();
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
+	zaccaria_state *state = screen.machine().driver_data<zaccaria_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
 
 	// 3 layers of sprites, each with their own palette and priorities
 	// Not perfect yet, does spriteram(1) layer have a priority bit somewhere?
-	draw_sprites(screen->machine(),bitmap,cliprect,state->m_spriteram2,2,1);
-	draw_sprites(screen->machine(),bitmap,cliprect,state->m_spriteram,1,0);
-	draw_sprites(screen->machine(),bitmap,cliprect,state->m_spriteram2+0x20,0,1);
+	draw_sprites(screen.machine(),bitmap,cliprect,state->m_spriteram2,2,1);
+	draw_sprites(screen.machine(),bitmap,cliprect,state->m_spriteram,1,0);
+	draw_sprites(screen.machine(),bitmap,cliprect,state->m_spriteram2+0x20,0,1);
 
 	return 0;
 }

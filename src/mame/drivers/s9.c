@@ -1,6 +1,9 @@
 /*
     Williams System 9
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
@@ -8,18 +11,28 @@ class williams_s9_state : public driver_device
 {
 public:
 	williams_s9_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( williams_s9_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( williams_s9_map, AS_PROGRAM, 8, williams_s9_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( williams_s9 )
 INPUT_PORTS_END
 
-static MACHINE_RESET( williams_s9 )
+void williams_s9_state::machine_reset()
 {
 }
 
@@ -31,8 +44,6 @@ static MACHINE_CONFIG_START( williams_s9, williams_s9_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(williams_s9_map)
-
-	MCFG_MACHINE_RESET( williams_s9 )
 MACHINE_CONFIG_END
 
 /*--------------------
@@ -147,11 +158,11 @@ ROM_START(alcat_l7)
 	ROM_LOAD("acs_u22.bin", 0x8000, 0x8000, CRC(56c1011a) SHA1(c817a3410c643617f3643897b8f529ae78546b0d))
 ROM_END
 
-GAME(1985,	comet_l4,		comet_l5,	williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Comet (L-4)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1985,	comet_l5,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Comet (L-5)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1985,	sorcr_l1,		sorcr_l2,	williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Sorcerer (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1985,	sorcr_l2,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Sorcerer (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1984,	sshtl_l7,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Space Shuttle (L-7)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1985,	alcat_l7,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Alley Cats (Shuffle) (L-7)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1984,	szone_l5,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Strike Zone (Shuffle) (L-5)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1984,	szone_l2,		szone_l5,	williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Strike Zone (Shuffle) (L-2)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1985,	comet_l4,		comet_l5,	williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Comet (L-4)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1985,	comet_l5,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Comet (L-5)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1985,	sorcr_l1,		sorcr_l2,	williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Sorcerer (L-1)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1985,	sorcr_l2,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Sorcerer (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1984,	sshtl_l7,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Space Shuttle (L-7)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1985,	alcat_l7,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Alley Cats (Shuffle) (L-7)",	GAME_IS_SKELETON_MECHANICAL)
+GAME(1984,	szone_l5,		0,			williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Strike Zone (Shuffle) (L-5)",	GAME_IS_SKELETON_MECHANICAL)
+GAME(1984,	szone_l2,		szone_l5,	williams_s9,	williams_s9,	williams_s9,	ROT0,	"Williams",	"Strike Zone (Shuffle) (L-2)",	GAME_IS_SKELETON_MECHANICAL)

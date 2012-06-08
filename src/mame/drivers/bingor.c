@@ -457,12 +457,12 @@ static VIDEO_START(bingor)
 {
 }
 
-static SCREEN_UPDATE(bingor)
+static SCREEN_UPDATE_RGB32(bingor)
 {
-	bingor_state *state = screen->machine().driver_data<bingor_state>();
+	bingor_state *state = screen.machine().driver_data<bingor_state>();
 	int x,y,count;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	count = (0x2000/2);
 
@@ -474,23 +474,23 @@ static SCREEN_UPDATE(bingor)
 
 			color = (state->m_blit_ram[count] & 0xf000)>>12;
 
-			if((x+3)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x+3) = screen->machine().pens[color];
+			if(cliprect.contains(x+3, y))
+				bitmap.pix32(y, x+3) = screen.machine().pens[color];
 
 			color = (state->m_blit_ram[count] & 0x0f00)>>8;
 
-			if((x+2)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x+2) = screen->machine().pens[color];
+			if(cliprect.contains(x+2, y))
+				bitmap.pix32(y, x+2) = screen.machine().pens[color];
 
 			color = (state->m_blit_ram[count] & 0x00f0)>>4;
 
-			if((x+1)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x+1) = screen->machine().pens[color];
+			if(cliprect.contains(x+1, y))
+				bitmap.pix32(y, x+1) = screen.machine().pens[color];
 
 			color = (state->m_blit_ram[count] & 0x000f)>>0;
 
-			if((x+0)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x+0) = screen->machine().pens[color];
+			if(cliprect.contains(x+0, y))
+				bitmap.pix32(y, x+0) = screen.machine().pens[color];
 
 			count++;
 		}
@@ -629,10 +629,9 @@ static MACHINE_CONFIG_START( bingor, bingor_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(400, 300)
 	MCFG_SCREEN_VISIBLE_AREA(0, 400-1, 0, 300-1)
-	MCFG_SCREEN_UPDATE(bingor)
+	MCFG_SCREEN_UPDATE_STATIC(bingor)
 
 	MCFG_PALETTE_LENGTH(0x100)
 

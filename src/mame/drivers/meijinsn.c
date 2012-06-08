@@ -61,7 +61,6 @@ SOFT  PSG & VOICE  BY M.C & S.H
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "video/resnet.h"
 #include "sound/ay8910.h"
 
@@ -69,7 +68,9 @@ class meijinsn_state : public driver_device
 {
 public:
 	meijinsn_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	/* memory pointers */
 	UINT16 *   m_shared_ram;
@@ -86,6 +87,8 @@ public:
 	UINT8 m_credits;
 	UINT8 m_coinvalue;
 	int m_mcu_latch;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -222,7 +225,7 @@ static INPUT_PORTS_START( meijinsn )
 	PORT_DIPSETTING(    0x02, "10:00" )
 	PORT_DIPSETTING(    0x01, "20:00" )
 	PORT_DIPSETTING(    0x00, "0:30" )
-	PORT_DIPNAME( 0x08, 0x00, DEF_STR( Coinage ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Coinage ) )
 	PORT_DIPSETTING(    0x08, "A 1C/1C B 1C/5C" )
 	PORT_DIPSETTING(    0x00, "A 1C/2C B 2C/1C" )
 	PORT_DIPNAME( 0x10, 0x00, "2 Player" )
@@ -280,9 +283,9 @@ static PALETTE_INIT( meijinsn )
 }
 
 
-static SCREEN_UPDATE(meijinsn)
+static SCREEN_UPDATE_IND16(meijinsn)
 {
-	meijinsn_state *state = screen->machine().driver_data<meijinsn_state>();
+	meijinsn_state *state = screen.machine().driver_data<meijinsn_state>();
 	int offs;
 
 	for (offs = 0; offs < 0x4000; offs++)
@@ -299,19 +302,23 @@ static SCREEN_UPDATE(meijinsn)
 		{
 			color= BIT(data1, x) | (BIT(data1, x + 4) << 1);
 			data = BIT(data2, x) | (BIT(data2, x + 4) << 1);
-			*BITMAP_ADDR16(bitmap, sy, (sx * 4 + (3 - x))) = color * 4 + data;
+			bitmap.pix16(sy, (sx * 4 + (3 - x))) = color * 4 + data;
 		}
 	}
 	return 0;
 }
 
 
-static INTERRUPT_GEN( meijinsn_interrupt )
+static TIMER_DEVICE_CALLBACK( meijinsn_interrupt )
 {
-	if (cpu_getiloops(device) == 0)
-		device_set_input_line(device, 1, HOLD_LINE);
-	else
-		device_set_input_line(device, 2, HOLD_LINE);
+	meijinsn_state *state = timer.machine().driver_data<meijinsn_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
 }
 
 static const ay8910_interface ay8910_config =
@@ -345,7 +352,7 @@ static MACHINE_CONFIG_START( meijinsn, meijinsn_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 9000000 )
 	MCFG_CPU_PROGRAM_MAP(meijinsn_map)
-	MCFG_CPU_VBLANK_INT_HACK(meijinsn_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", meijinsn_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80, 4000000)
 	MCFG_CPU_PROGRAM_MAP(meijinsn_sound_map)
@@ -359,10 +366,9 @@ static MACHINE_CONFIG_START( meijinsn, meijinsn_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(12, 243, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(meijinsn)
+	MCFG_SCREEN_UPDATE_STATIC(meijinsn)
 
 	MCFG_PALETTE_LENGTH(32)
 	MCFG_PALETTE_INIT(meijinsn)

@@ -42,7 +42,6 @@ Notes:
 ************************************************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m68000/m68000.h"
 #include "cpu/z180/z180.h"
 #include "machine/8255ppi.h"
@@ -54,7 +53,9 @@ class igs017_state : public driver_device
 {
 public:
 	igs017_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu")
+		{ }
 
 	int m_toggle;
 	int m_debug_addr;
@@ -75,6 +76,8 @@ public:
 	int m_irq1_enable;
 	int m_irq2_enable;
 	UINT8 *m_spriteram;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -125,14 +128,14 @@ static WRITE8_HANDLER( fg_w )
 {
 	igs017_state *state = space->machine().driver_data<igs017_state>();
 	state->m_fg_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset/4);
+	state->m_fg_tilemap->mark_tile_dirty(offset/4);
 }
 
 static WRITE8_HANDLER( bg_w )
 {
 	igs017_state *state = space->machine().driver_data<igs017_state>();
 	state->m_bg_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset/4);
+	state->m_bg_tilemap->mark_tile_dirty(offset/4);
 }
 
 // 16-bit handlers for an 8-bit chip
@@ -201,8 +204,8 @@ static VIDEO_START( igs017 )
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info,tilemap_scan_rows,8,8,64,32);
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info,tilemap_scan_rows,8,8,64,32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0xf);
-	tilemap_set_transparent_pen(state->m_bg_tilemap,0xf);
+	state->m_fg_tilemap->set_transparent_pen(0xf);
+	state->m_bg_tilemap->set_transparent_pen(0xf);
 
 	state->m_toggle = 0;
 	state->m_debug_addr = 0;
@@ -244,7 +247,7 @@ static VIDEO_START( igs017 )
 
 ***************************************************************************/
 
-static void draw_sprite(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect, int sx, int sy, int dimx, int dimy, int flipx, int flipy, int color, int addr)
+static void draw_sprite(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect, int sx, int sy, int dimx, int dimy, int flipx, int flipy, int color, int addr)
 {
 	igs017_state *state = machine.driver_data<igs017_state>();
 	// prepare GfxElement on the fly
@@ -262,7 +265,7 @@ static void draw_sprite(running_machine &machine, bitmap_t *bitmap,const rectang
 				sx, sy, 0x1f	);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	igs017_state *state = machine.driver_data<igs017_state>();
 	UINT8 *s	=	state->m_spriteram;
@@ -298,7 +301,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 }
 
 // A simple gfx viewer (toggle with T)
-static int debug_viewer(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static int debug_viewer(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 #ifdef MAME_DEBUG
 	igs017_state *state = machine.driver_data<igs017_state>();
@@ -327,7 +330,7 @@ static int debug_viewer(running_machine &machine, bitmap_t *bitmap,const rectang
 		if (w <= 0)		w = 0;
 		if (w > 1024)	w = 1024;
 
-		bitmap_fill(bitmap,cliprect,0);
+		bitmap.fill(0, cliprect);
 
 		draw_sprite(machine, bitmap, cliprect, 0,0, w,h, 0,0, 0, a);
 
@@ -341,35 +344,35 @@ static int debug_viewer(running_machine &machine, bitmap_t *bitmap,const rectang
 	return 0;
 }
 
-static SCREEN_UPDATE( igs017 )
+static SCREEN_UPDATE_IND16( igs017 )
 {
-	igs017_state *state = screen->machine().driver_data<igs017_state>();
+	igs017_state *state = screen.machine().driver_data<igs017_state>();
 	int layers_ctrl = -1;
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int mask = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	mask |= 2;
-		if (screen->machine().input().code_pressed(KEYCODE_A))	mask |= 4;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	mask |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_A))	mask |= 4;
 		if (mask != 0) layers_ctrl &= mask;
 	}
 #endif
 
-	if (debug_viewer(screen->machine(), bitmap,cliprect))
+	if (debug_viewer(screen.machine(), bitmap,cliprect))
 		return 0;
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (state->m_video_disable)
 		return 0;
 
-	if (layers_ctrl & 1)	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, TILEMAP_DRAW_OPAQUE, 0);
+	if (layers_ctrl & 1)	state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
 
-	if (layers_ctrl & 4)	draw_sprites(screen->machine(), bitmap, cliprect);
+	if (layers_ctrl & 4)	draw_sprites(screen.machine(), bitmap, cliprect);
 
-	if (layers_ctrl & 2)	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	if (layers_ctrl & 2)	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -2271,20 +2274,18 @@ GFXDECODE_END
                                 Machine Drivers
 ***************************************************************************/
 
-static INTERRUPT_GEN( iqblocka_interrupt )
+static TIMER_DEVICE_CALLBACK( irqblocka_interrupt )
 {
-	igs017_state *state = device->machine().driver_data<igs017_state>();
-	if (cpu_getiloops(device) & 1)
-	{
-		 if (state->m_nmi_enable)
-			device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	}
-	else
-	{
-		 if (state->m_irq_enable)
-			device_set_input_line(device, 0, HOLD_LINE);
-	}
+	igs017_state *state = timer.machine().driver_data<igs017_state>();
+	int scanline = param;
+
+	if(scanline == 240 && state->m_irq_enable)
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+
+	if(scanline == 0 && state->m_nmi_enable)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 }
+
 
 // Dips are read through the 8255
 static const ppi8255_interface iqblocka_ppi8255_intf =
@@ -2310,7 +2311,7 @@ static MACHINE_CONFIG_START( iqblocka, igs017_state )
 	MCFG_CPU_ADD("maincpu", Z180, XTAL_16MHz / 2)
 	MCFG_CPU_PROGRAM_MAP(iqblocka_map)
 	MCFG_CPU_IO_MAP(iqblocka_io)
-	MCFG_CPU_VBLANK_INT_HACK(iqblocka_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", irqblocka_interrupt, "screen", 0, 1)
 
 	MCFG_PPI8255_ADD( "ppi8255", iqblocka_ppi8255_intf )
 
@@ -2320,10 +2321,9 @@ static MACHINE_CONFIG_START( iqblocka, igs017_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE(igs017)
+	MCFG_SCREEN_UPDATE_STATIC(igs017)
 
 	MCFG_GFXDECODE(igs017)
 	MCFG_PALETTE_LENGTH(0x100*2)
@@ -2344,19 +2344,16 @@ MACHINE_CONFIG_END
 
 // mgcs
 
-static INTERRUPT_GEN( mgcs_interrupt )
+static TIMER_DEVICE_CALLBACK( mgcs_interrupt )
 {
-	igs017_state *state = device->machine().driver_data<igs017_state>();
-	if (cpu_getiloops(device) & 1)
-	{
-		 if (state->m_irq2_enable)
-			device_set_input_line(device, 2, HOLD_LINE);
-	}
-	else
-	{
-		 if (state->m_irq1_enable)
-			device_set_input_line(device, 1, HOLD_LINE);
-	}
+	igs017_state *state = timer.machine().driver_data<igs017_state>();
+	int scanline = param;
+
+	if(scanline == 240 && state->m_irq1_enable)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	if(scanline == 0 && state->m_irq2_enable)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
 }
 
 static MACHINE_RESET( mgcs )
@@ -2383,7 +2380,7 @@ static const ppi8255_interface mgcs_ppi8255_intf =
 static MACHINE_CONFIG_START( mgcs, igs017_state )
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_22MHz / 2)
 	MCFG_CPU_PROGRAM_MAP(mgcs)
-	MCFG_CPU_VBLANK_INT_HACK(mgcs_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mgcs_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(mgcs)
 
@@ -2393,10 +2390,9 @@ static MACHINE_CONFIG_START( mgcs, igs017_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE(igs017)
+	MCFG_SCREEN_UPDATE_STATIC(igs017)
 
 	MCFG_GFXDECODE(igs017_flipped)
 	MCFG_PALETTE_LENGTH(0x100*2)
@@ -2428,7 +2424,7 @@ static const ppi8255_interface sdmg2_ppi8255_intf =
 static MACHINE_CONFIG_START( sdmg2, igs017_state )
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_22MHz/2)
 	MCFG_CPU_PROGRAM_MAP(sdmg2)
-	MCFG_CPU_VBLANK_INT_HACK(mgcs_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mgcs_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(mgcs)
 
@@ -2438,10 +2434,9 @@ static MACHINE_CONFIG_START( sdmg2, igs017_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)	// VSync 60Hz, HSync 15.3kHz
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-16-1)
-	MCFG_SCREEN_UPDATE(igs017)
+	MCFG_SCREEN_UPDATE_STATIC(igs017)
 
 	MCFG_GFXDECODE(igs017)
 	MCFG_PALETTE_LENGTH(0x100*2)
@@ -2458,19 +2453,16 @@ MACHINE_CONFIG_END
 
 // mgdh
 
-static INTERRUPT_GEN( mgdh_interrupt )
+static TIMER_DEVICE_CALLBACK( mgdh_interrupt )
 {
-	igs017_state *state = device->machine().driver_data<igs017_state>();
-	if (cpu_getiloops(device) & 1)
-	{
-		 if (state->m_irq2_enable)
-			device_set_input_line(device, 3, HOLD_LINE);	// lev 3 instead of 2
-	}
-	else
-	{
-		 if (state->m_irq1_enable)
-			device_set_input_line(device, 1, HOLD_LINE);
-	}
+	igs017_state *state = timer.machine().driver_data<igs017_state>();
+	int scanline = param;
+
+	if(scanline == 240 && state->m_irq1_enable)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	if(scanline == 0 && state->m_irq2_enable)
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE); // lev 3 instead of 2
 }
 
 static const ppi8255_interface mgdh_ppi8255_intf =
@@ -2487,7 +2479,7 @@ static const ppi8255_interface mgdh_ppi8255_intf =
 static MACHINE_CONFIG_START( mgdha, igs017_state )
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_22MHz / 2)
 	MCFG_CPU_PROGRAM_MAP(mgdha_map)
-	MCFG_CPU_VBLANK_INT_HACK(mgdh_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mgdh_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(mgcs)
 
@@ -2497,10 +2489,9 @@ static MACHINE_CONFIG_START( mgdha, igs017_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-16-1)
-	MCFG_SCREEN_UPDATE(igs017)
+	MCFG_SCREEN_UPDATE_STATIC(igs017)
 
 	MCFG_GFXDECODE(igs017_swapped)
 	MCFG_PALETTE_LENGTH(0x100*2)
@@ -2521,7 +2512,7 @@ static MACHINE_CONFIG_START( tjsb, igs017_state )
 	MCFG_CPU_ADD("maincpu", Z180, XTAL_16MHz / 2)
 	MCFG_CPU_PROGRAM_MAP(tjsb_map)
 	MCFG_CPU_IO_MAP(tjsb_io)
-	MCFG_CPU_VBLANK_INT_HACK(iqblocka_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", irqblocka_interrupt, "screen", 0, 1)
 
 	MCFG_PPI8255_ADD( "ppi8255", iqblocka_ppi8255_intf )
 
@@ -2531,10 +2522,9 @@ static MACHINE_CONFIG_START( tjsb, igs017_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE(igs017)
+	MCFG_SCREEN_UPDATE_STATIC(igs017)
 
 	MCFG_GFXDECODE(igs017)
 	MCFG_PALETTE_LENGTH(0x100*2)

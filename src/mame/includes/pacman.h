@@ -28,6 +28,8 @@ public:
 	UINT8 m_flipscreen;
 	UINT8 m_bgpriority;
 	int m_xoffsethack;
+	UINT8 m_inv_spr;
+	UINT8 m_irq_mask;
 };
 
 
@@ -35,7 +37,7 @@ public:
 
 PALETTE_INIT( pacman );
 VIDEO_START( pacman );
-SCREEN_UPDATE( pacman );
+SCREEN_UPDATE_IND16( pacman );
 
 WRITE8_HANDLER( pacman_videoram_w );
 WRITE8_HANDLER( pacman_colorram_w );
@@ -50,7 +52,7 @@ WRITE8_HANDLER( pengo_gfxbank_w );
 
 
 VIDEO_START( s2650games );
-SCREEN_UPDATE( s2650games );
+SCREEN_UPDATE_IND16( s2650games );
 
 
 WRITE8_HANDLER( s2650games_videoram_w );
@@ -66,6 +68,8 @@ WRITE8_HANDLER( jrpacman_charbank_w );
 WRITE8_HANDLER( jrpacman_spritebank_w );
 WRITE8_HANDLER( jrpacman_scroll_w );
 WRITE8_HANDLER( jrpacman_bgpriority_w );
+
+VIDEO_START( birdiy );
 
 
 /*----------- defined in machine/pacplus.c -----------*/

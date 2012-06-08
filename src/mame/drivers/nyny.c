@@ -350,7 +350,7 @@ static MC6845_UPDATE_ROW( update_row )
 			else
 				color = bit2 ? color2 : 0;
 
-			*BITMAP_ADDR32(bitmap, y, x) = pens[color];
+			bitmap.pix32(y, x) = pens[color];
 
 			x += 1;
 		}
@@ -377,15 +377,15 @@ static MC6845_END_UPDATE( end_update )
 	pen_t *pens = (pen_t *)param;
 	UINT16 delay_counter = state->m_star_delay_counter;
 
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		int x;
 
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			/* check if the star status */
 			if (state->m_star_enable &&
-			    (*BITMAP_ADDR32(bitmap, y, x) == pens[0]) &&
+			    (bitmap.pix32(y, x) == pens[0]) &&
 			    ((state->m_star_shift_reg & 0x80ff) == 0x00ff) &&
 			    (((y & 0x01) ^ state->m_flipscreen) ^ (((x & 0x08) >> 3) ^ state->m_flipscreen)))
 			{
@@ -393,7 +393,7 @@ static MC6845_END_UPDATE( end_update )
 							  ((state->m_star_shift_reg & 0x0400) >>  9) |	/* G */
 							  ((state->m_star_shift_reg & 0x1000) >> 10);		/* B */
 
-				*BITMAP_ADDR32(bitmap, y, x) = pens[color];
+				bitmap.pix32(y, x) = pens[color];
 			}
 
 			if (delay_counter == 0)
@@ -425,16 +425,6 @@ static const mc6845_interface mc6845_intf =
 	DEVCB_NULL,				/* VSYNC callback */
 	NULL					/* update address callback */
 };
-
-
-static SCREEN_UPDATE( nyny )
-{
-	nyny_state *state = screen->machine().driver_data<nyny_state>();
-
-	state->m_mc6845->update(bitmap, cliprect);
-
-	return 0;
-}
 
 
 
@@ -732,9 +722,8 @@ static MACHINE_CONFIG_START( nyny, nyny_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, 256, 0, 256, 256, 0, 256)	/* temporary, CRTC will configure screen */
-	MCFG_SCREEN_UPDATE(nyny)
+	MCFG_SCREEN_UPDATE_DEVICE("crtc", mc6845_device, screen_update)
 
 	MCFG_MC6845_ADD("crtc", MC6845, CRTC_CLOCK, mc6845_intf)
 

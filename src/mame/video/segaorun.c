@@ -49,10 +49,10 @@ VIDEO_START( outrun )
  *
  *************************************/
 
-SCREEN_UPDATE( shangon )
+SCREEN_UPDATE_IND16( shangon )
 {
 	/* reset priorities */
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	/* draw the low priority road layer */
 	segaic16_road_draw(0, bitmap, cliprect, SEGAIC16_ROAD_BACKGROUND);
@@ -80,17 +80,17 @@ SCREEN_UPDATE( shangon )
 }
 
 
-SCREEN_UPDATE( outrun )
+SCREEN_UPDATE_IND16( outrun )
 {
 	/* if no drawing is happening, fill with black and get out */
 	if (!segaic16_display_enable)
 	{
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 		return 0;
 	}
 
 	/* reset priorities */
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	/* draw the low priority road layer */
 	segaic16_road_draw(0, bitmap, cliprect, SEGAIC16_ROAD_BACKGROUND);

@@ -166,7 +166,7 @@ static WRITE8_HANDLER( statriv2_videoram_w )
 	statriv2_state *state = space->machine().driver_data<statriv2_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap, offset & 0x3ff);
+	state->m_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 
@@ -177,13 +177,13 @@ static WRITE8_HANDLER( statriv2_videoram_w )
  *
  *************************************/
 
-static SCREEN_UPDATE( statriv2 )
+static SCREEN_UPDATE_IND16( statriv2 )
 {
-	statriv2_state *state = screen->machine().driver_data<statriv2_state>();
-	if (tms9927_screen_reset(screen->machine().device("tms")))
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	statriv2_state *state = screen.machine().driver_data<statriv2_state>();
+	if (tms9927_screen_reset(screen.machine().device("tms")))
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 	else
-		tilemap_draw(bitmap, cliprect, state->m_tilemap, 0, 0);
+		state->m_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -602,9 +602,8 @@ static MACHINE_CONFIG_START( statriv2, statriv2_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK/2, 384, 0, 320, 270, 0, 240)
-	MCFG_SCREEN_UPDATE(statriv2)
+	MCFG_SCREEN_UPDATE_STATIC(statriv2)
 
 	MCFG_TMS9927_ADD("tms", MASTER_CLOCK/2, tms9927_intf)
 

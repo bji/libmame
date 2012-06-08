@@ -82,13 +82,13 @@ static VIDEO_START( feversoc )
 
 }
 
-static SCREEN_UPDATE( feversoc )
+static SCREEN_UPDATE_IND16( feversoc )
 {
-	feversoc_state *state = screen->machine().driver_data<feversoc_state>();
+	feversoc_state *state = screen.machine().driver_data<feversoc_state>();
 	UINT32 *spriteram32 = state->m_spriteram;
 	int offs,spr_offs,colour,sx,sy,h,w,dx,dy;
 
-	bitmap_fill(bitmap, cliprect, screen->machine().pens[0]); //black pen
+	bitmap.fill(screen.machine().pens[0], cliprect); //black pen
 
 	for(offs=(0x2000/4)-2;offs>-1;offs-=2)
 	{
@@ -106,7 +106,7 @@ static SCREEN_UPDATE( feversoc )
 
 		for(dx=0;dx<w;dx++)
 			for(dy=0;dy<h;dy++)
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],spr_offs++,colour,0,0,(sx+dx*16),(sy+dy*16),0x3f);
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],spr_offs++,colour,0,0,(sx+dx*16),(sy+dy*16),0x3f);
 	}
 
 	return 0;
@@ -258,10 +258,9 @@ static MACHINE_CONFIG_START( feversoc, feversoc_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 30*8-1) //dynamic resolution?
-	MCFG_SCREEN_UPDATE(feversoc)
+	MCFG_SCREEN_UPDATE_STATIC(feversoc)
 
 	MCFG_GFXDECODE(feversoc)
 	MCFG_PALETTE_LENGTH(0x1000)

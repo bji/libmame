@@ -12,7 +12,18 @@ preliminary driver by Angelo Salese
 
 TODO:
 - Returns CMOS checksum error, can't enter into BIOS setup screens to set that up ... it's certainly a MESS-to-MAME
-  conversion bug or a keyboard device issue, since it works fine in MESS.
+  conversion bug or a keyboard device issue, since it works fine in MESS. (Update: it's the keyboard device)
+
+keyboard trick;
+- Set 0x41c to zero then set the scancode accordingly:
+- bp f1699 ah = 0x3b
+- bp f53b9 al = scancode
+- bp f08d9 ah = scancode
+
+0x48 is up 0x4d is down 0x50 is right 0x4b is left
+0x3c/0x3d is pageup/pagedown
+0x01 is esc
+0x0d is enter
 
 ********************************************************************************************************************/
 
@@ -96,14 +107,7 @@ static void pcat_dyn_set_keyb_int(running_machine &machine, int state)
 	pic8259_ir1_w(machine.device("pic8259_1"), state);
 }
 
-static const struct pc_vga_interface vga_interface =
-{
-	NULL,
-	NULL,
-	NULL,
-	AS_IO,
-	0x0000
-};
+static READ8_HANDLER( vga_setting ) { return 0xff; } // hard-code to color
 
 static void set_gate_a20(running_machine &machine, int a20)
 {
@@ -122,7 +126,7 @@ static int pcat_dyn_get_out2(running_machine &machine) {
 
 static const struct kbdc8042_interface at8042 =
 {
-	KBDC8042_AT386, set_gate_a20, keyboard_interrupt, pcat_dyn_get_out2
+	KBDC8042_AT386, set_gate_a20, keyboard_interrupt, NULL, pcat_dyn_get_out2
 };
 
 static MACHINE_START( pcat_dyn )
@@ -191,7 +195,8 @@ ROM_END
 
 static DRIVER_INIT(pcat_dyn)
 {
-	pc_vga_init(machine, &vga_interface, NULL);
+	pc_vga_init(machine, vga_setting, NULL);
+	pc_vga_io_init(machine, machine.device("maincpu")->memory().space(AS_PROGRAM), 0xa0000, machine.device("maincpu")->memory().space(AS_IO), 0x0000);
 }
 
 GAME( 1995, toursol,  0,       pcat_dyn, pcat_dyn, pcat_dyn, ROT0, "Dynamo", "Tournament Solitaire (V1.06, 08/03/95)", GAME_NOT_WORKING|GAME_NO_SOUND )

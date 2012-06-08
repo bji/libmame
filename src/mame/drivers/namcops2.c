@@ -20,6 +20,8 @@
 
 ***************************************************************************/
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/mips/mips3.h"
 #include "cpu/mips/r3000.h"
@@ -29,21 +31,32 @@ class namcops2_state : public driver_device
 {
 public:
 	namcops2_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
 
+	UINT32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void video_start();
 };
 
 
-static VIDEO_START(system246)
+void namcops2_state::video_start()
 {
 }
 
-static SCREEN_UPDATE(system246)
+UINT32 namcops2_state::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	return 0;
 }
 
-static ADDRESS_MAP_START(ps2_map, AS_PROGRAM, 32)
+static ADDRESS_MAP_START(ps2_map, AS_PROGRAM, 32, namcops2_state)
 	AM_RANGE(0x00000000, 0x01ffffff) AM_RAM	// 32 MB RAM in consumer PS2s, do these have more?
 	AM_RANGE(0x1fc00000, 0x1fdfffff) AM_ROM AM_REGION("bios", 0)
 ADDRESS_MAP_END
@@ -65,14 +78,11 @@ static MACHINE_CONFIG_START( system246, namcops2_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
+	MCFG_SCREEN_UPDATE_DRIVER(namcops2_state, screen_update)
 	MCFG_SCREEN_SIZE(640, 480)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 479)
-	MCFG_SCREEN_UPDATE(system246)
 
 	MCFG_PALETTE_LENGTH(65536)
-
-	MCFG_VIDEO_START(system246)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( system256, system246 )
@@ -349,28 +359,27 @@ ROM_START( scptour )
 	DISK_IMAGE_READONLY( "scp1cd0", 0, SHA1(19fa70ba22787704c40f0a8f27bc841218bbc99b) )
 ROM_END
 
-GAME(2001, sys246,          0, system246, system246, 0, ROT0, "Namco", "System 246 BIOS", GAME_NO_SOUND|GAME_NOT_WORKING|GAME_IS_BIOS_ROOT)
-GAME(2001, rrvac,      sys246, system246, system246, 0, ROT0, "Namco", "Ridge Racer V Arcade Battle (RRV3 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, dragchrn,   sys246, system246, system246, 0, ROT0, "Namco", "Dragon Chronicles (DC001 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, netchu02,   sys246, system246, system246, 0, ROT0, "Namco", "Netchuu Pro Yakyuu 2002 (NPY1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, scptour,    sys246, system246, system246, 0, ROT0, "Namco", "Smash Court Pro Tournament (SCP1)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, soulclb2,   sys246, system246, system246, 0, ROT0, "Namco", "Soul Calibur II (SC23 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, soulcl2a, soulclb2, system246, system246, 0, ROT0, "Namco", "Soul Calibur II (SC22 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, soulcl2b, soulclb2, system246, system246, 0, ROT0, "Namco", "Soul Calibur II (SC21 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, tekken4,    sys246, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF3 Ver. C)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, tekken4a,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF2 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2002, tekken4b,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2003, timecrs3,   sys246, system246, system246, 0, ROT0, "Namco", "Time Crisis 3 (TST1)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2003, zgundm,     sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Mobile Suit Z-Gundam: A.E.U.G. vs Titans (ZGA1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2004, fghtjam,    sys246, system246, system246, 0, ROT0, "Capcom / Namco", "Capcom Fighting Jam (JAM1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2004, sukuinuf,   sys246, system246, system246, 0, ROT0, "Namco", "Quiz and Variety Suku Suku Inufuku 2 (IN2 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2004, zgundmdx,   sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Mobile Suit Z-Gundam: A.E.U.G. vs Titans DX (ZDX1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2005, gundzaft,   sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Gundam Seed: Federation vs. Z.A.F.T. (SED1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2005, soulclb3,   sys246, system246, system246, 0, ROT0, "Namco", "Soul Calibur III (SC31001-NA-A)", GAME_NO_SOUND|GAME_NOT_WORKING)
+GAME(2001, sys246,          0, system246, system246, 0, ROT0, "Namco", "System 246 BIOS", GAME_IS_SKELETON|GAME_IS_BIOS_ROOT)
+GAME(2001, rrvac,      sys246, system246, system246, 0, ROT0, "Namco", "Ridge Racer V Arcade Battle (RRV3 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, dragchrn,   sys246, system246, system246, 0, ROT0, "Namco", "Dragon Chronicles (DC001 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, netchu02,   sys246, system246, system246, 0, ROT0, "Namco", "Netchuu Pro Yakyuu 2002 (NPY1 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, scptour,    sys246, system246, system246, 0, ROT0, "Namco", "Smash Court Pro Tournament (SCP1)", GAME_IS_SKELETON)
+GAME(2002, soulclb2,   sys246, system246, system246, 0, ROT0, "Namco", "Soul Calibur II (SC23 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, soulcl2a, soulclb2, system246, system246, 0, ROT0, "Namco", "Soul Calibur II (SC22 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, soulcl2b, soulclb2, system246, system246, 0, ROT0, "Namco", "Soul Calibur II (SC21 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, tekken4,    sys246, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF3 Ver. C)", GAME_IS_SKELETON)
+GAME(2002, tekken4a,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF2 Ver. A)", GAME_IS_SKELETON)
+GAME(2002, tekken4b,  tekken4, system246, system246, 0, ROT0, "Namco", "Tekken 4 (TEF1 Ver. A)", GAME_IS_SKELETON)
+GAME(2003, timecrs3,   sys246, system246, system246, 0, ROT0, "Namco", "Time Crisis 3 (TST1)", GAME_IS_SKELETON)
+GAME(2003, zgundm,     sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Mobile Suit Z-Gundam: A.E.U.G. vs Titans (ZGA1 Ver. A)", GAME_IS_SKELETON)
+GAME(2004, fghtjam,    sys246, system246, system246, 0, ROT0, "Capcom / Namco", "Capcom Fighting Jam (JAM1 Ver. A)", GAME_IS_SKELETON)
+GAME(2004, sukuinuf,   sys246, system246, system246, 0, ROT0, "Namco", "Quiz and Variety Suku Suku Inufuku 2 (IN2 Ver. A)", GAME_IS_SKELETON)
+GAME(2004, zgundmdx,   sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Mobile Suit Z-Gundam: A.E.U.G. vs Titans DX (ZDX1 Ver. A)", GAME_IS_SKELETON)
+GAME(2005, gundzaft,   sys246, system246, system246, 0, ROT0, "Capcom / Banpresto", "Gundam Seed: Federation vs. Z.A.F.T. (SED1 Ver. A)", GAME_IS_SKELETON)
+GAME(2005, soulclb3,   sys246, system246, system246, 0, ROT0, "Namco", "Soul Calibur III (SC31001-NA-A)", GAME_IS_SKELETON)
 
-GAME(2004, sys256,          0, system256, system246, 0, ROT0, "Namco", "System 256 BIOS", GAME_NO_SOUND|GAME_NOT_WORKING|GAME_IS_BIOS_ROOT)
-GAME(2005, tekken51,   sys256, system256, system246, 0, ROT0, "Namco", "Tekken 5.1 (TE51 Ver. B)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2006, kinniku,    sys256, system256, system246, 0, ROT0, "Namco", "Kinnikuman Muscle Grand Prix (KN1 Ver. A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2006, taiko9,     sys256, system256, system246, 0, ROT0, "Namco", "Taiko No Tatsujin 9 (TK91001-NA-A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-GAME(2007, taiko10,    sys256, system256, system246, 0, ROT0, "Namco", "Taiko No Tatsujin 10 (T101001-NA-A)", GAME_NO_SOUND|GAME_NOT_WORKING)
-
+GAME(2004, sys256,          0, system256, system246, 0, ROT0, "Namco", "System 256 BIOS", GAME_IS_SKELETON|GAME_IS_BIOS_ROOT)
+GAME(2005, tekken51,   sys256, system256, system246, 0, ROT0, "Namco", "Tekken 5.1 (TE51 Ver. B)", GAME_IS_SKELETON)
+GAME(2006, kinniku,    sys256, system256, system246, 0, ROT0, "Namco", "Kinnikuman Muscle Grand Prix (KN1 Ver. A)", GAME_IS_SKELETON)
+GAME(2006, taiko9,     sys256, system256, system246, 0, ROT0, "Namco", "Taiko No Tatsujin 9 (TK91001-NA-A)", GAME_IS_SKELETON)
+GAME(2007, taiko10,    sys256, system256, system246, 0, ROT0, "Namco", "Taiko No Tatsujin 10 (T101001-NA-A)", GAME_IS_SKELETON)

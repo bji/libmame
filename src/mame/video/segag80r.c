@@ -359,8 +359,8 @@ WRITE8_HANDLER( spaceod_back_port_w )
 		case 0:
 			if ((state->m_spaceod_bg_control ^ data) & 0xc4)
 			{
-				tilemap_mark_all_tiles_dirty(state->m_spaceod_bg_htilemap);
-				tilemap_mark_all_tiles_dirty(state->m_spaceod_bg_vtilemap);
+				state->m_spaceod_bg_htilemap->mark_all_dirty();
+				state->m_spaceod_bg_vtilemap->mark_all_dirty();
 			}
 			state->m_spaceod_bg_control = data;
 			break;
@@ -475,7 +475,7 @@ WRITE8_HANDLER( monsterb_back_port_w )
          */
 		case 4:
 			if ((state->m_bg_char_bank ^ data) & 0x0f)
-				tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+				state->m_bg_tilemap->mark_all_dirty();
 			state->m_bg_char_bank = data & 0x0f;
 			state->m_bg_scrolly = (data << 4) & 0x700;
 			state->m_bg_enable = data & 0x80;
@@ -564,7 +564,7 @@ WRITE8_HANDLER( pignewt_back_port_w )
 		case 4:
 			data = (data & 0x09) | ((data >> 2) & 0x02) | ((data << 2) & 0x04);
 			if ((state->m_bg_char_bank ^ data) & 0x0f)
-				tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+				state->m_bg_tilemap->mark_all_dirty();
 			state->m_bg_char_bank = data & 0x0f;
 			break;
 
@@ -626,7 +626,7 @@ WRITE8_HANDLER( sindbadm_back_port_w )
 			state->m_bg_scrollx = (data << 6) & 0x300;
 			state->m_bg_scrolly = (data << 4) & 0x700;
 			if ((state->m_bg_char_bank ^ data) & 0x03)
-				tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+				state->m_bg_tilemap->mark_all_dirty();
 			state->m_bg_char_bank = data & 0x03;
 			break;
 	}
@@ -640,7 +640,7 @@ WRITE8_HANDLER( sindbadm_back_port_w )
  *
  *************************************/
 
-static void draw_videoram(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, const UINT8 *transparent_pens)
+static void draw_videoram(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, const UINT8 *transparent_pens)
 {
 	segag80r_state *state = machine.driver_data<segag80r_state>();
 	UINT8 *videoram = state->m_videoram;
@@ -648,10 +648,10 @@ static void draw_videoram(running_machine &machine, bitmap_t *bitmap, const rect
 	int x, y;
 
 	/* iterate over the screen and draw visible tiles */
-	for (y = cliprect->min_y / 8; y <= cliprect->max_y / 8; y++)
+	for (y = cliprect.min_y / 8; y <= cliprect.max_y / 8; y++)
 	{
 		int effy = state->m_video_flip ? 27 - y : y;
-		for (x = cliprect->min_x / 8; x <= cliprect->max_x / 8; x++)
+		for (x = cliprect.min_x / 8; x <= cliprect.max_x / 8; x++)
 		{
 			int offs = effy * 32 + (x ^ flipmask);
 			UINT8 tile = videoram[offs];
@@ -670,14 +670,14 @@ static void draw_videoram(running_machine &machine, bitmap_t *bitmap, const rect
  *
  *************************************/
 
-static void draw_background_spaceod(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_background_spaceod(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	segag80r_state *state = machine.driver_data<segag80r_state>();
-	bitmap_t *pixmap = tilemap_get_pixmap(!(state->m_spaceod_bg_control & 0x02) ? state->m_spaceod_bg_htilemap : state->m_spaceod_bg_vtilemap);
+	bitmap_ind16 &pixmap = (!(state->m_spaceod_bg_control & 0x02) ? state->m_spaceod_bg_htilemap : state->m_spaceod_bg_vtilemap)->pixmap();
 	int flipmask = (state->m_spaceod_bg_control & 0x01) ? 0xff : 0x00;
 	int xoffset = (state->m_spaceod_bg_control & 0x02) ? 0x10 : 0x00;
-	int xmask = pixmap->width - 1;
-	int ymask = pixmap->height - 1;
+	int xmask = pixmap.width() - 1;
+	int ymask = pixmap.height() - 1;
 	int x, y;
 
 	/* The H and V counters on this board are independent of the ones on */
@@ -687,14 +687,14 @@ static void draw_background_spaceod(running_machine &machine, bitmap_t *bitmap, 
 	/* 240, giving us an offset of (262-240) = 22 scanlines. */
 
 	/* now fill in the background wherever there are black pixels */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		int effy = (y + state->m_spaceod_vcounter + 22) ^ flipmask;
-		UINT16 *src = (UINT16 *)pixmap->base + (effy & ymask) * pixmap->rowpixels;
-		UINT16 *dst = (UINT16 *)bitmap->base + y * bitmap->rowpixels;
+		UINT16 *src = &pixmap.pix16(effy & ymask);
+		UINT16 *dst = &bitmap.pix16(y);
 
 		/* loop over horizontal pixels */
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			int effx = ((x + state->m_spaceod_hcounter) ^ flipmask) + xoffset;
 			UINT8 fgpix = machine.generic.paletteram.u8[dst[x]];
@@ -728,31 +728,31 @@ static void draw_background_spaceod(running_machine &machine, bitmap_t *bitmap, 
  *
  *************************************/
 
-static void draw_background_page_scroll(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_background_page_scroll(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	segag80r_state *state = machine.driver_data<segag80r_state>();
-	bitmap_t *pixmap = tilemap_get_pixmap(state->m_bg_tilemap);
+	bitmap_ind16 &pixmap = state->m_bg_tilemap->pixmap();
 	int flipmask = (state->m_video_control & 0x08) ? 0xff : 0x00;
-	int xmask = pixmap->width - 1;
-	int ymask = pixmap->height - 1;
+	int xmask = pixmap.width() - 1;
+	int ymask = pixmap.height() - 1;
 	int x, y;
 
 	/* if disabled, draw nothing */
 	if (!state->m_bg_enable)
 	{
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(0, cliprect);
 		return;
 	}
 
 	/* now fill in the background wherever there are black pixels */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		int effy = state->m_bg_scrolly + (((y ^ flipmask) + (flipmask & 0xe0)) & 0xff);
-		UINT16 *src = (UINT16 *)pixmap->base + (effy & ymask) * pixmap->rowpixels;
-		UINT16 *dst = (UINT16 *)bitmap->base + y * bitmap->rowpixels;
+		UINT16 *src = &pixmap.pix16(effy & ymask);
+		UINT16 *dst = &bitmap.pix16(y);
 
 		/* loop over horizontal pixels */
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			int effx = state->m_bg_scrollx + (x ^ flipmask);
 			dst[x] = src[effx & xmask];
@@ -769,31 +769,31 @@ static void draw_background_page_scroll(running_machine &machine, bitmap_t *bitm
  *
  *************************************/
 
-static void draw_background_full_scroll(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_background_full_scroll(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	segag80r_state *state = machine.driver_data<segag80r_state>();
-	bitmap_t *pixmap = tilemap_get_pixmap(state->m_bg_tilemap);
+	bitmap_ind16 &pixmap = state->m_bg_tilemap->pixmap();
 	int flipmask = (state->m_video_control & 0x08) ? 0x3ff : 0x000;
-	int xmask = pixmap->width - 1;
-	int ymask = pixmap->height - 1;
+	int xmask = pixmap.width() - 1;
+	int ymask = pixmap.height() - 1;
 	int x, y;
 
 	/* if disabled, draw nothing */
 	if (!state->m_bg_enable)
 	{
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(0, cliprect);
 		return;
 	}
 
 	/* now fill in the background wherever there are black pixels */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		int effy = (y + state->m_bg_scrolly) ^ flipmask;
-		UINT16 *src = (UINT16 *)pixmap->base + (effy & ymask) * pixmap->rowpixels;
-		UINT16 *dst = (UINT16 *)bitmap->base + y * bitmap->rowpixels;
+		UINT16 *src = &pixmap.pix16(effy & ymask);
+		UINT16 *dst = &bitmap.pix16(y);
 
 		/* loop over horizontal pixels */
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			int effx = (x + state->m_bg_scrollx) ^ flipmask;
 			dst[x] = src[effx & xmask];
@@ -809,9 +809,9 @@ static void draw_background_full_scroll(running_machine &machine, bitmap_t *bitm
  *
  *************************************/
 
-SCREEN_UPDATE( segag80r )
+SCREEN_UPDATE_IND16( segag80r )
 {
-	segag80r_state *state = screen->machine().driver_data<segag80r_state>();
+	segag80r_state *state = screen.machine().driver_data<segag80r_state>();
 	UINT8 transparent_pens[16];
 
 	switch (state->m_background_pcb)
@@ -820,7 +820,7 @@ SCREEN_UPDATE( segag80r )
 		/* background: none */
 		case G80_BACKGROUND_NONE:
 			memset(transparent_pens, 0, 16);
-			draw_videoram(screen->machine(), bitmap, cliprect, transparent_pens);
+			draw_videoram(screen.machine(), bitmap, cliprect, transparent_pens);
 			break;
 
 		/* foreground: visible except where black */
@@ -828,32 +828,32 @@ SCREEN_UPDATE( segag80r )
 		/* we draw the foreground first, then the background to do collision detection */
 		case G80_BACKGROUND_SPACEOD:
 			memset(transparent_pens, 0, 16);
-			draw_videoram(screen->machine(), bitmap, cliprect, transparent_pens);
-			draw_background_spaceod(screen->machine(), bitmap, cliprect);
+			draw_videoram(screen.machine(), bitmap, cliprect, transparent_pens);
+			draw_background_spaceod(screen.machine(), bitmap, cliprect);
 			break;
 
 		/* foreground: visible except for pen 0 (this disagrees with schematics) */
 		/* background: page-granular scrolling */
 		case G80_BACKGROUND_MONSTERB:
 			memset(transparent_pens, 1, 16);
-			draw_background_page_scroll(screen->machine(), bitmap, cliprect);
-			draw_videoram(screen->machine(), bitmap, cliprect, transparent_pens);
+			draw_background_page_scroll(screen.machine(), bitmap, cliprect);
+			draw_videoram(screen.machine(), bitmap, cliprect, transparent_pens);
 			break;
 
 		/* foreground: visible except for pen 0 */
 		/* background: full scrolling */
 		case G80_BACKGROUND_PIGNEWT:
 			memset(transparent_pens, 1, 16);
-			draw_background_full_scroll(screen->machine(), bitmap, cliprect);
-			draw_videoram(screen->machine(), bitmap, cliprect, transparent_pens);
+			draw_background_full_scroll(screen.machine(), bitmap, cliprect);
+			draw_videoram(screen.machine(), bitmap, cliprect, transparent_pens);
 			break;
 
 		/* foreground: visible except for pen 0 */
 		/* background: page-granular scrolling */
 		case G80_BACKGROUND_SINDBADM:
 			memset(transparent_pens, 1, 16);
-			draw_background_page_scroll(screen->machine(), bitmap, cliprect);
-			draw_videoram(screen->machine(), bitmap, cliprect, transparent_pens);
+			draw_background_page_scroll(screen.machine(), bitmap, cliprect);
+			draw_videoram(screen.machine(), bitmap, cliprect, transparent_pens);
 			break;
 	}
 	return 0;

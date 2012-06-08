@@ -8,6 +8,8 @@ public:
 	UINT8 *m_colorram;
 	int m_palettebank;
 	tilemap_t *m_bg_tilemap;
+
+	UINT8 m_sound_nmi_mask;
 };
 
 
@@ -24,4 +26,4 @@ WRITE8_HANDLER( tagteam_flipscreen_w );
 
 PALETTE_INIT( tagteam );
 VIDEO_START( tagteam );
-SCREEN_UPDATE( tagteam );
+SCREEN_UPDATE_IND16( tagteam );

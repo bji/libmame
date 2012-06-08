@@ -36,7 +36,6 @@ fix comms so it boots, it's a bit of a hack for hyperduel at the moment ;-)
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "sound/2151intf.h"
 #include "sound/okim6295.h"
 #include "sound/2413intf.h"
@@ -60,23 +59,23 @@ static TIMER_CALLBACK( vblank_end_callback )
 	state->m_requested_int &= ~param;
 }
 
-static INTERRUPT_GEN( hyprduel_interrupt )
+static TIMER_DEVICE_CALLBACK( hyprduel_interrupt )
 {
-	hyprduel_state *state = device->machine().driver_data<hyprduel_state>();
-	int line = RASTER_LINES - cpu_getiloops(device);
+	hyprduel_state *state = timer.machine().driver_data<hyprduel_state>();
+	int line = param;
 
-	if (line == RASTER_LINES)
+	if (line == 0) /* TODO: fix this! */
 	{
 		state->m_requested_int |= 0x01;		/* vblank */
 		state->m_requested_int |= 0x20;
-		device_set_input_line(device, 2, HOLD_LINE);
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
 		/* the duration is a guess */
-		device->machine().scheduler().timer_set(attotime::from_usec(2500), FUNC(vblank_end_callback), 0x20);
+		timer.machine().scheduler().timer_set(attotime::from_usec(2500), FUNC(vblank_end_callback), 0x20);
 	}
 	else
 		state->m_requested_int |= 0x12;		/* hsync */
 
-	update_irq_state(device->machine());
+	update_irq_state(timer.machine());
 }
 
 static READ16_HANDLER( hyprduel_irq_cause_r )
@@ -607,10 +606,19 @@ INPUT_PORTS_END
 ***************************************************************************/
 
 /* 8x8x4 tiles */
-static GFXLAYOUT_RAW( layout_8x8x4, 4, 8, 8, 4*8, 32*8 )
+static const gfx_layout layout_8x8x4 =
+{
+	8,8,
+	RGN_FRAC(1,1),
+	4,
+	{ STEP4(0,1) },
+	{ 4*1,4*0, 4*3,4*2, 4*5,4*4, 4*7,4*6 },
+	{ STEP8(0,4*8) },
+	4*8*8
+};
 
 /* 8x8x8 tiles for later games */
-static GFXLAYOUT_RAW( layout_8x8x8h, 8, 8, 8, 8*8, 32*8 )
+static GFXLAYOUT_RAW( layout_8x8x8h, 8, 8, 8*8, 32*8 )
 
 static GFXDECODE_START( 14220 )
 	GFXDECODE_ENTRY( "gfx1", 0, layout_8x8x4,    0x0, 0x200 ) // [0] 4 Bit Tiles
@@ -676,7 +684,7 @@ static MACHINE_CONFIG_START( hyprduel, hyprduel_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000,20000000/2)		/* 10MHz */
 	MCFG_CPU_PROGRAM_MAP(hyprduel_map)
-	MCFG_CPU_VBLANK_INT_HACK(hyprduel_interrupt,RASTER_LINES)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", hyprduel_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("sub", M68000,20000000/2)		/* 10MHz */
 	MCFG_CPU_PROGRAM_MAP(hyprduel_map2)
@@ -690,10 +698,9 @@ static MACHINE_CONFIG_START( hyprduel, hyprduel_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 224)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, FIRST_VISIBLE_LINE, LAST_VISIBLE_LINE)
-	MCFG_SCREEN_UPDATE(hyprduel)
+	MCFG_SCREEN_UPDATE_STATIC(hyprduel)
 
 	MCFG_GFXDECODE(14220)
 	MCFG_PALETTE_LENGTH(8192)
@@ -719,7 +726,7 @@ static MACHINE_CONFIG_START( magerror, hyprduel_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000,20000000/2)		/* 10MHz */
 	MCFG_CPU_PROGRAM_MAP(magerror_map)
-	MCFG_CPU_VBLANK_INT_HACK(hyprduel_interrupt,RASTER_LINES)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", hyprduel_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("sub", M68000,20000000/2)		/* 10MHz */
 	MCFG_CPU_PROGRAM_MAP(magerror_map2)
@@ -733,10 +740,9 @@ static MACHINE_CONFIG_START( magerror, hyprduel_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 224)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, FIRST_VISIBLE_LINE, LAST_VISIBLE_LINE)
-	MCFG_SCREEN_UPDATE(hyprduel)
+	MCFG_SCREEN_UPDATE_STATIC(hyprduel)
 
 	MCFG_GFXDECODE(14220)
 	MCFG_PALETTE_LENGTH(8192)

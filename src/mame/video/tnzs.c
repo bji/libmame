@@ -42,18 +42,20 @@ PALETTE_INIT( arknoid2 )
 }
 
 
-SCREEN_UPDATE( tnzs )
+SCREEN_UPDATE_IND16( tnzs )
 {
-	bitmap_fill(bitmap, cliprect, 0x1f0);
+	bitmap.fill(0x1f0, cliprect);
 
-	screen->machine().device<seta001_device>("spritegen")->set_fg_yoffsets( -0x12, 0x0e );
-	screen->machine().device<seta001_device>("spritegen")->set_bg_yoffsets( 0x1, -0x1 );
+	screen.machine().device<seta001_device>("spritegen")->set_fg_yoffsets( -0x12, 0x0e );
+	screen.machine().device<seta001_device>("spritegen")->set_bg_yoffsets( 0x1, -0x1 );
 
-	screen->machine().device<seta001_device>("spritegen")->seta001_draw_sprites(screen->machine(), bitmap, cliprect, 0x800, 0 );
+	screen.machine().device<seta001_device>("spritegen")->seta001_draw_sprites(screen.machine(), bitmap, cliprect, 0x800, 0 );
 	return 0;
 }
 
-SCREEN_EOF( tnzs )
+SCREEN_VBLANK( tnzs )
 {
-	machine.device<seta001_device>("spritegen")->tnzs_eof();
+	// rising edge
+	if (vblank_on)
+		screen.machine().device<seta001_device>("spritegen")->tnzs_eof();
 }

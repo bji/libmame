@@ -72,14 +72,14 @@ static VIDEO_START( suprgolf )
 	state->m_bg_fb = auto_alloc_array(machine, UINT16, 0x2000*0x20);
 	state->m_fg_fb = auto_alloc_array(machine, UINT16, 0x2000*0x20);
 
-	tilemap_set_transparent_pen(state->m_tilemap,15);
+	state->m_tilemap->set_transparent_pen(15);
 }
 
-static SCREEN_UPDATE( suprgolf )
+static SCREEN_UPDATE_IND16( suprgolf )
 {
-	suprgolf_state *state = screen->machine().driver_data<suprgolf_state>();
+	suprgolf_state *state = screen.machine().driver_data<suprgolf_state>();
 	int x,y,count,color;
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	{
 		count = 0;
@@ -90,8 +90,8 @@ static SCREEN_UPDATE( suprgolf )
 			{
 				color = state->m_bg_fb[count];
 
-				if(x <= cliprect->max_x && y <= cliprect->max_y)
-					*BITMAP_ADDR16(bitmap, y, x) = screen->machine().pens[(color & 0x7ff)];
+				if(x <= cliprect.max_x && y <= cliprect.max_y)
+					bitmap.pix16(y, x) = screen.machine().pens[(color & 0x7ff)];
 
 				count++;
 			}
@@ -107,15 +107,15 @@ static SCREEN_UPDATE( suprgolf )
 			{
 				color = state->m_fg_fb[count];
 
-				if(((state->m_fg_fb[count] & 0x0f) != 0x0f) && (x <= cliprect->max_x && y <= cliprect->max_y))
-					*BITMAP_ADDR16(bitmap, y, x) = screen->machine().pens[(color & 0x7ff)];
+				if(((state->m_fg_fb[count] & 0x0f) != 0x0f) && (x <= cliprect.max_x && y <= cliprect.max_y))
+					bitmap.pix16(y, x) = screen.machine().pens[(color & 0x7ff)];
 
 				count++;
 			}
 		}
 	}
 
-	tilemap_draw(bitmap,cliprect,state->m_tilemap,0,0);
+	state->m_tilemap->draw(bitmap, cliprect, 0,0);
 
 	return 0;
 }
@@ -150,7 +150,7 @@ static WRITE8_HANDLER( suprgolf_videoram_w )
 	else
 	{
 		state->m_videoram[offset] = data;
-		tilemap_mark_tile_dirty(state->m_tilemap, (offset & 0x7fe) >> 1);
+		state->m_tilemap->mark_tile_dirty((offset & 0x7fe) >> 1);
 	}
 }
 
@@ -520,10 +520,9 @@ static MACHINE_CONFIG_START( suprgolf, suprgolf_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 0, 191)
-	MCFG_SCREEN_UPDATE(suprgolf)
+	MCFG_SCREEN_UPDATE_STATIC(suprgolf)
 
 	MCFG_GFXDECODE(suprgolf)
 	MCFG_PALETTE_LENGTH(0x800)

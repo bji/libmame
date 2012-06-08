@@ -87,7 +87,7 @@ static VIDEO_START( dominob )
 	machine.gfx[0]->color_granularity = 8;
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	dominob_state *state = machine.driver_data<dominob_state>();
 	int offs;
@@ -117,9 +117,9 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 }
 
 
-static SCREEN_UPDATE( dominob )
+static SCREEN_UPDATE_IND16( dominob )
 {
-	dominob_state *state = screen->machine().driver_data<dominob_state>();
+	dominob_state *state = screen.machine().driver_data<dominob_state>();
 	int x,y;
 	int index = 0;
 
@@ -130,7 +130,7 @@ static SCREEN_UPDATE( dominob )
 		{
 			drawgfx_opaque(bitmap,
 					cliprect,
-					screen->machine().gfx[1],
+					screen.machine().gfx[1],
 					state->m_bgram[index] + 256 * (state->m_bgram[index + 1] & 0xf),
 					state->m_bgram[index + 1] >> 4,
 					0, 0,
@@ -145,7 +145,7 @@ static SCREEN_UPDATE( dominob )
 		{
 			drawgfx_transpen(	bitmap,
 					cliprect,
-					screen->machine().gfx[0],
+					screen.machine().gfx[0],
 					state->m_videoram[(y * 32 + x) * 2 + 1] + (state->m_videoram[(y * 32 + x) * 2] & 7) * 256,
 					(state->m_videoram[(y * 32 + x) * 2] >> 3),
 					0, 0,
@@ -153,7 +153,7 @@ static SCREEN_UPDATE( dominob )
 		}
 	}
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }
@@ -300,10 +300,9 @@ static MACHINE_CONFIG_START( dominob, dominob_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.1524)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(dominob)
+	MCFG_SCREEN_UPDATE_STATIC(dominob)
 
 	MCFG_GFXDECODE(dominob)
 	MCFG_PALETTE_LENGTH(512)

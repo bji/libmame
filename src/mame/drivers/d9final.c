@@ -57,10 +57,10 @@ static VIDEO_START(d9final)
 	state->m_sc0_tilemap = tilemap_create(machine, get_sc0_tile_info,tilemap_scan_rows,8,8,64,32);
 }
 
-static SCREEN_UPDATE(d9final)
+static SCREEN_UPDATE_IND16(d9final)
 {
-	d9final_state *state = screen->machine().driver_data<d9final_state>();
-	tilemap_draw(bitmap,cliprect,state->m_sc0_tilemap,0,0);
+	d9final_state *state = screen.machine().driver_data<d9final_state>();
+	state->m_sc0_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -68,21 +68,21 @@ static WRITE8_HANDLER( sc0_lovram )
 {
 	d9final_state *state = space->machine().driver_data<d9final_state>();
 	state->m_lo_vram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_sc0_tilemap,offset);
+	state->m_sc0_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( sc0_hivram )
 {
 	d9final_state *state = space->machine().driver_data<d9final_state>();
 	state->m_hi_vram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_sc0_tilemap,offset);
+	state->m_sc0_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( sc0_cram )
 {
 	d9final_state *state = space->machine().driver_data<d9final_state>();
 	state->m_cram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_sc0_tilemap,offset);
+	state->m_sc0_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( d9final_bank_w )
@@ -286,10 +286,9 @@ static MACHINE_CONFIG_START( d9final, d9final_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(d9final)
+	MCFG_SCREEN_UPDATE_STATIC(d9final)
 
 	MCFG_GFXDECODE(d9final)
 	MCFG_PALETTE_LENGTH(0x400)

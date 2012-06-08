@@ -513,7 +513,7 @@ static VIDEO_START(majorpkr)
 
 	state->m_bg_tilemap = tilemap_create(machine, bg_get_tile_info, tilemap_scan_rows, 16, 8, 36, 28);
 	state->m_fg_tilemap = tilemap_create(machine, fg_get_tile_info, tilemap_scan_rows, 16, 8, 36, 28);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	state->machine().generic.paletteram.u8 = auto_alloc_array(machine, UINT8, 4 * 0x800);
 
@@ -521,29 +521,27 @@ static VIDEO_START(majorpkr)
 }
 
 
-static SCREEN_UPDATE(majorpkr)
+static SCREEN_UPDATE_IND16(majorpkr)
 {
-	majorpkr_state *state = screen->machine().driver_data<majorpkr_state>();
+	majorpkr_state *state = screen.machine().driver_data<majorpkr_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	rectangle custom_clip;
 
 	/* The following custom_clip is to exclude the last char column (unused)
        form the render. We need more proof about how the video is working.
     */
-	custom_clip.min_x=cliprect->min_x;
-	custom_clip.max_x=cliprect->max_x-16;
-	custom_clip.min_y=cliprect->min_y;
-	custom_clip.max_y=cliprect->max_y;
+	custom_clip = cliprect;
+	custom_clip.max_x -= 16;
 
-	tilemap_draw(bitmap, &custom_clip, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, &custom_clip, state->m_fg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, custom_clip, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, custom_clip, 0, 0);
 
 	if (state->m_flip_state == 1)
 	{
-		tilemap_set_flip(state->m_bg_tilemap, TILEMAP_FLIPX | TILEMAP_FLIPY);
-		tilemap_set_flip(state->m_fg_tilemap, TILEMAP_FLIPX | TILEMAP_FLIPY);
+		state->m_bg_tilemap->set_flip(TILEMAP_FLIPX | TILEMAP_FLIPY);
+		state->m_fg_tilemap->set_flip(TILEMAP_FLIPX | TILEMAP_FLIPY);
 	}
 
 	return 0;
@@ -604,13 +602,13 @@ static WRITE8_HANDLER(vram_w)
 
 	if (state->m_vram_bank == 0)
 	{
-		tilemap_mark_tile_dirty(state->m_fg_tilemap, offset >> 1);
+		state->m_fg_tilemap->mark_tile_dirty(offset >> 1);
 	}
 	else
 	{
 		if (state->m_vram_bank == 1)
 		{
-			tilemap_mark_tile_dirty(state->m_bg_tilemap, offset >> 1);
+			state->m_bg_tilemap->mark_tile_dirty(offset >> 1);
 		}
 		else
 		{
@@ -1037,7 +1035,6 @@ static MACHINE_CONFIG_START( majorpkr, majorpkr_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(52.786)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((47+1)*16, (36+1)*8)				/* through CRTC registers: 768 x 296 */
 	MCFG_SCREEN_VISIBLE_AREA(0, (36*16)-1, 0, (28*8)-1) /* through CRTC registers: 560(+16) x 224 */
 
@@ -1045,7 +1042,7 @@ static MACHINE_CONFIG_START( majorpkr, majorpkr_state )
 	MCFG_PALETTE_LENGTH(0x100 * 16)
 
 	MCFG_VIDEO_START(majorpkr)
-	MCFG_SCREEN_UPDATE(majorpkr)
+	MCFG_SCREEN_UPDATE_STATIC(majorpkr)
 
 	MCFG_MC6845_ADD("crtc", MC6845, CRTC_CLOCK, mc6845_intf) /* verified */
 

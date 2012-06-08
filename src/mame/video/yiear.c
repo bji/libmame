@@ -63,7 +63,7 @@ WRITE8_HANDLER( yiear_videoram_w )
 {
 	yiear_state *state = space->machine().driver_data<yiear_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset / 2);
+	state->m_bg_tilemap->mark_tile_dirty(offset / 2);
 }
 
 WRITE8_HANDLER( yiear_control_w )
@@ -73,14 +73,14 @@ WRITE8_HANDLER( yiear_control_w )
 	if (flip_screen_get(space->machine()) != (data & 0x01))
 	{
 		flip_screen_set(space->machine(), data & 0x01);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 
 	/* bit 1 is NMI enable */
 	state->m_yiear_nmi_enable = data & 0x02;
 
 	/* bit 2 is IRQ enable */
-	interrupt_enable_w(space, 0, data & 0x04);
+	state->m_yiear_irq_enable = data & 0x04;
 
 	/* bits 3 and 4 are coin counters */
 	coin_counter_w(space->machine(), 0, data & 0x08);
@@ -105,7 +105,7 @@ VIDEO_START( yiear )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	yiear_state *state = machine.driver_data<yiear_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -141,11 +141,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-SCREEN_UPDATE( yiear )
+SCREEN_UPDATE_IND16( yiear )
 {
-	yiear_state *state = screen->machine().driver_data<yiear_state>();
+	yiear_state *state = screen.machine().driver_data<yiear_state>();
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

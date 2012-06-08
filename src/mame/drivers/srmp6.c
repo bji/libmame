@@ -158,9 +158,9 @@ static VIDEO_START(srmp6)
 static int xixi=0;
 #endif
 
-static SCREEN_UPDATE(srmp6)
+static SCREEN_UPDATE_RGB32(srmp6)
 {
-	srmp6_state *state = screen->machine().driver_data<srmp6_state>();
+	srmp6_state *state = screen.machine().driver_data<srmp6_state>();
 	int alpha;
 	int x,y,tileno,height,width,xw,yw,sprite,xb,yb;
 	UINT16 *sprite_list = state->m_sprram_old;
@@ -172,17 +172,17 @@ static SCREEN_UPDATE(srmp6)
 		UINT16 b;
 	} temp;
 
-	bitmap_fill(bitmap,cliprect,0);
+	bitmap.fill(0, cliprect);
 
 #if 0
 	/* debug */
-	if(screen->machine().input().code_pressed_once(KEYCODE_Q))
+	if(screen.machine().input().code_pressed_once(KEYCODE_Q))
 	{
 		++xixi;
 		printf("%x\n",xixi);
 	}
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_W))
+	if(screen.machine().input().code_pressed_once(KEYCODE_W))
 	{
 		--xixi;
 		printf("%x\n",xixi);
@@ -259,7 +259,7 @@ static SCREEN_UPDATE(srmp6)
 						else
 							yb=y+(height-yw-1)*8+global_y;
 
-						drawgfx_alpha(bitmap,cliprect,screen->machine().gfx[0],tileno,global_pal,flip_x,flip_y,xb,yb,0,alpha);
+						drawgfx_alpha(bitmap,cliprect,screen.machine().gfx[0],tileno,global_pal,flip_x,flip_y,xb,yb,0,alpha);
 						tileno++;
 					}
 				}
@@ -273,7 +273,7 @@ static SCREEN_UPDATE(srmp6)
 
 	memcpy(state->m_sprram_old, state->m_sprram, 0x80000);
 
-	if(screen->machine().input().code_pressed_once(KEYCODE_Q))
+	if(screen.machine().input().code_pressed_once(KEYCODE_Q))
 	{
 		FILE *p=fopen("tileram.bin","wb");
 		fwrite(state->m_tileram, 1, 0x100000*16, p);
@@ -673,10 +673,9 @@ static MACHINE_CONFIG_START( srmp6, srmp6_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 42*8-1, 0*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(srmp6)
+	MCFG_SCREEN_UPDATE_STATIC(srmp6)
 
 	MCFG_PALETTE_LENGTH(0x800)
 

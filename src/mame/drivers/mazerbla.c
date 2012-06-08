@@ -60,7 +60,7 @@ public:
 	size_t    m_videoram_size;
 
 	/* video-related */
-	bitmap_t * m_tmpbitmaps[4];
+	bitmap_ind16 m_tmpbitmaps[4];
 
 	UINT8 m_vcu_video_reg[4];
 	UINT32 m_vcu_gfx_addr;
@@ -158,22 +158,22 @@ static VIDEO_START( mazerbla )
 	state->m_dbg_lookup = 4;
 #endif
 
-	state->m_tmpbitmaps[0] = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_tmpbitmaps[1] = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_tmpbitmaps[2] = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_tmpbitmaps[3] = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmaps[0]);
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmaps[1]);
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmaps[2]);
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmaps[3]);
 
-	state->save_item(NAME(*state->m_tmpbitmaps[0]));
-	state->save_item(NAME(*state->m_tmpbitmaps[1]));
-	state->save_item(NAME(*state->m_tmpbitmaps[2]));
-	state->save_item(NAME(*state->m_tmpbitmaps[3]));
+	state->save_item(NAME(state->m_tmpbitmaps[0]));
+	state->save_item(NAME(state->m_tmpbitmaps[1]));
+	state->save_item(NAME(state->m_tmpbitmaps[2]));
+	state->save_item(NAME(state->m_tmpbitmaps[3]));
 }
 
 #ifdef UNUSED_DEFINITION
 
-SCREEN_UPDATE( test_vcu )
+SCREEN_UPDATE_IND16( test_vcu )
 {
-	mazerbla_state *state = screen->machine().driver_data<mazerbla_state>();
+	mazerbla_state *state = screen.machine().driver_data<mazerbla_state>();
 	int *planes_enabled = state->m_planes_enabled;
 	char buf[128];
 
@@ -185,7 +185,7 @@ SCREEN_UPDATE( test_vcu )
 	if (state->m_game_id == GREATGUN)
 		color_base = 0x00;
 
-	bitmap_fill(bitmap, NULL, 0);
+	bitmap.fill(0);
 //  logerror("-->frame\n");
 
 	if (planes_enabled[3])
@@ -194,50 +194,50 @@ SCREEN_UPDATE( test_vcu )
 	if (planes_enabled[2])
 		copybitmap_trans(bitmap, state->m_tmpbitmaps[2], 0, 0, 0, 0,cliprect, color_base);
 
-	bitmap_fill(state->m_tmpbitmaps[2], NULL, color_base);
+	state->m_tmpbitmaps[2].fill(color_base);
 
 	if (planes_enabled[1])
 		copybitmap_trans(bitmap, state->m_tmpbitmaps[1], 0, 0, 0, 0,cliprect, color_base);
 
-	bitmap_fill(state->m_tmpbitmaps[1], NULL, color_base);
+	state->m_tmpbitmaps[1].fill(color_base);
 
 	if (planes_enabled[0])
 		copybitmap_trans(bitmap, state->m_tmpbitmaps[0], 0, 0, 0, 0,cliprect, color_base);
 
-	bitmap_fill(state->m_tmpbitmaps[0], NULL, color_base);
+	state->m_tmpbitmaps[0].fill(color_base);
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_1))	/* plane 1 */
+	if (screen.machine().input().code_pressed_once(KEYCODE_1))	/* plane 1 */
 		planes_enabled[0] ^= 1;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_2))	/* plane 2 */
+	if (screen.machine().input().code_pressed_once(KEYCODE_2))	/* plane 2 */
 		planes_enabled[1] ^= 1;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_3))	/* plane 3 */
+	if (screen.machine().input().code_pressed_once(KEYCODE_3))	/* plane 3 */
 		planes_enabled[2] ^= 1;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_4))	/* plane 4 */
+	if (screen.machine().input().code_pressed_once(KEYCODE_4))	/* plane 4 */
 		planes_enabled[3] ^= 1;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_I))	/* show/hide debug info */
+	if (screen.machine().input().code_pressed_once(KEYCODE_I))	/* show/hide debug info */
 		state->m_dbg_info = !state->m_dbg_info;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_G))	/* enable gfx area handling */
+	if (screen.machine().input().code_pressed_once(KEYCODE_G))	/* enable gfx area handling */
 		state->m_dbg_gfx_e = !state->m_dbg_gfx_e;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_C))	/* enable color area handling */
+	if (screen.machine().input().code_pressed_once(KEYCODE_C))	/* enable color area handling */
 		state->m_dbg_clr_e = !state->m_dbg_clr_e;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_V))	/* draw only when vbank==dbg_vbank */
+	if (screen.machine().input().code_pressed_once(KEYCODE_V))	/* draw only when vbank==dbg_vbank */
 		state->m_dbg_vbank ^= 1;
 
-	if (screen->machine().input().code_pressed_once(KEYCODE_L))	/* showlookup ram */
+	if (screen.machine().input().code_pressed_once(KEYCODE_L))	/* showlookup ram */
 		state->m_dbg_lookup = (state->m_dbg_lookup + 1) % 5;	//0,1,2,3, 4-off
 
 
 	if (state->m_dbg_info)
 	{
 		sprintf(buf,"I-info, G-gfx, C-color, V-vbank, 1-4 enable planes");
-		ui_draw_text(buf, 10, 0 * ui_get_line_height(screen->machine()));
+		ui_draw_text(buf, 10, 0 * ui_get_line_height(screen.machine()));
 
 		sprintf(buf,"g:%1i c:%1i v:%1i vbk=%1i  planes=%1i%1i%1i%1i  ", state->m_dbg_gfx_e&1, state->m_dbg_clr_e&1, state->m_dbg_vbank, vbank&1,
 			planes_enabled[0],
@@ -245,7 +245,7 @@ SCREEN_UPDATE( test_vcu )
 			planes_enabled[2],
 			planes_enabled[3] );
 
-		ui_draw_text(buf, 10, 1 * ui_get_line_height(screen->machine()));
+		ui_draw_text(buf, 10, 1 * ui_get_line_height(screen.machine()));
 
 		if (state->m_dbg_lookup!=4)
 		{
@@ -260,7 +260,7 @@ SCREEN_UPDATE( test_vcu )
 				{
 					sprintf(buf + strlen(buf), "%02x ", lookup_ram[lookup_offs + x + y * 16]);
 				}
-				ui_draw_text(buf, 0, (2 + y) * ui_get_line_height(screen->machine()));
+				ui_draw_text(buf, 0, (2 + y) * ui_get_line_height(screen.machine()));
 			}
 		}
 	}
@@ -270,9 +270,9 @@ SCREEN_UPDATE( test_vcu )
 #endif
 
 
-static SCREEN_UPDATE( mazerbla )
+static SCREEN_UPDATE_IND16( mazerbla )
 {
-	mazerbla_state *state = screen->machine().driver_data<mazerbla_state>();
+	mazerbla_state *state = screen.machine().driver_data<mazerbla_state>();
 //  UINT32 color_base = 0;
 
 	if (state->m_game_id == MAZERBLA)
@@ -281,7 +281,7 @@ static SCREEN_UPDATE( mazerbla )
 //  if (state->m_game_id == GREATGUN)
 //      color_base = 0x00;
 
-	//  bitmap_fill(bitmap, NULL, 0);
+	//  bitmap.fill(0);
 
 	copybitmap(bitmap, state->m_tmpbitmaps[3], 0, 0, 0, 0, cliprect);
 	copybitmap_trans(bitmap, state->m_tmpbitmaps[2], 0, 0, 0, 0, cliprect, 0);
@@ -464,7 +464,7 @@ static READ8_HANDLER( vcu_set_gfx_addr_r )
 					}
 
 					if (((state->m_xpos + x) < 256) && ((state->m_ypos + y) < 256) )
-						*BITMAP_ADDR16(state->m_tmpbitmaps[state->m_plane], state->m_ypos + y, state->m_xpos + x) = col;
+						state->m_tmpbitmaps[state->m_plane].pix16(state->m_ypos + y, state->m_xpos + x) = col;
 
 					bits += 2;
 				}
@@ -493,7 +493,7 @@ static READ8_HANDLER( vcu_set_gfx_addr_r )
 					/* color = 4 MSB = front PEN, 4 LSB = background PEN */
 
 					if (((state->m_xpos + x) < 256) && ((state->m_ypos + y) < 256))
-						*BITMAP_ADDR16(state->m_tmpbitmaps[state->m_plane], state->m_ypos + y, state->m_xpos + x) = data ? color_base | ((state->m_color1 & 0xf0) >> 4): color_base | ((state->m_color1 & 0x0f));
+						state->m_tmpbitmaps[state->m_plane].pix16(state->m_ypos + y, state->m_xpos + x) = data ? color_base | ((state->m_color1 & 0xf0) >> 4): color_base | ((state->m_color1 & 0x0f));
 
 					bits += 1;
 				}
@@ -521,7 +521,7 @@ static READ8_HANDLER( vcu_set_gfx_addr_r )
 					col = color_base | data;
 
 					if (((state->m_xpos + x) < 256) && ((state->m_ypos + y) < 256))
-						*BITMAP_ADDR16(state->m_tmpbitmaps[state->m_plane], state->m_ypos + y, state->m_xpos + x) = col;
+						state->m_tmpbitmaps[state->m_plane].pix16(state->m_ypos + y, state->m_xpos + x) = col;
 
 					bits += 4;
 				}
@@ -622,7 +622,7 @@ static READ8_HANDLER( vcu_set_clr_addr_r )
 					}
 
 					if (((state->m_xpos + x) < 256) && ((state->m_ypos + y) < 256))
-						*BITMAP_ADDR16(state->m_tmpbitmaps[state->m_plane], state->m_ypos + y, state->m_xpos + x) = col;
+						state->m_tmpbitmaps[state->m_plane].pix16(state->m_ypos + y, state->m_xpos + x) = col;
 
 						bits += 2;
 				}
@@ -1524,10 +1524,9 @@ static MACHINE_CONFIG_START( mazerbla, mazerbla_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(mazerbla)
+	MCFG_SCREEN_UPDATE_STATIC(mazerbla)
 
 	MCFG_PALETTE_LENGTH(256)
 
@@ -1565,10 +1564,9 @@ static MACHINE_CONFIG_START( greatgun, mazerbla_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(mazerbla)
+	MCFG_SCREEN_UPDATE_STATIC(mazerbla)
 
 	MCFG_PALETTE_LENGTH(256)
 

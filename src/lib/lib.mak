@@ -19,7 +19,9 @@ OBJDIRS += \
 	$(LIBOBJ)/formats \
 	$(LIBOBJ)/zlib \
 	$(LIBOBJ)/softfloat \
-	$(LIBOBJ)/cothread \
+	$(LIBOBJ)/libjpeg \
+	$(LIBOBJ)/libflac \
+	$(LIBOBJ)/libflacpp \
 
 
 
@@ -48,7 +50,6 @@ UTILOBJS = \
 	$(LIBOBJ)/util/png.o \
 	$(LIBOBJ)/util/pool.o \
 	$(LIBOBJ)/util/sha1.o \
-	$(LIBOBJ)/util/tagmap.o \
 	$(LIBOBJ)/util/unicode.o \
 	$(LIBOBJ)/util/unzip.o \
 	$(LIBOBJ)/util/vbiparse.o \
@@ -108,6 +109,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/d64_dsk.o		\
 	$(LIBOBJ)/formats/d81_dsk.o		\
 	$(LIBOBJ)/formats/d88_dsk.o		\
+	$(LIBOBJ)/formats/dfi_dsk.o		\
 	$(LIBOBJ)/formats/dim_dsk.o		\
 	$(LIBOBJ)/formats/dsk_dsk.o		\
 	$(LIBOBJ)/formats/fdi_dsk.o		\
@@ -119,6 +121,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/hect_tap.o	\
 	$(LIBOBJ)/formats/imd_dsk.o		\
 	$(LIBOBJ)/formats/ipf_dsk.o		\
+	$(LIBOBJ)/formats/kc_cas.o		\
 	$(LIBOBJ)/formats/kim1_cas.o	\
 	$(LIBOBJ)/formats/lviv_lvt.o	\
 	$(LIBOBJ)/formats/msx_dsk.o		\
@@ -129,6 +132,7 @@ FORMATSOBJS = \
 	$(LIBOBJ)/formats/oric_dsk.o	\
 	$(LIBOBJ)/formats/oric_tap.o	\
 	$(LIBOBJ)/formats/p6001_cas.o	\
+	$(LIBOBJ)/formats/pasti_dsk.o	\
 	$(LIBOBJ)/formats/pc_dsk.o		\
 	$(LIBOBJ)/formats/pmd_pmd.o		\
 	$(LIBOBJ)/formats/primoptp.o	\
@@ -207,18 +211,105 @@ $(LIBOBJ)/softfloat/fsincos.o: $(LIBSRC)/softfloat/fsincos.c $(LIBSRC)/softfloat
 
 
 #-------------------------------------------------
-# cothread library objects
+# libJPEG library objects
 #-------------------------------------------------
 
-COTHREADOBJS = \
-	$(LIBOBJ)/cothread/libco.o
+LIBJPEGOBJS= \
+	$(LIBOBJ)/libjpeg/jaricom.o \
+	$(LIBOBJ)/libjpeg/jcapimin.o \
+	$(LIBOBJ)/libjpeg/jcapistd.o \
+	$(LIBOBJ)/libjpeg/jcarith.o \
+	$(LIBOBJ)/libjpeg/jccoefct.o \
+	$(LIBOBJ)/libjpeg/jccolor.o \
+	$(LIBOBJ)/libjpeg/jcdctmgr.o \
+	$(LIBOBJ)/libjpeg/jchuff.o \
+	$(LIBOBJ)/libjpeg/jcinit.o \
+	$(LIBOBJ)/libjpeg/jcmainct.o \
+	$(LIBOBJ)/libjpeg/jcmarker.o \
+	$(LIBOBJ)/libjpeg/jcmaster.o \
+	$(LIBOBJ)/libjpeg/jcomapi.o \
+	$(LIBOBJ)/libjpeg/jcparam.o \
+	$(LIBOBJ)/libjpeg/jcprepct.o \
+	$(LIBOBJ)/libjpeg/jcsample.o \
+	$(LIBOBJ)/libjpeg/jctrans.o \
+	$(LIBOBJ)/libjpeg/jdapimin.o \
+	$(LIBOBJ)/libjpeg/jdapistd.o \
+	$(LIBOBJ)/libjpeg/jdarith.o \
+	$(LIBOBJ)/libjpeg/jdatadst.o \
+	$(LIBOBJ)/libjpeg/jdatasrc.o \
+	$(LIBOBJ)/libjpeg/jdcoefct.o \
+	$(LIBOBJ)/libjpeg/jdcolor.o \
+	$(LIBOBJ)/libjpeg/jddctmgr.o \
+	$(LIBOBJ)/libjpeg/jdhuff.o \
+	$(LIBOBJ)/libjpeg/jdinput.o \
+	$(LIBOBJ)/libjpeg/jdmainct.o \
+	$(LIBOBJ)/libjpeg/jdmarker.o \
+	$(LIBOBJ)/libjpeg/jdmaster.o \
+	$(LIBOBJ)/libjpeg/jdmerge.o \
+	$(LIBOBJ)/libjpeg/jdpostct.o \
+	$(LIBOBJ)/libjpeg/jdsample.o \
+	$(LIBOBJ)/libjpeg/jdtrans.o \
+	$(LIBOBJ)/libjpeg/jerror.o \
+	$(LIBOBJ)/libjpeg/jfdctflt.o \
+	$(LIBOBJ)/libjpeg/jfdctfst.o \
+	$(LIBOBJ)/libjpeg/jfdctint.o \
+	$(LIBOBJ)/libjpeg/jidctflt.o \
+	$(LIBOBJ)/libjpeg/jidctfst.o \
+	$(LIBOBJ)/libjpeg/jidctint.o \
+	$(LIBOBJ)/libjpeg/jquant1.o \
+	$(LIBOBJ)/libjpeg/jquant2.o \
+	$(LIBOBJ)/libjpeg/jutils.o \
+	$(LIBOBJ)/libjpeg/jmemmgr.o \
+	$(LIBOBJ)/libjpeg/jmemansi.o \
 
-$(OBJ)/libco.a: $(COTHREADOBJS)
+$(OBJ)/libjpeg.a: $(LIBJPEGOBJS)
 
-ifndef PROFILE
-COTHREAD_CFLAGS := -fomit-frame-pointer
+$(LIBOBJ)/libjpeg/%.o: $(LIBSRC)/libjpeg/%.c | $(OSPREBUILD)
+	@echo Compiling $<...
+	$(CC) $(CDEFS) $(CCOMFLAGS) $(CONLYFLAGS) -I$(LIBSRC)/libjpeg -c $< -o $@
+
+
+#-------------------------------------------------
+# libflac library objects
+#-------------------------------------------------
+
+FLACOPTS=-DFLAC__NO_ASM -DHAVE_INTTYPES_H -DHAVE_ICONV -DHAVE_LANGINFO_CODESET -DHAVE_SOCKLEN_T -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+
+ifdef BUILD_LIBMAME
+FLACOPTS := $(FLACOPTS) -fPIC
 endif
 
-$(LIBOBJ)/cothread/%.o: $(LIBSRC)/cothread/%.c | $(OSPREBUILD)
+LIBFLACOBJS = \
+	$(LIBOBJ)/libflac/bitmath.o \
+	$(LIBOBJ)/libflac/bitreader.o \
+	$(LIBOBJ)/libflac/bitwriter.o \
+	$(LIBOBJ)/libflac/cpu.o \
+	$(LIBOBJ)/libflac/crc.o \
+	$(LIBOBJ)/libflac/fixed.o \
+	$(LIBOBJ)/libflac/float.o \
+	$(LIBOBJ)/libflac/format.o \
+	$(LIBOBJ)/libflac/lpc.o \
+	$(LIBOBJ)/libflac/md5.o \
+	$(LIBOBJ)/libflac/memory.o \
+	$(LIBOBJ)/libflac/stream_decoder.o \
+	$(LIBOBJ)/libflac/stream_encoder.o \
+	$(LIBOBJ)/libflac/stream_encoder_framing.o \
+	$(LIBOBJ)/libflac/window.o
+
+$(OBJ)/libflac.a: $(LIBFLACOBJS)
+
+$(LIBOBJ)/libflac/%.o: $(LIBSRC)/libflac/libflac/%.c | $(OSPREBUILD)
 	@echo Compiling $<...
-	$(CC) $(CDEFS) $(CCOMFLAGS) $(COTHREAD_CFLAGS) -c $< -o $@
+	$(CC) $(CDEFS) $(FLACOPTS) $(CONLYFLAGS) -I$(LIBSRC)/libflac/include -c $< -o $@
+
+
+# LIBFLACPPOBJS = \
+#	$(LIBOBJ)/libflacpp/metadata.o \
+#	$(LIBOBJ)/libflacpp/stream_decoder.o \
+#	$(LIBOBJ)/libflacpp/stream_encoder.o
+
+# $(OBJ)/libflac++.a: $(LIBFLACPPOBJS)
+
+# $(LIBOBJ)/libflacpp/%.o: $(LIBSRC)/libflac/libflac++/%.cpp | $(OSPREBUILD)
+# 	@echo Compiling $<...
+#	$(CC) $(CDEFS) $(FLACOPTS) $(CPPONLYFLAGS) -I$(LIBSRC)/libflac/include -c $< -o $@

@@ -66,13 +66,13 @@ static VIDEO_START(intrscti)
 {
 }
 
-static SCREEN_UPDATE(intrscti)
+static SCREEN_UPDATE_IND16(intrscti)
 {
-	intrscti_state *state = screen->machine().driver_data<intrscti_state>();
+	intrscti_state *state = screen.machine().driver_data<intrscti_state>();
 	int y,x;
 	int count;
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	count = 0;
 	for (y=0;y<64;y++)
@@ -81,7 +81,7 @@ static SCREEN_UPDATE(intrscti)
 		{
 			int dat;
 			dat = state->m_ram[count];
-			drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],dat/*+0x100*/,0,0,0,x*8,y*8,0);
+			drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],dat/*+0x100*/,0,0,0,x*8,y*8,0);
 			count++;
 		}
 	}
@@ -101,10 +101,9 @@ static MACHINE_CONFIG_START( intrscti, intrscti_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0, 512-1)
-	MCFG_SCREEN_UPDATE(intrscti)
+	MCFG_SCREEN_UPDATE_STATIC(intrscti)
 
 	MCFG_GFXDECODE(intrscti)
 	MCFG_PALETTE_LENGTH(0x100)
@@ -138,4 +137,4 @@ static DRIVER_INIT( intrscti )
 	}
 }
 
-GAME( 19??, intrscti,  0,    intrscti, intrscti, intrscti, ROT0, "<unknown>", "Intersecti", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 19??, intrscti,  0,    intrscti, intrscti, intrscti, ROT0, "<unknown>", "Intersecti", GAME_IS_SKELETON )

@@ -80,7 +80,7 @@ static WRITE16_HANDLER( gaelco_vram_encrypted_w )
 	data = gaelco_decrypt(space, offset, data, 0x0f, 0x4228);
 	COMBINE_DATA(&state->m_videoram[offset]);
 
-	tilemap_mark_tile_dirty(state->m_tilemap[offset >> 11], ((offset << 1) & 0x0fff) >> 2);
+	state->m_tilemap[offset >> 11]->mark_tile_dirty(((offset << 1) & 0x0fff) >> 2);
 }
 
 
@@ -103,7 +103,7 @@ static WRITE16_HANDLER( thoop_vram_encrypted_w )
 	data = gaelco_decrypt(space, offset, data, 0x0e, 0x4228);
 	COMBINE_DATA(&state->m_videoram[offset]);
 
-	tilemap_mark_tile_dirty(state->m_tilemap[offset >> 11], ((offset << 1) & 0x0fff) >> 2);
+	state->m_tilemap[offset >> 11]->mark_tile_dirty(((offset << 1) & 0x0fff) >> 2);
 }
 
 static WRITE16_HANDLER(thoop_encrypted_w)
@@ -525,10 +525,9 @@ static MACHINE_CONFIG_START( bigkarnk, gaelco_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 32*16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(bigkarnk)
+	MCFG_SCREEN_UPDATE_STATIC(bigkarnk)
 
 	MCFG_GFXDECODE(0x100000)
 	MCFG_PALETTE_LENGTH(1024)
@@ -558,10 +557,9 @@ static MACHINE_CONFIG_START( maniacsq, gaelco_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 32*16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(maniacsq)
+	MCFG_SCREEN_UPDATE_STATIC(maniacsq)
 
 	MCFG_GFXDECODE(0x100000)
 	MCFG_PALETTE_LENGTH(1024)
@@ -590,10 +588,9 @@ static MACHINE_CONFIG_START( squash, gaelco_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 32*16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(maniacsq)
+	MCFG_SCREEN_UPDATE_STATIC(maniacsq)
 
 	MCFG_GFXDECODE(0x100000)
 	MCFG_PALETTE_LENGTH(1024)
@@ -622,10 +619,9 @@ static MACHINE_CONFIG_START( thoop, gaelco_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 32*16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 16, 256-1)
-	MCFG_SCREEN_UPDATE(maniacsq)
+	MCFG_SCREEN_UPDATE_STATIC(maniacsq)
 
 	MCFG_GFXDECODE(0x100000)
 	MCFG_PALETTE_LENGTH(1024)

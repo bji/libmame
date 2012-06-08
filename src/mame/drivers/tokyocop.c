@@ -1,5 +1,8 @@
 /* Tokyo Cop
 
+TODO:
+can't be emulated without proper mb bios
+
 Italian Version
 
 PC based hardware
@@ -16,6 +19,8 @@ I/O Board with Altera Flex EPF15K50EQC240-3
 
 */
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/i386/i386.h"
 
@@ -24,21 +29,32 @@ class tokyocop_state : public driver_device
 {
 public:
 	tokyocop_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
 
+	UINT32 screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void video_start();
 };
 
 
-static VIDEO_START(tokyocop)
+void tokyocop_state::video_start()
 {
 }
 
-static SCREEN_UPDATE(tokyocop)
+UINT32 tokyocop_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	return 0;
 }
 
-static ADDRESS_MAP_START( tokyocop_map, AS_PROGRAM, 32 )
+static ADDRESS_MAP_START( tokyocop_map, AS_PROGRAM, 32, tokyocop_state )
 	AM_RANGE(0x00000000, 0x0001ffff) AM_ROM
 ADDRESS_MAP_END
 
@@ -53,16 +69,13 @@ static MACHINE_CONFIG_START( tokyocop, tokyocop_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
+	MCFG_SCREEN_UPDATE_DRIVER(tokyocop_state, screen_update)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(tokyocop)
 
 	MCFG_PALETTE_LENGTH(0x100)
-
-	MCFG_VIDEO_START(tokyocop)
 MACHINE_CONFIG_END
 
 
@@ -75,4 +88,4 @@ ROM_START(tokyocop)
 ROM_END
 
 
-GAME( 2003, tokyocop,  0,   tokyocop, tokyocop, 0, ROT0, "Gaelco", "Tokyo Cop (Italy)", GAME_NOT_WORKING|GAME_NO_SOUND )
+GAME( 2003, tokyocop,  0,   tokyocop, tokyocop, 0, ROT0, "Gaelco", "Tokyo Cop (Italy)", GAME_IS_SKELETON )

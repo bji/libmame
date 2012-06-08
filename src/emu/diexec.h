@@ -48,7 +48,7 @@
 
 
 // set to 1 to execute on cothread instead of directly
-#define USE_COTHREADS 1
+//#define USE_COTHREADS 1
 
 
 //**************************************************************************
@@ -144,6 +144,7 @@ typedef int (*device_irq_callback)(device_t *device, int irqnum);
 class device_execute_interface : public device_interface
 {
 	friend class device_scheduler;
+	friend class testcpu_state;
 
 public:
 	// construction/destruction
@@ -181,9 +182,6 @@ public:
 	int input_state(int linenum) { return m_input[linenum].m_curstate; }
 	void set_irq_callback(device_irq_callback callback);
 
-	// deprecated, but still needed for older drivers
-	int iloops() const { return m_iloops; }
-
 	// suspend/resume
 	void suspend(UINT32 reason, bool eatcycles);
 	void resume(UINT32 reason);
@@ -204,11 +202,11 @@ public:
 	UINT64 total_cycles() const;
 
 	// required operation overrides
-#if USE_COTHREADS
-	void run() { m_cothread.make_active(); }
-#else
+//#if USE_COTHREADS
+//  void run() { m_cothread.make_active(); }
+//#else
 	void run() { execute_run(); }
-#endif
+//#endif
 
 protected:
 	// internal helpers
@@ -230,7 +228,7 @@ protected:
 	virtual void execute_set_input(int linenum, int state);
 
 	// interface-level overrides
-	virtual bool interface_validity_check(emu_options &options, const game_driver &driver) const;
+	virtual void interface_validity_check(validity_checker &valid) const;
 	virtual void interface_pre_start();
 	virtual void interface_post_start();
 	virtual void interface_pre_reset();
@@ -272,12 +270,11 @@ protected:
 	};
 
 	// internal state
-	cothread				m_cothread;					// thread used for execution
+//  cothread                m_cothread;                 // thread used for execution
 
 	// configuration
 	bool					m_disabled;					// disabled from executing?
 	device_interrupt_func	m_vblank_interrupt;			// for interrupts tied to VBLANK
-	int 					m_vblank_interrupts_per_frame;	// usually 1
 	const char *			m_vblank_interrupt_screen;	// the screen that causes the VBLANK interrupt
 	device_interrupt_func	m_timed_interrupt;			// for interrupts not tied to VBLANK
 	attotime				m_timed_interrupt_period;	// period for periodic interrupts
@@ -290,11 +287,6 @@ protected:
 	device_irq_callback		m_driver_irq;				// driver-specific IRQ callback
 	device_input			m_input[MAX_INPUT_LINES];	// data about inputs
 	emu_timer *				m_timedint_timer;			// reference to this device's periodic interrupt timer
-
-	// these below are hacks to support multiple interrupts per frame
-	INT32					m_iloops;					// number of interrupts remaining this frame
-	emu_timer *				m_partial_frame_timer;		// the timer that triggers partial frame interrupts
-	attotime				m_partial_frame_period;		// the length of one partial frame for interrupt purposes
 
 	// cycle counting and executing
 	profile_type			m_profiler;					// profiler tag
@@ -324,14 +316,14 @@ private:
 
 	void on_vblank(screen_device &screen, bool vblank_state);
 
-	static void static_trigger_partial_frame_interrupt(running_machine &machine, void *ptr, int param);
-	void trigger_partial_frame_interrupt();
-
 	static void static_trigger_periodic_interrupt(running_machine &machine, void *ptr, int param);
 	void trigger_periodic_interrupt();
 
 	attoseconds_t minimum_quantum() const;
 };
+
+// iterator
+typedef device_interface_iterator<device_execute_interface> execute_interface_iterator;
 
 
 

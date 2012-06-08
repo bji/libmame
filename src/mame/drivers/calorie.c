@@ -136,22 +136,22 @@ static VIDEO_START( calorie )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 16, 16, 16, 16);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE( calorie )
+static SCREEN_UPDATE_IND16( calorie )
 {
-	calorie_state *state = screen->machine().driver_data<calorie_state>();
+	calorie_state *state = screen.machine().driver_data<calorie_state>();
 	int x;
 
 	if (state->m_bg_bank & 0x10)
 	{
-		tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 	else
 	{
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, TILEMAP_DRAW_OPAQUE, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
 	}
 
 
@@ -166,7 +166,7 @@ static SCREEN_UPDATE( calorie )
 		ypos = 0xff - state->m_sprites[x + 2];
 		xpos = state->m_sprites[x + 3];
 
-		if (flip_screen_get(screen->machine()))
+		if (flip_screen_get(screen.machine()))
 		{
 			if (state->m_sprites[x + 1] & 0x10)
 				ypos = 0xff - ypos + 32;
@@ -181,12 +181,12 @@ static SCREEN_UPDATE( calorie )
 		if (state->m_sprites[x + 1] & 0x10)
 		{
 			 /* 32x32 sprites */
-			drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[3], tileno | 0x40, color, flipx, flipy, xpos, ypos - 31, 0);
+			drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[3], tileno | 0x40, color, flipx, flipy, xpos, ypos - 31, 0);
 		}
 		else
 		{
 			/* 16x16 sprites */
-			drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[2], tileno, color, flipx, flipy, xpos, ypos - 15, 0);
+			drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[2], tileno, color, flipx, flipy, xpos, ypos - 15, 0);
 		}
 	}
 	return 0;
@@ -202,14 +202,14 @@ static WRITE8_HANDLER( fg_ram_w )
 {
 	calorie_state *state = space->machine().driver_data<calorie_state>();
 	state->m_fg_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset & 0x3ff);
+	state->m_fg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 static WRITE8_HANDLER( bg_bank_w )
 {
 	calorie_state *state = space->machine().driver_data<calorie_state>();
 	if((state->m_bg_bank & ~0x10) != (data & ~0x10))
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 
 	state->m_bg_bank = data;
 }
@@ -449,10 +449,9 @@ static MACHINE_CONFIG_START( calorie, calorie_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(calorie)
+	MCFG_SCREEN_UPDATE_STATIC(calorie)
 
 	MCFG_GFXDECODE(calorie)
 	MCFG_PALETTE_LENGTH(0x100)

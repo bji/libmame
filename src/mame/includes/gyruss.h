@@ -22,6 +22,9 @@ public:
 	/* devices */
 	cpu_device *m_audiocpu;
 	cpu_device *m_audiocpu_2;
+
+	UINT8	   m_master_nmi_mask;
+	UINT8      m_slave_irq_mask;
 };
 
 
@@ -32,4 +35,4 @@ READ8_HANDLER( gyruss_scanline_r );
 
 PALETTE_INIT( gyruss );
 VIDEO_START( gyruss );
-SCREEN_UPDATE( gyruss );
+SCREEN_UPDATE_IND16( gyruss );

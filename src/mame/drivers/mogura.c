@@ -78,26 +78,21 @@ static VIDEO_START( mogura )
 	state->m_tilemap = tilemap_create(machine, get_mogura_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 }
 
-static SCREEN_UPDATE( mogura )
+static SCREEN_UPDATE_IND16( mogura )
 {
-	mogura_state *state = screen->machine().driver_data<mogura_state>();
-	const rectangle &visarea = screen->visible_area();
+	mogura_state *state = screen.machine().driver_data<mogura_state>();
+	const rectangle &visarea = screen.visible_area();
 
 	/* tilemap layout is a bit strange ... */
-	rectangle clip;
-	clip.min_x = visarea.min_x;
+	rectangle clip = visarea;
 	clip.max_x = 256 - 1;
-	clip.min_y = visarea.min_y;
-	clip.max_y = visarea.max_y;
-	tilemap_set_scrollx(state->m_tilemap, 0, 256);
-	tilemap_draw(bitmap, &clip, state->m_tilemap, 0, 0);
+	state->m_tilemap->set_scrollx(0, 256);
+	state->m_tilemap->draw(bitmap, clip, 0, 0);
 
 	clip.min_x = 256;
 	clip.max_x = 512 - 1;
-	clip.min_y = visarea.min_y;
-	clip.max_y = visarea.max_y;
-	tilemap_set_scrollx(state->m_tilemap, 0, -128);
-	tilemap_draw(bitmap, &clip, state->m_tilemap, 0, 0);
+	state->m_tilemap->set_scrollx(0, -128);
+	state->m_tilemap->draw(bitmap, clip, 0, 0);
 
 	return 0;
 }
@@ -106,7 +101,7 @@ static WRITE8_HANDLER( mogura_tileram_w )
 {
 	mogura_state *state = space->machine().driver_data<mogura_state>();
 	state->m_tileram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap, offset & 0x7ff);
+	state->m_tilemap->mark_tile_dirty(offset & 0x7ff);
 }
 
 static WRITE8_HANDLER(mogura_dac_w)
@@ -215,10 +210,9 @@ static MACHINE_CONFIG_START( mogura, mogura_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60) // ?
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE(mogura)
+	MCFG_SCREEN_UPDATE_STATIC(mogura)
 
 	MCFG_PALETTE_LENGTH(32)
 

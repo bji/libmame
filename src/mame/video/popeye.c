@@ -172,14 +172,14 @@ WRITE8_HANDLER( popeye_videoram_w )
 {
 	popeye_state *state = space->machine().driver_data<popeye_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( popeye_colorram_w )
 {
 	popeye_state *state = space->machine().driver_data<popeye_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( popeye_bitmap_w )
@@ -202,7 +202,7 @@ WRITE8_HANDLER( popeye_bitmap_w )
 		{
 			for (x = 0; x < 8; x++)
 			{
-				*BITMAP_ADDR16(state->m_tmpbitmap2, sy+y, sx+x) = colour;
+				state->m_tmpbitmap2->pix16(sy+y, sx+x) = colour;
 			}
 		}
 	}
@@ -219,7 +219,7 @@ WRITE8_HANDLER( popeye_bitmap_w )
 		{
 			for (x = 0; x < 8; x++)
 			{
-				*BITMAP_ADDR16(state->m_tmpbitmap2, sy+y, sx+x) = colour;
+				state->m_tmpbitmap2->pix16(sy+y, sx+x) = colour;
 			}
 		}
 	}
@@ -247,12 +247,12 @@ VIDEO_START( skyskipr )
 {
 	popeye_state *state = machine.driver_data<popeye_state>();
 	state->m_bitmapram = auto_alloc_array(machine, UINT8, popeye_bitmapram_size);
-	state->m_tmpbitmap2 = auto_bitmap_alloc(machine,1024,1024,machine.primary_screen->format());	/* actually 1024x512 but not rolling over vertically? */
+	state->m_tmpbitmap2 = auto_bitmap_ind16_alloc(machine,1024,1024);	/* actually 1024x512 but not rolling over vertically? */
 
 	state->m_bitmap_type = TYPE_SKYSKIPR;
 
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 16, 16, 32, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
     state->m_lastflip = 0;
 
@@ -265,12 +265,12 @@ VIDEO_START( popeye )
 {
 	popeye_state *state = machine.driver_data<popeye_state>();
 	state->m_bitmapram = auto_alloc_array(machine, UINT8, popeye_bitmapram_size);
-	state->m_tmpbitmap2 = auto_bitmap_alloc(machine,512,512,machine.primary_screen->format());
+	state->m_tmpbitmap2 = auto_bitmap_ind16_alloc(machine,512,512);
 
 	state->m_bitmap_type = TYPE_POPEYE;
 
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 16, 16, 32, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
     state->m_lastflip = 0;
 
@@ -279,7 +279,7 @@ VIDEO_START( popeye )
     state_save_register_global_pointer(machine, state->m_bitmapram, popeye_bitmapram_size);
 }
 
-static void draw_background(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_background(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	popeye_state *state = machine.driver_data<popeye_state>();
 	int offs;
@@ -296,7 +296,7 @@ static void draw_background(running_machine &machine, bitmap_t *bitmap, const re
 	set_background_palette(machine, (*state->m_palettebank & 0x08) >> 3);
 
 	if (state->m_background_pos[1] == 0)	/* no background */
-		bitmap_fill(bitmap,cliprect,0);
+		bitmap.fill(0, cliprect);
 	else
 	{
 		/* copy the background graphics */
@@ -313,11 +313,11 @@ static void draw_background(running_machine &machine, bitmap_t *bitmap, const re
 			scrolly = -scrolly;
 		}
 
-		copyscrollbitmap(bitmap,state->m_tmpbitmap2,1,&scrollx,1,&scrolly,cliprect);
+		copyscrollbitmap(bitmap,*state->m_tmpbitmap2,1,&scrollx,1,&scrolly,cliprect);
 	}
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	popeye_state *state = machine.driver_data<popeye_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -371,11 +371,11 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-SCREEN_UPDATE( popeye )
+SCREEN_UPDATE_IND16( popeye )
 {
-	popeye_state *state = screen->machine().driver_data<popeye_state>();
-	draw_background(screen->machine(), bitmap, cliprect);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	popeye_state *state = screen.machine().driver_data<popeye_state>();
+	draw_background(screen.machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

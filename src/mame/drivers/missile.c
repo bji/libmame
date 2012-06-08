@@ -664,16 +664,16 @@ static UINT8 read_vram(address_space *space, offs_t address)
  *
  *************************************/
 
-static SCREEN_UPDATE( missile )
+static SCREEN_UPDATE_IND16( missile )
 {
-	missile_state *state = screen->machine().driver_data<missile_state>();
+	missile_state *state = screen.machine().driver_data<missile_state>();
 	UINT8 *videoram = state->m_videoram;
 	int x, y;
 
 	/* draw the bitmap to the screen, looping over Y */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
-		UINT16 *dst = (UINT16 *)bitmap->base + y * bitmap->rowpixels;
+		UINT16 *dst = &bitmap.pix16(y);
 
 		int effy = state->m_flipscreen ? ((256+24 - y) & 0xff) : y;
 		UINT8 *src = &videoram[effy * 64];
@@ -684,7 +684,7 @@ static SCREEN_UPDATE( missile )
 			src3 = &videoram[get_bit3_addr(effy << 8)];
 
 		/* loop over X */
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			UINT8 pix = src[x / 4] >> (x & 3);
 			pix = ((pix >> 2) & 4) | ((pix << 1) & 2);
@@ -1038,9 +1038,8 @@ static MACHINE_CONFIG_START( missile, missile_state )
 	MCFG_PALETTE_LENGTH(8)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, HTOTAL, HBEND, HBSTART, VTOTAL, VBEND, VBSTART)
-	MCFG_SCREEN_UPDATE(missile)
+	MCFG_SCREEN_UPDATE_STATIC(missile)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

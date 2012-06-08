@@ -16,7 +16,6 @@
 */
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m6502/m6502.h"
 #include "includes/atari.h"
 #include "sound/speaker.h"
@@ -121,16 +120,15 @@ static MACHINE_CONFIG_START( a5200, bartop52_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6502, FREQ_17_EXACT)
 	MCFG_CPU_PROGRAM_MAP(a5200_mem)
-	MCFG_CPU_VBLANK_INT_HACK(a5200_interrupt, TOTAL_LINES_60HZ)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", a5200_interrupt, "screen", 0, 1)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(1))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_VISIBLE_AREA(MIN_X, MAX_X, MIN_Y, MAX_Y)
 	MCFG_SCREEN_REFRESH_RATE(FRAME_RATE_60HZ)
 	MCFG_SCREEN_SIZE(HWIDTH*8, TOTAL_LINES_60HZ)
-	MCFG_SCREEN_UPDATE(atari)
+	MCFG_SCREEN_UPDATE_STATIC(atari)
 
 	MCFG_PALETTE_LENGTH(256)
 	MCFG_PALETTE_INIT(atari)

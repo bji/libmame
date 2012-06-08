@@ -14,7 +14,7 @@ WRITE8_HANDLER( sidearms_videoram_w )
 	sidearms_state *state = space->machine().driver_data<sidearms_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( sidearms_colorram_w )
@@ -22,7 +22,7 @@ WRITE8_HANDLER( sidearms_colorram_w )
 	sidearms_state *state = space->machine().driver_data<sidearms_state>();
 
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( sidearms_c804_w )
@@ -67,7 +67,7 @@ WRITE8_HANDLER( sidearms_c804_w )
 	{
 		state->m_flipon = data & 0x80;
 		flip_screen_set(space->machine(), state->m_flipon);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -156,7 +156,7 @@ VIDEO_START( sidearms )
 		state->m_bg_tilemap = tilemap_create(machine, get_sidearms_bg_tile_info, sidearms_tilemap_scan,
 			 32, 32, 128, 128);
 
-		tilemap_set_transparent_pen(state->m_bg_tilemap, 15);
+		state->m_bg_tilemap->set_transparent_pen(15);
 	}
 	else
 	{
@@ -166,7 +166,7 @@ VIDEO_START( sidearms )
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows,
 		 8, 8, 64, 64);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 3);
+	state->m_fg_tilemap->set_transparent_pen(3);
 
 	state->m_hflop_74a_n = 1;
 	state->m_latch_374 = state->m_vcount_191 = state->m_hcount_191 = 0;
@@ -174,7 +174,7 @@ VIDEO_START( sidearms )
 	state->m_flipon = state->m_charon = state->m_staron = state->m_objon = state->m_bgon = 0;
 }
 
-static void draw_sprites_region(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int start_offset, int end_offset )
+static void draw_sprites_region(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int start_offset, int end_offset )
 {
 	UINT8 *buffered_spriteram = machine.generic.buffered_spriteram.u8;
 	const gfx_element *gfx = machine.gfx[2];
@@ -207,7 +207,7 @@ static void draw_sprites_region(running_machine &machine, bitmap_t *bitmap, cons
 	}
 }
 
-static void sidearms_draw_starfield( running_machine &machine, bitmap_t *bitmap )
+static void sidearms_draw_starfield( running_machine &machine, bitmap_ind16 &bitmap )
 {
 	int x, y, i;
 	UINT32 hadd_283, vadd_283, _hflop_74a_n, _hcount_191, _vcount_191;
@@ -217,8 +217,8 @@ static void sidearms_draw_starfield( running_machine &machine, bitmap_t *bitmap 
 	sidearms_state *state = machine.driver_data<sidearms_state>();
 
 	// clear starfield background
-	lineptr = BITMAP_ADDR16(bitmap, 16, 64);
-	lineadv = bitmap->rowpixels;
+	lineptr = &bitmap.pix16(16, 64);
+	lineadv = bitmap.rowpixels();
 
 	for (i=224; i; i--) { memset(lineptr, 0, 768); lineptr += lineadv; }
 
@@ -237,13 +237,13 @@ static void sidearms_draw_starfield( running_machine &machine, bitmap_t *bitmap 
 #if 0 // old loop (for reference; easier to read)
 	if (!flipon)
 	{
-		lineptr = bitmap->base;
+		lineptr = bitmap.base;
 		pixadv  = 1;
 		lineadv = lineadv - 512;
 	}
 	else
 	{
-		lineptr = BITMAP_ADDR16(bitmap, 255, 512 - 1);
+		lineptr = &bitmap.pix16(255, 512 - 1);
 		pixadv  = -1;
 		lineadv = -lineadv + 512;
 	}
@@ -280,13 +280,13 @@ static void sidearms_draw_starfield( running_machine &machine, bitmap_t *bitmap 
 #else // optimized loop
 	if (!state->m_flipon)
 	{
-		lineptr = BITMAP_ADDR16(bitmap, 16, 64);
+		lineptr = &bitmap.pix16(16, 64);
 		pixadv  = 1;
 		lineadv = lineadv - 384;
 	}
 	else
 	{
-		lineptr = BITMAP_ADDR16(bitmap, 239, 512 - 64 - 1);
+		lineptr = &bitmap.pix16(239, 512 - 64 - 1);
 		pixadv  = -1;
 		lineadv = -lineadv + 384;
 	}
@@ -331,7 +331,7 @@ static void sidearms_draw_starfield( running_machine &machine, bitmap_t *bitmap 
 #endif
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	sidearms_state *state = machine.driver_data<sidearms_state>();
 
@@ -346,29 +346,33 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-SCREEN_UPDATE( sidearms )
+SCREEN_UPDATE_IND16( sidearms )
 {
-	sidearms_state *state = screen->machine().driver_data<sidearms_state>();
+	sidearms_state *state = screen.machine().driver_data<sidearms_state>();
 
-	sidearms_draw_starfield(screen->machine(), bitmap);
+	sidearms_draw_starfield(screen.machine(), bitmap);
 
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_bg_scrollx[0] + (state->m_bg_scrollx[1] << 8 & 0xf00));
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, state->m_bg_scrolly[0] + (state->m_bg_scrolly[1] << 8 & 0xf00));
+	state->m_bg_tilemap->set_scrollx(0, state->m_bg_scrollx[0] + (state->m_bg_scrollx[1] << 8 & 0xf00));
+	state->m_bg_tilemap->set_scrolly(0, state->m_bg_scrolly[0] + (state->m_bg_scrolly[1] << 8 & 0xf00));
 
 	if (state->m_bgon)
-		tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+		state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	if (state->m_objon)
-		draw_sprites(screen->machine(), bitmap, cliprect);
+		draw_sprites(screen.machine(), bitmap, cliprect);
 
 	if (state->m_charon)
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
-SCREEN_EOF( sidearms )
+SCREEN_VBLANK( sidearms )
 {
-	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
+	// rising edge
+	if (vblank_on)
+	{
+		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
 
-	buffer_spriteram_w(space, 0, 0);
+		buffer_spriteram_w(space, 0, 0);
+	}
 }

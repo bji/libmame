@@ -61,7 +61,6 @@ Notes:
 ***************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m68000/m68000.h"
 #include "sound/okim6295.h"
 #include "sound/2413intf.h"
@@ -85,7 +84,9 @@ class igs011_state : public driver_device
 {
 public:
 	igs011_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu")
+		{ }
 
 	UINT8 *m_layer[8];
 	UINT16 m_priority;
@@ -105,6 +106,8 @@ public:
 	UINT16 m_lhb_irq_enable;
 	UINT16 *m_vbowl_trackball;
 	blitter_t m_blitter;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -154,9 +157,9 @@ static VIDEO_START( igs011 )
 	state->m_lhb2_pen_hi = 0;
 }
 
-static SCREEN_UPDATE( igs011 )
+static SCREEN_UPDATE_IND16( igs011 )
 {
-	igs011_state *state = screen->machine().driver_data<igs011_state>();
+	igs011_state *state = screen.machine().driver_data<igs011_state>();
 #ifdef MAME_DEBUG
 	int layer_enable = -1;
 #endif
@@ -165,26 +168,26 @@ static SCREEN_UPDATE( igs011 )
 	UINT16 *pri_ram;
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int mask = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	mask |= 0x01;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	mask |= 0x02;
-		if (screen->machine().input().code_pressed(KEYCODE_E))	mask |= 0x04;
-		if (screen->machine().input().code_pressed(KEYCODE_R))	mask |= 0x08;
-		if (screen->machine().input().code_pressed(KEYCODE_A))	mask |= 0x10;
-		if (screen->machine().input().code_pressed(KEYCODE_S))	mask |= 0x20;
-		if (screen->machine().input().code_pressed(KEYCODE_D))	mask |= 0x40;
-		if (screen->machine().input().code_pressed(KEYCODE_F))	mask |= 0x80;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	mask |= 0x01;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	mask |= 0x02;
+		if (screen.machine().input().code_pressed(KEYCODE_E))	mask |= 0x04;
+		if (screen.machine().input().code_pressed(KEYCODE_R))	mask |= 0x08;
+		if (screen.machine().input().code_pressed(KEYCODE_A))	mask |= 0x10;
+		if (screen.machine().input().code_pressed(KEYCODE_S))	mask |= 0x20;
+		if (screen.machine().input().code_pressed(KEYCODE_D))	mask |= 0x40;
+		if (screen.machine().input().code_pressed(KEYCODE_F))	mask |= 0x80;
 		if (mask)	layer_enable &= mask;
 	}
 #endif
 
 	pri_ram = &state->m_priority_ram[(state->m_priority & 7) * 512/2];
 
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			scr_addr = x + y * 512;
 			pri_addr = 0xff;
@@ -204,10 +207,10 @@ static SCREEN_UPDATE( igs011 )
 
 #ifdef MAME_DEBUG
 			if ((layer_enable != -1) && (pri_addr == 0xff))
-				*BITMAP_ADDR16(bitmap, y, x) = get_black_pen(screen->machine());
+				bitmap.pix16(y, x) = get_black_pen(screen.machine());
 			else
 #endif
-				*BITMAP_ADDR16(bitmap, y, x) = state->m_layer[l][scr_addr] | (l << 8);
+				bitmap.pix16(y, x) = state->m_layer[l][scr_addr] | (l << 8);
 		}
 	}
 	return 0;
@@ -433,7 +436,7 @@ static WRITE16_HANDLER( igs011_blit_flags_w )
 			}
 
 			// plot it
-			if (x >= clip.min_x && x <= clip.max_x && y >= clip.min_y && y <= clip.max_y)
+			if (clip.contains(x, y))
 			{
 				if      (clear)				dest[x + y * 512] = clear_pen;
 				else if (pen != trans_pen)	dest[x + y * 512] = pen | pen_hi;
@@ -2385,11 +2388,15 @@ static READ16_HANDLER( vbowl_unk_r )
 	return 0xffff;
 }
 
-static SCREEN_EOF( vbowl )
+static SCREEN_VBLANK( vbowl )
 {
-	igs011_state *state = machine.driver_data<igs011_state>();
-	state->m_vbowl_trackball[0] = state->m_vbowl_trackball[1];
-	state->m_vbowl_trackball[1] = (input_port_read(machine, "AN1") << 8) | input_port_read(machine, "AN0");
+	// rising edge
+	if (vblank_on)
+	{
+		igs011_state *state = screen.machine().driver_data<igs011_state>();
+		state->m_vbowl_trackball[0] = state->m_vbowl_trackball[1];
+		state->m_vbowl_trackball[1] = (input_port_read(screen.machine(), "AN1") << 8) | input_port_read(screen.machine(), "AN0");
+	}
 }
 
 static WRITE16_HANDLER( vbowl_pen_hi_w )
@@ -3571,10 +3578,9 @@ static MACHINE_CONFIG_START( igs011_base, igs011_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE( igs011 )
+	MCFG_SCREEN_UPDATE_STATIC( igs011 )
 
 	MCFG_PALETTE_LENGTH(0x800)
 //  MCFG_GFXDECODE(igs011)
@@ -3587,20 +3593,19 @@ static MACHINE_CONFIG_START( igs011_base, igs011_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 MACHINE_CONFIG_END
 
-static INTERRUPT_GEN( drgnwrld_interrupt )
+
+static TIMER_DEVICE_CALLBACK ( drgnworld_timer_irq_cb )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line(device, 6, HOLD_LINE);	break;
-		default:
-		case 1:	device_set_input_line(device, 5, HOLD_LINE);	break;
-	}
+	igs011_state *state = timer.machine().driver_data<igs011_state>();
+
+	device_set_input_line(state->m_maincpu, 5, HOLD_LINE);
 }
 
 static MACHINE_CONFIG_DERIVED( drgnwrld, igs011_base )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(drgnwrld)
-	MCFG_CPU_VBLANK_INT_HACK(drgnwrld_interrupt,1+4)	// lev5 frequency drives the music tempo
+	MCFG_CPU_VBLANK_INT("screen",irq6_line_hold)
+	MCFG_TIMER_ADD_PERIODIC("timer_irq", drgnworld_timer_irq_cb, attotime::from_hz(240)) // lev5 frequency drives the music tempo
 
 	MCFG_SOUND_ADD("ymsnd", YM3812, 3579545)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 2.0)
@@ -3613,43 +3618,47 @@ MACHINE_CONFIG_END
 
 
 
-static INTERRUPT_GEN( lhb_interrupt )
+static INTERRUPT_GEN( lhb_vblank_irq )
 {
 	igs011_state *state = device->machine().driver_data<igs011_state>();
 	if (!state->m_lhb_irq_enable)
 		return;
 
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line(device, 3, HOLD_LINE);	break;
-		case 2:	device_set_input_line(device, 6, HOLD_LINE);	break;
-		default:
-				// It reads the inputs. Must be called more than once for test mode on boot to work
-				device_set_input_line(device, 5, HOLD_LINE);	break;
-	}
+	device_set_input_line(state->m_maincpu, 6, HOLD_LINE);
+}
+
+static TIMER_DEVICE_CALLBACK ( lhb_timer_irq_cb )
+{
+	igs011_state *state = timer.machine().driver_data<igs011_state>();
+	if (!state->m_lhb_irq_enable)
+		return;
+
+	device_set_input_line(state->m_maincpu, 5, HOLD_LINE);
 }
 
 static MACHINE_CONFIG_DERIVED( lhb, igs011_base )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(lhb)
-	MCFG_CPU_VBLANK_INT_HACK(lhb_interrupt,3+1)
+	MCFG_CPU_VBLANK_INT("screen",lhb_vblank_irq)
+	MCFG_TIMER_ADD_PERIODIC("timer_irq", lhb_timer_irq_cb, attotime::from_hz(240)) // lev5 frequency drives the music tempo
+	// irq 3 points to an apparently unneeded routine
 MACHINE_CONFIG_END
 
 
 
-static INTERRUPT_GEN( wlcc_interrupt )
+static TIMER_DEVICE_CALLBACK ( wlcc_timer_irq_cb )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line(device, 3, HOLD_LINE);	break;
-		case 1:	device_set_input_line(device, 6, HOLD_LINE);	break;
-	}
+	igs011_state *state = timer.machine().driver_data<igs011_state>();
+
+	device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
 }
+
 
 static MACHINE_CONFIG_DERIVED( wlcc, igs011_base )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(wlcc)
-	MCFG_CPU_VBLANK_INT_HACK(wlcc_interrupt,2)
+	MCFG_CPU_VBLANK_INT("screen",irq6_line_hold)
+	MCFG_TIMER_ADD_PERIODIC("timer_irq", wlcc_timer_irq_cb, attotime::from_hz(240)) // lev3 frequency drives the music tempo
 MACHINE_CONFIG_END
 
 
@@ -3657,7 +3666,8 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( xymg, igs011_base )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(xymg)
-	MCFG_CPU_VBLANK_INT_HACK(wlcc_interrupt,2)
+	MCFG_CPU_VBLANK_INT("screen",irq6_line_hold)
+	MCFG_TIMER_ADD_PERIODIC("timer_irq", wlcc_timer_irq_cb, attotime::from_hz(240)) // lev3 frequency drives the music tempo
 MACHINE_CONFIG_END
 
 
@@ -3665,7 +3675,8 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( lhb2, igs011_base )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(lhb2)
-	MCFG_CPU_VBLANK_INT_HACK(drgnwrld_interrupt,1+4)	// lev5 frequency drives the music tempo
+	MCFG_CPU_VBLANK_INT("screen",irq6_line_hold)
+	MCFG_TIMER_ADD_PERIODIC("timer_irq", drgnworld_timer_irq_cb, attotime::from_hz(240)) // lev5 frequency drives the music tempo
 
 //  MCFG_GFXDECODE(igs011_hi)
 
@@ -3680,25 +3691,16 @@ static void sound_irq(device_t *device, int state)
 //   cputag_set_input_line(machine, "maincpu", 3, state);
 }
 
-static INTERRUPT_GEN( vbowl_interrupt )
-{
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line(device, 4, HOLD_LINE);	break;
-		case 1:	device_set_input_line(device, 5, HOLD_LINE);	break;
-		case 2:	device_set_input_line(device, 6, HOLD_LINE);	break;
-		default:
-		case 3:	device_set_input_line(device, 3, HOLD_LINE);	break;	// sound
-	}
-}
-
 static MACHINE_CONFIG_DERIVED( vbowl, igs011_base )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(vbowl)
-	MCFG_CPU_VBLANK_INT_HACK(vbowl_interrupt,3+4)
+	MCFG_CPU_VBLANK_INT("screen",irq6_line_hold)
+	MCFG_TIMER_ADD_PERIODIC("timer_irq", wlcc_timer_irq_cb, attotime::from_hz(240)) // lev3 frequency drives the music tempo
+	// irq 5 points to a debug function (all routines are clearly patched out)
+	// irq 4 points to an apparently unneeded routine
 
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_EOF(vbowl)	// trackball
+	MCFG_SCREEN_VBLANK_STATIC(vbowl)	// trackball
 //  MCFG_GFXDECODE(igs011_hi)
 
 	MCFG_DEVICE_REMOVE("oki")

@@ -969,6 +969,16 @@ MACHINE_CONFIG_END
 	ROM_LOAD( "supersleuth.p1", 0x000000, 0x080000, CRC(2417208f) SHA1(5c51bdcfa566aa8b2379d529441d37b2145864bb) )\
 	ROM_LOAD( "supersleuth.p2", 0x080000, 0x080000, CRC(892d3a4d) SHA1(bb585a9fda56f2f0859707973f771d60c5dfa080) )\
 
+#define m1_coderd_sound \
+	ROM_REGION( 0x100000, "oki", ROMREGION_ERASE00  )\
+	ROM_LOAD( "code_red.s1", 0x000000, 0x080000, CRC(616b939d) SHA1(1a94747efe430e508086fdb66da3f3e7daf7c4f3) )\
+	ROM_LOAD( "code_red.s2", 0x080000, 0x080000, CRC(bee44524) SHA1(dd3837559b375e1055e6aa6c984bfd88102a5825) )\
+
+#define m1_coro_sound \
+	ROM_REGION( 0x100000, "oki", ROMREGION_ERASE00  )\
+	ROM_LOAD( "digi0421.bin", 0x000000, 0x080000, CRC(9489c9cd) SHA1(1a858b2a6f41898bbf95611e9f13d668c8a05c9c) )\
+	ROM_LOAD( "digi0422.bin", 0x080000, 0x080000, CRC(cf17088e) SHA1(54c9a52ccdd1ca622367367e1304fe4e4037b0b9) )\
+
 ROM_START( m1albsq )
 	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
 	ROM_LOAD( "sa5-056", 0x0000, 0x010000, CRC(6f3bc318) SHA1(6dbe6e02ca762a8ffaed9c89a0da5f6a10d829cc) )//4.1 Normal Token
@@ -1850,68 +1860,177 @@ ROM_END_M1A_MCU
 
 
 
-
-
-
-
-
-
-
-
-
-
 ROM_START( m1coderd )
 	ROM_REGION( 0x20000, "maincpu", ROMREGION_ERASE00  )
-	ROM_LOAD( "sc991130", 0x0000, 0x020000, CRC(d3add67f) SHA1(f7387978f18680921a2aff0296de2b9609f3215d) )
-
-	ROM_REGION( 0x20000, "altrevs", ROMREGION_ERASE00  )
-	ROM_LOAD( "sc991131", 0x0000, 0x020000, CRC(d5b90a02) SHA1(18a5642175ee330832ce95ac2fcb3a662cfe4273) )
-
-	ROM_REGION( 0x100000, "oki", ROMREGION_ERASE00  )
-	ROM_LOAD( "code_red.s1", 0x000000, 0x080000, CRC(616b939d) SHA1(1a94747efe430e508086fdb66da3f3e7daf7c4f3) )
-	ROM_LOAD( "code_red.s2", 0x080000, 0x080000, CRC(bee44524) SHA1(dd3837559b375e1055e6aa6c984bfd88102a5825) )
+	ROM_LOAD( "sc991130", 0x0000, 0x020000, CRC(d3add67f) SHA1(f7387978f18680921a2aff0296de2b9609f3215d) )//ncr21
+	m1_coderd_sound
 ROM_END_M1A_MCU
 
+ROM_START( m1coderdp )
+	ROM_REGION( 0x20000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sc991131", 0x0000, 0x020000, CRC(d5b90a02) SHA1(18a5642175ee330832ce95ac2fcb3a662cfe4273) )//pcr21
+	m1_coderd_sound
+ROM_END_M1A_MCU
+
+
+
+//1996
 ROM_START( m1coro )
 	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
-	ROM_LOAD( "cns58c", 0x0000, 0x010000, CRC(e254a369) SHA1(10c03b108f9fb9ffb16c4cf47fac74625d2e7877) )
+	ROM_LOAD( "sa6-192", 0x0000, 0x010000, CRC(5a4b0f17) SHA1(04ae2db3a29485672faaedd22c5780dd71176c96) )//CORO
+	m1_coro_sound
+ROM_END_M1A_MCU
 
-	ROM_REGION( 0x20000, "altrevs", ROMREGION_ERASE00  )
-	ROM_LOAD( "cns58t", 0x0000, 0x010000, CRC(1b2c1306) SHA1(7fa7c0238685dc2a91354ae47674247e95707613) )
-	ROM_LOAD( "coro2010", 0x0000, 0x010000, CRC(a7cfd3e9) SHA1(1b8fee6397d137cfae8bcd93b6a3b8e36b2716b8) )
-	ROM_LOAD( "cst5p5bin", 0x0000, 0x010000, CRC(0ab4535b) SHA1(fc334b9da2736f8d57adb76095df8e957fb7667d) )
-	ROM_LOAD( "sa4-450", 0x0000, 0x010000, CRC(355e10f4) SHA1(5de193ea05988e6eb1190cff357581671a87c82f) )
-	ROM_LOAD( "sa4-451", 0x0000, 0x010000, CRC(ddb68d12) SHA1(b399504a8a17129b88e9f95ab1942c7448e5fbb3) )
-	ROM_LOAD( "sa4-529", 0x0000, 0x010000, CRC(ca486f81) SHA1(001669f92d9d548854b3c2c9e9c5b7141c9d2b32) )
-	ROM_LOAD( "sa4-530", 0x0000, 0x010000, CRC(4ade92e9) SHA1(2d5d18cfab8ff5a5f5790168375548a56b6903b0) )
-	ROM_LOAD( "sa5-048", 0x0000, 0x010000, CRC(fbd5c2ae) SHA1(c05959664fcee7f3f05c6f81c1a98d2fc6b59141) )
-	ROM_LOAD( "sa5-049", 0x0000, 0x010000, CRC(133d5f48) SHA1(b4f89e5cf1d4ef60f73be18d372c38b22126e651) )
-	ROM_LOAD( "sa5-208.bin", 0x0000, 0x010000, CRC(66f06d18) SHA1(fd14b09280815c03126d113e6be791a20483aae9) )
-	ROM_LOAD( "sa5-209", 0x0000, 0x010000, CRC(8e18f0fe) SHA1(8d6c0fbd05484dc42b976228b7575e0ca0eea239) )
-	ROM_LOAD( "sa5-393", 0x0000, 0x010000, CRC(abbdfe46) SHA1(a6e005849b6da9801331155eb73fa169f6f42265) )
-	ROM_LOAD( "sa5-394", 0x0000, 0x010000, CRC(a7a5a6ff) SHA1(0805d3f1148e0aa83f8c0c804c08df3624a3af72) )
-	ROM_LOAD( "sa5-395", 0x0000, 0x010000, CRC(980a56ba) SHA1(372744f165e0105346c567013b0c8ddec2ec0f7d) )
-	ROM_LOAD( "sa5-396", 0x0000, 0x010000, CRC(2cb28869) SHA1(0dc78252b8e56a4b18342e5d1583ed4a0ea1db38) )
-	ROM_LOAD( "sa5-397", 0x0000, 0x010000, CRC(6b91fff5) SHA1(e29ae21bfd7d7e3139bfb65b60bd4bafcece5b24) )
-	ROM_LOAD( "sa5-399", 0x0000, 0x010000, CRC(0e290f63) SHA1(a5c8f2b125836ca76a7707d09d8e4a2f3058a9df) )
-	ROM_LOAD( "sa6-192", 0x0000, 0x010000, CRC(5a4b0f17) SHA1(04ae2db3a29485672faaedd22c5780dd71176c96) )
-	ROM_LOAD( "sa6-193", 0x0000, 0x010000, CRC(b2a392f1) SHA1(d7b908373eb3e225e399c36847ef2481ea3ad65a) )
+ROM_START( m1corop )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa6-193", 0x0000, 0x010000, CRC(b2a392f1) SHA1(d7b908373eb3e225e399c36847ef2481ea3ad65a) )//PCORO
+	m1_coro_sound
+ROM_END_M1A_MCU
 
-	ROM_LOAD( "cns5.10", 0x0000, 0x010000, CRC(91dc8625) SHA1(525c4311355bb3aa3052160bc439c49f5cecbcc6) )
-	ROM_LOAD( "cnst5.5v2", 0x0000, 0x010000, CRC(a5b2589e) SHA1(cabd5abf996c1bb9ca7a0ffcc5d666aa632f6789) )
-	ROM_LOAD( "sa5-306", 0x0000, 0x010000, CRC(a94a8f48) SHA1(56d5723d8087f523061280d9afe15a1bf8b269f5) )
-	ROM_LOAD( "sa5-307", 0x0000, 0x010000, CRC(41a212ae) SHA1(463a7d93f3b8b073cb83bda2a957dab37070ba8b) )
-	ROM_LOAD( "sa5-447", 0x0000, 0x010000, CRC(5b292c6e) SHA1(584a5d64ee47054870785222f85a58a721165530) )
-	ROM_LOAD( "sa5-448", 0x0000, 0x010000, CRC(e0e481c3) SHA1(062b8f58a7d9fa9163fd98892a6cc8099d4d234c) )
-	ROM_LOAD( "sa6-049", 0x0000, 0x010000, CRC(dfa086ae) SHA1(c5fa5d435a603851ab6bbe5860ee38e41aea814e) )
+//1995
+ROM_START( m1coro32g )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa6-049", 0x0000, 0x010000, CRC(dfa086ae) SHA1(c5fa5d435a603851ab6bbe5860ee38e41aea814e) )//3.2 G?
+	m1_coro_sound
+ROM_END_M1A_MCU
 
-	// BWB Set
-	ROM_LOAD( "cs______.1_1", 0x0000, 0x010000, CRC(5b292c6e) SHA1(584a5d64ee47054870785222f85a58a721165530) )
+ROM_START( m1coro32gh )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "cns58c", 0x0000, 0x010000, CRC(e254a369) SHA1(10c03b108f9fb9ffb16c4cf47fac74625d2e7877) )//sa6-049 alt 3.2
+	m1_coro_sound
+ROM_END_M1A_MCU
 
+ROM_START( m1coro12a )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "cns58t", 0x0000, 0x010000, CRC(1b2c1306) SHA1(7fa7c0238685dc2a91354ae47674247e95707613) )//1.2 sa5-447 alt
+	m1_coro_sound
+ROM_END_M1A_MCU
 
-	ROM_REGION( 0x100000, "oki", ROMREGION_ERASE00  )
-	ROM_LOAD( "digi0421.bin", 0x000000, 0x080000, CRC(9489c9cd) SHA1(1a858b2a6f41898bbf95611e9f13d668c8a05c9c) )
-	ROM_LOAD( "digi0422.bin", 0x080000, 0x080000, CRC(cf17088e) SHA1(54c9a52ccdd1ca622367367e1304fe4e4037b0b9) )
+ROM_START( m1coro12g )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-447", 0x0000, 0x010000, CRC(5b292c6e) SHA1(584a5d64ee47054870785222f85a58a721165530) )//1.2 Gala? BwB labelled
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro12gp )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-448", 0x0000, 0x010000, CRC(e0e481c3) SHA1(062b8f58a7d9fa9163fd98892a6cc8099d4d234c) )//1.2 Gala? protocol
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro10h1 )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "cns5.10", 0x0000, 0x010000, CRC(91dc8625) SHA1(525c4311355bb3aa3052160bc439c49f5cecbcc6) )//1.0 G hack
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro10h2 )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "cst5p5bin", 0x0000, 0x010000, CRC(0ab4535b) SHA1(fc334b9da2736f8d57adb76095df8e957fb7667d) )//1.0 hack 5p 5GBP
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro10h3 )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "cnst5.5v2", 0x0000, 0x010000, CRC(a5b2589e) SHA1(cabd5abf996c1bb9ca7a0ffcc5d666aa632f6789) )//1.0 Gala hack 2
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+//1993
+ROM_START( m1coro81 )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-048", 0x0000, 0x010000, CRC(fbd5c2ae) SHA1(c05959664fcee7f3f05c6f81c1a98d2fc6b59141) )//8.1
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro81p )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-049", 0x0000, 0x010000, CRC(133d5f48) SHA1(b4f89e5cf1d4ef60f73be18d372c38b22126e651) )//8.1 Protocol
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro32n )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-399", 0x0000, 0x010000, CRC(0e290f63) SHA1(a5c8f2b125836ca76a7707d09d8e4a2f3058a9df) )//3.2 newer
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro32np )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-397", 0x0000, 0x010000, CRC(6b91fff5) SHA1(e29ae21bfd7d7e3139bfb65b60bd4bafcece5b24) )//3.2 newer protocol (Poss mislabel)
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro22n )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-395", 0x0000, 0x010000, CRC(980a56ba) SHA1(372744f165e0105346c567013b0c8ddec2ec0f7d) )//2.2 newer
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro21n )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-208", 0x0000, 0x010000, CRC(66f06d18) SHA1(fd14b09280815c03126d113e6be791a20483aae9) )//2.1 newer
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro21np )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-209", 0x0000, 0x010000, CRC(8e18f0fe) SHA1(8d6c0fbd05484dc42b976228b7575e0ca0eea239) )//2.1 newer protocol
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro12n )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-393", 0x0000, 0x010000, CRC(abbdfe46) SHA1(a6e005849b6da9801331155eb73fa169f6f42265) )//1.2 newer
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro12np )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-394", 0x0000, 0x010000, CRC(a7a5a6ff) SHA1(0805d3f1148e0aa83f8c0c804c08df3624a3af72) )//1.2 newer protocol
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro11n )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-306", 0x0000, 0x010000, CRC(a94a8f48) SHA1(56d5723d8087f523061280d9afe15a1bf8b269f5) )//1.1 newer
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro11np )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa5-307", 0x0000, 0x010000, CRC(41a212ae) SHA1(463a7d93f3b8b073cb83bda2a957dab37070ba8b) )//1.1 newer protocol
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro31 )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa4-450", 0x0000, 0x010000, CRC(355e10f4) SHA1(5de193ea05988e6eb1190cff357581671a87c82f) )//3.1 Normal
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro31p )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa4-451", 0x0000, 0x010000, CRC(ddb68d12) SHA1(b399504a8a17129b88e9f95ab1942c7448e5fbb3) )//3.1 Protocol
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro30h )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "coro2010", 0x0000, 0x010000, CRC(a7cfd3e9) SHA1(1b8fee6397d137cfae8bcd93b6a3b8e36b2716b8) )//sa5-399 hack 20GBP?
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro21v )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa4-529", 0x0000, 0x010000, CRC(ca486f81) SHA1(001669f92d9d548854b3c2c9e9c5b7141c9d2b32) )//2.1 Multivend
+	m1_coro_sound
+ROM_END_M1A_MCU
+
+ROM_START( m1coro21vp )
+	ROM_REGION( 0x10000, "maincpu", ROMREGION_ERASE00  )
+	ROM_LOAD( "sa4-530", 0x0000, 0x010000, CRC(4ade92e9) SHA1(2d5d18cfab8ff5a5f5790168375548a56b6903b0) )//2.1 Multivend Protocol
+	m1_coro_sound
 ROM_END_M1A_MCU
 
 ROM_START( m1cororr )
@@ -3874,277 +3993,306 @@ static DRIVER_INIT( m1 )
 	}
 }
 
+#define GAME_FLAGS GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL
 
-GAME( 1993, m1albsq		,0			,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v4.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1albsqp	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v4.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1albsq3	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v3.0 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1albsq2	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v2.2 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1albsq1	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1albsq1p	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 1993, m1albsq		,0			,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v4.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1albsqp	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v4.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1albsq3	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v3.0 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1albsq2	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v2.2 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1albsq1	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1albsq1p	,m1albsq	,m1,m1,m1, ROT0, "Maygay", "Albert Square (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
 
-GAME( 199?, m1alley		,0			,m1,m1,m1, ROT0, "Maygay", "Alley Cat (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, m1alley		,0			,m1,m1,m1, ROT0, "Maygay", "Alley Cat (Maygay) (M1A/B)",GAME_FLAGS )
 
-GAME( 1997, m1apollo	,0			,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Newer) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollop	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Newer) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apolloh	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Newer) (Hack?) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apolloa	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apolloap	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apolloao	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Older, 15GBP) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo9	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v9.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo9p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v9.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo4	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v4.1 (Newer) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo4p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v4.1 (Newer) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo11	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v11? (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo11b	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v11? (BwB Rebuild) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo11p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v11? (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo8	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v8.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo8p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v8.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo7	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v7.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo7p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v7.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo5	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v5.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo5p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v5.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo4o	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v4.1 (Older, Token)(M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo3	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v3.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo3p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v3.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo2	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v2.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1apollo2p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 1997, m1apollo	,0			,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollop	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apolloh	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Newer) (Hack?) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apolloa	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apolloap	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apolloao	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) vA.1 (Older, 15GBP) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo9	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v9.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo9p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v9.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo4	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v4.1 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo4p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v4.1 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo11	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v11? (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo11b	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v11? (BwB Rebuild) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo11p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v11? (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo8	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v8.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo8p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v8.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo7	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v7.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo7p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v7.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo5	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v5.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo5p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v5.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo4o	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v4.1 (Older, Token)(M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo3	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v3.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo3p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v3.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo2	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1apollo2p	,m1apollo	,m1,m1,m1, ROT0, "Maygay", "Apollo 9 (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
 
-GAME( 199?, m1bankbs	,0			,m1,m1,m1, ROT0, "Maygay", "Bank Buster Club (Maygay) v2.9 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1bankbsp	,m1bankbs	,m1,m1,m1, ROT0, "Maygay", "Bank Buster Club (Maygay) v2.9 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1bankbso	,m1bankbs	,m1,m1,m1, ROT0, "Maygay", "Bank Buster Club (Maygay) v2.8 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1bankrl	,0			,m1,m1,m1, ROT0, "Maygay", "Bank Roll (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1bankrlp	,m1bankrl	,m1,m1,m1, ROT0, "Maygay", "Bank Roll (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1bankrl2p	,m1bankrl	,m1,m1,m1, ROT0, "Maygay", "Bank Roll (Maygay) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1bargn		,0			,m1,m1,m1, ROT0, "Maygay", "Bar-gain (Maygay) v7.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1bargnp	,m1bargn	,m1,m1,m1, ROT0, "Maygay", "Bar-gain (Maygay) v7.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1bargnc	,m1bargn	,m1,m1,m1, ROT0, "Maygay", "Casino Bar-gain (Maygay) v5.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1bargncp	,m1bargn	,m1,m1,m1, ROT0, "Maygay", "Casino Bar-gain (Maygay) v5.1 (Protocol)(M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 2000, m1bigdel	,0			,m1,m1,m1, ROT0, "Maygay", "Big Deal (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1blkhol	,0			,m1,m1,m1, ROT0, "Maygay", "Black Hole (Dutch) (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1992, m1bluemx	,0			,m1,m1,m1, ROT0, "Maygay", "Blue Max (Maygay) v2.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1992, m1bluemxp	,m1bluemx	,m1,m1,m1, ROT0, "Maygay", "Blue Max (Maygay) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi		,0			,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (Newer) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondip	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (Newer) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi4	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v4.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi4p	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v4.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi3	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v3.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi2	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v2.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi2p	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi2po	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v2.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi1	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bondi1p	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1bounty	,0			,m1,m1,m1, ROT0, "Maygay", "Bounty Hunter (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1bountc	,0			,m1,m1,m1, ROT0, "Maygay", "Bounty Hunter Club (Maygay) v1.3 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1bountcp	,m1bountc	,m1,m1,m1, ROT0, "Maygay", "Bounty Hunter Club (Maygay) v1.3 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik		,0			,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v11? (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cikp		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v11? (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cikh		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v11? (Hack?) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik51		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v5.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik51p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v5.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik51o	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v5.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik41		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v4.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik41p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v4.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik31		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v3.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik31p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v3.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik21		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v2.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik21p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik12		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.2 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik11		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik11p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik11n	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (alternate) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1997, m1cik11np	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (alternate,Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casclb	,0			,m1,m1,m1, ROT0, "Maygay", "Casino Club (Maygay) v1.2 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casclbp	,m1casclb	,m1,m1,m1, ROT0, "Maygay", "Casino Club (Maygay) v1.2 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casclb1	,m1casclb	,m1,m1,m1, ROT0, "Maygay", "Casino Club (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casgcl	,0			,m1,m1,m1, ROT0, "Maygay", "Casino Gambler Club (Maygay) v1.2 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casgclp	,m1casgcl	,m1,m1,m1, ROT0, "Maygay", "Casino Gambler Club (Maygay) v1.2 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casroy	,0			,m1,m1,m1, ROT0, "Maygay", "Casino Royale Club (Maygay) v1.2 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casroyp	,m1casroy	,m1,m1,m1, ROT0, "Maygay", "Casino Royale Club (Maygay) v1.2 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1990, m1casroy1	,m1casroy	,m1,m1,m1, ROT0, "Maygay", "Casino Royale Club (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1chain		,0			,m1,m1,m1, ROT0, "Maygay", "Chain Reaction (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1clbfvr	,0			,m1,m1,m1, ROT0, "Maygay", "Club Fever (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1clbfvrp	,m1clbfvr	,m1,m1,m1, ROT0, "Maygay", "Club Fever (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedo	,0			,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v6.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedop	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v6.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedo5	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v5.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedo5p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v5.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedoi	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v7.2 (Isle of Man) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedoip	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v7.2 (Isle of Man) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedon	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.2 (Newer) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedonp	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.2 (Newer) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedob2	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v2.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedob2p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedob2h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v2.1 (Hack?) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedob1	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedob1p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1995, m1cluedob1h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v1.1 (Hack?) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo4	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v4.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo4p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v4.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo3	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v3.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo3p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v3.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo3h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v3.1 (Hack?) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo1	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo1p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluedo1h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.1 (Hack?) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, m1bankbs	,0			,m1,m1,m1, ROT0, "Maygay", "Bank Buster Club (Maygay) v2.9 (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1bankbsp	,m1bankbs	,m1,m1,m1, ROT0, "Maygay", "Bank Buster Club (Maygay) v2.9 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1bankbso	,m1bankbs	,m1,m1,m1, ROT0, "Maygay", "Bank Buster Club (Maygay) v2.8 (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1bankrl	,0			,m1,m1,m1, ROT0, "Maygay", "Bank Roll (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1bankrlp	,m1bankrl	,m1,m1,m1, ROT0, "Maygay", "Bank Roll (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1bankrl2p	,m1bankrl	,m1,m1,m1, ROT0, "Maygay", "Bank Roll (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1bargn		,0			,m1,m1,m1, ROT0, "Maygay", "Bar-gain (Maygay) v7.1 (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1bargnp	,m1bargn	,m1,m1,m1, ROT0, "Maygay", "Bar-gain (Maygay) v7.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1bargnc	,m1bargn	,m1,m1,m1, ROT0, "Maygay", "Casino Bar-gain (Maygay) v5.1 (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1bargncp	,m1bargn	,m1,m1,m1, ROT0, "Maygay", "Casino Bar-gain (Maygay) v5.1 (Protocol)(M1A/B)",GAME_FLAGS )
+GAME( 2000, m1bigdel	,0			,m1,m1,m1, ROT0, "Maygay", "Big Deal (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1blkhol	,0			,m1,m1,m1, ROT0, "Maygay", "Black Hole (Dutch) (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 1992, m1bluemx	,0			,m1,m1,m1, ROT0, "Maygay", "Blue Max (Maygay) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 1992, m1bluemxp	,m1bluemx	,m1,m1,m1, ROT0, "Maygay", "Blue Max (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi		,0			,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondip	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi4	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v4.1 (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi4p	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v4.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi3	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v3.1 (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi2	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi2p	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi2po	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v2.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi1	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bondi1p	,m1bondi	,m1,m1,m1, ROT0, "Maygay", "Bondi Beach (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1bounty	,0			,m1,m1,m1, ROT0, "Maygay", "Bounty Hunter (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1bountc	,0			,m1,m1,m1, ROT0, "Maygay", "Bounty Hunter Club (Maygay) v1.3 (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1bountcp	,m1bountc	,m1,m1,m1, ROT0, "Maygay", "Bounty Hunter Club (Maygay) v1.3 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik		,0			,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v11? (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cikp		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v11? (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cikh		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v11? (Hack?) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik51		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v5.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik51p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v5.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik51o	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v5.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik41		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v4.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik41p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v4.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik31		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v3.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik31p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v3.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik21		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik21p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik12		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.2 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik11		,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik11p	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik11n	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (alternate) (M1A/B)",GAME_FLAGS )
+GAME( 1997, m1cik11np	,m1cik		,m1,m1,m1, ROT0, "Maygay", "Cash Is King (Maygay) v1.1 (alternate,Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casclb	,0			,m1,m1,m1, ROT0, "Maygay", "Casino Club (Maygay) v1.2 (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casclbp	,m1casclb	,m1,m1,m1, ROT0, "Maygay", "Casino Club (Maygay) v1.2 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casclb1	,m1casclb	,m1,m1,m1, ROT0, "Maygay", "Casino Club (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casgcl	,0			,m1,m1,m1, ROT0, "Maygay", "Casino Gambler Club (Maygay) v1.2 (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casgclp	,m1casgcl	,m1,m1,m1, ROT0, "Maygay", "Casino Gambler Club (Maygay) v1.2 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casroy	,0			,m1,m1,m1, ROT0, "Maygay", "Casino Royale Club (Maygay) v1.2 (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casroyp	,m1casroy	,m1,m1,m1, ROT0, "Maygay", "Casino Royale Club (Maygay) v1.2 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1990, m1casroy1	,m1casroy	,m1,m1,m1, ROT0, "Maygay", "Casino Royale Club (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1chain		,0			,m1,m1,m1, ROT0, "Maygay", "Chain Reaction (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1clbfvr	,0			,m1,m1,m1, ROT0, "Maygay", "Club Fever (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1clbfvrp	,m1clbfvr	,m1,m1,m1, ROT0, "Maygay", "Club Fever (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedo	,0			,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v6.1 (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedop	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v6.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedo5	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v5.1 (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedo5p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v5.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedoi	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v7.2 (Isle of Man) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedoip	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v7.2 (Isle of Man) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedon	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.2 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedonp	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.2 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedob2	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedob2p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedob2h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v2.1 (Hack?) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedob1	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedob1p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1cluedob1h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay/BwB", "Cluedo (Maygay/BwB) v1.1 (Hack?) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo4	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v4.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo4p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v4.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo3	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v3.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo3p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v3.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo3h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v3.1 (Hack?) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo1	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo1p	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluedo1h	,m1cluedo	,m1,m1,m1, ROT0, "Maygay", "Cluedo (Maygay) v1.1 (Hack?) (M1A/B)",GAME_FLAGS )
 
-GAME( 1993, m1cluecb	,0			,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v3.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluecbp	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v3.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluecb2	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v2.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluecb2p	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v2.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluecb1	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v1.1 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluecb1p	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v1.1 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluesh	,0			,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1clueshp	,m1cluesh	,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1cluesho	,m1cluesh	,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1993, m1clueshop	,m1cluesh	,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluess	,0			,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessh	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (Newer) (Hack) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (Newer) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessa	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.2 (Newer) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessap	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.2 (Newer) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessb	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v7.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessbp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v7.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessc	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v6.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluesscp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v6.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessd	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessdp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluesse	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessep	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessf	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessfp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessg	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v7.1 (15GBP Jackpot) (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessi	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (10GBP Jackpot) (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessj	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (5GBP Jackpot) (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessk	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.2 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessl	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluesslp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessm	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessmp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessn	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.1 (10GBP Jackpot) (Older) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluesso	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older, alternate) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessop	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older, alternate) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessq	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older, alternate) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessqp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older, alternate) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessr	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older, alternate) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluessrp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older, alternate) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluesss	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1? (Older, alternate) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 1996, m1cluesssp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1? (Older, alternate) (Protocol) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 1993, m1cluecb	,0			,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v3.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluecbp	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v3.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluecb2	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluecb2p	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluecb1	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v1.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluecb1p	,m1cluecb	,m1,m1,m1, ROT0, "Maygay", "Cluedo Club (Maygay) v1.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluesh	,0			,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1clueshp	,m1cluesh	,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1cluesho	,m1cluesh	,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1clueshop	,m1cluesh	,m1,m1,m1, ROT0, "Maygay", "Super Cluedo Showcase (Maygay) v1.2 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluess	,0			,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessh	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (Newer) (Hack) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessa	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.2 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessap	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.2 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessb	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v7.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessbp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v7.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessc	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v6.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluesscp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v6.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessd	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessdp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluesse	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessep	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessf	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessfp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessg	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v7.1 (15GBP Jackpot) (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessi	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (10GBP Jackpot) (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessj	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.3 (5GBP Jackpot) (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessk	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.2 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessl	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluesslp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessm	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessmp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessn	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v1.1 (10GBP Jackpot) (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluesso	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older, alternate) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessop	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v2.1 (Older, alternate) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessq	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older, alternate) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessqp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v5.1 (Older, alternate) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessr	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older, alternate) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluessrp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v3.1 (Older, alternate) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluesss	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1? (Older, alternate) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1cluesssp	,m1cluess	,m1,m1,m1, ROT0, "Maygay", "Cluedo Super Sleuth (Maygay) v4.1? (Older, alternate) (Protocol) (M1A/B)",GAME_FLAGS )
 
-GAME( 199?, m1coderd	,0			,m1,m1,m1, ROT0, "Maygay", "Code Red Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1coro		,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1cororr	,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street - Rovers Return (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1corocb	,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1corosh	,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street Showcase (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1criss		,0			,m1,m1,m1, ROT0, "Maygay", "Criss Cross Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1dxmono	,0			,m1,m1,m1, ROT0, "Maygay", "Deluxe Monopoly (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1dmnhrt	,0			,m1,m1,m1, ROT0, "Maygay", "Diamond Hearts (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1dm4ev		,0			,m1,m1,m1, ROT0, "Maygay", "Diamonds Are Forever Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1dkong		,0			,m1,m1,m1, ROT0, "Maygay", "Donkey Kong (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1ee		,0			,m1,m1,m1, ROT0, "Maygay", "Eastenders (Bwb) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1eea		,m1ee		,m1,m1,m1, ROT0, "Maygay", "Eastenders (Maygay - Bwb) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1eeb		,m1ee		,m1,m1,m1, ROT0, "Maygay", "Eastenders (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1eeqv		,0			,m1,m1,m1, ROT0, "Maygay", "Eastenders - Queen Vic (Maygay - Whitbread) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1eeqva		,m1eeqv		,m1,m1,m1, ROT0, "Maygay", "Eastenders - Queen Vic (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1expclb	,0			,m1,m1,m1, ROT0, "Maygay", "Explorer Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1fantfb	,0			,m1,m1,m1, ROT0, "Maygay", "Fantasy Football (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1fight		,0			,m1,m1,m1, ROT0, "Maygay", "Fight Night (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1fivest	,0			,m1,m1,m1, ROT0, "Maygay", "Five Star (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1frexpl	,0			,m1,m1,m1, ROT0, "Maygay", "Fruit Explosion (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1glad		,0			,m1,m1,m1, ROT0, "Maygay", "Gladiators (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1glada		,0			,m1,m1,m1, ROT0, "Maygay", "Gladiators Arcade (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1gladsh	,0			,m1,m1,m1, ROT0, "Maygay", "Gladiators Showcase (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1goldsv	,0			,m1,m1,m1, ROT0, "Maygay", "Gold & Silver (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1gold10	,0			,m1,m1,m1, ROT0, "Maygay", "Golden 10 (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1goldng	,0			,m1,m1,m1, ROT0, "Maygay", "Golden Nugget Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1gresc		,0			,m1,m1,m1, ROT0, "Maygay", "Great Escape, The (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1guvnor	,0			,m1,m1,m1, ROT0, "Maygay", "The Guvnor (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1htclb		,0			,m1,m1,m1, ROT0, "Maygay", "Hi Tension Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1hotpot	,0			,m1,m1,m1, ROT0, "Maygay", "Hot Pots (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1infern	,0			,m1,m1,m1, ROT0, "Maygay", "Inferno (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1imclb		,0			,m1,m1,m1, ROT0, "Maygay", "Instant Millionaire Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1inwin		,0			,m1,m1,m1, ROT0, "Maygay", "Instant Win (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1itsko		,0			,m1,m1,m1, ROT0, "Maygay", "It's A Knockout (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1itjob		,0			,m1,m1,m1, ROT0, "Maygay", "Italian Job (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1jpmult	,0			,m1,m1,m1, ROT0, "Maygay", "Jackpot Multiplier (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1jbond		,0			,m1,m1,m1, ROT0, "Maygay", "James Bond (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1jdwins	,0			,m1,m1,m1, ROT0, "Maygay", "Jim Davison's Winning Streak (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1liveam	,0			,m1,m1,m1, ROT0, "Maygay", "Living In America (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1lotmil	,0			,m1,m1,m1, ROT0, "Maygay", "Lottery Millionaire Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1luckno	,0			,m1,m1,m1, ROT0, "Maygay", "Lucky Numbers (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1magic		,0			,m1,m1,m1, ROT0, "Maygay", "Magic Squares (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1manhat	,0			,m1,m1,m1, ROT0, "Maygay", "Manhattan Skylines (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1bignit	,0			,m1,m1,m1, ROT0, "Maygay", "Mike Reid's Big Night Out (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1mongam	,0			,m1,m1,m1, ROT0, "Maygay", "Money Game Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1monmon	,0			,m1,m1,m1, ROT0, "Maygay", "Money Money Money (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1monod		,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly (Maygay) [Dutch] (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1mono		,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1moncls	,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly Classic (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1monclb	,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1monstr	,0			,m1,m1,m1, ROT0, "Maygay", "Monster Cash (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1nhp		,0			,m1,m1,m1, ROT0, "Maygay", "Noel's House Party (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1nudbnk	,0			,m1,m1,m1, ROT0, "Maygay", "Nudge Banker (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1nudunl	,0			,m1,m1,m1, ROT0, "Maygay", "Nudges Unlimited (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1omega		,0			,m1,m1,m1, ROT0, "Maygay", "Omega (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1onbus		,0			,m1,m1,m1, ROT0, "Maygay", "On The Buses (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1ott		,0			,m1,m1,m1, ROT0, "Maygay", "Over The Top (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1piggy		,0			,m1,m1,m1, ROT0, "Maygay", "Piggy Bank (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1ppd		,0			,m1,m1,m1, ROT0, "Maygay", "Pink Panther (Maygay) [Dutch] (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1pp		,0			,m1,m1,m1, ROT0, "Maygay", "Pink Panther (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1ppc		,0			,m1,m1,m1, ROT0, "Maygay", "Pink Panther Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1przclu	,0			,m1,m1,m1, ROT0, "Maygay", "Prize Cluedo (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1przee		,0			,m1,m1,m1, ROT0, "Maygay", "Prize Eastenders (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1reeldm	,0			,m1,m1,m1, ROT0, "Maygay", "Reel Diamonds (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1retpp		,0			,m1,m1,m1, ROT0, "Maygay", "Return Of The Pink Panther (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1search	,0			,m1,m1,m1, ROT0, "Maygay", "Search Light (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1sixspn	,0			,m1,m1,m1, ROT0, "Maygay", "Six Spinner (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1spid		,0			,m1,m1,m1, ROT0, "Maygay", "Spiderman (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1spid2		,0			,m1,m1,m1, ROT0, "Maygay", "Spiderman 2 (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1sptlgt	,0			,m1,m1,m1, ROT0, "Maygay", "Spotlight (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1stair		,0			,m1,m1,m1, ROT0, "Maygay", "Stairway To Heaven (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1sudnim	,0			,m1,m1,m1, ROT0, "Maygay", "Sudden Impact (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1sprnov	,0			,m1,m1,m1, ROT0, "Maygay", "Super Nova (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1suppot	,0			,m1,m1,m1, ROT0, "Maygay", "Super Pots (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1taknot	,0			,m1,m1,m1, ROT0, "Maygay", "Take Note (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1tstunt	,0			,m1,m1,m1, ROT0, "Maygay", "Test Unit (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1thatlf	,0			,m1,m1,m1, ROT0, "Maygay", "That's Life (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1topten	,0			,m1,m1,m1, ROT0, "Maygay", "Top Tenner (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1tp		,0			,m1,m1,m1, ROT0, "Maygay", "Trivial Pursuit (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1tpclb		,0			,m1,m1,m1, ROT0, "Maygay", "Trivial Pursuit Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1ultchl	,0			,m1,m1,m1, ROT0, "Maygay", "Ultimate Challenge (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1undsie	,0			,m1,m1,m1, ROT0, "Maygay", "Under Siege (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1vegas		,0			,m1,m1,m1, ROT0, "Maygay", "Vegas Gambler Club (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1wagon		,0			,m1,m1,m1, ROT0, "Maygay", "Wagon Trail (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1wotw		,0			,m1,m1,m1, ROT0, "Maygay", "War Of The Worlds (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1wldzne	,0			,m1,m1,m1, ROT0, "Maygay", "Wild Zone (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1winenc	,0			,m1,m1,m1, ROT0, "Maygay", "Winners Enclosure (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1simps		,0			,m1,m1,m1, ROT0, "Maygay", "The Simpsons (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, m1coderd	,0			,m1,m1,m1, ROT0, "Maygay", "Code Red Club (Maygay) v2.1 (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1coderdp	,m1coderd	,m1,m1,m1, ROT0, "Maygay", "Code Red Club (Maygay) v2.1 (Protocol) (M1A/B)",GAME_FLAGS )
 
-GAME( 199?, m1bghou		,0			,m1,m1,m1, ROT0, "Gemini", "Big Ghoulies (Gemini) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1crzco		,0			,m1,m1,m1, ROT0, "Gemini", "Crazy Cobra (Gemini) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1luxor		,0			,m1,m1,m1, ROT0, "Gemini", "Luxor Casino (Gemini) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 1996, m1coro		,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 1996, m1corop		,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro32g	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.2 (Newer, G?) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro32gh	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.2 (Newer, G?) (Hack) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro12g	,m1coro		,m1,m1,m1, ROT0, "Maygay/BwB?", "Coronation Street (Maygay) v1.2 (Newer, G?) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro12gp	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.2 (Newer, G?) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro12a	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.2 (Newer, G?) (Alternate) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro10h1	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.0 (Hack 1) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro10h2	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.0 (Hack 2) (M1A/B)",GAME_FLAGS )
+GAME( 1995, m1coro10h3	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.0 (Hack 3) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro81	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v8.1 (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro81p	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v8.1 (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro32n	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.2 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro32np	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.2 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro22n	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v2.2 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro21n	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v2.1 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro21np	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v2.1 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro12n	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.2 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro12np	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.2 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro11n	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.1 (Newer) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro11np	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v1.1 (Newer) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro31	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.1 (Older) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro31p	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.1 (Older) (Protocol) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro30h	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v3.0 (Hack) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro21v	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v2.1 (Multivend) (M1A/B)",GAME_FLAGS )
+GAME( 1993, m1coro21vp	,m1coro		,m1,m1,m1, ROT0, "Maygay", "Coronation Street (Maygay) v2.1 (Multivend) (Protocol)(M1A/B)",GAME_FLAGS )
+
+GAME( 199?, m1cororr	,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street - Rovers Return (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1corocb	,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1corosh	,0			,m1,m1,m1, ROT0, "Maygay", "Coronation Street Showcase (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1criss		,0			,m1,m1,m1, ROT0, "Maygay", "Criss Cross Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1dxmono	,0			,m1,m1,m1, ROT0, "Maygay", "Deluxe Monopoly (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1dmnhrt	,0			,m1,m1,m1, ROT0, "Maygay", "Diamond Hearts (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1dm4ev		,0			,m1,m1,m1, ROT0, "Maygay", "Diamonds Are Forever Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1dkong		,0			,m1,m1,m1, ROT0, "Maygay", "Donkey Kong (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1ee		,0			,m1,m1,m1, ROT0, "Maygay", "Eastenders (Bwb) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1eea		,m1ee		,m1,m1,m1, ROT0, "Maygay", "Eastenders (Maygay - Bwb) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1eeb		,m1ee		,m1,m1,m1, ROT0, "Maygay", "Eastenders (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1eeqv		,0			,m1,m1,m1, ROT0, "Maygay", "Eastenders - Queen Vic (Maygay - Whitbread) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1eeqva		,m1eeqv		,m1,m1,m1, ROT0, "Maygay", "Eastenders - Queen Vic (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1expclb	,0			,m1,m1,m1, ROT0, "Maygay", "Explorer Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1fantfb	,0			,m1,m1,m1, ROT0, "Maygay", "Fantasy Football (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1fight		,0			,m1,m1,m1, ROT0, "Maygay", "Fight Night (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1fivest	,0			,m1,m1,m1, ROT0, "Maygay", "Five Star (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1frexpl	,0			,m1,m1,m1, ROT0, "Maygay", "Fruit Explosion (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1glad		,0			,m1,m1,m1, ROT0, "Maygay", "Gladiators (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1glada		,0			,m1,m1,m1, ROT0, "Maygay", "Gladiators Arcade (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1gladsh	,0			,m1,m1,m1, ROT0, "Maygay", "Gladiators Showcase (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1goldsv	,0			,m1,m1,m1, ROT0, "Maygay", "Gold & Silver (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1gold10	,0			,m1,m1,m1, ROT0, "Maygay", "Golden 10 (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1goldng	,0			,m1,m1,m1, ROT0, "Maygay", "Golden Nugget Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1gresc		,0			,m1,m1,m1, ROT0, "Maygay", "Great Escape, The (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1guvnor	,0			,m1,m1,m1, ROT0, "Maygay", "The Guvnor (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1htclb		,0			,m1,m1,m1, ROT0, "Maygay", "Hi Tension Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1hotpot	,0			,m1,m1,m1, ROT0, "Maygay", "Hot Pots (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1infern	,0			,m1,m1,m1, ROT0, "Maygay", "Inferno (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1imclb		,0			,m1,m1,m1, ROT0, "Maygay", "Instant Millionaire Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1inwin		,0			,m1,m1,m1, ROT0, "Maygay", "Instant Win (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1itsko		,0			,m1,m1,m1, ROT0, "Maygay", "It's A Knockout (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1itjob		,0			,m1,m1,m1, ROT0, "Maygay", "Italian Job (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1jpmult	,0			,m1,m1,m1, ROT0, "Maygay", "Jackpot Multiplier (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1jbond		,0			,m1,m1,m1, ROT0, "Maygay", "James Bond (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1jdwins	,0			,m1,m1,m1, ROT0, "Maygay", "Jim Davison's Winning Streak (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1liveam	,0			,m1,m1,m1, ROT0, "Maygay", "Living In America (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1lotmil	,0			,m1,m1,m1, ROT0, "Maygay", "Lottery Millionaire Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1luckno	,0			,m1,m1,m1, ROT0, "Maygay", "Lucky Numbers (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1magic		,0			,m1,m1,m1, ROT0, "Maygay", "Magic Squares (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1manhat	,0			,m1,m1,m1, ROT0, "Maygay", "Manhattan Skylines (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1bignit	,0			,m1,m1,m1, ROT0, "Maygay", "Mike Reid's Big Night Out (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1mongam	,0			,m1,m1,m1, ROT0, "Maygay", "Money Game Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1monmon	,0			,m1,m1,m1, ROT0, "Maygay", "Money Money Money (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1monod		,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly (Maygay) [Dutch] (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1mono		,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1moncls	,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly Classic (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1monclb	,0			,m1,m1,m1, ROT0, "Maygay", "Monopoly Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1monstr	,0			,m1,m1,m1, ROT0, "Maygay", "Monster Cash (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1nhp		,0			,m1,m1,m1, ROT0, "Maygay", "Noel's House Party (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1nudbnk	,0			,m1,m1,m1, ROT0, "Maygay", "Nudge Banker (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1nudunl	,0			,m1,m1,m1, ROT0, "Maygay", "Nudges Unlimited (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1omega		,0			,m1,m1,m1, ROT0, "Maygay", "Omega (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1onbus		,0			,m1,m1,m1, ROT0, "Maygay", "On The Buses (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1ott		,0			,m1,m1,m1, ROT0, "Maygay", "Over The Top (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1piggy		,0			,m1,m1,m1, ROT0, "Maygay", "Piggy Bank (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1ppd		,0			,m1,m1,m1, ROT0, "Maygay", "Pink Panther (Maygay) [Dutch] (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1pp		,0			,m1,m1,m1, ROT0, "Maygay", "Pink Panther (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1ppc		,0			,m1,m1,m1, ROT0, "Maygay", "Pink Panther Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1przclu	,0			,m1,m1,m1, ROT0, "Maygay", "Prize Cluedo (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1przee		,0			,m1,m1,m1, ROT0, "Maygay", "Prize Eastenders (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1reeldm	,0			,m1,m1,m1, ROT0, "Maygay", "Reel Diamonds (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1retpp		,0			,m1,m1,m1, ROT0, "Maygay", "Return Of The Pink Panther (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1search	,0			,m1,m1,m1, ROT0, "Maygay", "Search Light (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1sixspn	,0			,m1,m1,m1, ROT0, "Maygay", "Six Spinner (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1spid		,0			,m1,m1,m1, ROT0, "Maygay", "Spiderman (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1spid2		,0			,m1,m1,m1, ROT0, "Maygay", "Spiderman 2 (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1sptlgt	,0			,m1,m1,m1, ROT0, "Maygay", "Spotlight (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1stair		,0			,m1,m1,m1, ROT0, "Maygay", "Stairway To Heaven (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1sudnim	,0			,m1,m1,m1, ROT0, "Maygay", "Sudden Impact (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1sprnov	,0			,m1,m1,m1, ROT0, "Maygay", "Super Nova (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1suppot	,0			,m1,m1,m1, ROT0, "Maygay", "Super Pots (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1taknot	,0			,m1,m1,m1, ROT0, "Maygay", "Take Note (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1tstunt	,0			,m1,m1,m1, ROT0, "Maygay", "Test Unit (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1thatlf	,0			,m1,m1,m1, ROT0, "Maygay", "That's Life (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1topten	,0			,m1,m1,m1, ROT0, "Maygay", "Top Tenner (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1tp		,0			,m1,m1,m1, ROT0, "Maygay", "Trivial Pursuit (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1tpclb		,0			,m1,m1,m1, ROT0, "Maygay", "Trivial Pursuit Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1ultchl	,0			,m1,m1,m1, ROT0, "Maygay", "Ultimate Challenge (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1undsie	,0			,m1,m1,m1, ROT0, "Maygay", "Under Siege (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1vegas		,0			,m1,m1,m1, ROT0, "Maygay", "Vegas Gambler Club (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1wagon		,0			,m1,m1,m1, ROT0, "Maygay", "Wagon Trail (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1wotw		,0			,m1,m1,m1, ROT0, "Maygay", "War Of The Worlds (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1wldzne	,0			,m1,m1,m1, ROT0, "Maygay", "Wild Zone (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1winenc	,0			,m1,m1,m1, ROT0, "Maygay", "Winners Enclosure (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1simps		,0			,m1,m1,m1, ROT0, "Maygay", "The Simpsons (Maygay) (M1A/B)",GAME_FLAGS )
+
+GAME( 199?, m1bghou		,0			,m1,m1,m1, ROT0, "Gemini", "Big Ghoulies (Gemini) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1crzco		,0			,m1,m1,m1, ROT0, "Gemini", "Crazy Cobra (Gemini) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1luxor		,0			,m1,m1,m1, ROT0, "Gemini", "Luxor Casino (Gemini) (M1A/B)",GAME_FLAGS )
 
 // guessing these are M1A/B based on data/code starting at 0x2800
-GAME( 199?, m1hiloc		,0			,m1,m1,m1, ROT0, "Global", "Hi Lo Casino (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1jtjob		,0			,m1,m1,m1, ROT0, "Global", "Just The Job (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1kingsw	,0			,m1,m1,m1, ROT0, "Global", "King Of The Swingers (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1lca		,0			,m1,m1,m1, ROT0, "Global", "Lights Camera Action (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1mb		,0			,m1,m1,m1, ROT0, "Global", "Monkey Business (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1mbclb		,0			,m1,m1,m1, ROT0, "Global", "Monkey Business Club (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1sycc		,0			,m1,m1,m1, ROT0, "Global", "Stake Yer Claim Club (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1thrill	,0			,m1,m1,m1, ROT0, "Global", "Thrills 'n' Spills (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1trtr		,0			,m1,m1,m1, ROT0, "Global", "Trick Or Treat (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1trtrcl	,0			,m1,m1,m1, ROT0, "Global", "Trick Or Treat Club (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1vegcrw	,0			,m1,m1,m1, ROT0, "Global", "Vegetable Crew (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, m1hiloc		,0			,m1,m1,m1, ROT0, "Global", "Hi Lo Casino (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1jtjob		,0			,m1,m1,m1, ROT0, "Global", "Just The Job (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1kingsw	,0			,m1,m1,m1, ROT0, "Global", "King Of The Swingers (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1lca		,0			,m1,m1,m1, ROT0, "Global", "Lights Camera Action (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1mb		,0			,m1,m1,m1, ROT0, "Global", "Monkey Business (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1mbclb		,0			,m1,m1,m1, ROT0, "Global", "Monkey Business Club (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1sycc		,0			,m1,m1,m1, ROT0, "Global", "Stake Yer Claim Club (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1thrill	,0			,m1,m1,m1, ROT0, "Global", "Thrills 'n' Spills (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1trtr		,0			,m1,m1,m1, ROT0, "Global", "Trick Or Treat (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1trtrcl	,0			,m1,m1,m1, ROT0, "Global", "Trick Or Treat Club (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1vegcrw	,0			,m1,m1,m1, ROT0, "Global", "Vegetable Crew (Global) (M1A/B)",GAME_FLAGS )
 
-GAME( 199?, m1calyps	,0			,m1,m1,m1, ROT0, "Maygay", "Calypso (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1cashln	,0			,m1,m1,m1, ROT0, "Maygay", "Cash Lines (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1races		,0			,m1,m1,m1, ROT0, "Maygay", "A Day At The Races (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1digdel	,0			,m1,m1,m1, ROT0, "Global", "Diggers Delight (Global) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1startr	,0			,m1,m1,m1, ROT0, "Mdm", "Star Trekking (Mdm) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1ttcash	,0			,m1,m1,m1, ROT0, "Empire", "Tick Tock Cash (Empire) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1topstr	,0			,m1,m1,m1, ROT0, "Maygay", "Top Strike (Maygay - Bwb) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1sirich	,0			,m1,m1,m1, ROT0, "Maygay", "Strike It Rich (Maygay) (M1A/B)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, m1gskill	,0			,m1,m1,m1, ROT0, "Hitech Amusement", "Greek Skill (Hitech Amusement)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL ) // no idea if this is m1ab but the code starts at 2800
+GAME( 199?, m1calyps	,0			,m1,m1,m1, ROT0, "Maygay", "Calypso (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1cashln	,0			,m1,m1,m1, ROT0, "Maygay", "Cash Lines (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1races		,0			,m1,m1,m1, ROT0, "Maygay", "A Day At The Races (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1digdel	,0			,m1,m1,m1, ROT0, "Global", "Diggers Delight (Global) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1startr	,0			,m1,m1,m1, ROT0, "Mdm", "Star Trekking (Mdm) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1ttcash	,0			,m1,m1,m1, ROT0, "Empire", "Tick Tock Cash (Empire) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1topstr	,0			,m1,m1,m1, ROT0, "Maygay", "Top Strike (Maygay - Bwb) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1sirich	,0			,m1,m1,m1, ROT0, "Maygay", "Strike It Rich (Maygay) (M1A/B)",GAME_FLAGS )
+GAME( 199?, m1gskill	,0			,m1,m1,m1, ROT0, "Hitech Amusement", "Greek Skill (Hitech Amusement)",GAME_FLAGS ) // no idea if this is m1ab but the code starts at 2800
 
-GAME( 19??, m1atunk		,0			,m1,m1,m1, ROT0, "Avantime?", "Random Runner (Avantime?)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 19??, m1atunk		,0			,m1,m1,m1, ROT0, "Avantime?", "Random Runner (Avantime?)",GAME_FLAGS )
 

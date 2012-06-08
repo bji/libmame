@@ -76,16 +76,18 @@ static WRITE8_HANDLER( skykid_bankswitch_w )
 
 static WRITE8_HANDLER( skykid_irq_1_ctrl_w )
 {
+	skykid_state *state = space->machine().driver_data<skykid_state>();
 	int bit = !BIT(offset,11);
-	cpu_interrupt_enable(space->machine().device("maincpu"), bit);
+	state->m_main_irq_mask = bit;
 	if (!bit)
 		cputag_set_input_line(space->machine(), "maincpu", 0, CLEAR_LINE);
 }
 
 static WRITE8_HANDLER( skykid_irq_2_ctrl_w )
 {
+	skykid_state *state = space->machine().driver_data<skykid_state>();
 	int bit = !BIT(offset,13);
-	cpu_interrupt_enable(space->machine().device("mcu"), bit);
+	state->m_mcu_irq_mask = bit;
 	if (!bit)
 		cputag_set_input_line(space->machine(), "mcu", 0, CLEAR_LINE);
 }
@@ -425,6 +427,22 @@ static const namco_interface namco_config =
 	0					/* stereo */
 };
 
+static INTERRUPT_GEN( main_vblank_irq )
+{
+	skykid_state *state = device->machine().driver_data<skykid_state>();
+
+	if(state->m_main_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
+
+
+static INTERRUPT_GEN( mcu_vblank_irq )
+{
+	skykid_state *state = device->machine().driver_data<skykid_state>();
+
+	if(state->m_mcu_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
 
 
 static MACHINE_CONFIG_START( skykid, skykid_state )
@@ -432,12 +450,12 @@ static MACHINE_CONFIG_START( skykid, skykid_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809,49152000/32)
 	MCFG_CPU_PROGRAM_MAP(skykid_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("mcu", HD63701,49152000/8)	/* or compatible 6808 with extra instructions */
 	MCFG_CPU_PROGRAM_MAP(mcu_map)
 	MCFG_CPU_IO_MAP(mcu_port_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", mcu_vblank_irq)
 
 	MCFG_QUANTUM_TIME(attotime::from_hz(6000))	/* we need heavy synch */
 
@@ -447,10 +465,9 @@ static MACHINE_CONFIG_START( skykid, skykid_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60.606060)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(36*8, 28*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 36*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(skykid)
+	MCFG_SCREEN_UPDATE_STATIC(skykid)
 
 	MCFG_GFXDECODE(skykid)
 	MCFG_PALETTE_LENGTH(64*4+128*4+64*8)

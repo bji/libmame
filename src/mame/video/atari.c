@@ -713,6 +713,8 @@ VIDEO_START( atari )
 	LOG(("atari antic_vh_start\n"));
     memset(&antic, 0, sizeof(antic));
 
+	antic.bitmap = auto_bitmap_ind16_alloc(machine, machine.primary_screen->width(), machine.primary_screen->height());
+
 	antic.renderer = antic_mode_0_xx;
 	antic.cclk_expand = auto_alloc_array(machine, UINT32, 21 * 256);
 
@@ -759,8 +761,6 @@ VIDEO_START( atari )
     {
 		antic.video[i] = auto_alloc_clear(machine, VIDEO);
     }
-
-    VIDEO_START_CALL(generic_bitmapped);
 }
 
 /************************************************************************
@@ -768,13 +768,13 @@ VIDEO_START( atari )
  * Refresh screen bitmap.
  * Note: Actual drawing is done scanline wise during atari_interrupt
  ************************************************************************/
-SCREEN_UPDATE( atari )
+SCREEN_UPDATE_IND16( atari )
 {
 	UINT32 new_tv_artifacts;
 
-	SCREEN_UPDATE_CALL(generic_bitmapped);
+	copybitmap(bitmap, *antic.bitmap, 0, 0, 0, 0, cliprect);
 
-	new_tv_artifacts = input_port_read_safe(screen->machine(), "artifacts", 0);
+	new_tv_artifacts = input_port_read_safe(screen.machine(), "artifacts", 0);
 	if( tv_artifacts != new_tv_artifacts )
 	{
 		tv_artifacts = new_tv_artifacts;
@@ -1043,7 +1043,7 @@ static void antic_linerefresh(running_machine &machine)
 	dst[2] = antic.color_lookup[PBK] | antic.color_lookup[PBK] << 16;
 	dst[3] = antic.color_lookup[PBK] | antic.color_lookup[PBK] << 16;
 
-	draw_scanline8(machine.generic.tmpbitmap, 12, y, MIN(machine.generic.tmpbitmap->width - 12, sizeof(scanline)), (const UINT8 *) scanline, NULL);
+	draw_scanline8(*antic.bitmap, 12, y, MIN(antic.bitmap->width() - 12, sizeof(scanline)), (const UINT8 *) scanline, NULL);
 }
 
 static int cycle(running_machine &machine)
@@ -1540,24 +1540,24 @@ static void generic_atari_interrupt(running_machine &machine, void (*handle_keyb
 
 
 
-INTERRUPT_GEN( a400_interrupt )
+TIMER_DEVICE_CALLBACK( a400_interrupt )
 {
-	generic_atari_interrupt(device->machine(), a800_handle_keyboard, 4);
+	generic_atari_interrupt(timer.machine(), a800_handle_keyboard, 4);
 }
 
-INTERRUPT_GEN( a800_interrupt )
+TIMER_DEVICE_CALLBACK( a800_interrupt )
 {
-	generic_atari_interrupt(device->machine(), a800_handle_keyboard, 4);
+	generic_atari_interrupt(timer.machine(), a800_handle_keyboard, 4);
 }
 
-INTERRUPT_GEN( a800xl_interrupt )
+TIMER_DEVICE_CALLBACK( a800xl_interrupt )
 {
-	generic_atari_interrupt(device->machine(), a800_handle_keyboard, 2);
+	generic_atari_interrupt(timer.machine(), a800_handle_keyboard, 2);
 }
 
-INTERRUPT_GEN( a5200_interrupt )
+TIMER_DEVICE_CALLBACK( a5200_interrupt )
 {
-	generic_atari_interrupt(device->machine(), a5200_handle_keypads, 4);
+	generic_atari_interrupt(timer.machine(), a5200_handle_keypads, 4);
 }
 
 /**************************************************************

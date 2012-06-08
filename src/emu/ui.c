@@ -20,6 +20,7 @@
 #include "ui.h"
 #include "uiinput.h"
 #include "uimenu.h"
+#include "uimain.h"
 #include "uigfx.h"
 #include <ctype.h>
 
@@ -166,7 +167,6 @@ static INT32 slider_overyoffset(running_machine &machine, void *arg, astring *st
 static INT32 slider_flicker(running_machine &machine, void *arg, astring *string, INT32 newval);
 static INT32 slider_beam(running_machine &machine, void *arg, astring *string, INT32 newval);
 static char *slider_get_screen_desc(screen_device &screen);
-static char *slider_get_laserdisc_desc(device_t *screen);
 #ifdef MAME_DEBUG
 static INT32 slider_crossscale(running_machine &machine, void *arg, astring *string, INT32 newval);
 static INT32 slider_crossoffset(running_machine &machine, void *arg, astring *string, INT32 newval);
@@ -245,7 +245,7 @@ int ui_init(running_machine &machine, int _quiet_startup)
 	machine.add_notifier(MACHINE_NOTIFY_EXIT, machine_notify_delegate(FUNC(ui_exit), &machine));
 
 	/* initialize the other UI bits */
-	ui_menu_init(machine);
+	ui_menu::init(machine);
 	ui_gfx_init(machine);
 
 	/* reset globals */
@@ -299,7 +299,7 @@ int ui_display_startup_screens(running_machine &machine, int first_time, int sho
 
 	/* loop over states */
 	ui_set_handler(handler_ingame, 0);
-	for (state = 0; state < maxstate && !machine.scheduled_event_pending() && !ui_menu_is_force_game_select(); state++)
+	for (state = 0; state < maxstate && !machine.scheduled_event_pending() && !ui_menu::stack_has_special_main_menu(); state++)
 	{
 		/* default to standard colors */
 		messagebox_backcolor = UI_BACKGROUND_COLOR;
@@ -334,7 +334,7 @@ int ui_display_startup_screens(running_machine &machine, int first_time, int sho
 		while (machine.input().poll_switches() != INPUT_CODE_INVALID) ;
 
 		/* loop while we have a handler */
-		while (ui_handler_callback != handler_ingame && !machine.scheduled_event_pending() && !ui_menu_is_force_game_select())
+		while (ui_handler_callback != handler_ingame && !machine.scheduled_event_pending() && !ui_menu::stack_has_special_main_menu())
 			machine.video().frame_update();
 
 		/* clear the handler and force an update */
@@ -343,8 +343,8 @@ int ui_display_startup_screens(running_machine &machine, int first_time, int sho
 	}
 
 	/* if we're the empty driver, force the menus on */
-	if (ui_menu_is_force_game_select())
-		ui_set_handler(ui_menu_ui_handler, 0);
+	if (ui_menu::stack_has_special_main_menu())
+		ui_set_handler(ui_menu::ui_handler, 0);
 
 	return 0;
 }
@@ -391,7 +391,7 @@ void ui_update_and_render(running_machine &machine, render_container *container)
 	if (machine.phase() >= MACHINE_PHASE_RESET && (single_step || machine.paused()))
 	{
 		int alpha = (1.0f - machine.options().pause_brightness()) * 255.0f;
-		if (ui_menu_is_force_game_select())
+		if (ui_menu::stack_has_special_main_menu())
 			alpha = 255;
 		if (alpha > 255)
 			alpha = 255;
@@ -870,7 +870,7 @@ int ui_get_show_profiler(void)
 
 void ui_show_menu(void)
 {
-	ui_set_handler(ui_menu_ui_handler, 0);
+	ui_set_handler(ui_menu::ui_handler, 0);
 }
 
 
@@ -881,7 +881,7 @@ void ui_show_menu(void)
 
 int ui_is_menu_active(void)
 {
-	return (ui_handler_callback == ui_menu_ui_handler);
+	return (ui_handler_callback == ui_menu::ui_handler);
 }
 
 
@@ -931,7 +931,9 @@ static astring &warnings_string(running_machine &machine, astring &string)
 	/* add a warning if any ROMs were loaded with warnings */
 	if (rom_load_warnings(machine) > 0)
 	{
-		string.cat("One or more ROMs/CHDs for this game are incorrect. The " GAMENOUN " may not run correctly.\n");
+		string.cat("One or more ROMs/CHDs for this game are incorrect. The ");
+		string.cat(emulator_info::get_gamenoun());
+		string.cat(" may not run correctly.\n");
 		if (machine.system().flags & WARNING_FLAGS)
 			string.cat("\n");
 	}
@@ -939,12 +941,16 @@ static astring &warnings_string(running_machine &machine, astring &string)
 	/* if we have at least one warning flag, print the general header */
 	if ((machine.system().flags & WARNING_FLAGS) || rom_load_knownbad(machine) > 0)
 	{
-		string.cat("There are known problems with this " GAMENOUN "\n\n");
+		string.cat("There are known problems with this ");
+		string.cat(emulator_info::get_gamenoun());
+		string.cat("\n\n");
 
 		/* add a warning if any ROMs are flagged BAD_DUMP/NO_DUMP */
-		if (rom_load_knownbad(machine) > 0)
-			string.cat("One or more ROMs/CHDs for this "  GAMENOUN " have not been correctly dumped.\n");
-
+		if (rom_load_knownbad(machine) > 0) {
+			string.cat("One or more ROMs/CHDs for this ");
+			string.cat(emulator_info::get_gamenoun());
+			string.cat(" have not been correctly dumped.\n");
+		}
 		/* add one line per warning flag */
 		if (input_machine_has_keyboard(machine))
 			string.cat("The keyboard emulation may not be 100% accurate.\n");
@@ -971,12 +977,20 @@ static astring &warnings_string(running_machine &machine, astring &string)
 			/* add the strings for these warnings */
 			if (machine.system().flags & GAME_UNEMULATED_PROTECTION)
 				string.cat("The game has protection which isn't fully emulated.\n");
-			if (machine.system().flags & GAME_NOT_WORKING)
-				string.cat("\nTHIS " CAPGAMENOUN " DOESN'T WORK. The emulation for this game is not yet complete. "
+			if (machine.system().flags & GAME_NOT_WORKING) {
+				string.cat("\nTHIS ");
+				string.cat(emulator_info::get_capgamenoun());
+				string.cat(" DOESN'T WORK. The emulation for this game is not yet complete. "
 					 "There is nothing you can do to fix this problem except wait for the developers to improve the emulation.\n");
-			if (machine.system().flags & GAME_MECHANICAL)
-				string.cat("\nCertain elements of this " GAMENOUN " cannot be emulated as it requires actual physical interaction or consists of mechanical devices. "
-					 "It is not possible to fully play this " GAMENOUN ".\n");
+			}
+			if (machine.system().flags & GAME_MECHANICAL) {
+				string.cat("\nCertain elements of this ");
+				string.cat(emulator_info::get_gamenoun());
+				string.cat(" cannot be emulated as it requires actual physical interaction or consists of mechanical devices. "
+					 "It is not possible to fully play this ");
+				string.cat(emulator_info::get_gamenoun());
+				string.cat(".\n");
+			}
 
 			/* find the parent of this driver */
 			driver_enumerator drivlist(machine.options());
@@ -1018,28 +1032,31 @@ static astring &warnings_string(running_machine &machine, astring &string)
 
 astring &game_info_astring(running_machine &machine, astring &string)
 {
-	int scrcount = machine.devicelist().count(SCREEN);
+	screen_device_iterator scriter(machine.root_device());
+	int scrcount = scriter.count();
 	int found_sound = FALSE;
 
 	/* print description, manufacturer, and CPU: */
 	string.printf("%s\n%s %s\n\nCPU:\n", machine.system().description, machine.system().year, machine.system().manufacturer);
 
 	/* loop over all CPUs */
-	device_execute_interface *exec = NULL;
-	for (bool gotone = machine.devicelist().first(exec); gotone; gotone = exec->next(exec))
+	execute_interface_iterator execiter(machine.root_device());
+	tagmap_t<UINT8> exectags;
+	for (device_execute_interface *exec = execiter.first(); exec != NULL; exec = execiter.next())
 	{
+		if (exectags.add(exec->device().tag(), 1, FALSE) == TMERR_DUPLICATE)
+			continue;
 		/* get cpu specific clock that takes internal multiplier/dividers into account */
 		int clock = exec->device().clock();
 
 		/* count how many identical CPUs we have */
 		int count = 1;
-		device_execute_interface *scan = NULL;
-		for (bool gotanother = exec->next(scan); gotanother; gotanother = scan->next(scan))
+		execute_interface_iterator execinneriter(machine.root_device());
+		for (device_execute_interface *scan = execinneriter.first(); scan != NULL; scan = execinneriter.next())
 		{
-			if (exec->device().type() != scan->device().type() || exec->device().clock() != scan->device().clock())
-				break;
-			count++;
-			exec = scan;
+			if (exec->device().type() == scan->device().type() && exec->device().clock() == scan->device().clock())
+				if (exectags.add(scan->device().tag(), 1, FALSE) != TMERR_DUPLICATE)
+					count++;
 		}
 
 		/* if more than one, prepend a #x in front of the CPU name */
@@ -1055,9 +1072,13 @@ astring &game_info_astring(running_machine &machine, astring &string)
 	}
 
 	/* loop over all sound chips */
-	device_sound_interface *sound = NULL;
-	for (bool gotone = machine.devicelist().first(sound); gotone; gotone = sound->next(sound))
+	sound_interface_iterator snditer(machine.root_device());
+	tagmap_t<UINT8> soundtags;
+	for (device_sound_interface *sound = snditer.first(); sound != NULL; sound = snditer.next())
 	{
+		if (soundtags.add(sound->device().tag(), 1, FALSE) == TMERR_DUPLICATE)
+			continue;
+
 		/* append the Sound: string */
 		if (!found_sound)
 			string.cat("\nSound:\n");
@@ -1065,15 +1086,13 @@ astring &game_info_astring(running_machine &machine, astring &string)
 
 		/* count how many identical sound chips we have */
 		int count = 1;
-		device_sound_interface *scan = NULL;
-		for (bool gotanother = sound->next(scan); gotanother; gotanother = scan->next(scan))
+		sound_interface_iterator sndinneriter(machine.root_device());
+		for (device_sound_interface *scan = sndinneriter.first(); scan != NULL; scan = sndinneriter.next())
 		{
-			if (sound->device().type() != scan->device().type() || sound->device().clock() != scan->device().clock())
-				break;
-			count++;
-			sound = scan;
+			if (sound->device().type() == scan->device().type() && sound->device().clock() == scan->device().clock())
+				if (soundtags.add(scan->device().tag(), 1, FALSE) != TMERR_DUPLICATE)
+					count++;
 		}
-
 		/* if more than one, prepend a #x in front of the CPU name */
 		if (count > 1)
 			string.catprintf("%d" UTF8_MULTIPLY, count);
@@ -1095,7 +1114,8 @@ astring &game_info_astring(running_machine &machine, astring &string)
 		string.cat("None\n");
 	else
 	{
-		for (screen_device *screen = machine.first_screen(); screen != NULL; screen = screen->next_screen())
+		screen_device_iterator iter(machine.root_device());
+		for (screen_device *screen = iter.first(); screen != NULL; screen = iter.next())
 		{
 			if (scrcount > 1)
 			{
@@ -1110,8 +1130,7 @@ astring &game_info_astring(running_machine &machine, astring &string)
 				const rectangle &visarea = screen->visible_area();
 
 				string.catprintf("%d " UTF8_MULTIPLY " %d (%s) %f" UTF8_NBSP "Hz\n",
-						visarea.max_x - visarea.min_x + 1,
-						visarea.max_y - visarea.min_y + 1,
+						visarea.width(), visarea.height(),
 						(machine.system().flags & ORIENTATION_SWAP_XY) ? "V" : "H",
 						ATTOSECONDS_TO_HZ(screen->frame_period().attoseconds));
 			}
@@ -1274,17 +1293,13 @@ void ui_paste(running_machine &machine)
 
 void ui_image_handler_ingame(running_machine &machine)
 {
-	device_image_interface *image = NULL;
-
 	/* run display routine for devices */
 	if (machine.phase() == MACHINE_PHASE_RUNNING)
 	{
-		for (bool gotone = machine.devicelist().first(image); gotone; gotone = image->next(image))
-		{
+		image_interface_iterator iter(machine.root_device());
+		for (device_image_interface *image = iter.first(); image != NULL; image = iter.next())
 			image->call_display();
-		}
 	}
-
 }
 
 /*-------------------------------------------------
@@ -1382,11 +1397,11 @@ static UINT32 handler_ingame(running_machine &machine, render_container *contain
 
 	/* turn on menus if requested */
 	if (ui_input_pressed(machine, IPT_UI_CONFIGURE))
-		return ui_set_handler(ui_menu_ui_handler, 0);
+		return ui_set_handler(ui_menu::ui_handler, 0);
 
 	/* if the on-screen display isn't up and the user has toggled it, turn it on */
 	if ((machine.debug_flags & DEBUG_FLAG_ENABLED) == 0 && ui_input_pressed(machine, IPT_UI_ON_SCREEN_DISPLAY))
-		return ui_set_handler(ui_slider_ui_handler, 1);
+		return ui_set_handler(ui_menu_sliders::ui_handler, 1);
 
 	/* handle a reset request */
 	if (ui_input_pressed(machine, IPT_UI_RESET_MACHINE))
@@ -1647,7 +1662,6 @@ static slider_state *slider_init(running_machine &machine)
 {
 	input_field_config *field;
 	input_port_config *port;
-	device_t *device;
 	slider_state *listhead = NULL;
 	slider_state **tailptr = &listhead;
 	astring string;
@@ -1686,8 +1700,8 @@ static slider_state *slider_init(running_machine &machine)
 	/* add CPU overclocking (cheat only) */
 	if (machine.options().cheat())
 	{
-		device_execute_interface *exec = NULL;
-		for (bool gotone = machine.devicelist().first(exec); gotone; gotone = exec->next(exec))
+		execute_interface_iterator iter(machine.root_device());
+		for (device_execute_interface *exec = iter.first(); exec != NULL; exec = iter.next())
 		{
 			void *param = (void *)&exec->device();
 			string.printf("Overclock CPU %s", exec->device().tag());
@@ -1697,7 +1711,8 @@ static slider_state *slider_init(running_machine &machine)
 	}
 
 	/* add screen parameters */
-	for (screen_device *screen = machine.first_screen(); screen != NULL; screen = screen->next_screen())
+	screen_device_iterator scriter(machine.root_device());
+	for (screen_device *screen = scriter.first(); screen != NULL; screen = scriter.next())
 	{
 		int defxscale = floor(screen->xscale() * 1000.0f + 0.5f);
 		int defyscale = floor(screen->yscale() * 1000.0f + 0.5f);
@@ -1739,35 +1754,34 @@ static slider_state *slider_init(running_machine &machine)
 		tailptr = &(*tailptr)->next;
 	}
 
-	for (device = machine.devicelist().first(); device != NULL; device = device->next())
-		if (device_is_laserdisc(device))
+	laserdisc_device_iterator lditer(machine.root_device());
+	for (laserdisc_device *laserdisc = lditer.first(); laserdisc != NULL; laserdisc = lditer.next())
+		if (laserdisc->overlay_configured())
 		{
-			const laserdisc_config *config = (const laserdisc_config *)downcast<const legacy_device_base *>(device)->inline_config();
-			if (config->overupdate != NULL)
-			{
-				int defxscale = floor(config->overscalex * 1000.0f + 0.5f);
-				int defyscale = floor(config->overscaley * 1000.0f + 0.5f);
-				int defxoffset = floor(config->overposx * 1000.0f + 0.5f);
-				int defyoffset = floor(config->overposy * 1000.0f + 0.5f);
-				void *param = (void *)device;
+			laserdisc_overlay_config config;
+			laserdisc->get_overlay_config(config);
+			int defxscale = floor(config.m_overscalex * 1000.0f + 0.5f);
+			int defyscale = floor(config.m_overscaley * 1000.0f + 0.5f);
+			int defxoffset = floor(config.m_overposx * 1000.0f + 0.5f);
+			int defyoffset = floor(config.m_overposy * 1000.0f + 0.5f);
+			void *param = (void *)laserdisc;
 
-				/* add scale and offset controls per-overlay */
-				string.printf("%s Horiz Stretch", slider_get_laserdisc_desc(device));
-				*tailptr = slider_alloc(machine, string, 500, (defxscale == 0) ? 1000 : defxscale, 1500, 2, slider_overxscale, param);
-				tailptr = &(*tailptr)->next;
-				string.printf("%s Horiz Position", slider_get_laserdisc_desc(device));
-				*tailptr = slider_alloc(machine, string, -500, defxoffset, 500, 2, slider_overxoffset, param);
-				tailptr = &(*tailptr)->next;
-				string.printf("%s Vert Stretch", slider_get_laserdisc_desc(device));
-				*tailptr = slider_alloc(machine, string, 500, (defyscale == 0) ? 1000 : defyscale, 1500, 2, slider_overyscale, param);
-				tailptr = &(*tailptr)->next;
-				string.printf("%s Vert Position", slider_get_laserdisc_desc(device));
-				*tailptr = slider_alloc(machine, string, -500, defyoffset, 500, 2, slider_overyoffset, param);
-				tailptr = &(*tailptr)->next;
-			}
+			/* add scale and offset controls per-overlay */
+			string.printf("Laserdisc '%s' Horiz Stretch", laserdisc->tag());
+			*tailptr = slider_alloc(machine, string, 500, (defxscale == 0) ? 1000 : defxscale, 1500, 2, slider_overxscale, param);
+			tailptr = &(*tailptr)->next;
+			string.printf("Laserdisc '%s' Horiz Position", laserdisc->tag());
+			*tailptr = slider_alloc(machine, string, -500, defxoffset, 500, 2, slider_overxoffset, param);
+			tailptr = &(*tailptr)->next;
+			string.printf("Laserdisc '%s' Vert Stretch", laserdisc->tag());
+			*tailptr = slider_alloc(machine, string, 500, (defyscale == 0) ? 1000 : defyscale, 1500, 2, slider_overyscale, param);
+			tailptr = &(*tailptr)->next;
+			string.printf("Laserdisc '%s' Vert Position", laserdisc->tag());
+			*tailptr = slider_alloc(machine, string, -500, defyoffset, 500, 2, slider_overyoffset, param);
+			tailptr = &(*tailptr)->next;
 		}
 
-	for (screen_device *screen = machine.first_screen(); screen != NULL; screen = screen->next_screen())
+	for (screen_device *screen = scriter.first(); screen != NULL; screen = scriter.next())
 		if (screen->screen_type() == SCREEN_TYPE_VECTOR)
 		{
 			/* add flicker control */
@@ -2056,18 +2070,18 @@ static INT32 slider_yoffset(running_machine &machine, void *arg, astring *string
 
 static INT32 slider_overxscale(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	device_t *laserdisc = (device_t *)arg;
-	laserdisc_config settings;
+	laserdisc_device *laserdisc = (laserdisc_device *)arg;
+	laserdisc_overlay_config settings;
 
-	laserdisc_get_config(laserdisc, &settings);
+	laserdisc->get_overlay_config(settings);
 	if (newval != SLIDER_NOCHANGE)
 	{
-		settings.overscalex = (float)newval * 0.001f;
-		laserdisc_set_config(laserdisc, &settings);
+		settings.m_overscalex = (float)newval * 0.001f;
+		laserdisc->set_overlay_config(settings);
 	}
 	if (string != NULL)
-		string->printf("%.3f", settings.overscalex);
-	return floor(settings.overscalex * 1000.0f + 0.5f);
+		string->printf("%.3f", settings.m_overscalex);
+	return floor(settings.m_overscalex * 1000.0f + 0.5f);
 }
 
 
@@ -2078,18 +2092,18 @@ static INT32 slider_overxscale(running_machine &machine, void *arg, astring *str
 
 static INT32 slider_overyscale(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	device_t *laserdisc = (device_t *)arg;
-	laserdisc_config settings;
+	laserdisc_device *laserdisc = (laserdisc_device *)arg;
+	laserdisc_overlay_config settings;
 
-	laserdisc_get_config(laserdisc, &settings);
+	laserdisc->get_overlay_config(settings);
 	if (newval != SLIDER_NOCHANGE)
 	{
-		settings.overscaley = (float)newval * 0.001f;
-		laserdisc_set_config(laserdisc, &settings);
+		settings.m_overscaley = (float)newval * 0.001f;
+		laserdisc->set_overlay_config(settings);
 	}
 	if (string != NULL)
-		string->printf("%.3f", settings.overscaley);
-	return floor(settings.overscaley * 1000.0f + 0.5f);
+		string->printf("%.3f", settings.m_overscaley);
+	return floor(settings.m_overscaley * 1000.0f + 0.5f);
 }
 
 
@@ -2100,18 +2114,18 @@ static INT32 slider_overyscale(running_machine &machine, void *arg, astring *str
 
 static INT32 slider_overxoffset(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	device_t *laserdisc = (device_t *)arg;
-	laserdisc_config settings;
+	laserdisc_device *laserdisc = (laserdisc_device *)arg;
+	laserdisc_overlay_config settings;
 
-	laserdisc_get_config(laserdisc, &settings);
+	laserdisc->get_overlay_config(settings);
 	if (newval != SLIDER_NOCHANGE)
 	{
-		settings.overposx = (float)newval * 0.001f;
-		laserdisc_set_config(laserdisc, &settings);
+		settings.m_overposx = (float)newval * 0.001f;
+		laserdisc->set_overlay_config(settings);
 	}
 	if (string != NULL)
-		string->printf("%.3f", settings.overposx);
-	return floor(settings.overposx * 1000.0f + 0.5f);
+		string->printf("%.3f", settings.m_overposx);
+	return floor(settings.m_overposx * 1000.0f + 0.5f);
 }
 
 
@@ -2122,18 +2136,18 @@ static INT32 slider_overxoffset(running_machine &machine, void *arg, astring *st
 
 static INT32 slider_overyoffset(running_machine &machine, void *arg, astring *string, INT32 newval)
 {
-	device_t *laserdisc = (device_t *)arg;
-	laserdisc_config settings;
+	laserdisc_device *laserdisc = (laserdisc_device *)arg;
+	laserdisc_overlay_config settings;
 
-	laserdisc_get_config(laserdisc, &settings);
+	laserdisc->get_overlay_config(settings);
 	if (newval != SLIDER_NOCHANGE)
 	{
-		settings.overposy = (float)newval * 0.001f;
-		laserdisc_set_config(laserdisc, &settings);
+		settings.m_overposy = (float)newval * 0.001f;
+		laserdisc->set_overlay_config(settings);
 	}
 	if (string != NULL)
-		string->printf("%.3f", settings.overposy);
-	return floor(settings.overposy * 1000.0f + 0.5f);
+		string->printf("%.3f", settings.m_overposy);
+	return floor(settings.m_overposy * 1000.0f + 0.5f);
 }
 
 
@@ -2174,7 +2188,8 @@ static INT32 slider_beam(running_machine &machine, void *arg, astring *string, I
 
 static char *slider_get_screen_desc(screen_device &screen)
 {
-	int scrcount = screen.machine().devicelist().count(SCREEN);
+	screen_device_iterator iter(screen.machine().root_device());
+	int scrcount = iter.count();
 	static char descbuf[256];
 
 	if (scrcount > 1)
@@ -2182,24 +2197,6 @@ static char *slider_get_screen_desc(screen_device &screen)
 	else
 		strcpy(descbuf, "Screen");
 
-	return descbuf;
-}
-
-/*-------------------------------------------------
-    slider_get_laserdisc_desc - returns the
-    description for a given laseridsc
--------------------------------------------------*/
-static char *slider_get_laserdisc_desc(device_t *laserdisc)
-{
-	static char descbuf[256];
-	for (device_t *device = laserdisc->machine().devicelist().first(); device != NULL; device = device->next())
-		if (device_is_laserdisc(device) && device != laserdisc)
-		{
-			sprintf(descbuf, "Laserdisc '%s'", laserdisc->tag());
-			return descbuf;
-		}
-
-	strcpy(descbuf, "Laserdisc");
 	return descbuf;
 }
 

@@ -100,7 +100,6 @@ reelquak:
 
 #include "emu.h"
 #include "memconv.h"
-#include "deprecat.h"
 #include "includes/seta2.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/tmp68301.h"
@@ -2004,26 +2003,13 @@ GFXDECODE_END
 
 static INTERRUPT_GEN( seta2_interrupt )
 {
-	switch ( cpu_getiloops(device) )
-	{
-		case 0:
-			/* VBlank is connected to INT0 (external interrupts pin 0) */
-			tmp68301_external_interrupt_0(device->machine());
-			break;
-	}
+	/* VBlank is connected to INT0 (external interrupts pin 0) */
+	tmp68301_external_interrupt_0(device->machine());
 }
 
 static INTERRUPT_GEN( samshoot_interrupt )
 {
-	switch ( cpu_getiloops(device) )
-	{
-		case 0:
-			tmp68301_external_interrupt_0(device->machine());	// vblank
-			break;
-		case 1:
-			tmp68301_external_interrupt_2(device->machine());	// to do: hook up x1-10 interrupts
-			break;
-	}
+	tmp68301_external_interrupt_2(device->machine());	// to do: hook up x1-10 interrupts
 }
 
 static const x1_010_interface x1_010_sound_intf =
@@ -2043,11 +2029,10 @@ static MACHINE_CONFIG_START( seta2, seta2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x200, 0x200)
 	MCFG_SCREEN_VISIBLE_AREA(0x40, 0x1c0-1, 0x80, 0x170-1)
-	MCFG_SCREEN_UPDATE(seta2)
-	MCFG_SCREEN_EOF(seta2)
+	MCFG_SCREEN_UPDATE_STATIC(seta2)
+	MCFG_SCREEN_VBLANK_STATIC(seta2)
 
 	MCFG_GFXDECODE(seta2)
 	MCFG_PALETTE_LENGTH(0x8000+0xf0)	// extra 0xf0 because we might draw 256-color object with 16-color granularity
@@ -2158,7 +2143,7 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( samshoot, seta2 )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(samshoot_map)
-	MCFG_CPU_VBLANK_INT_HACK(samshoot_interrupt,2)
+	MCFG_CPU_PERIODIC_INT(samshoot_interrupt,60)
 
 	MCFG_NVRAM_ADD_0FILL("nvram")
 
@@ -2172,13 +2157,16 @@ MACHINE_CONFIG_END
                                   Funcube
 ***************************************************************************/
 
-static INTERRUPT_GEN( funcube_interrupt )
+static TIMER_DEVICE_CALLBACK( funcube_interrupt )
 {
-	switch ( cpu_getiloops(device) )
-	{
-		case 1:  device_set_input_line(device, 2, HOLD_LINE); break;
-		case 0:  device_set_input_line(device, 1, HOLD_LINE); break;
-	}
+	seta2_state *state = timer.machine().driver_data<seta2_state>();
+	int scanline = param;
+
+	if(scanline == 368)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
 }
 
 static INTERRUPT_GEN( funcube_sub_timer_irq )
@@ -2222,7 +2210,7 @@ static MACHINE_CONFIG_START( funcube, seta2_state )
 
 	MCFG_CPU_ADD("maincpu", MCF5206E, XTAL_25_447MHz)
 	MCFG_CPU_PROGRAM_MAP(funcube_map)
-	MCFG_CPU_VBLANK_INT_HACK(funcube_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", funcube_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("sub", H83007, FUNCUBE_SUB_CPU_CLOCK)
 	MCFG_CPU_PROGRAM_MAP(funcube_sub_map)
@@ -2237,11 +2225,10 @@ static MACHINE_CONFIG_START( funcube, seta2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))	// not accurate
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x200, 0x200)
 	MCFG_SCREEN_VISIBLE_AREA(0x0, 0x140-1, 0x80, 0x170-1)
-	MCFG_SCREEN_UPDATE(seta2)
-	MCFG_SCREEN_EOF(seta2)
+	MCFG_SCREEN_UPDATE_STATIC(seta2)
+	MCFG_SCREEN_VBLANK_STATIC(seta2)
 
 	MCFG_GFXDECODE(funcube)
 	MCFG_PALETTE_LENGTH(0x8000+0xf0)	// extra 0xf0 because we might draw 256-color object with 16-color granularity
@@ -2274,11 +2261,10 @@ static MACHINE_CONFIG_START( namcostr, seta2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x200, 0x200)
 	MCFG_SCREEN_VISIBLE_AREA(0x40, 0x1c0-1, 0x80, 0x170-1)
-	MCFG_SCREEN_UPDATE(seta2)
-	MCFG_SCREEN_EOF(seta2)
+	MCFG_SCREEN_UPDATE_STATIC(seta2)
+	MCFG_SCREEN_VBLANK_STATIC(seta2)
 
 	MCFG_GFXDECODE(funcube)
 	MCFG_PALETTE_LENGTH(0x8000+0xf0)	// extra 0xf0 because we might draw 256-color object with 16-color granularity

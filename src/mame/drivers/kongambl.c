@@ -39,12 +39,12 @@ static VIDEO_START(kongambl)
 	k056832_set_layer_offs(k056832, 3,  6, 0);
 }
 
-static SCREEN_UPDATE(kongambl)
+static SCREEN_UPDATE_IND16(kongambl)
 {
-	device_t *k056832 = screen->machine().device("k056832");
+	device_t *k056832 = screen.machine().device("k056832");
 
-	bitmap_fill(bitmap, cliprect, 0);
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 //  k056832_tilemap_draw(k056832, bitmap, cliprect, 3, 0, 0);
 //  k056832_tilemap_draw(k056832, bitmap, cliprect, 2, 0, 0);
@@ -147,10 +147,9 @@ static MACHINE_CONFIG_START( kongambl, kongambl_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(kongambl)
+	MCFG_SCREEN_UPDATE_STATIC(kongambl)
 
 	MCFG_PALETTE_LENGTH(8192)
 

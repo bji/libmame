@@ -167,7 +167,7 @@ static MACHINE_START( kinst )
 {
 	kinst_state *state = machine.driver_data<kinst_state>();
 	device_t *ide = machine.device("ide");
-	UINT8 *features = ide_get_features(ide);
+	UINT8 *features = ide_get_features(ide,0);
 
 	if (strncmp(machine.system().name, "kinst2", 6) != 0)
 	{
@@ -230,20 +230,20 @@ static MACHINE_RESET( kinst )
  *
  *************************************/
 
-static SCREEN_UPDATE( kinst )
+static SCREEN_UPDATE_IND16( kinst )
 {
-	kinst_state *state = screen->machine().driver_data<kinst_state>();
+	kinst_state *state = screen.machine().driver_data<kinst_state>();
 	int y;
 
 	/* loop over rows and copy to the destination */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		UINT32 *src = &state->m_video_base[640/4 * y];
-		UINT16 *dest = BITMAP_ADDR16(bitmap, y, cliprect->min_x);
+		UINT16 *dest = &bitmap.pix16(y, cliprect.min_x);
 		int x;
 
 		/* loop over columns */
-		for (x = cliprect->min_x; x < cliprect->max_x; x += 2)
+		for (x = cliprect.min_x; x < cliprect.max_x; x += 2)
 		{
 			UINT32 data = *src++;
 
@@ -668,10 +668,9 @@ static MACHINE_CONFIG_START( kinst, kinst_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 240)
 	MCFG_SCREEN_VISIBLE_AREA(0, 319, 0, 239)
-	MCFG_SCREEN_UPDATE(kinst)
+	MCFG_SCREEN_UPDATE_STATIC(kinst)
 
 	MCFG_PALETTE_INIT(BBBBB_GGGGG_RRRRR)
 	MCFG_PALETTE_LENGTH(32768)

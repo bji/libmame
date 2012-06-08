@@ -68,9 +68,9 @@ static VIDEO_START( gunpey )
 	state->m_blit_buffer = auto_alloc_array(machine, UINT16, 512*512);
 }
 
-static SCREEN_UPDATE( gunpey )
+static SCREEN_UPDATE_RGB32( gunpey )
 {
-	gunpey_state *state = screen->machine().driver_data<gunpey_state>();
+	gunpey_state *state = screen.machine().driver_data<gunpey_state>();
 	UINT16 *blit_buffer = state->m_blit_buffer;
 	int x,y;
 	int count;
@@ -89,8 +89,8 @@ static SCREEN_UPDATE( gunpey )
 			g = (color & 0x03e0) >> 2;
 			r = (color & 0x7c00) >> 7;
 
-			if(x<screen->visible_area().max_x && y<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x) = b | (g<<8) | (r<<16);
+			if(cliprect.contains(x, y))
+				bitmap.pix32(y, x) = b | (g<<8) | (r<<16);
 
 
 			count++;
@@ -340,10 +340,9 @@ static MACHINE_CONFIG_START( gunpey, gunpey_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 512-1, 0*8, 512-1)
-	MCFG_SCREEN_UPDATE(gunpey)
+	MCFG_SCREEN_UPDATE_STATIC(gunpey)
 
 	MCFG_PALETTE_LENGTH(0x800)
 	MCFG_PALETTE_INIT(gunpey)

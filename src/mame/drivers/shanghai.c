@@ -71,9 +71,9 @@ static VIDEO_START( shanghai )
 {
 }
 
-static SCREEN_UPDATE( shanghai )
+static SCREEN_UPDATE_IND16( shanghai )
 {
-	device_t *hd63484 = screen->machine().device("hd63484");
+	device_t *hd63484 = screen.machine().device("hd63484");
 	int x, y, b, src;
 
 	b = ((hd63484_regs_r(hd63484, 0xcc/2, 0xffff) & 0x000f) << 16) + hd63484_regs_r(hd63484, 0xce/2, 0xffff);
@@ -83,8 +83,8 @@ static SCREEN_UPDATE( shanghai )
 		{
 			b &= (HD63484_RAM_SIZE - 1);
 			src = hd63484_ram_r(hd63484, b, 0xffff);
-			*BITMAP_ADDR16(bitmap, y, x)     = src & 0x00ff;
-			*BITMAP_ADDR16(bitmap, y, x + 1) = (src & 0xff00) >> 8;
+			bitmap.pix16(y, x)     = src & 0x00ff;
+			bitmap.pix16(y, x + 1) = (src & 0xff00) >> 8;
 			b++;
 		}
 	}
@@ -107,8 +107,8 @@ static SCREEN_UPDATE( shanghai )
 				src = hd63484_ram_r(hd63484, b, 0xffff);
 				if (x <= w && x + sx >= 0 && x + sx < (hd63484_regs_r(hd63484, 0xca/2, 0xffff) & 0x0fff) * 2)
 				{
-					*BITMAP_ADDR16(bitmap, y, x + sx)     = src & 0x00ff;
-					*BITMAP_ADDR16(bitmap, y, x + sx + 1) = (src & 0xff00) >> 8;
+					bitmap.pix16(y, x + sx)     = src & 0x00ff;
+					bitmap.pix16(y, x + sx + 1) = (src & 0xff00) >> 8;
 				}
 				b++;
 			}
@@ -445,10 +445,9 @@ static MACHINE_CONFIG_START( shanghai, shanghai_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(30)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(384, 280)
 	MCFG_SCREEN_VISIBLE_AREA(0, 384-1, 0, 280-1) // Base Screen is 384 pixel
-	MCFG_SCREEN_UPDATE(shanghai)
+	MCFG_SCREEN_UPDATE_STATIC(shanghai)
 
 	MCFG_PALETTE_LENGTH(256)
 
@@ -480,10 +479,9 @@ static MACHINE_CONFIG_START( shangha2, shanghai_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(30)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(384, 280)
 	MCFG_SCREEN_VISIBLE_AREA(0, 384-1, 0, 280-1) // Base Screen is 384 pixel
-	MCFG_SCREEN_UPDATE(shanghai)
+	MCFG_SCREEN_UPDATE_STATIC(shanghai)
 
 	MCFG_PALETTE_LENGTH(256)
 
@@ -519,10 +517,9 @@ static MACHINE_CONFIG_START( kothello, shanghai_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(30)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(384, 280)
 	MCFG_SCREEN_VISIBLE_AREA(8, 384-1, 0, 250-1) // Base Screen is 376 pixel
-	MCFG_SCREEN_UPDATE(shanghai)
+	MCFG_SCREEN_UPDATE_STATIC(shanghai)
 
 	MCFG_PALETTE_LENGTH(256)
 

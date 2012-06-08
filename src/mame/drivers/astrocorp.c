@@ -30,7 +30,6 @@ To do:
 *************************************************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/eeprom.h"
 #include "machine/ticket.h"
@@ -49,7 +48,7 @@ public:
 	size_t     m_spriteram_size;
 
 	/* video-related */
-	bitmap_t * m_bitmap;
+	bitmap_ind16 m_bitmap;
 	UINT16     m_screen_enable;
 	UINT16     m_draw_sprites;
 };
@@ -62,9 +61,9 @@ static VIDEO_START( astrocorp )
 {
 	astrocorp_state *state = machine.driver_data<astrocorp_state>();
 
-	state->m_bitmap = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_bitmap);
 
-	state->save_item(NAME(*state->m_bitmap));
+	state->save_item(NAME(state->m_bitmap));
 	state->save_item       (NAME(state->m_screen_enable));
 	state->save_item       (NAME(state->m_draw_sprites));
 }
@@ -91,7 +90,7 @@ static VIDEO_START( astrocorp )
 
 ***************************************************************************/
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	astrocorp_state *state = machine.driver_data<astrocorp_state>();
 	UINT16 *source = state->m_spriteram;
@@ -139,14 +138,14 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-static SCREEN_UPDATE(astrocorp)
+static SCREEN_UPDATE_IND16(astrocorp)
 {
-	astrocorp_state *state = screen->machine().driver_data<astrocorp_state>();
+	astrocorp_state *state = screen.machine().driver_data<astrocorp_state>();
 
 	if (state->m_screen_enable & 1)
 		copybitmap(bitmap, state->m_bitmap, 0,0,0,0, cliprect);
 	else
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	return 0;
 }
@@ -164,7 +163,7 @@ static WRITE16_HANDLER( astrocorp_draw_sprites_w )
 	UINT16 now = COMBINE_DATA(&state->m_draw_sprites);
 
 	if (!old && now)
-		draw_sprites(space->machine(), state->m_bitmap, &space->machine().primary_screen->visible_area());
+		draw_sprites(space->machine(), state->m_bitmap, space->machine().primary_screen->visible_area());
 }
 
 static WRITE16_HANDLER( astrocorp_eeprom_w )
@@ -475,10 +474,9 @@ static MACHINE_CONFIG_START( showhand, astrocorp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58.846)	// measured on pcb
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 240)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE(astrocorp)
+	MCFG_SCREEN_UPDATE_STATIC(astrocorp)
 
 	MCFG_GFXDECODE(astrocorp)
 	MCFG_PALETTE_LENGTH(0x100)
@@ -499,13 +497,15 @@ static MACHINE_CONFIG_DERIVED( showhanc, showhand )
 MACHINE_CONFIG_END
 
 
-static INTERRUPT_GEN( skilldrp_irq )
+static TIMER_DEVICE_CALLBACK( skilldrp_scanline )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line(device, 4, HOLD_LINE);	break;	// sprites, sound, i/o
-		case 1:	device_set_input_line(device, 2, HOLD_LINE);	break;	// palette
-	}
+	int scanline = param;
+
+	if(scanline == 240) // vblank-out irq. controls sprites, sound, i/o
+		cputag_set_input_line(timer.machine(), "maincpu", 4, HOLD_LINE);
+
+	if(scanline == 0) // vblank-in? controls palette
+		cputag_set_input_line(timer.machine(), "maincpu", 2, HOLD_LINE);
 }
 
 static MACHINE_CONFIG_START( skilldrp, astrocorp_state )
@@ -513,7 +513,7 @@ static MACHINE_CONFIG_START( skilldrp, astrocorp_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_24MHz / 2)	// JX-1689F1028N GRX586.V5
 	MCFG_CPU_PROGRAM_MAP(skilldrp_map)
-	MCFG_CPU_VBLANK_INT_HACK(skilldrp_irq, 2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", skilldrp_scanline, "screen", 0, 1)
 
 	MCFG_NVRAM_ADD_0FILL("nvram")
 	MCFG_EEPROM_93C46_ADD("eeprom")
@@ -525,10 +525,9 @@ static MACHINE_CONFIG_START( skilldrp, astrocorp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58.846)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x200, 0x100)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x200-1, 0, 0xf0-1)
-	MCFG_SCREEN_UPDATE(astrocorp)
+	MCFG_SCREEN_UPDATE_STATIC(astrocorp)
 
 	MCFG_GFXDECODE(astrocorp)
 	MCFG_PALETTE_LENGTH(0x100)

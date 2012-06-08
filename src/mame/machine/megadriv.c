@@ -385,7 +385,7 @@ static timer_device* frame_timer;
 static timer_device* scanline_timer;
 static timer_device* irq6_on_timer;
 static timer_device* irq4_on_timer;
-static bitmap_t* render_bitmap;
+static bitmap_ind16* render_bitmap;
 //emu_timer* vblankirq_off_timer;
 
 /* Sega CD stuff */
@@ -5380,11 +5380,11 @@ static READ16_HANDLER( segacd_main_dataram_part1_r )
 			// converts data stored in bitmap format (in dataram) to be read out as tiles (for dma->vram purposes)
 			// used by Heart of the Alien
 
-			if(offset<0x30000/2)		/* 0x20000 - 0x2ffff */ // 512x256 bitmap -> tiles
+			if(offset<0x30000/2)		/* 0x20000 - 0x2ffff */ // 512x256 bitmap. tiles
 				offset = BITSWAP24(offset,23,22,21,20,19,18,17,16,15,8,7,6,5,4,3,2,1,14,13,12,11,10,9,0);
-			else if(offset<0x38000/2)	/* 0x30000 - 0x37fff */  // 512x128 bitmap -> tiles
+			else if(offset<0x38000/2)	/* 0x30000 - 0x37fff */  // 512x128 bitmap. tiles
 				offset = BITSWAP24(offset,23,22,21,20,19,18,17,16,15,14,7,6,5,4,3,2,1,13,12,11,10,9,8,0);
-			else if(offset<0x3c000/2)	/* 0x38000 - 0x3bfff */  // 512x64 bitmap -> tiles
+			else if(offset<0x3c000/2)	/* 0x38000 - 0x3bfff */  // 512x64 bitmap. tiles
 				offset = BITSWAP24(offset,23,22,21,20,19,18,17,16,15,14,13,6,5,4,3,2,1,12,11,10,9,8,7,0);
 			else  /* 0x3c000 - 0x3dfff and 0x3e000 - 0x3ffff */  // 512x32 bitmap (x2) -> tiles
 				offset = BITSWAP24(offset,23,22,21,20,19,18,17,16,15,14,13,12,5,4,3,2,1,11,10,9,8,7,6,0);
@@ -5703,12 +5703,12 @@ static int segacd_get_active_stampmap_tilemap(void)
 #if 0
 static void segacd_mark_stampmaps_dirty(void)
 {
-	tilemap_mark_all_tiles_dirty(segacd_stampmap[segacd_get_active_stampmap_tilemap()]);
+	segacd_stampmap[segacd_get_active_stampmap_tilemap(->mark_all_dirty()]);
 
-	//tilemap_mark_all_tiles_dirty(segacd_stampmap[0]);
-	//tilemap_mark_all_tiles_dirty(segacd_stampmap[1]);
-	//tilemap_mark_all_tiles_dirty(segacd_stampmap[2]);
-	//tilemap_mark_all_tiles_dirty(segacd_stampmap[3]);
+	//segacd_stampmap[0]->mark_all_dirty();
+	//segacd_stampmap[1]->mark_all_dirty();
+	//segacd_stampmap[2]->mark_all_dirty();
+	//segacd_stampmap[3]->mark_all_dirty();
 }
 #endif
 
@@ -6457,7 +6457,7 @@ static WRITE16_HANDLER( segacd_stampsize_w )
 // the lower 3 bits of segacd_imagebuffer_hdot_size are set
 
 // this really needs to be doing it's own lookups rather than depending on the inefficient MAME cache..
-INLINE UINT8 read_pixel_from_stampmap( running_machine& machine, bitmap_t* srcbitmap, int x, int y)
+INLINE UINT8 read_pixel_from_stampmap( running_machine& machine, bitmap_ind16* srcbitmap, int x, int y)
 {
 /*
     if (!srcbitmap)
@@ -6468,7 +6468,7 @@ INLINE UINT8 read_pixel_from_stampmap( running_machine& machine, bitmap_t* srcbi
     if (x >= srcbitmap->width) return 0;
     if (y >= srcbitmap->height) return 0;
 
-    UINT16* cacheptr = BITMAP_ADDR16( srcbitmap, y, x);
+    UINT16* cacheptr = &srcbitmap->pix16(y, x);
 
     return cacheptr[0] & 0xf;
 */
@@ -6514,8 +6514,8 @@ WRITE16_HANDLER( segacd_trace_vector_base_address_w )
 
 
 		int line;
-		//bitmap_t *srcbitmap = tilemap_get_pixmap(segacd_stampmap[segacd_get_active_stampmap_tilemap()]);
-		bitmap_t *srcbitmap = 0;
+		//bitmap_ind16 *srcbitmap = segacd_stampmap[segacd_get_active_stampmap_tilemap(->pixmap()]);
+		bitmap_ind16 *srcbitmap = 0;
 		UINT32 bufferstart = ((segacd_imagebuffer_start_address&0xfff8)*2)<<3;
 
 		for (line=0;line<segacd_imagebuffer_vdot_size;line++)
@@ -7224,7 +7224,7 @@ VIDEO_START(megadriv)
 {
 	int x;
 
-	render_bitmap = machine.primary_screen->alloc_compatible_bitmap();
+	render_bitmap = auto_bitmap_ind16_alloc(machine, machine.primary_screen->width(), machine.primary_screen->height());
 
 	megadrive_vdp_vram  = auto_alloc_array(machine, UINT16, 0x10000/2);
 	megadrive_vdp_cram  = auto_alloc_array(machine, UINT16, 0x80/2);
@@ -7272,10 +7272,15 @@ VIDEO_START(megadriv)
 	segac2_sp_pal_lookup[3] = 0x30;
 }
 
-SCREEN_UPDATE(megadriv)
+SCREEN_UPDATE_RGB32(megadriv)
 {
 	/* Copy our screen buffer here */
-	copybitmap(bitmap, render_bitmap, 0, 0, 0, 0, cliprect);
+	for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
+		for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
+		{
+			UINT16 src = render_bitmap->pix(y, x);
+			bitmap.pix32(y, x) = MAKE_RGB(pal5bit(src >> 10), pal5bit(src >> 5), pal5bit(src >> 0));
+		}
 
 //  int xxx;
 	/* reference */
@@ -8553,7 +8558,7 @@ static void genesis_render_videobuffer_to_screenbuffer(running_machine &machine,
 {
 	UINT16*lineptr;
 	int x;
-	lineptr = BITMAP_ADDR16(render_bitmap, scanline, 0);
+	lineptr = &render_bitmap->pix16(scanline);
 
 	/* render 32x output to a buffer */
 	if (_32x_is_connected && (_32x_displaymode != 0))
@@ -9391,23 +9396,26 @@ void megadriv_stop_scanline_timer(void)
 
 /* VIDEO_EOF is used to resync the scanline counters */
 
-SCREEN_EOF(megadriv)
+SCREEN_VBLANK(megadriv)
 {
-	rectangle visarea;
-	int scr_width = 320;
+	// rising edge
+	if (vblank_on)
+	{
+		rectangle visarea;
+		int scr_width = 320;
 
-	megadrive_vblank_flag = 0;
-	//megadrive_irq6_pending = 0; /* NO! (breaks warlock) */
+		megadrive_vblank_flag = 0;
+		//megadrive_irq6_pending = 0; /* NO! (breaks warlock) */
 
-	/* Set it to -1 here, so it becomes 0 when the first timer kicks in */
-	genesis_scanline_counter = -1;
-	megadrive_sprite_collision=0;//? when to reset this ..
-	megadrive_imode = MEGADRIVE_REG0C_INTERLEAVE; // can't change mid-frame..
-	megadrive_imode_odd_frame^=1;
-//  cputag_set_input_line(machine, "genesis_snd_z80", 0, CLEAR_LINE); // if the z80 interrupt hasn't happened by now, clear it..
+		/* Set it to -1 here, so it becomes 0 when the first timer kicks in */
+		genesis_scanline_counter = -1;
+		megadrive_sprite_collision=0;//? when to reset this ..
+		megadrive_imode = MEGADRIVE_REG0C_INTERLEAVE; // can't change mid-frame..
+		megadrive_imode_odd_frame^=1;
+//      cputag_set_input_line(machine, "genesis_snd_z80", 0, CLEAR_LINE); // if the z80 interrupt hasn't happened by now, clear it..
 
-	if (input_port_read_safe(machine, "RESET", 0x00) & 0x01)
-		cputag_set_input_line(machine, "maincpu", INPUT_LINE_RESET, PULSE_LINE);
+		if (input_port_read_safe(screen.machine(), "RESET", 0x00) & 0x01)
+			cputag_set_input_line(screen.machine(), "maincpu", INPUT_LINE_RESET, PULSE_LINE);
 
 /*
 int megadrive_total_scanlines = 262;
@@ -9419,95 +9427,92 @@ int megadrive_z80irq_hpos = 320;
 */
 
 
-	if (MEGADRIVE_REG01_240_LINE)
-	{
-		if (!megadrive_region_pal)
+		if (MEGADRIVE_REG01_240_LINE)
 		{
-			/* this is invalid! */
-			megadrive_visible_scanlines = 240;
-			megadrive_total_scanlines = 262;
-			megadrive_irq6_scanline = 240;
-			megadrive_z80irq_scanline = 240;
+			if (!megadrive_region_pal)
+			{
+				/* this is invalid! */
+				megadrive_visible_scanlines = 240;
+				megadrive_total_scanlines = 262;
+				megadrive_irq6_scanline = 240;
+				megadrive_z80irq_scanline = 240;
+			}
+			else
+			{
+				megadrive_visible_scanlines = 240;
+				megadrive_total_scanlines = 313;
+				megadrive_irq6_scanline = 240;
+				megadrive_z80irq_scanline = 240;
+			}
 		}
 		else
 		{
-			megadrive_visible_scanlines = 240;
-			megadrive_total_scanlines = 313;
-			megadrive_irq6_scanline = 240;
-			megadrive_z80irq_scanline = 240;
+			if (!megadrive_region_pal)
+			{
+				megadrive_visible_scanlines = 224;
+				megadrive_total_scanlines=262;
+				megadrive_irq6_scanline = 224;
+				megadrive_z80irq_scanline = 224;
+			}
+			else
+			{
+				megadrive_visible_scanlines = 224;
+				megadrive_total_scanlines=313;
+				megadrive_irq6_scanline = 224;
+				megadrive_z80irq_scanline = 224;
+			}
 		}
-	}
-	else
-	{
-		if (!megadrive_region_pal)
+
+		if (megadrive_imode==3)
 		{
-			megadrive_visible_scanlines = 224;
-			megadrive_total_scanlines=262;
-			megadrive_irq6_scanline = 224;
-			megadrive_z80irq_scanline = 224;
+			megadrive_visible_scanlines<<=1;
+			megadrive_total_scanlines<<=1;
+			megadrive_irq6_scanline <<=1;
+			megadrive_z80irq_scanline <<=1;
 		}
-		else
+
+
+		//get_hposition();
+		switch (MEGADRIVE_REG0C_RS0 | (MEGADRIVE_REG0C_RS1 << 1))
 		{
-			megadrive_visible_scanlines = 224;
-			megadrive_total_scanlines=313;
-			megadrive_irq6_scanline = 224;
-			megadrive_z80irq_scanline = 224;
+			 /* note, add 240 mode + init new timings! */
+			case 0:scr_width = 256;break;// configure_screen(0, 256-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); break;
+			case 1:scr_width = 256;break;// configure_screen(0, 256-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); mame_printf_debug("invalid screenmode!\n"); break;
+			case 2:scr_width = 320;break;// configure_screen(0, 320-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); break; /* technically invalid, but used in rare cases */
+			case 3:scr_width = 320;break;// configure_screen(0, 320-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); break;
 		}
+//      mame_printf_debug("my mode %02x", megadrive_vdp_register[0x0c]);
+
+		visarea.set(0, scr_width-1, 0, megadrive_visible_scanlines-1);
+
+		screen.machine().primary_screen->configure(scr_width, megadrive_visible_scanlines, visarea, HZ_TO_ATTOSECONDS(megadriv_framerate));
+
+		if (0)
+		{
+			//int xxx;
+//          UINT64 frametime;
+
+		//  /* reference */
+//          frametime = ATTOSECONDS_PER_SECOND/megadriv_framerate;
+
+			//time_elapsed_since_crap = frame_timer->time_elapsed();
+			//xxx = screen.machine().device<cpudevice>("maincpu")->attotime_to_cycles(time_elapsed_since_crap);
+			//mame_printf_debug("---------- cycles %d, %08x %08x\n",xxx, (UINT32)(time_elapsed_since_crap.attoseconds>>32),(UINT32)(time_elapsed_since_crap.attoseconds&0xffffffff));
+			//mame_printf_debug("---------- framet %d, %08x %08x\n",xxx, (UINT32)(frametime>>32),(UINT32)(frametime&0xffffffff));
+			frame_timer->adjust(attotime::zero);
+		}
+
+		scanline_timer->adjust(attotime::zero);
+
+		if(_32x_is_connected)
+			_32x_hcount_compare_val = -1;
 	}
-
-	if (megadrive_imode==3)
-	{
-		megadrive_visible_scanlines<<=1;
-		megadrive_total_scanlines<<=1;
-		megadrive_irq6_scanline <<=1;
-		megadrive_z80irq_scanline <<=1;
-	}
-
-
-	//get_hposition();
-	switch (MEGADRIVE_REG0C_RS0 | (MEGADRIVE_REG0C_RS1 << 1))
-	{
-		 /* note, add 240 mode + init new timings! */
-		case 0:scr_width = 256;break;// configure_screen(0, 256-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); break;
-		case 1:scr_width = 256;break;// configure_screen(0, 256-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); mame_printf_debug("invalid screenmode!\n"); break;
-		case 2:scr_width = 320;break;// configure_screen(0, 320-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); break; /* technically invalid, but used in rare cases */
-		case 3:scr_width = 320;break;// configure_screen(0, 320-1, megadrive_visible_scanlines-1,(double)megadriv_framerate); break;
-	}
-//  mame_printf_debug("my mode %02x", megadrive_vdp_register[0x0c]);
-
-	visarea.min_x = 0;
-	visarea.max_x = scr_width-1;
-	visarea.min_y = 0;
-	visarea.max_y = megadrive_visible_scanlines-1;
-
-	machine.primary_screen->configure(scr_width, megadrive_visible_scanlines, visarea, HZ_TO_ATTOSECONDS(megadriv_framerate));
-
-	if (0)
-	{
-		//int xxx;
-//      UINT64 frametime;
-
-	//  /* reference */
-//      frametime = ATTOSECONDS_PER_SECOND/megadriv_framerate;
-
-		//time_elapsed_since_crap = frame_timer->time_elapsed();
-		//xxx = machine.device<cpudevice>("maincpu")->attotime_to_cycles(time_elapsed_since_crap);
-		//mame_printf_debug("---------- cycles %d, %08x %08x\n",xxx, (UINT32)(time_elapsed_since_crap.attoseconds>>32),(UINT32)(time_elapsed_since_crap.attoseconds&0xffffffff));
-		//mame_printf_debug("---------- framet %d, %08x %08x\n",xxx, (UINT32)(frametime>>32),(UINT32)(frametime&0xffffffff));
-		frame_timer->adjust(attotime::zero);
-	}
-
-	scanline_timer->adjust(attotime::zero);
-
-	if(_32x_is_connected)
-		_32x_hcount_compare_val = -1;
 }
 
 
 UINT16* megadriv_backupram;
 int megadriv_backupram_length;
 
-#ifndef MESS
 static NVRAM_HANDLER( megadriv )
 {
 	if (megadriv_backupram!=NULL)
@@ -9529,7 +9534,6 @@ static NVRAM_HANDLER( megadriv )
 		}
 	}
 }
-#endif
 
 
 MACHINE_CONFIG_FRAGMENT( megadriv_timers )
@@ -9557,17 +9561,14 @@ MACHINE_CONFIG_FRAGMENT( md_ntsc )
 	MCFG_FRAGMENT_ADD(megadriv_timers)
 
 	MCFG_SCREEN_ADD("megadriv", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB15)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0)) // Vblank handled manually.
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 32*8-1, 0, 28*8-1)
-	MCFG_SCREEN_UPDATE(megadriv) /* Copies a bitmap */
-	MCFG_SCREEN_EOF(megadriv) /* Used to Sync the timing */
+	MCFG_SCREEN_UPDATE_STATIC(megadriv) /* Copies a bitmap */
+	MCFG_SCREEN_VBLANK_STATIC(megadriv) /* Used to Sync the timing */
 
-#ifndef MESS
 	MCFG_NVRAM_HANDLER(megadriv)
-#endif
 
 	MCFG_PALETTE_LENGTH(0x200)
 
@@ -9608,17 +9609,14 @@ MACHINE_CONFIG_FRAGMENT( md_pal )
 	MCFG_FRAGMENT_ADD(megadriv_timers)
 
 	MCFG_SCREEN_ADD("megadriv", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB15)
 	MCFG_SCREEN_REFRESH_RATE(50)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0)) // Vblank handled manually.
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 32*8-1, 0, 28*8-1)
-	MCFG_SCREEN_UPDATE(megadriv) /* Copies a bitmap */
-	MCFG_SCREEN_EOF(megadriv) /* Used to Sync the timing */
+	MCFG_SCREEN_UPDATE_STATIC(megadriv) /* Copies a bitmap */
+	MCFG_SCREEN_VBLANK_STATIC(megadriv) /* Used to Sync the timing */
 
-#ifndef MESS
 	MCFG_NVRAM_HANDLER(megadriv)
-#endif
 
 	MCFG_PALETTE_LENGTH(0x200)
 
@@ -9759,7 +9757,7 @@ MACHINE_CONFIG_END
 
 
 MACHINE_CONFIG_DERIVED( genesis_scd, megadriv )
-
+	MCFG_NVRAM_HANDLER_CLEAR()
 	MCFG_CPU_ADD("segacd_68k", M68000, SEGACD_CLOCK ) /* 12.5 MHz */
 	MCFG_CPU_PROGRAM_MAP(segacd_map)
 

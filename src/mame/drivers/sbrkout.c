@@ -310,7 +310,7 @@ static WRITE8_HANDLER( sbrkout_videoram_w )
 	sbrkout_state *state = space->machine().driver_data<sbrkout_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -321,13 +321,13 @@ static WRITE8_HANDLER( sbrkout_videoram_w )
  *
  *************************************/
 
-static SCREEN_UPDATE( sbrkout )
+static SCREEN_UPDATE_IND16( sbrkout )
 {
-	sbrkout_state *state = screen->machine().driver_data<sbrkout_state>();
+	sbrkout_state *state = screen.machine().driver_data<sbrkout_state>();
 	UINT8 *videoram = state->m_videoram;
 	int ball;
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	for (ball = 2; ball >= 0; ball--)
 	{
@@ -335,7 +335,7 @@ static SCREEN_UPDATE( sbrkout )
 		int sx = 31 * 8 - videoram[0x380 + 0x10 + ball * 2];
 		int sy = 30 * 8 - videoram[0x380 + 0x18 + ball * 2];
 
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1], code, 0, 0, 0, sx, sy, 0);
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1], code, 0, 0, 0, sx, sy, 0);
 	}
 	return 0;
 }
@@ -510,8 +510,7 @@ static MACHINE_CONFIG_START( sbrkout, sbrkout_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 384, 0, 256, 262, 0, 224)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_UPDATE(sbrkout)
+	MCFG_SCREEN_UPDATE_STATIC(sbrkout)
 
 	MCFG_PALETTE_INIT(black_and_white)
 	MCFG_VIDEO_START(sbrkout)

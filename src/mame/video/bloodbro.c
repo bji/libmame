@@ -62,8 +62,8 @@ VIDEO_START( bloodbro )
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info,tilemap_scan_rows,16,16,32,16);
 	state->m_tx_tilemap = tilemap_create(machine, get_tx_tile_info,tilemap_scan_rows, 8, 8,32,32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap,15);
-	tilemap_set_transparent_pen(state->m_tx_tilemap,15);
+	state->m_fg_tilemap->set_transparent_pen(15);
+	state->m_tx_tilemap->set_transparent_pen(15);
 }
 
 
@@ -78,21 +78,21 @@ WRITE16_HANDLER( bloodbro_bgvideoram_w )
 {
 	bloodbro_state *state = space->machine().driver_data<bloodbro_state>();
 	COMBINE_DATA(&state->m_bgvideoram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER( bloodbro_fgvideoram_w )
 {
 	bloodbro_state *state = space->machine().driver_data<bloodbro_state>();
 	COMBINE_DATA(&state->m_fgvideoram[offset]);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER( bloodbro_txvideoram_w )
 {
 	bloodbro_state *state = space->machine().driver_data<bloodbro_state>();
 	COMBINE_DATA(&state->m_txvideoram[offset]);
-	tilemap_mark_tile_dirty(state->m_tx_tilemap,offset);
+	state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -145,7 +145,7 @@ WRITE16_HANDLER( bloodbro_txvideoram_w )
    -------X XXXXXXXX
    -------- YYYYYYYY */
 
-static void bloodbro_draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void bloodbro_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	bloodbro_state *state = machine.driver_data<bloodbro_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -194,7 +194,7 @@ static void bloodbro_draw_sprites(running_machine &machine, bitmap_t *bitmap, co
    -------X XXXXXXXX
 */
 
-static void weststry_draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void weststry_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	bloodbro_state *state = machine.driver_data<bloodbro_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -232,55 +232,55 @@ static void weststry_draw_sprites(running_machine &machine, bitmap_t *bitmap, co
 
 
 
-SCREEN_UPDATE( bloodbro )
+SCREEN_UPDATE_IND16( bloodbro )
 {
-	bloodbro_state *state = screen->machine().driver_data<bloodbro_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap,0,state->m_scroll[0x10]);	/* ? */
-	tilemap_set_scrolly(state->m_bg_tilemap,0,state->m_scroll[0x11]);	/* ? */
-	tilemap_set_scrollx(state->m_fg_tilemap,0,state->m_scroll[0x12]);
-	tilemap_set_scrolly(state->m_fg_tilemap,0,state->m_scroll[0x13]);
+	bloodbro_state *state = screen.machine().driver_data<bloodbro_state>();
+	state->m_bg_tilemap->set_scrollx(0,state->m_scroll[0x10]);	/* ? */
+	state->m_bg_tilemap->set_scrolly(0,state->m_scroll[0x11]);	/* ? */
+	state->m_fg_tilemap->set_scrollx(0,state->m_scroll[0x12]);
+	state->m_fg_tilemap->set_scrolly(0,state->m_scroll[0x13]);
 
-	bitmap_fill(screen->machine().priority_bitmap,cliprect,0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,1);
-	bloodbro_draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,1);
+	bloodbro_draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
-SCREEN_UPDATE( weststry )
+SCREEN_UPDATE_IND16( weststry )
 {
-	bloodbro_state *state = screen->machine().driver_data<bloodbro_state>();
-//  tilemap_set_scrollx(state->m_bg_tilemap,0,state->m_scroll[0x10]);    /* ? */
-//  tilemap_set_scrolly(state->m_bg_tilemap,0,state->m_scroll[0x11]);    /* ? */
-//  tilemap_set_scrollx(state->m_fg_tilemap,0,state->m_scroll[0x12]);
-//  tilemap_set_scrolly(state->m_fg_tilemap,0,state->m_scroll[0x13]);
+	bloodbro_state *state = screen.machine().driver_data<bloodbro_state>();
+//  state->m_bg_tilemap->set_scrollx(0,state->m_scroll[0x10]);    /* ? */
+//  state->m_bg_tilemap->set_scrolly(0,state->m_scroll[0x11]);    /* ? */
+//  state->m_fg_tilemap->set_scrollx(0,state->m_scroll[0x12]);
+//  state->m_fg_tilemap->set_scrolly(0,state->m_scroll[0x13]);
 
-	bitmap_fill(screen->machine().priority_bitmap,cliprect,0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,1);
-	weststry_draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,1);
+	weststry_draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
 
-SCREEN_UPDATE( skysmash )
+SCREEN_UPDATE_IND16( skysmash )
 {
-	bloodbro_state *state = screen->machine().driver_data<bloodbro_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap,0,state->m_scroll[0x08]);
-	tilemap_set_scrolly(state->m_bg_tilemap,0,state->m_scroll[0x09]);	/* ? */
-	tilemap_set_scrollx(state->m_fg_tilemap,0,state->m_scroll[0x0a]);
-	tilemap_set_scrolly(state->m_fg_tilemap,0,state->m_scroll[0x0b]);	/* ? */
+	bloodbro_state *state = screen.machine().driver_data<bloodbro_state>();
+	state->m_bg_tilemap->set_scrollx(0,state->m_scroll[0x08]);
+	state->m_bg_tilemap->set_scrolly(0,state->m_scroll[0x09]);	/* ? */
+	state->m_fg_tilemap->set_scrollx(0,state->m_scroll[0x0a]);
+	state->m_fg_tilemap->set_scrolly(0,state->m_scroll[0x0b]);	/* ? */
 
-	bitmap_fill(screen->machine().priority_bitmap,cliprect,0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,1);
-	bloodbro_draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,1);
+	bloodbro_draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 

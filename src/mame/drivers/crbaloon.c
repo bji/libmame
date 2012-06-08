@@ -158,11 +158,12 @@ static READ8_HANDLER( pc3259_r )
 
 static WRITE8_HANDLER( port_sound_w )
 {
+	crbaloon_state *state = space->machine().driver_data<crbaloon_state>();
 	device_t *discrete = space->machine().device("discrete");
 	device_t *sn = space->machine().device("snsnd");
 
 	/* D0 - interrupt enable - also goes to PC3259 as /HTCTRL */
-	cpu_interrupt_enable(space->machine().device("maincpu"), (data & 0x01) ? TRUE : FALSE);
+	state->m_irq_mask = data & 0x01;
 	crbaloon_set_clear_collision_address(space->machine(), (data & 0x01) ? TRUE : FALSE);
 
 	/* D1 - SOUND STOP */
@@ -357,13 +358,22 @@ static MACHINE_RESET( crballoon )
  *
  *************************************/
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	crbaloon_state *state = device->machine().driver_data<crbaloon_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
+
 static MACHINE_CONFIG_START( crbaloon, crbaloon_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, CRBALOON_MASTER_XTAL / 3)
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(main_io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_RESET(crballoon)
 
@@ -378,10 +388,9 @@ static MACHINE_CONFIG_START( crbaloon, crbaloon_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(crbaloon)
+	MCFG_SCREEN_UPDATE_STATIC(crbaloon)
 
 	/* audio hardware */
 	MCFG_FRAGMENT_ADD(crbaloon_audio)

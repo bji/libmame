@@ -82,39 +82,39 @@ static VIDEO_START( itgambl2 )
 }
 
 /* (dirty) debug code for looking 8bpps blitter-based gfxs */
-static SCREEN_UPDATE( itgambl2 )
+static SCREEN_UPDATE_RGB32( itgambl2 )
 {
-	itgambl2_state *state = screen->machine().driver_data<itgambl2_state>();
+	itgambl2_state *state = screen.machine().driver_data<itgambl2_state>();
 	int x,y,count;
-	const UINT8 *blit_ram = screen->machine().region("gfx1")->base();
+	const UINT8 *blit_ram = screen.machine().region("gfx1")->base();
 
-	if(screen->machine().input().code_pressed(KEYCODE_Z))
+	if(screen.machine().input().code_pressed(KEYCODE_Z))
 		state->m_test_x++;
 
-	if(screen->machine().input().code_pressed(KEYCODE_X))
+	if(screen.machine().input().code_pressed(KEYCODE_X))
 		state->m_test_x--;
 
-	if(screen->machine().input().code_pressed(KEYCODE_A))
+	if(screen.machine().input().code_pressed(KEYCODE_A))
 		state->m_test_y++;
 
-	if(screen->machine().input().code_pressed(KEYCODE_S))
+	if(screen.machine().input().code_pressed(KEYCODE_S))
 		state->m_test_y--;
 
-	if(screen->machine().input().code_pressed(KEYCODE_Q))
+	if(screen.machine().input().code_pressed(KEYCODE_Q))
 		state->m_start_offs+=0x200;
 
-	if(screen->machine().input().code_pressed(KEYCODE_W))
+	if(screen.machine().input().code_pressed(KEYCODE_W))
 		state->m_start_offs-=0x200;
 
-	if(screen->machine().input().code_pressed(KEYCODE_E))
+	if(screen.machine().input().code_pressed(KEYCODE_E))
 		state->m_start_offs++;
 
-	if(screen->machine().input().code_pressed(KEYCODE_R))
+	if(screen.machine().input().code_pressed(KEYCODE_R))
 		state->m_start_offs--;
 
 	popmessage("%d %d %04x",state->m_test_x,state->m_test_y,state->m_start_offs);
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	count = (state->m_start_offs);
 
@@ -126,8 +126,8 @@ static SCREEN_UPDATE( itgambl2 )
 
 			color = (blit_ram[count] & 0xff)>>0;
 
-			if((x)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x) = screen->machine().pens[color];
+			if(cliprect.contains(x, y))
+				bitmap.pix32(y, x) = screen.machine().pens[color];
 
 			count++;
 		}
@@ -269,10 +269,9 @@ static MACHINE_CONFIG_START( itgambl2, itgambl2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE( itgambl2 )
+	MCFG_SCREEN_UPDATE_STATIC( itgambl2 )
 
 	MCFG_MACHINE_RESET( itgambl2 )
 	MCFG_PALETTE_INIT( itgambl2 )
@@ -926,19 +925,19 @@ ROM_END
 *************************/
 
 /*    YEAR  NAME      PARENT  MACHINE   INPUT     INIT ROT    COMPANY    FULLNAME                          FLAGS  */
-GAME( 1999, ntcash,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "NtCash",                                GAME_NOT_WORKING )
-GAME( 1999, wizard,   0,      itgambl2, itgambl2, 0,   ROT0, "A.A.",      "Wizard (Ver 1.0)",                      GAME_NOT_WORKING )
-GAME( 200?, trstar2k, 0,      itgambl2, itgambl2, 0,   ROT0, "A.M.",      "Triple Star 2000",                      GAME_NOT_WORKING )
-GAME( 2001, laser2k1, 0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Laser 2001 (Ver 1.2)",                  GAME_NOT_WORKING )
-GAME( 2001, mdrink,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Magic Drink (Ver 1.2)",                 GAME_NOT_WORKING )
-GAME( 2001, te0144,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Puzzle Bobble (Italian Gambling Game)", GAME_NOT_WORKING )
-GAME( 200?, cmagica,  0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Carta Magica (Ver 1.8)",                GAME_NOT_WORKING )
-GAME( 200?, millsun,  0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Millennium Sun",                        GAME_NOT_WORKING )
-GAME( 200?, sspac2k1, 0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Super Space 2001",                      GAME_NOT_WORKING )
-GAME( 200?, elvis,    0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Elvis?",                                GAME_NOT_WORKING )
-GAME( 200?, sstar,    0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Super Star",                            GAME_NOT_WORKING )
-GAME( 2001, pirati,   0,      itgambl2, itgambl2, 0,   ROT0, "Cin", 	  "Pirati",                                GAME_NOT_WORKING )
-GAME( 200?, mnumitg,  0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Magic Number (Italian Gambling Game, Ver 1.5)", GAME_NOT_WORKING )
-GAME( 200?, mclass,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Magic Class (Ver 2.2)",                 GAME_NOT_WORKING )
-GAME( 200?, europass, 0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Euro Pass (Ver 1.1)",                   GAME_NOT_WORKING )
+GAME( 1999, ntcash,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "NtCash",                                GAME_IS_SKELETON )
+GAME( 1999, wizard,   0,      itgambl2, itgambl2, 0,   ROT0, "A.A.",      "Wizard (Ver 1.0)",                      GAME_IS_SKELETON )
+GAME( 200?, trstar2k, 0,      itgambl2, itgambl2, 0,   ROT0, "A.M.",      "Triple Star 2000",                      GAME_IS_SKELETON )
+GAME( 2001, laser2k1, 0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Laser 2001 (Ver 1.2)",                  GAME_IS_SKELETON )
+GAME( 2001, mdrink,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Magic Drink (Ver 1.2)",                 GAME_IS_SKELETON )
+GAME( 2001, te0144,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Puzzle Bobble (Italian Gambling Game)", GAME_IS_SKELETON )
+GAME( 200?, cmagica,  0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Carta Magica (Ver 1.8)",                GAME_IS_SKELETON )
+GAME( 200?, millsun,  0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Millennium Sun",                        GAME_IS_SKELETON )
+GAME( 200?, sspac2k1, 0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Super Space 2001",                      GAME_IS_SKELETON )
+GAME( 200?, elvis,    0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Elvis?",                                GAME_IS_SKELETON )
+GAME( 200?, sstar,    0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Super Star",                            GAME_IS_SKELETON )
+GAME( 2001, pirati,   0,      itgambl2, itgambl2, 0,   ROT0, "Cin", 	  "Pirati",                                GAME_IS_SKELETON )
+GAME( 200?, mnumitg,  0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Magic Number (Italian Gambling Game, Ver 1.5)", GAME_IS_SKELETON )
+GAME( 200?, mclass,   0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Magic Class (Ver 2.2)",                 GAME_IS_SKELETON )
+GAME( 200?, europass, 0,      itgambl2, itgambl2, 0,   ROT0, "<unknown>", "Euro Pass (Ver 1.1)",                   GAME_IS_SKELETON )
 

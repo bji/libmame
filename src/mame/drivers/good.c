@@ -57,7 +57,7 @@ static WRITE16_HANDLER( fg_tilemapram_w )
 {
 	good_state *state = space->machine().driver_data<good_state>();
 	COMBINE_DATA(&state->m_fg_tilemapram[offset]);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset / 2);
+	state->m_fg_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_fg_tile_info )
@@ -72,7 +72,7 @@ static WRITE16_HANDLER( bg_tilemapram_w )
 {
 	good_state *state = space->machine().driver_data<good_state>();
 	COMBINE_DATA(&state->m_bg_tilemapram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset / 2);
+	state->m_bg_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -90,14 +90,14 @@ static VIDEO_START( good )
 	good_state *state = machine.driver_data<good_state>();
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 16, 16, 32, 32);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 16, 16, 32, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0xf);
+	state->m_fg_tilemap->set_transparent_pen(0xf);
 }
 
-static SCREEN_UPDATE( good )
+static SCREEN_UPDATE_IND16( good )
 {
-	good_state *state = screen->machine().driver_data<good_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	good_state *state = screen.machine().driver_data<good_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -284,10 +284,9 @@ static MACHINE_CONFIG_START( good, good_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 32*16)
 	MCFG_SCREEN_VISIBLE_AREA(1*16, 23*16-1, 0*16, 14*16-1)
-	MCFG_SCREEN_UPDATE(good)
+	MCFG_SCREEN_UPDATE_STATIC(good)
 
 	MCFG_PALETTE_LENGTH(0x400)
 

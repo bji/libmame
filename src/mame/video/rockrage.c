@@ -85,7 +85,7 @@ WRITE8_HANDLER( rockrage_vreg_w )
 	rockrage_state *state = space->machine().driver_data<rockrage_state>();
 
 	if ((data & 0x0c) != (state->m_vreg & 0x0c))
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 
 	state->m_vreg = data;
 }
@@ -96,16 +96,16 @@ WRITE8_HANDLER( rockrage_vreg_w )
 
 ***************************************************************************/
 
-SCREEN_UPDATE( rockrage )
+SCREEN_UPDATE_IND16( rockrage )
 {
-	rockrage_state *state = screen->machine().driver_data<rockrage_state>();
+	rockrage_state *state = screen.machine().driver_data<rockrage_state>();
 
-	set_pens(screen->machine());
+	set_pens(screen.machine());
 
 	k007342_tilemap_update(state->m_k007342);
 
 	k007342_tilemap_draw(state->m_k007342, bitmap, cliprect, 0, TILEMAP_DRAW_OPAQUE, 0);
-	k007420_sprites_draw(state->m_k007420, bitmap, cliprect, screen->machine().gfx[1]);
+	k007420_sprites_draw(state->m_k007420, bitmap, cliprect, screen.machine().gfx[1]);
 	k007342_tilemap_draw(state->m_k007342, bitmap, cliprect, 0, 1 | TILEMAP_DRAW_OPAQUE, 0);
 	k007342_tilemap_draw(state->m_k007342, bitmap, cliprect, 1, 0, 0);
 	k007342_tilemap_draw(state->m_k007342, bitmap, cliprect, 1, 1, 0);

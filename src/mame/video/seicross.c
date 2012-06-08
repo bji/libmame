@@ -58,7 +58,7 @@ WRITE8_HANDLER( seicross_videoram_w )
 	seicross_state *state = space->machine().driver_data<seicross_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( seicross_colorram_w )
@@ -73,8 +73,8 @@ WRITE8_HANDLER( seicross_colorram_w )
 	state->m_colorram[offset] = data;
 	state->m_colorram[offset + 0x20] = data;
 
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset + 0x20);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset + 0x20);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -94,10 +94,10 @@ VIDEO_START( seicross )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows,
 		 8, 8, 32, 32);
 
-	tilemap_set_scroll_cols(state->m_bg_tilemap, 32);
+	state->m_bg_tilemap->set_scroll_cols(32);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	seicross_state *state = machine.driver_data<seicross_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -137,15 +137,15 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-SCREEN_UPDATE( seicross )
+SCREEN_UPDATE_IND16( seicross )
 {
-	seicross_state *state = screen->machine().driver_data<seicross_state>();
+	seicross_state *state = screen.machine().driver_data<seicross_state>();
 	int col;
 
 	for (col = 0; col < 32; col++)
-		tilemap_set_scrolly(state->m_bg_tilemap, col, state->m_row_scroll[col]);
+		state->m_bg_tilemap->set_scrolly(col, state->m_row_scroll[col]);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

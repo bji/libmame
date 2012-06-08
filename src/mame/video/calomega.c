@@ -21,14 +21,14 @@ WRITE8_HANDLER( calomega_videoram_w )
 {
 	calomega_state *state = space->machine().driver_data<calomega_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( calomega_colorram_w )
 {
 	calomega_state *state = space->machine().driver_data<calomega_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -63,10 +63,10 @@ VIDEO_START( calomega )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 31);
 }
 
-SCREEN_UPDATE( calomega )
+SCREEN_UPDATE_IND16( calomega )
 {
-	calomega_state *state = screen->machine().driver_data<calomega_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	calomega_state *state = screen.machine().driver_data<calomega_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 

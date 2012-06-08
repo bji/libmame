@@ -65,7 +65,6 @@ Updates:
 ***************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "video/konicdev.h"
 #include "machine/eeprom.h"
 #include "cpu/m68000/m68000.h"
@@ -176,18 +175,8 @@ static INTERRUPT_GEN(cuebrick_interrupt)
 {
 	tmnt_state *state = device->machine().driver_data<tmnt_state>();
 
-	// cheap IRQ multiplexing to avoid losing sound IRQs
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			device_set_input_line(device, M68K_IRQ_5, HOLD_LINE);
-			break;
-
-		default:
-			if (state->m_cuebrick_snd_irqlatch)
-				device_set_input_line(device, M68K_IRQ_6, HOLD_LINE);
-			break;
-	}
+	if (state->m_irq5_mask)
+		device_set_input_line(device, M68K_IRQ_5, HOLD_LINE);
 }
 
 static INTERRUPT_GEN( punkshot_interrupt )
@@ -1247,11 +1236,11 @@ static INPUT_PORTS_START( cuebrick )
 	PORT_DIPNAME( 0x18, 0x08, "Machine Name" ) PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(    0x18, DEF_STR( None ) )
 	PORT_DIPSETTING(    0x10, "Lewis" )
-	PORT_DIPSETTING(    0x08, "Johnson" ) // Japan factory default = "Johnson"
+	PORT_DIPSETTING(    0x08, "Johnson" )
 	PORT_DIPSETTING(    0x00, "George" )
 	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) ) // Japan factory default = "Normal"
+	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Difficult ) )
 	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
@@ -1293,19 +1282,19 @@ static INPUT_PORTS_START( mia )
 	PORT_START("DSW2")
 	PORT_DIPNAME( 0x03, 0x02, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "2" )
-	PORT_DIPSETTING(    0x02, "3" ) // US and Japan factory default = "3"
+	PORT_DIPSETTING(    0x02, "3" )
 	PORT_DIPSETTING(    0x01, "5" )
 	PORT_DIPSETTING(    0x00, "7" )
 	PORT_DIPUNUSED_DIPLOC( 0x04, IP_ACTIVE_LOW, "SW2:3" )
 	PORT_DIPNAME( 0x18, 0x08, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SW2:4,5")
-	PORT_DIPSETTING(    0x18, "30K, Every 80K" ) // Japan factory default = "30K, Every 80K"
+	PORT_DIPSETTING(    0x18, "30K, Every 80K" )	// Japan factory default
 	PORT_DIPSETTING(    0x10, "50K, Every 100K" )
-	PORT_DIPSETTING(    0x08, "50K Only" ) // US factory default = "50K Only" (struck off "50K, Every 100K")
+	PORT_DIPSETTING(    0x08, "50K Only" )			// US factory default
 	PORT_DIPSETTING(    0x00, "100K Only" )
 	PORT_DIPNAME( 0x60, 0x20, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) ) // Japan factory default = "Normal"
-	PORT_DIPSETTING(    0x20, DEF_STR( Difficult ) ) // US factory default = "Difficult" (struck off "Normal")
+	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )		// Japan factory default
+	PORT_DIPSETTING(    0x20, DEF_STR( Difficult ) )	// US factory default
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Difficult ) )
 	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
@@ -1315,9 +1304,9 @@ static INPUT_PORTS_START( mia )
 	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW3:1")
 	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, "VRAM Character Check" ) PORT_DIPLOCATION("SW3:2")
-	PORT_DIPSETTING(    0x02, DEF_STR( Off ) ) // US manual says "VRAM Character Check"
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )  // Japanese manual says "not used"
+	PORT_DIPNAME( 0x02, 0x02, "VRAM Character Check" ) PORT_DIPLOCATION("SW3:2") // JP manual says "not used"
+	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 	PORT_SERVICE_DIPLOC( 0x04, IP_ACTIVE_LOW, "SW3:3" )
 	PORT_DIPUNUSED_DIPLOC( 0x08, IP_ACTIVE_LOW, "SW3:4" )
 INPUT_PORTS_END
@@ -1434,7 +1423,7 @@ static INPUT_PORTS_START( tmnt2p )
 	PORT_DIPUNUSED_DIPLOC( 0x10, IP_ACTIVE_LOW, "SW2:5" ) // ditto
 	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) ) // US and Japan factory default = "Normal"
+	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Difficult ) )
 	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
@@ -1458,13 +1447,13 @@ static INPUT_PORTS_START( punkshtj ) // Japan 2 Players
 	PORT_DIPUNUSED_DIPLOC( 0x0200, IP_ACTIVE_LOW, "SW2:2" ) // manual says "not used", but doesn't "should be kept OFF"
 	PORT_DIPNAME( 0x0c00, 0x0800, "Period Length" ) PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(      0x0c00, "1 Minutes" )
-	PORT_DIPSETTING(      0x0800, "2 Minutes" ) // Japan factory default = "2 Minutes"
+	PORT_DIPSETTING(      0x0800, "2 Minutes" )
 	PORT_DIPSETTING(      0x0400, "3 Minutes" )
 	PORT_DIPSETTING(      0x0000, "4 Minutes" )
 	PORT_DIPUNUSED_DIPLOC( 0x1000, IP_ACTIVE_LOW, "SW2:5" ) // manual says "not used", but doesn't "should be kept OFF"
 	PORT_DIPNAME( 0x6000, 0x4000, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(      0x6000, DEF_STR( Easy ) )
-	PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) ) // Japan factory default = "Normal"
+	PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) )
 	PORT_DIPSETTING(      0x2000, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(      0x0000, DEF_STR( Very_Difficult ) )
 	PORT_DIPNAME( 0x8000, 0x0000, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
@@ -1555,72 +1544,21 @@ static INPUT_PORTS_START( punkshot ) // US 4 Players set1
 
 	PORT_MODIFY("DSW1/DSW2")
 	PORT_DIPNAME( 0x0300, 0x0300, "Energy" ) PORT_DIPLOCATION("SW2:1,2")
-	PORT_DIPSETTING(      0x0300, "30" ) // US set1 factory default = "30"
+	PORT_DIPSETTING(      0x0300, "30" )
 	PORT_DIPSETTING(      0x0200, "40" )
 	PORT_DIPSETTING(      0x0100, "50" )
 	PORT_DIPSETTING(      0x0000, "60" )
 	PORT_DIPNAME( 0x0c00, 0x0800, "Period Length" ) PORT_DIPLOCATION("SW2:3,4")
 	PORT_DIPSETTING(      0x0c00, "2 Minutes" )
-	PORT_DIPSETTING(      0x0800, "3 Minutes" ) // US set1 factory default = "3 Minutes"
+	PORT_DIPSETTING(      0x0800, "3 Minutes" )
 	PORT_DIPSETTING(      0x0400, "4 Minutes" )
 	PORT_DIPSETTING(      0x0000, "5 Minutes" )
 	PORT_DIPNAME( 0x6000, 0x6000, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
-	PORT_DIPSETTING(      0x6000, DEF_STR( Easy ) ) // US factory default = "Easy"
+	PORT_DIPSETTING(      0x6000, DEF_STR( Easy ) )
 	PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) )
 	PORT_DIPSETTING(      0x2000, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(      0x0000, DEF_STR( Very_Difficult ) )
 INPUT_PORTS_END
-
-/*
-static INPUT_PORTS_START( punkshot2o ) // US 2 Players set1
-    PORT_INCLUDE( punkshtj )
-    PORT_INCLUDE( punksht_us_coinage )
-
-    PORT_MODIFY("DSW1/DSW2")
-    PORT_DIPNAME( 0x0300, 0x0300, "Energy" ) PORT_DIPLOCATION("SW2:1,2")
-    PORT_DIPSETTING(      0x0300, "30" ) // US set1 factory default = "30"
-    PORT_DIPSETTING(      0x0200, "40" )
-    PORT_DIPSETTING(      0x0100, "50" )
-    PORT_DIPSETTING(      0x0000, "60" )
-    PORT_DIPNAME( 0x0c00, 0x0800, "Period Length" ) PORT_DIPLOCATION("SW2:3,4")
-    PORT_DIPSETTING(      0x0c00, "2 Minutes" )
-    PORT_DIPSETTING(      0x0800, "3 Minutes" ) // US set1 factory default = "3 Minutes"
-    PORT_DIPSETTING(      0x0400, "4 Minutes" )
-    PORT_DIPSETTING(      0x0000, "5 Minutes" )
-    PORT_DIPNAME( 0x6000, 0x6000, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
-    PORT_DIPSETTING(      0x6000, DEF_STR( Easy ) ) // US set1 factory default = "Easy"
-    PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) )
-    PORT_DIPSETTING(      0x2000, DEF_STR( Difficult ) )
-    PORT_DIPSETTING(      0x0000, DEF_STR( Very_Difficult ) )
-INPUT_PORTS_END
-*/
-
-/*
-static INPUT_PORTS_START( punksht4n ) // US 4 Players set2
-    PORT_INCLUDE( punkshtj4 )
-    PORT_INCLUDE( punksht_us_coinage )
-
-    PORT_MODIFY("DSW1/DSW2")
-    PORT_DIPNAME( 0x0300, 0x0300, "Energy" ) PORT_DIPLOCATION("SW2:1,2")
-    PORT_DIPSETTING(      0x0300, "40" )
-    PORT_DIPSETTING(      0x0200, "50" )
-    PORT_DIPSETTING(      0x0100, "60" )
-    PORT_DIPSETTING(      0x0000, "70" )
-    PORT_DIPNAME( 0x0c00, 0x0c00, "Period Length" ) PORT_DIPLOCATION("SW2:3,4")
-    PORT_DIPSETTING(      0x0c00, "3 Minutes" )
-    PORT_DIPSETTING(      0x0800, "4 Minutes" )
-    PORT_DIPSETTING(      0x0400, "5 Minutes" )
-    PORT_DIPSETTING(      0x0000, "6 Minutes" )
-    PORT_DIPNAME( 0x6000, 0x6000, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
-    PORT_DIPSETTING(      0x6000, DEF_STR( Easy ) )
-    PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) )
-    PORT_DIPSETTING(      0x2000, DEF_STR( Difficult ) )
-    PORT_DIPSETTING(      0x0000, DEF_STR( Very_Difficult ) )
-    PORT_DIPNAME( 0x8000, 0x0000, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
-    PORT_DIPSETTING(      0x8000, DEF_STR( Off ) )
-    PORT_DIPSETTING(      0x0000, DEF_STR( On ) )
-INPUT_PORTS_END
-*/
 
 static INPUT_PORTS_START( punksht2 ) // US 2 Players set2
 	PORT_INCLUDE( punkshtj )
@@ -1671,18 +1609,18 @@ static INPUT_PORTS_START( lgtnfght )
 	PORT_START("DSW1")
 	PORT_DIPNAME( 0x03, 0x02, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "2" )
-	PORT_DIPSETTING(    0x02, "3" ) // US and Japan factory default = "3"
+	PORT_DIPSETTING(    0x02, "3" )
 	PORT_DIPSETTING(    0x01, "5" )
 	PORT_DIPSETTING(    0x00, "7" )
 	PORT_DIPUNUSED_DIPLOC( 0x04, IP_ACTIVE_LOW, "SW2:3" ) // manual says "not used"
 	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SW2:4,5")
-	PORT_DIPSETTING(    0x18, "100K, 400K" ) // US factory default = "100K, 400K"
-	PORT_DIPSETTING(    0x10, "150K, 500K" ) // Japan factory default = "150K, 500K"
+	PORT_DIPSETTING(    0x18, "100K, 400K" )
+	PORT_DIPSETTING(    0x10, "150K, 500K" )
 	PORT_DIPSETTING(    0x08, "200K Only" )
 	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) ) // US and Japan factory default = "Normal"
+	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Difficult ) )
 	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
@@ -1706,8 +1644,8 @@ static INPUT_PORTS_START( trigon )
 
 	PORT_MODIFY("DSW1")
 	PORT_DIPNAME( 0x18, 0x10, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SW2:4,5")
-	PORT_DIPSETTING(    0x18, "100K, 400K" ) // US factory default = "100K, 400K"
-	PORT_DIPSETTING(    0x10, "150K, 500K" ) // Japan factory default = "150K, 500K"
+	PORT_DIPSETTING(    0x18, "100K, 400K" ) // US factory default
+	PORT_DIPSETTING(    0x10, "150K, 500K" ) // JP factory default
 	PORT_DIPSETTING(    0x08, "200K Only" )
 	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 INPUT_PORTS_END
@@ -1759,7 +1697,7 @@ static INPUT_PORTS_START( glfgreat )
 	PORT_DIPSETTING(      0x0000, "3/5" )
 	PORT_DIPNAME( 0x6000, 0x4000, DEF_STR( Difficulty ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(      0x6000, DEF_STR( Easy ) )
-	PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) ) // Japan factory default = "Normal"
+	PORT_DIPSETTING(      0x4000, DEF_STR( Normal ) )
 	PORT_DIPSETTING(      0x2000, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(      0x0000, DEF_STR( Very_Difficult ) )
 	PORT_DIPNAME( 0x8000, 0x0000, DEF_STR( Demo_Sounds ) ) PORT_DIPLOCATION("SW2:8")
@@ -1808,7 +1746,7 @@ static INPUT_PORTS_START( glfgreatj )
 	PORT_DIPSETTING(      0x0000, "4/4" ) // Cocktail (P1&P2 <-> P3&P4)
 	PORT_DIPNAME( 0x1800, 0x1000, "Initial/Maximum Credit" ) PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(      0x1800, "2/2" )
-	PORT_DIPSETTING(      0x1000, "2/3" ) // Japan factory default = "Maximum 3"
+	PORT_DIPSETTING(      0x1000, "2/3" )
 	PORT_DIPSETTING(      0x0800, "2/4" )
 	PORT_DIPSETTING(      0x0000, "2/5" )
 
@@ -2119,7 +2057,8 @@ INPUT_PORTS_END
 static void cuebrick_irq_handler( device_t *device, int state )
 {
 	tmnt_state *tmnt = device->machine().driver_data<tmnt_state>();
-	tmnt->m_cuebrick_snd_irqlatch = state;
+
+	device_set_input_line(tmnt->m_maincpu, M68K_IRQ_6, (state) ? ASSERT_LINE : CLEAR_LINE);
 }
 
 static const ym2151_interface ym2151_interface_cbj =
@@ -2326,13 +2265,22 @@ static MACHINE_RESET( common )
 	state->m_cuebrick_nvram_bank = 0;
 }
 
+/* cuebrick, mia and tmnt */
+static INTERRUPT_GEN( tmnt_vblank_irq )
+{
+	tmnt_state *state = device->machine().driver_data<tmnt_state>();
+
+	if(state->m_irq5_mask)
+		device_set_input_line(device, 5, HOLD_LINE);
+}
+
 
 static MACHINE_CONFIG_START( cuebrick, tmnt_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 8000000)	/* 8 MHz */
 	MCFG_CPU_PROGRAM_MAP(cuebrick_main_map)
-	MCFG_CPU_VBLANK_INT_HACK(cuebrick_interrupt,10)
+	MCFG_CPU_VBLANK_INT("screen",cuebrick_interrupt)
 
 	MCFG_MACHINE_START(common)
 	MCFG_MACHINE_RESET(common)
@@ -2343,10 +2291,9 @@ static MACHINE_CONFIG_START( cuebrick, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(13*8, (64-13)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(mia)
+	MCFG_SCREEN_UPDATE_STATIC(mia)
 
 	MCFG_PALETTE_LENGTH(1024)
 	MCFG_NVRAM_ADD_0FILL("nvram")
@@ -2371,7 +2318,7 @@ static MACHINE_CONFIG_START( mia, tmnt_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_24MHz/3)
 	MCFG_CPU_PROGRAM_MAP(mia_main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq5_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", tmnt_vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_3_579545MHz)
 	MCFG_CPU_PROGRAM_MAP(mia_audio_map)
@@ -2385,10 +2332,9 @@ static MACHINE_CONFIG_START( mia, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(13*8, (64-13)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(mia)
+	MCFG_SCREEN_UPDATE_STATIC(mia)
 
 	MCFG_PALETTE_LENGTH(1024)
 
@@ -2425,7 +2371,7 @@ static MACHINE_CONFIG_START( tmnt, tmnt_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_24MHz/3)
 	MCFG_CPU_PROGRAM_MAP(tmnt_main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq5_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", tmnt_vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_3_579545MHz)
 	MCFG_CPU_PROGRAM_MAP(tmnt_audio_map)
@@ -2439,11 +2385,10 @@ static MACHINE_CONFIG_START( tmnt, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	//MCFG_SCREEN_VISIBLE_AREA(13*8, (64-13)*8-1, 2*8, 30*8-1 )
 	MCFG_SCREEN_VISIBLE_AREA(13*8-8, (64-13)*8-1+8, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(tmnt)
+	MCFG_SCREEN_UPDATE_STATIC(tmnt)
 	// We see something strange in the left 8 pixels and the right 8 pixels, but it is same as real PCB.
 
 	MCFG_PALETTE_LENGTH(1024)
@@ -2494,10 +2439,9 @@ static MACHINE_CONFIG_START( punkshot, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(punkshot)
+	MCFG_SCREEN_UPDATE_STATIC(punkshot)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -2536,10 +2480,9 @@ static MACHINE_CONFIG_START( lgtnfght, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(lgtnfght)
+	MCFG_SCREEN_UPDATE_STATIC(lgtnfght)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -2584,11 +2527,10 @@ static MACHINE_CONFIG_START( blswhstl, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-15)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(lgtnfght)
-	MCFG_SCREEN_EOF( blswhstl )
+	MCFG_SCREEN_UPDATE_STATIC(lgtnfght)
+	MCFG_SCREEN_VBLANK_STATIC( blswhstl )
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -2649,10 +2591,9 @@ static MACHINE_CONFIG_START( glfgreat, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(glfgreat)
+	MCFG_SCREEN_UPDATE_STATIC(glfgreat)
 
 	MCFG_GFXDECODE(glfgreat)
 	MCFG_PALETTE_LENGTH(2048)
@@ -2715,10 +2656,9 @@ static MACHINE_CONFIG_START( prmrsocr, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(glfgreat)
+	MCFG_SCREEN_UPDATE_STATIC(glfgreat)
 
 	MCFG_GFXDECODE(glfgreat)
 	MCFG_PALETTE_LENGTH(2048)
@@ -2766,10 +2706,9 @@ static MACHINE_CONFIG_START( tmnt2, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(13*8, (64-13)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(tmnt2)
+	MCFG_SCREEN_UPDATE_STATIC(tmnt2)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -2814,10 +2753,9 @@ static MACHINE_CONFIG_START( ssriders, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(tmnt2)
+	MCFG_SCREEN_UPDATE_STATIC(tmnt2)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -2858,10 +2796,9 @@ static MACHINE_CONFIG_START( sunsetbl, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(tmnt2)
+	MCFG_SCREEN_UPDATE_STATIC(tmnt2)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -2899,10 +2836,9 @@ static MACHINE_CONFIG_START( thndrx2, tmnt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(thndrx2)
+	MCFG_SCREEN_UPDATE_STATIC(thndrx2)
 
 	MCFG_PALETTE_LENGTH(2048)
 

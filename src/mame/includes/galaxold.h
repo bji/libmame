@@ -52,17 +52,16 @@ public:
 	void (*m_modify_spritecode)(running_machine &machine, UINT8 *spriteram, int*, int*, int*, int);	/* function to call to do sprite banking */
 	void (*m_modify_color)(UINT8 *color);	/* function to call to do modify how the color codes map to the PROM */
 	void (*m_modify_ypos)(UINT8*);	/* function to call to do modify how vertical positioning bits are connected */
-	void (*m_tilemap_set_scroll)( tilemap_t *, int col, int value );
 
 	UINT8 m_timer_adjusted;
 	UINT8 m_darkplnt_bullet_color;
-	void (*m_draw_bullets)(running_machine &,bitmap_t *,const rectangle *, int, int, int);	/* function to call to draw a bullet */
+	void (*m_draw_bullets)(running_machine &,bitmap_ind16 &,const rectangle &, int, int, int);	/* function to call to draw a bullet */
 
 	UINT8 m_background_enable;
 	UINT8 m_background_red;
 	UINT8 m_background_green;
 	UINT8 m_background_blue;
-	void (*m_draw_background)(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect);	/* function to call to draw the background */
+	void (*m_draw_background)(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect);	/* function to call to draw the background */
 	UINT16 m_rockclim_v;
 	UINT16 m_rockclim_h;
 	int m_dambustr_bg_split_line;
@@ -70,9 +69,9 @@ public:
 	int m_dambustr_bg_color_2;
 	int m_dambustr_bg_priority;
 	int m_dambustr_char_bank;
-	bitmap_t *m_dambustr_tmpbitmap;
+	bitmap_ind16 *m_dambustr_tmpbitmap;
 
-	void (*m_draw_stars)(running_machine &machine, bitmap_t *, const rectangle *);		/* function to call to draw the star layer */
+	void (*m_draw_stars)(running_machine &machine, bitmap_ind16 &, const rectangle &);		/* function to call to draw the star layer */
 	int m_stars_colors_start;
 	INT32 m_stars_scrollpos;
 	UINT8 m_stars_on;
@@ -80,6 +79,8 @@ public:
 	emu_timer *m_stars_blink_timer;
 	emu_timer *m_stars_scroll_timer;
 	struct star m_stars[STAR_COUNT];
+
+	UINT8 m_nmi_mask; /* Harem per-game specific */
 };
 
 
@@ -140,10 +141,10 @@ VIDEO_START( racknrol );
 VIDEO_START( ad2083 );
 
 void galaxold_init_stars(running_machine &machine, int colors_offset);
-void galaxold_draw_stars(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect);
+void galaxold_draw_stars(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
-SCREEN_UPDATE( galaxold );
-SCREEN_UPDATE( dambustr );
+SCREEN_UPDATE_IND16( galaxold );
+SCREEN_UPDATE_IND16( dambustr );
 
 WRITE8_HANDLER( galaxold_gfxbank_w );
 WRITE8_HANDLER( galaxold_flip_screen_x_w );

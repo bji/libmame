@@ -39,7 +39,6 @@ PROMs : NEC B406 (1kx4) x2
 
 #include "emu.h"
 #include "cpu/i8085/i8085.h"
-#include "deprecat.h"
 #include "cpu/mcs48/mcs48.h"
 #include "video/resnet.h"
 #include "sound/ay8910.h"
@@ -49,17 +48,21 @@ class sbowling_state : public driver_device
 {
 public:
 	sbowling_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu")
+		{ }
 
 	int m_bgmap;
 	UINT8 *m_videoram;
 
 	int m_sbw_system;
 	tilemap_t *m_sb_tilemap;
-	bitmap_t *m_tmpbitmap;
+	bitmap_ind16 *m_tmpbitmap;
 	UINT32 m_color_prom_address;
 	UINT8 m_pix_sh;
 	UINT8 m_pix[2];
+
+	required_device<cpu_device> m_maincpu;
 };
 
 static TILE_GET_INFO( get_sb_tile_info )
@@ -71,14 +74,14 @@ static TILE_GET_INFO( get_sb_tile_info )
 	SET_TILE_INFO(0, tileno, 0, 0);
 }
 
-static void plot_pixel_sbw(bitmap_t *tmpbitmap, int x, int y, int col, int flip)
+static void plot_pixel_sbw(bitmap_ind16 *tmpbitmap, int x, int y, int col, int flip)
 {
 	if (flip)
 	{
 		y = 255-y;
 		x = 247-x;
 	}
-	*BITMAP_ADDR16(tmpbitmap, y, x) = col;
+	tmpbitmap->pix16(y, x) = col;
 }
 
 static WRITE8_HANDLER( sbw_videoram_w )
@@ -105,13 +108,13 @@ static WRITE8_HANDLER( sbw_videoram_w )
 	}
 }
 
-static SCREEN_UPDATE(sbowling)
+static SCREEN_UPDATE_IND16(sbowling)
 {
-	sbowling_state *state = screen->machine().driver_data<sbowling_state>();
+	sbowling_state *state = screen.machine().driver_data<sbowling_state>();
 
-	bitmap_fill(bitmap, cliprect, 0x18);
-	tilemap_draw(bitmap, cliprect,state->m_sb_tilemap, 0, 0);
-	copybitmap_trans(bitmap, state->m_tmpbitmap, 0, 0, 0, 0, cliprect, state->m_color_prom_address);
+	bitmap.fill(0x18, cliprect);
+	state->m_sb_tilemap->draw(bitmap, cliprect, 0, 0);
+	copybitmap_trans(bitmap, *state->m_tmpbitmap, 0, 0, 0, 0, cliprect, state->m_color_prom_address);
 	return 0;
 }
 
@@ -119,7 +122,7 @@ static VIDEO_START(sbowling)
 {
 	sbowling_state *state = machine.driver_data<sbowling_state>();
 
-	state->m_tmpbitmap = auto_bitmap_alloc(machine,32*8,32*8,machine.primary_screen->format());
+	state->m_tmpbitmap = auto_bitmap_ind16_alloc(machine,32*8,32*8);
 	state->m_sb_tilemap = tilemap_create(machine, get_sb_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
@@ -153,11 +156,17 @@ static READ8_HANDLER( pix_data_r )
 
 
 
-static INTERRUPT_GEN( sbw_interrupt )
+static TIMER_DEVICE_CALLBACK( sbw_interrupt )
 {
-	int vector = device->machine().primary_screen->vblank() ? 0xcf : 0xd7;	/* RST 08h/10h */
+	sbowling_state *state = timer.machine().driver_data<sbowling_state>();
+	int scanline = param;
 
-	device_set_input_line_and_vector(device, 0, HOLD_LINE, vector);
+	if(scanline == 256)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xcf); /* RST 08h */
+
+	if(scanline == 128)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xd7); /* RST 10h */
+
 }
 
 static WRITE8_HANDLER (system_w)
@@ -197,7 +206,7 @@ static WRITE8_HANDLER(graph_control_w)
 	state->m_color_prom_address = ((data&0x07)<<7) | ((data&0xc0)>>3);
 
 	state->m_bgmap = ((data>>4)^3) & 0x3;
-	tilemap_mark_all_tiles_dirty(state->m_sb_tilemap);
+	state->m_sb_tilemap->mark_all_dirty();
 }
 
 static READ8_HANDLER (controls_r)
@@ -316,9 +325,9 @@ INPUT_PORTS_END
 static const gfx_layout charlayout =
 {
 	8,8,
-	256,
+	RGN_FRAC(1,3),
 	3,
-	{ 0x800*0*8, 0x800*1*8, 0x800*2*8 },
+	{ RGN_FRAC(0,3), RGN_FRAC(1,3), RGN_FRAC(2,3) },
 	{ 7, 6, 5, 4, 3, 2, 1, 0 },
 	{ 0*8, 1*8, 2*8, 3*8, 4*8, 5*8, 6*8, 7*8 },
 	8*8
@@ -369,20 +378,19 @@ static PALETTE_INIT( sbowling )
 }
 
 static MACHINE_CONFIG_START( sbowling, sbowling_state )
-
 	MCFG_CPU_ADD("maincpu", I8080, XTAL_19_968MHz/10)	/* ? */
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(port_map)
-	MCFG_CPU_VBLANK_INT_HACK(sbw_interrupt, 2)
-	MCFG_GFXDECODE(sbowling)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sbw_interrupt, "screen", 0, 1)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 262)		/* vert size taken from mw8080bw */
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 4*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(sbowling)
+	MCFG_SCREEN_UPDATE_STATIC(sbowling)
+
+	MCFG_GFXDECODE(sbowling)
 
 	MCFG_PALETTE_LENGTH(0x400)
 	MCFG_PALETTE_INIT(sbowling)

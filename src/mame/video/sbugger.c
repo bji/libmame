@@ -19,7 +19,7 @@ WRITE8_HANDLER( sbugger_videoram_w )
 	sbugger_state *state = space->machine().driver_data<sbugger_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap,offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( sbugger_videoram_attr_w )
@@ -27,7 +27,7 @@ WRITE8_HANDLER( sbugger_videoram_attr_w )
 	sbugger_state *state = space->machine().driver_data<sbugger_state>();
 
 	state->m_videoram_attr[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap,offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 VIDEO_START(sbugger)
@@ -36,10 +36,10 @@ VIDEO_START(sbugger)
 	state->m_tilemap = tilemap_create(machine, get_sbugger_tile_info, tilemap_scan_rows, 8, 16, 64, 16);
 }
 
-SCREEN_UPDATE(sbugger)
+SCREEN_UPDATE_IND16(sbugger)
 {
-	sbugger_state *state = screen->machine().driver_data<sbugger_state>();
-	tilemap_draw(bitmap,cliprect,state->m_tilemap,0,0);
+	sbugger_state *state = screen.machine().driver_data<sbugger_state>();
+	state->m_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 

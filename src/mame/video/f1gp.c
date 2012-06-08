@@ -50,7 +50,7 @@ VIDEO_START( f1gp )
 	state->m_roz_tilemap = tilemap_create(machine, f1gp_get_roz_tile_info, tilemap_scan_rows, 16, 16, 64, 64);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0xff);
+	state->m_fg_tilemap->set_transparent_pen(0xff);
 
 	state->m_zoomdata = (UINT16 *)machine.region("gfx4")->base();
 	gfx_element_set_source(machine.gfx[3], (UINT8 *)state->m_zoomdata);
@@ -66,7 +66,7 @@ VIDEO_START( f1gpb )
 	state->m_roz_tilemap = tilemap_create(machine, f1gp_get_roz_tile_info, tilemap_scan_rows, 16, 16, 64, 64);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0xff);
+	state->m_fg_tilemap->set_transparent_pen(0xff);
 
 	state->m_zoomdata = (UINT16 *)machine.region("gfx4")->base();
 	gfx_element_set_source(machine.gfx[3], (UINT8 *)state->m_zoomdata);
@@ -81,11 +81,11 @@ VIDEO_START( f1gp2 )
 	state->m_roz_tilemap = tilemap_create(machine, f1gp2_get_roz_tile_info, tilemap_scan_rows, 16, 16, 64, 64);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0xff);
-	tilemap_set_transparent_pen(state->m_roz_tilemap, 0x0f);
+	state->m_fg_tilemap->set_transparent_pen(0xff);
+	state->m_roz_tilemap->set_transparent_pen(0x0f);
 
-	tilemap_set_scrolldx(state->m_fg_tilemap, -80, 0);
-	tilemap_set_scrolldy(state->m_fg_tilemap, -26, 0);
+	state->m_fg_tilemap->set_scrolldx(-80, 0);
+	state->m_fg_tilemap->set_scrolldy(-26, 0);
 }
 
 
@@ -118,14 +118,14 @@ WRITE16_HANDLER( f1gp_rozvideoram_w )
 {
 	f1gp_state *state = space->machine().driver_data<f1gp_state>();
 	COMBINE_DATA(&state->m_rozvideoram[offset]);
-	tilemap_mark_tile_dirty(state->m_roz_tilemap, offset);
+	state->m_roz_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER( f1gp_fgvideoram_w )
 {
 	f1gp_state *state = space->machine().driver_data<f1gp_state>();
 	COMBINE_DATA(&state->m_fgvideoram[offset]);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER( f1gp_fgscroll_w )
@@ -133,8 +133,8 @@ WRITE16_HANDLER( f1gp_fgscroll_w )
 	f1gp_state *state = space->machine().driver_data<f1gp_state>();
 	COMBINE_DATA(&state->m_scroll[offset]);
 
-	tilemap_set_scrollx(state->m_fg_tilemap, 0, state->m_scroll[0]);
-	tilemap_set_scrolly(state->m_fg_tilemap, 0, state->m_scroll[1]);
+	state->m_fg_tilemap->set_scrollx(0, state->m_scroll[0]);
+	state->m_fg_tilemap->set_scrolly(0, state->m_scroll[1]);
 }
 
 WRITE16_HANDLER( f1gp_gfxctrl_w )
@@ -165,7 +165,7 @@ WRITE16_HANDLER( f1gp2_gfxctrl_w )
 		if (state->m_roz_bank != (data >> 8))
 		{
 			state->m_roz_bank = (data >> 8);
-			tilemap_mark_all_tiles_dirty(state->m_roz_tilemap);
+			state->m_roz_tilemap->mark_all_dirty();
 		}
 	}
 }
@@ -177,7 +177,7 @@ WRITE16_HANDLER( f1gp2_gfxctrl_w )
 
 ***************************************************************************/
 
-static void f1gp_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int chip, int primask )
+static void f1gp_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int chip, int primask )
 {
 	f1gp_state *state = machine.driver_data<f1gp_state>();
 	int attr_start, first;
@@ -250,32 +250,32 @@ static void f1gp_draw_sprites( running_machine &machine, bitmap_t *bitmap, const
 }
 
 
-SCREEN_UPDATE( f1gp )
+SCREEN_UPDATE_IND16( f1gp )
 {
-	f1gp_state *state = screen->machine().driver_data<f1gp_state>();
+	f1gp_state *state = screen.machine().driver_data<f1gp_state>();
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, 0, 0, 1);
 
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 1);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 1);
 
 	/* quick kludge for "continue" screen priority */
 	if (state->m_gfxctrl == 0x00)
 	{
-		f1gp_draw_sprites(screen->machine(), bitmap, cliprect, 0, 0x02);
-		f1gp_draw_sprites(screen->machine(), bitmap, cliprect, 1, 0x02);
+		f1gp_draw_sprites(screen.machine(), bitmap, cliprect, 0, 0x02);
+		f1gp_draw_sprites(screen.machine(), bitmap, cliprect, 1, 0x02);
 	}
 	else
 	{
-		f1gp_draw_sprites(screen->machine(), bitmap, cliprect, 0, 0x00);
-		f1gp_draw_sprites(screen->machine(), bitmap, cliprect, 1, 0x02);
+		f1gp_draw_sprites(screen.machine(), bitmap, cliprect, 0, 0x00);
+		f1gp_draw_sprites(screen.machine(), bitmap, cliprect, 1, 0x02);
 	}
 	return 0;
 }
 
 
-static void f1gpb_draw_sprites( running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect )
+static void f1gpb_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect )
 {
 	f1gp_state *state = machine.driver_data<f1gp_state>();
 	UINT16 *spriteram = state->m_spriteram;
@@ -343,9 +343,9 @@ static void f1gpb_draw_sprites( running_machine &machine, bitmap_t *bitmap,const
 	}
 }
 
-SCREEN_UPDATE( f1gpb )
+SCREEN_UPDATE_IND16( f1gpb )
 {
-	f1gp_state *state = screen->machine().driver_data<f1gp_state>();
+	f1gp_state *state = screen.machine().driver_data<f1gp_state>();
 	UINT32 startx, starty;
 	int incxx, incxy, incyx, incyy;
 
@@ -355,24 +355,24 @@ SCREEN_UPDATE( f1gpb )
 	startx = state->m_rozregs[0] + 328;
 	starty = state->m_rozregs[2];
 
-	tilemap_set_scrolly(state->m_fg_tilemap, 0, state->m_fgregs[0] + 8);
+	state->m_fg_tilemap->set_scrolly(0, state->m_fgregs[0] + 8);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	tilemap_draw_roz(bitmap, cliprect, state->m_roz_tilemap,
+	state->m_roz_tilemap->draw_roz(bitmap, cliprect,
 		startx << 13, starty << 13,
 		incxx << 5, incxy << 5, incyx << 5, incyy << 5,
 		1, 0, 0);
 
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 1);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 1);
 
-	f1gpb_draw_sprites(screen->machine(), bitmap, cliprect);
+	f1gpb_draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }
 
 
-static void f1gp2_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void f1gp2_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	f1gp_state *state = machine.driver_data<f1gp_state>();
 	int offs;
@@ -444,30 +444,30 @@ static void f1gp2_draw_sprites( running_machine &machine, bitmap_t *bitmap, cons
 }
 
 
-SCREEN_UPDATE( f1gp2 )
+SCREEN_UPDATE_IND16( f1gp2 )
 {
-	f1gp_state *state = screen->machine().driver_data<f1gp_state>();
+	f1gp_state *state = screen.machine().driver_data<f1gp_state>();
 
 	if (state->m_gfxctrl & 4)	/* blank screen */
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 	else
 	{
 		switch (state->m_gfxctrl & 3)
 		{
 			case 0:
 				k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, TILEMAP_DRAW_OPAQUE, 0, 1);
-				f1gp2_draw_sprites(screen->machine(), bitmap, cliprect);
-				tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+				f1gp2_draw_sprites(screen.machine(), bitmap, cliprect);
+				state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 				break;
 			case 1:
 				k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, TILEMAP_DRAW_OPAQUE, 0, 1);
-				tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
-				f1gp2_draw_sprites(screen->machine(), bitmap, cliprect);
+				state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
+				f1gp2_draw_sprites(screen.machine(), bitmap, cliprect);
 				break;
 			case 2:
-				tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, TILEMAP_DRAW_OPAQUE, 0);
+				state->m_fg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
 				k053936_zoom_draw(state->m_k053936, bitmap, cliprect, state->m_roz_tilemap, 0, 0, 1);
-				f1gp2_draw_sprites(screen->machine(), bitmap, cliprect);
+				f1gp2_draw_sprites(screen.machine(), bitmap, cliprect);
 				break;
 #ifdef MAME_DEBUG
 			case 3:

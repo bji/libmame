@@ -68,7 +68,6 @@ mw-9.rom = ST M27C1001 / GFX
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "machine/eeprom.h"
 #include "includes/cps1.h"	// needed for decoding functions only
 #include "includes/mitchell.h"
@@ -113,7 +112,7 @@ static NVRAM_HANDLER( mitchell )
 
 static READ8_HANDLER( pang_port5_r )
 {
-	int bit = space->machine().device<eeprom_device>("eeprom")->read_bit() << 7;
+	mitchell_state *state = space->machine().driver_data<mitchell_state>();
 
 	/* bits 0 and (sometimes) 3 are checked in the interrupt handler.
         bit 3 is checked before updating the palette so it really seems to be vblank.
@@ -121,10 +120,8 @@ static READ8_HANDLER( pang_port5_r )
         Many games require two interrupts per frame and for these bits to toggle,
         otherwise music doesn't work.
     */
-	if (cpu_getiloops(&space->device()) & 1)
-		bit |= 0x01;
 
-	return (input_port_read(space->machine(), "SYS0") & 0x7e) | bit;
+	return (input_port_read(space->machine(), "SYS0") & 0xfe) | (state->m_irq_source & 1);
 }
 
 static WRITE8_DEVICE_HANDLER( eeprom_cs_w )
@@ -357,7 +354,7 @@ static ADDRESS_MAP_START( spangbl_io_map, AS_IO, 8 )
 	AM_RANGE(0x02, 0x02) AM_WRITE(pang_bankswitch_w)      /* Code bank register */
 	AM_RANGE(0x03, 0x03) AM_DEVWRITE("ymsnd", ym2413_data_port_w)
 	AM_RANGE(0x04, 0x04) AM_DEVWRITE("ymsnd", ym2413_register_port_w)
-	AM_RANGE(0x05, 0x05) AM_READ(pang_port5_r)
+	AM_RANGE(0x05, 0x05) AM_READ_PORT("SYS0")
 	AM_RANGE(0x06, 0x06) AM_WRITENOP	/* watchdog? irq ack? */
 	AM_RANGE(0x07, 0x07) AM_WRITE(pang_video_bank_w)      /* Video RAM bank register */
 	AM_RANGE(0x08, 0x08) AM_DEVWRITE("eeprom", eeprom_cs_w)
@@ -434,7 +431,7 @@ static INPUT_PORTS_START( mj_common )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_VBLANK )
 	PORT_BIT( 0x70, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* data from EEPROM */
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_READ_LINE_DEVICE_MEMBER("eeprom", eeprom_device, read_bit)
 
 	PORT_START("IN0")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -684,7 +681,7 @@ static INPUT_PORTS_START( pang )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_VBLANK )
 	PORT_BIT( 0x70, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* data from EEPROM */
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_READ_LINE_DEVICE_MEMBER("eeprom", eeprom_device, read_bit)
 
 	PORT_START("IN0")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -720,6 +717,9 @@ INPUT_PORTS_END
 static INPUT_PORTS_START( spangbl )
 	PORT_INCLUDE( pang )
 
+	PORT_MODIFY("SYS0")
+	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
+
 	PORT_MODIFY("IN1")
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_UNKNOWN ) // must be high for game to boot..
 INPUT_PORTS_END
@@ -727,12 +727,12 @@ INPUT_PORTS_END
 static INPUT_PORTS_START( mstworld )
 	/* this port may not have the same role */
 	PORT_START("SYS0")
-	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* USED - handled in port5_r */
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_SERVICE_NO_TOGGLE( 0x02, IP_ACTIVE_LOW )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_VBLANK )
 	PORT_BIT( 0x70, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* data from EEPROM (spang) */
+	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 
 	PORT_START("IN0")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -848,7 +848,7 @@ static INPUT_PORTS_START( qtono1 )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_VBLANK )
 	PORT_BIT( 0x70, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* data from EEPROM */
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_READ_LINE_DEVICE_MEMBER("eeprom", eeprom_device, read_bit)
 
 	PORT_START("IN0")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_SERVICE )	/* same as the service mode farther down */
@@ -888,7 +888,7 @@ static INPUT_PORTS_START( block )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_VBLANK )
 	PORT_BIT( 0x70, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* data from EEPROM */
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_READ_LINE_DEVICE_MEMBER("eeprom", eeprom_device, read_bit)
 
 	PORT_START("IN0")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -930,7 +930,7 @@ static INPUT_PORTS_START( blockjoy )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_VBLANK )
 	PORT_BIT( 0x70, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* unused? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNKNOWN )	/* data from EEPROM */
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_SPECIAL ) PORT_READ_LINE_DEVICE_MEMBER("eeprom", eeprom_device, read_bit)
 
 	PORT_START("IN0")
 	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNKNOWN )
@@ -1087,6 +1087,7 @@ static MACHINE_START( mitchell )
 	state->save_item(NAME(state->m_keymatrix));
 	state->save_item(NAME(state->m_dir));
 	state->save_item(NAME(state->m_dial));
+	state->save_item(NAME(state->m_irq_source));
 //  state_save_register_global(machine, init_eeprom_count);
 }
 
@@ -1104,13 +1105,26 @@ static MACHINE_RESET( mitchell )
 	state->m_keymatrix = 0;
 }
 
+static TIMER_DEVICE_CALLBACK( mitchell_irq )
+{
+	mitchell_state *state = timer.machine().driver_data<mitchell_state>();
+	int scanline = param;
+
+	if (scanline == 240 || scanline == 0)
+	{
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+
+		state->m_irq_source = (scanline == 0);
+	}
+}
+
 static MACHINE_CONFIG_START( mgakuen, mitchell_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2) /* probably same clock as the other mitchell hardware games */
 	MCFG_CPU_PROGRAM_MAP(mgakuen_map)
 	MCFG_CPU_IO_MAP(mitchell_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(irq0_line_hold,2)	/* ??? one extra irq seems to be needed for music (see input5_r) */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mitchell_irq, "screen", 0, 1)	/* ??? one extra irq seems to be needed for music (see input5_r) */
 
 	MCFG_MACHINE_START(mitchell)
 	MCFG_MACHINE_RESET(mitchell)
@@ -1121,10 +1135,9 @@ static MACHINE_CONFIG_START( mgakuen, mitchell_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 1*8, 31*8-1 )
-	MCFG_SCREEN_UPDATE(pang)
+	MCFG_SCREEN_UPDATE_STATIC(pang)
 
 	MCFG_GFXDECODE(mgakuen)
 	MCFG_PALETTE_LENGTH(1024)	/* less colors than the others */
@@ -1148,7 +1161,7 @@ static MACHINE_CONFIG_START( pang, mitchell_state )
 	MCFG_CPU_ADD("maincpu",Z80, XTAL_16MHz/2) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(mitchell_map)
 	MCFG_CPU_IO_MAP(mitchell_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(irq0_line_hold,2)	/* ??? one extra irq seems to be needed for music (see input5_r) */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mitchell_irq, "screen", 0, 1)	/* ??? one extra irq seems to be needed for music (see input5_r) */
 
 	MCFG_MACHINE_START(mitchell)
 	MCFG_MACHINE_RESET(mitchell)
@@ -1160,7 +1173,6 @@ static MACHINE_CONFIG_START( pang, mitchell_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57.42)   /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 1*8, 31*8-1 )
 
@@ -1168,7 +1180,7 @@ static MACHINE_CONFIG_START( pang, mitchell_state )
 	MCFG_PALETTE_LENGTH(2048)
 
 	MCFG_VIDEO_START(pang)
-	MCFG_SCREEN_UPDATE(pang)
+	MCFG_SCREEN_UPDATE_STATIC(pang)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -1224,6 +1236,8 @@ static MACHINE_CONFIG_DERIVED( spangbl, pang )
 	MCFG_CPU_IO_MAP(spangbl_io_map)
 	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
 
+	MCFG_DEVICE_REMOVE("scantimer")
+
 	MCFG_CPU_ADD("audiocpu", Z80, 8000000)
 	MCFG_CPU_PROGRAM_MAP(spangbl_sound_map)
 	MCFG_CPU_IO_MAP(spangbl_sound_io_map)
@@ -1259,7 +1273,6 @@ static MACHINE_CONFIG_START( mstworld, mitchell_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 1*8, 31*8-1 )
 
@@ -1267,7 +1280,7 @@ static MACHINE_CONFIG_START( mstworld, mitchell_state )
 	MCFG_PALETTE_LENGTH(2048)
 
 	MCFG_VIDEO_START(pang)
-	MCFG_SCREEN_UPDATE(pang)
+	MCFG_SCREEN_UPDATE_STATIC(pang)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -1283,7 +1296,7 @@ static MACHINE_CONFIG_START( marukin, mitchell_state )
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(mitchell_map)
 	MCFG_CPU_IO_MAP(mitchell_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(irq0_line_hold,2)	/* ??? one extra irq seems to be needed for music (see input5_r) */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mitchell_irq, "screen", 0, 1)	/* ??? one extra irq seems to be needed for music (see input5_r) */
 
 	MCFG_NVRAM_HANDLER(mitchell)
 	MCFG_EEPROM_ADD("eeprom", eeprom_intf)
@@ -1292,7 +1305,6 @@ static MACHINE_CONFIG_START( marukin, mitchell_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 1*8, 31*8-1 )
 
@@ -1300,7 +1312,7 @@ static MACHINE_CONFIG_START( marukin, mitchell_state )
 	MCFG_PALETTE_LENGTH(2048)
 
 	MCFG_VIDEO_START(pang)
-	MCFG_SCREEN_UPDATE(pang)
+	MCFG_SCREEN_UPDATE_STATIC(pang)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -1336,7 +1348,7 @@ static MACHINE_CONFIG_START( pkladiesbl, mitchell_state )
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_12MHz/2) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(mitchell_map)
 	MCFG_CPU_IO_MAP(mitchell_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(irq0_line_hold,2)	/* ??? one extra irq seems to be needed for music (see input5_r) */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mitchell_irq, "screen", 0, 1)	/* ??? one extra irq seems to be needed for music (see input5_r) */
 
 	MCFG_NVRAM_HANDLER(mitchell)
 	MCFG_EEPROM_ADD("eeprom", eeprom_intf)
@@ -1345,7 +1357,6 @@ static MACHINE_CONFIG_START( pkladiesbl, mitchell_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.09) /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 1*8, 31*8-1 )
 
@@ -1353,7 +1364,7 @@ static MACHINE_CONFIG_START( pkladiesbl, mitchell_state )
 	MCFG_PALETTE_LENGTH(2048)
 
 	MCFG_VIDEO_START(pang)
-	MCFG_SCREEN_UPDATE(pang)
+	MCFG_SCREEN_UPDATE_STATIC(pang)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

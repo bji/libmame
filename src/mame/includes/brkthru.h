@@ -29,6 +29,8 @@ public:
 	/* devices */
 	device_t *m_maincpu;
 	device_t *m_audiocpu;
+
+	UINT8   m_nmi_mask;
 };
 
 
@@ -39,4 +41,4 @@ WRITE8_HANDLER( brkthru_bgram_w );
 WRITE8_HANDLER( brkthru_fgram_w );
 VIDEO_START( brkthru );
 PALETTE_INIT( brkthru );
-SCREEN_UPDATE( brkthru );
+SCREEN_UPDATE_IND16( brkthru );

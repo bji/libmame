@@ -34,6 +34,8 @@ public:
 	/* devices */
 	cpu_device *m_maincpu;
 	device_t *m_samples;
+
+	UINT8    m_main_irq_mask;
 };
 
 
@@ -50,6 +52,6 @@ VIDEO_START( rallyx );
 VIDEO_START( jungler );
 VIDEO_START( locomotn );
 VIDEO_START( commsega );
-SCREEN_UPDATE( rallyx );
-SCREEN_UPDATE( jungler );
-SCREEN_UPDATE( locomotn );
+SCREEN_UPDATE_IND16( rallyx );
+SCREEN_UPDATE_IND16( jungler );
+SCREEN_UPDATE_IND16( locomotn );

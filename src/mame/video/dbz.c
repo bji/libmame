@@ -42,7 +42,7 @@ WRITE16_HANDLER( dbz_bg2_videoram_w )
 {
 	dbz_state *state = space->machine().driver_data<dbz_state>();
 	COMBINE_DATA(&state->m_bg2_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg2_tilemap, offset / 2);
+	state->m_bg2_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_dbz_bg2_tile_info )
@@ -61,7 +61,7 @@ WRITE16_HANDLER( dbz_bg1_videoram_w )
 {
 	dbz_state *state = space->machine().driver_data<dbz_state>();
 	COMBINE_DATA(&state->m_bg1_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg1_tilemap, offset / 2);
+	state->m_bg1_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_dbz_bg1_tile_info )
@@ -83,8 +83,8 @@ VIDEO_START( dbz )
 	state->m_bg1_tilemap = tilemap_create(machine, get_dbz_bg1_tile_info, tilemap_scan_rows, 16, 16, 64, 32);
 	state->m_bg2_tilemap = tilemap_create(machine, get_dbz_bg2_tile_info, tilemap_scan_rows, 16, 16, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_bg1_tilemap, 0);
-	tilemap_set_transparent_pen(state->m_bg2_tilemap, 0);
+	state->m_bg1_tilemap->set_transparent_pen(0);
+	state->m_bg2_tilemap->set_transparent_pen(0);
 
 	if (!strcmp(machine.system().name, "dbz"))
 		k056832_set_layer_offs(state->m_k056832, 0, -34, -16);
@@ -97,9 +97,9 @@ VIDEO_START( dbz )
 	k053247_set_sprite_offs(state->m_k053246, -87, 32);
 }
 
-SCREEN_UPDATE( dbz )
+SCREEN_UPDATE_IND16( dbz )
 {
-	dbz_state *state = screen->machine().driver_data<dbz_state>();
+	dbz_state *state = screen.machine().driver_data<dbz_state>();
 	static const int K053251_CI[6] = { K053251_CI3, K053251_CI4, K053251_CI4, K053251_CI4, K053251_CI2, K053251_CI1 };
 	int layer[5], plane, new_colorbase;
 
@@ -114,9 +114,9 @@ SCREEN_UPDATE( dbz )
 			if (plane <= 3)
 				k056832_mark_plane_dirty(state->m_k056832, plane);
 			else if (plane == 4)
-				tilemap_mark_all_tiles_dirty(state->m_bg1_tilemap);
+				state->m_bg1_tilemap->mark_all_dirty();
 			else if (plane == 5)
-				tilemap_mark_all_tiles_dirty(state->m_bg2_tilemap);
+				state->m_bg2_tilemap->mark_all_dirty();
 		}
 	}
 
@@ -135,7 +135,7 @@ SCREEN_UPDATE( dbz )
 
 	konami_sortlayers5(layer, state->m_layerpri);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	for (plane = 0; plane < 5; plane++)
 	{

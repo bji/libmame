@@ -8,21 +8,20 @@ driver by Allard Van Der Bas
 
 #include "emu.h"
 #include "cpu/m6809/m6809.h"
-#include "deprecat.h"
 #include "sound/sn76496.h"
 #include "includes/shaolins.h"
 
 #define MASTER_CLOCK XTAL_18_432MHz
 
-static INTERRUPT_GEN( shaolins_interrupt )
+static TIMER_DEVICE_CALLBACK( shaolins_interrupt )
 {
-	shaolins_state *state = device->machine().driver_data<shaolins_state>();
+	shaolins_state *state = timer.machine().driver_data<shaolins_state>();
+	int scanline = param;
 
-	if (cpu_getiloops(device) == 0) device_set_input_line(device, 0, HOLD_LINE);
-	else if (cpu_getiloops(device) % 2)
-	{
-		if (state->m_nmi_enable & 0x02) device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	}
+	if(scanline == 240)
+		 device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+	else if((scanline % 32) == 0)
+		if (state->m_nmi_enable & 0x02) device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 }
 
 
@@ -193,16 +192,15 @@ static MACHINE_CONFIG_START( shaolins, shaolins_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, MASTER_CLOCK/12)        /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(shaolins_map)
-	MCFG_CPU_VBLANK_INT_HACK(shaolins_interrupt,16)	/* 1 IRQ + 8 NMI */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", shaolins_interrupt, "screen", 0, 1)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(shaolins)
+	MCFG_SCREEN_UPDATE_STATIC(shaolins)
 
 	MCFG_GFXDECODE(shaolins)
 	MCFG_PALETTE_LENGTH(16*8*16+16*8*16)

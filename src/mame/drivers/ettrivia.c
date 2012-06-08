@@ -54,20 +54,20 @@ static WRITE8_HANDLER( ettrivia_fg_w )
 {
 	ettrivia_state *state = space->machine().driver_data<ettrivia_state>();
 	state->m_fg_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( ettrivia_bg_w )
 {
 	ettrivia_state *state = space->machine().driver_data<ettrivia_state>();
 	state->m_bg_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( ettrivia_control_w )
 {
 	ettrivia_state *state = space->machine().driver_data<ettrivia_state>();
-	tilemap_mark_all_tiles_dirty_all(space->machine());
+	space->machine().tilemap().mark_all_dirty();
 
 	state->m_palreg  = (data >> 1) & 3;
 	state->m_gfx_bank = (data >> 2) & 1;
@@ -188,7 +188,7 @@ static GFXDECODE_START( ettrivia )
 	GFXDECODE_ENTRY( "gfx2", 0, charlayout, 32*4, 32 )
 GFXDECODE_END
 
-INLINE void get_tile_info(running_machine &machine, tile_data *tileinfo, int tile_index, UINT8 *vidram, int gfx_code)
+INLINE void get_tile_info(running_machine &machine, tile_data &tileinfo, int tile_index, UINT8 *vidram, int gfx_code)
 {
 	ettrivia_state *state = machine.driver_data<ettrivia_state>();
 	int code = vidram[tile_index];
@@ -253,14 +253,14 @@ static VIDEO_START( ettrivia )
 	state->m_bg_tilemap = tilemap_create( machine, get_tile_info_bg,tilemap_scan_rows,8,8,64,32 );
 	state->m_fg_tilemap = tilemap_create( machine, get_tile_info_fg,tilemap_scan_rows,8,8,64,32 );
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE( ettrivia )
+static SCREEN_UPDATE_IND16( ettrivia )
 {
-	ettrivia_state *state = screen->machine().driver_data<ettrivia_state>();
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
+	ettrivia_state *state = screen.machine().driver_data<ettrivia_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -305,10 +305,9 @@ static MACHINE_CONFIG_START( ettrivia, ettrivia_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(ettrivia)
+	MCFG_SCREEN_UPDATE_STATIC(ettrivia)
 
 	MCFG_GFXDECODE(ettrivia)
 	MCFG_PALETTE_LENGTH(256)

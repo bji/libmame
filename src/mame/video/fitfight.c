@@ -4,7 +4,7 @@
 #include "includes/fitfight.h"
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int layer )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int layer )
 {
 	fitfight_state *state = machine.driver_data<fitfight_state>();
 	const gfx_element *gfx = machine.gfx[3];
@@ -57,7 +57,7 @@ WRITE16_HANDLER(  fof_bak_tileram_w )
 	fitfight_state *state = space->machine().driver_data<fitfight_state>();
 
 	COMBINE_DATA(&state->m_fof_bak_tileram[offset]);
-	tilemap_mark_tile_dirty(state->m_fof_bak_tilemap, offset / 2);
+	state->m_fof_bak_tilemap->mark_tile_dirty(offset / 2);
 }
 
 
@@ -77,7 +77,7 @@ WRITE16_HANDLER( fof_mid_tileram_w )
 	fitfight_state *state = space->machine().driver_data<fitfight_state>();
 
 	COMBINE_DATA(&state->m_fof_mid_tileram[offset]);
-	tilemap_mark_tile_dirty(state->m_fof_mid_tilemap, offset / 2);
+	state->m_fof_mid_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_fof_txt_tile_info )
@@ -96,7 +96,7 @@ WRITE16_HANDLER( fof_txt_tileram_w )
 	fitfight_state *state = space->machine().driver_data<fitfight_state>();
 
 	COMBINE_DATA(&state->m_fof_txt_tileram[offset]);
-	tilemap_mark_tile_dirty(state->m_fof_txt_tilemap, offset / 2);
+	state->m_fof_txt_tilemap->mark_tile_dirty(offset / 2);
 }
 
 /* video start / update */
@@ -108,15 +108,15 @@ VIDEO_START(fitfight)
 	/* opaque */
 
 	state->m_fof_mid_tilemap = tilemap_create(machine, get_fof_mid_tile_info, tilemap_scan_cols, 8, 8, 128, 32);
-	tilemap_set_transparent_pen(state->m_fof_mid_tilemap, 0);
+	state->m_fof_mid_tilemap->set_transparent_pen(0);
 
 	state->m_fof_txt_tilemap = tilemap_create(machine, get_fof_txt_tile_info, tilemap_scan_cols, 8, 8, 128, 32);
-	tilemap_set_transparent_pen(state->m_fof_txt_tilemap, 0);
+	state->m_fof_txt_tilemap->set_transparent_pen(0);
 }
 
-SCREEN_UPDATE(fitfight)
+SCREEN_UPDATE_IND16(fitfight)
 {
-	fitfight_state *state = screen->machine().driver_data<fitfight_state>();
+	fitfight_state *state = screen.machine().driver_data<fitfight_state>();
 
 	/* scroll isn't right */
 
@@ -126,42 +126,42 @@ SCREEN_UPDATE(fitfight)
 	vblank = (state->m_fof_700000[0] & 0x8000);
 
 	if (vblank > 0)
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 	else {
-//      if (screen->machine().input().code_pressed(KEYCODE_Q))
+//      if (screen.machine().input().code_pressed(KEYCODE_Q))
 //          scrollbak = ((state->m_fof_a00000[0] & 0xff00) >> 5) - ((state->m_fof_700000[0] & 0x0038) >> 3);
-//      else if (screen->machine().input().code_pressed(KEYCODE_W))
+//      else if (screen.machine().input().code_pressed(KEYCODE_W))
 //          scrollbak = ((state->m_fof_a00000[0] & 0xff00) >> 5) + ((state->m_fof_700000[0] & 0x01c0) >> 6);
-//      else if (screen->machine().input().code_pressed(KEYCODE_E))
+//      else if (screen.machine().input().code_pressed(KEYCODE_E))
 //          scrollbak = ((state->m_fof_a00000[0] & 0xff00) >> 5) - ((state->m_fof_700000[0] & 0x01c0) >> 6);
-//      else if (screen->machine().input().code_pressed(KEYCODE_R))
+//      else if (screen.machine().input().code_pressed(KEYCODE_R))
 //          scrollbak = ((state->m_fof_a00000[0] & 0xff00) >> 5) + ((state->m_fof_700000[0] & 0x0038) >> 3);
 //      else
 		scrollbak = ((state->m_fof_a00000[0] & 0xff00) >> 5);
-		tilemap_set_scrollx(state->m_fof_bak_tilemap,0, scrollbak );
-		tilemap_set_scrolly(state->m_fof_bak_tilemap,0, state->m_fof_a00000[0] & 0xff);
-		tilemap_draw(bitmap, cliprect, state->m_fof_bak_tilemap, 0, 0);
+		state->m_fof_bak_tilemap->set_scrollx(0, scrollbak );
+		state->m_fof_bak_tilemap->set_scrolly(0, state->m_fof_a00000[0] & 0xff);
+		state->m_fof_bak_tilemap->draw(bitmap, cliprect, 0, 0);
 
-		draw_sprites(screen->machine(), bitmap, cliprect, 0);
+		draw_sprites(screen.machine(), bitmap, cliprect, 0);
 
-//      if (screen->machine().input().code_pressed(KEYCODE_A))
+//      if (screen.machine().input().code_pressed(KEYCODE_A))
 //          scrollmid = ((state->m_fof_900000[0] & 0xff00) >> 5) - ((state->m_fof_700000[0] & 0x01c0) >> 6);
-//      else if (screen->machine().input().code_pressed(KEYCODE_S))
+//      else if (screen.machine().input().code_pressed(KEYCODE_S))
 //          scrollmid = ((state->m_fof_900000[0] & 0xff00) >> 5) + ((state->m_fof_700000[0] & 0x0038) >> 3);
-//      else if (screen->machine().input().code_pressed(KEYCODE_D))
+//      else if (screen.machine().input().code_pressed(KEYCODE_D))
 //          scrollmid = ((state->m_fof_900000[0] & 0xff00) >> 5) - ((state->m_fof_700000[0] & 0x0038) >> 3);
-//      else if (screen->machine().input().code_pressed(KEYCODE_F))
+//      else if (screen.machine().input().code_pressed(KEYCODE_F))
 //          scrollmid = ((state->m_fof_900000[0] & 0xff00) >> 5) + ((state->m_fof_700000[0] & 0x01c0) >> 6);
 //      else
 		scrollmid = ((state->m_fof_900000[0] & 0xff00) >> 5);
-		tilemap_set_scrollx(state->m_fof_mid_tilemap, 0, scrollmid );
-		tilemap_set_scrolly(state->m_fof_mid_tilemap, 0, state->m_fof_900000[0] & 0xff);
-//      if (!screen->machine().input().code_pressed(KEYCODE_F))
-		tilemap_draw(bitmap, cliprect, state->m_fof_mid_tilemap, 0, 0);
+		state->m_fof_mid_tilemap->set_scrollx(0, scrollmid );
+		state->m_fof_mid_tilemap->set_scrolly(0, state->m_fof_900000[0] & 0xff);
+//      if (!screen.machine().input().code_pressed(KEYCODE_F))
+		state->m_fof_mid_tilemap->draw(bitmap, cliprect, 0, 0);
 
-		draw_sprites(screen->machine(), bitmap, cliprect, 1);
+		draw_sprites(screen.machine(), bitmap, cliprect, 1);
 
-		tilemap_draw(bitmap, cliprect, state->m_fof_txt_tilemap, 0, 0);
+		state->m_fof_txt_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 /*  popmessage ("Regs %04x %04x %04x %04x %04x %04x",
             state->m_fof_100000[0], state->m_fof_600000[0], state->m_fof_700000[0],

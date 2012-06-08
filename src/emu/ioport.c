@@ -312,7 +312,7 @@ struct _input_port_private
 ***************************************************************************/
 
 /* XML attributes for the different types */
-static const char *const seqtypestrings[] = { "standard", "decrement", "increment" };
+static const char *const seqtypestrings[] = { "standard", "increment", "decrement" };
 
 
 static const char_info charinfo[] =
@@ -637,129 +637,40 @@ static const struct
 	{ INPUT_STRING_Coinage, "Coinage" },
 	{ INPUT_STRING_Coin_A, "Coin A" },
 	{ INPUT_STRING_Coin_B, "Coin B" },
-//  { INPUT_STRING_20C_1C, "20 Coins/1 Credit" },
-//  { INPUT_STRING_15C_1C, "15 Coins/1 Credit" },
-//  { INPUT_STRING_10C_1C, "10 Coins/1 Credit" },
-//  __input_string_coinage_start
 	{ INPUT_STRING_9C_1C, "9 Coins/1 Credit" },
 	{ INPUT_STRING_8C_1C, "8 Coins/1 Credit" },
 	{ INPUT_STRING_7C_1C, "7 Coins/1 Credit" },
 	{ INPUT_STRING_6C_1C, "6 Coins/1 Credit" },
-//  { INPUT_STRING_10C_2C, "10 Coins/2 Credits" },
 	{ INPUT_STRING_5C_1C, "5 Coins/1 Credit" },
-//  { INPUT_STRING_9C_2C, "9 Coins/2 Credits" },
-//  { INPUT_STRING_8C_2C, "8 Coins/2 Credits" },
 	{ INPUT_STRING_4C_1C, "4 Coins/1 Credit" },
-//  { INPUT_STRING_7C_2C, "7 Coins/2 Credits" },
-//  { INPUT_STRING_10C_3C, "10 Coins/3 Credits" },
-//  { INPUT_STRING_9C_3C, "9 Coins/3 Credits" },
-//  { INPUT_STRING_6C_2C, "6 Coins/2 Credits" },
 	{ INPUT_STRING_3C_1C, "3 Coins/1 Credit" },
 	{ INPUT_STRING_8C_3C, "8 Coins/3 Credits" },
-//  { INPUT_STRING_10C_4C, "10 Coins/4 Credits" },
-//  { INPUT_STRING_5C_2C, "5 Coins/2 Credits" },
-//  { INPUT_STRING_7C_3C, "7 Coins/3 Credits" },
-//  { INPUT_STRING_9C_4C, "9 Coins/4 Credits" },
-//  { INPUT_STRING_10C_5C, "10 Coins/5 Credits" },
-//  { INPUT_STRING_8C_4C, "8 Coins/4 Credits" },
-//  { INPUT_STRING_6C_3C, "6 Coins/3 Credits" },
 	{ INPUT_STRING_4C_2C, "4 Coins/2 Credits" },
 	{ INPUT_STRING_2C_1C, "2 Coins/1 Credit" },
-//  { INPUT_STRING_9C_5C, "9 Coins/5 Credits" },
-//  { INPUT_STRING_7C_4C, "7 Coins/4 Credits" },
-//  { INPUT_STRING_10C_6C, "10 Coins/6 Credits" },
 	{ INPUT_STRING_5C_3C, "5 Coins/3 Credits" },
-//  { INPUT_STRING_8C_5C, "8 Coins/5 Credits" },
-//  { INPUT_STRING_9C_6C, "9 Coins/6 Credits" },
-//  { INPUT_STRING_6C_4C, "6 Coins/4 Credits" },
 	{ INPUT_STRING_3C_2C, "3 Coins/2 Credits" },
-//  { INPUT_STRING_10C_7C, "10 Coins/7 Credits" },
-//  { INPUT_STRING_7C_5C, "7 Coins/5 Credits" },
-//  { INPUT_STRING_8C_6C, "8 Coins/6 Credits" },
 	{ INPUT_STRING_4C_3C, "4 Coins/3 Credits" },
-//  { INPUT_STRING_9C_7C, "9 Coins/7 Credits" },
-//  { INPUT_STRING_10C_8C, "10 Coins/8 Credits" },
-//  { INPUT_STRING_5C_4C, "5 Coins/4 Credits" },
-//  { INPUT_STRING_6C_5C, "6 Coins/5 Credits" },
-//  { INPUT_STRING_7C_6C, "7 Coins/6 Credits" },
-//  { INPUT_STRING_8C_7C, "8 Coins/7 Credits" },
-//  { INPUT_STRING_9C_8C, "9 Coins/8 Credits" },
-//  { INPUT_STRING_10C_9C, "10 Coins/9 Credits" },
-//  { INPUT_STRING_10C_10C, "10 Coins/10 Credits" },
-//  { INPUT_STRING_9C_9C, "9 Coins/9 Credits" },
-//  { INPUT_STRING_8C_8C, "8 Coins/8 Credits" },
-//  { INPUT_STRING_7C_7C, "7 Coins/7 Credits" },
-//  { INPUT_STRING_6C_6C, "6 Coins/6 Credits" },
-//  { INPUT_STRING_5C_5C, "5 Coins/5 Credits" },
 	{ INPUT_STRING_4C_4C, "4 Coins/4 Credits" },
 	{ INPUT_STRING_3C_3C, "3 Coins/3 Credits" },
 	{ INPUT_STRING_2C_2C, "2 Coins/2 Credits" },
 	{ INPUT_STRING_1C_1C, "1 Coin/1 Credit" },
-//  { INPUT_STRING_9C_10C, "9 Coins/10 Credits" },
-//  { INPUT_STRING_8C_9C, "8 Coins/9 Credits" },
-//  { INPUT_STRING_7C_8C, "7 Coins/8 Credits" },
-//  { INPUT_STRING_6C_7C, "6 Coins/7 Credits" },
-//  { INPUT_STRING_5C_6C, "5 Coins/6 Credits" },
-//  { INPUT_STRING_8C_10C, "8 Coins/10 Credits" },
 	{ INPUT_STRING_4C_5C, "4 Coins/5 Credits" },
-//  { INPUT_STRING_7C_9C, "7 Coins/9 Credits" },
-//  { INPUT_STRING_6C_8C, "6 Coins/8 Credits" },
 	{ INPUT_STRING_3C_4C, "3 Coins/4 Credits" },
-//  { INPUT_STRING_5C_7C, "5 Coins/7 Credits" },
-//  { INPUT_STRING_7C_10C, "7 Coins/10 Credits" },
-//  { INPUT_STRING_6C_9C, "6 Coins/9 Credits" },
-//  { INPUT_STRING_4C_6C, "4 Coins/6 Credits" },
 	{ INPUT_STRING_2C_3C, "2 Coins/3 Credits" },
-//  { INPUT_STRING_5C_8C, "5 Coins/8 Credits" },
-//  { INPUT_STRING_6C_10C, "6 Coins/10 Credits" },
-//  { INPUT_STRING_3C_5C, "3 Coins/5 Credits" },
 	{ INPUT_STRING_4C_7C, "4 Coins/7 Credits" },
-//  { INPUT_STRING_5C_9C, "5 Coins/9 Credits" },
-//  { INPUT_STRING_5C_10C, "5 Coins/10 Credits" },
-//  { INPUT_STRING_4C_8C, "4 Coins/8 Credits" },
-//  { INPUT_STRING_3C_6C, "3 Coins/6 Credits" },
 	{ INPUT_STRING_2C_4C, "2 Coins/4 Credits" },
 	{ INPUT_STRING_1C_2C, "1 Coin/2 Credits" },
-//  { INPUT_STRING_4C_9C, "4 Coins/9 Credits" },
-//  { INPUT_STRING_3C_7C, "3 Coins/7 Credits" },
-//  { INPUT_STRING_4C_10C, "4 Coins/10 Credits" },
 	{ INPUT_STRING_2C_5C, "2 Coins/5 Credits" },
-//  { INPUT_STRING_3C_8C, "3 Coins/8 Credits" },
-//  { INPUT_STRING_3C_9C, "3 Coins/9 Credits" },
 	{ INPUT_STRING_2C_6C, "2 Coins/6 Credits" },
 	{ INPUT_STRING_1C_3C, "1 Coin/3 Credits" },
-//  { INPUT_STRING_3C_10C, "3 Coins/10 Credits" },
 	{ INPUT_STRING_2C_7C, "2 Coins/7 Credits" },
 	{ INPUT_STRING_2C_8C, "2 Coins/8 Credits" },
 	{ INPUT_STRING_1C_4C, "1 Coin/4 Credits" },
-//  { INPUT_STRING_2C_9C, "2 Coins/9 Credits" },
-//  { INPUT_STRING_2C_10C, "2 Coins/10 Credits" },
 	{ INPUT_STRING_1C_5C, "1 Coin/5 Credits" },
 	{ INPUT_STRING_1C_6C, "1 Coin/6 Credits" },
 	{ INPUT_STRING_1C_7C, "1 Coin/7 Credits" },
 	{ INPUT_STRING_1C_8C, "1 Coin/8 Credits" },
 	{ INPUT_STRING_1C_9C, "1 Coin/9 Credits" },
-//  __input_string_coinage_end
-//  { INPUT_STRING_1C_10C, "1 Coin/10 Credits" },
-//  { INPUT_STRING_1C_11C, "1 Coin/11 Credits" },
-//  { INPUT_STRING_1C_12C, "1 Coin/12 Credits" },
-//  { INPUT_STRING_1C_13C, "1 Coin/13 Credits" },
-//  { INPUT_STRING_1C_14C, "1 Coin/14 Credits" },
-//  { INPUT_STRING_1C_15C, "1 Coin/15 Credits" },
-//  { INPUT_STRING_1C_20C, "1 Coin/20 Credits" },
-//  { INPUT_STRING_1C_25C, "1 Coin/25 Credits" },
-//  { INPUT_STRING_1C_30C, "1 Coin/30 Credits" },
-//  { INPUT_STRING_1C_40C, "1 Coin/40 Credits" },
-//  { INPUT_STRING_1C_50C, "1 Coin/50 Credits" },
-//  { INPUT_STRING_1C_99C, "1 Coin/99 Credits" },
-//  { INPUT_STRING_1C_100C, "1 Coin/100 Credits" },
-//  { INPUT_STRING_1C_120C, "1 Coin/120 Credits" },
-//  { INPUT_STRING_1C_125C, "1 Coin/125 Credits" },
-//  { INPUT_STRING_1C_150C, "1 Coin/150 Credits" },
-//  { INPUT_STRING_1C_200C, "1 Coin/200 Credits" },
-//  { INPUT_STRING_1C_250C, "1 Coin/250 Credits" },
-//  { INPUT_STRING_1C_500C, "1 Coin/500 Credits" },
-//  { INPUT_STRING_1C_1000C, "1 Coin/1000 Credits" },
 	{ INPUT_STRING_Free_Play, "Free Play" },
 	{ INPUT_STRING_Cabinet, "Cabinet" },
 	{ INPUT_STRING_Upright, "Upright" },
@@ -825,24 +736,14 @@ static const struct
 	{ INPUT_STRING_Continues, "Continues" },
 	{ INPUT_STRING_Allow_Continue, "Allow Continue" },
 	{ INPUT_STRING_Level_Select, "Level Select" },
-//  { INPUT_STRING_Allow, "Allow" },
-//  { INPUT_STRING_Forbid, "Forbid" },
-//  { INPUT_STRING_Enable, "Enable" },
-//  { INPUT_STRING_Disable, "Disable" },
 	{ INPUT_STRING_Infinite, "Infinite" },
-//  { INPUT_STRING_Invincibility, "Invincibility" },
-//  { INPUT_STRING_Invulnerability, "Invulnerability" },
 	{ INPUT_STRING_Stereo, "Stereo" },
 	{ INPUT_STRING_Mono, "Mono" },
 	{ INPUT_STRING_Unused, "Unused" },
 	{ INPUT_STRING_Unknown, "Unknown" },
-//  { INPUT_STRING_Undefined, "Undefined" },
 	{ INPUT_STRING_Standard, "Standard" },
 	{ INPUT_STRING_Reverse, "Reverse" },
 	{ INPUT_STRING_Alternate, "Alternate" },
-//  { INPUT_STRING_Reserve, "Reserve" },
-//  { INPUT_STRING_Spare, "Spare" },
-//  { INPUT_STRING_Invalid, "Invalid" },
 	{ INPUT_STRING_None, "None" },
 };
 
@@ -1002,7 +903,8 @@ time_t input_port_init(running_machine &machine)
 	init_port_types(machine);
 
 	/* if we have a token list, proceed */
-	for (device_t *device = machine.devicelist().first(); device != NULL; device = device->next())
+	device_iterator iter(machine.root_device());
+	for (device_t *device = iter.first(); device != NULL; device = iter.next())
 	{
 		astring errors;
 		input_port_list_init(*device, machine.m_portlist, errors);
@@ -1071,9 +973,9 @@ void input_port_list_init(device_t &device, ioport_list &portlist, astring &erro
     mask on the tagged port
 -------------------------------------------------*/
 
-const input_field_config *input_field_by_tag_and_mask(const ioport_list &portlist, const char *tag, input_port_value mask)
+const input_field_config *input_field_by_tag_and_mask(running_machine &machine, const char *tag, input_port_value mask)
 {
-	const input_port_config *port = portlist.find(tag);
+	const input_port_config *port = machine.port(tag);
 
 	/* if we got the port, look for the field */
 	if (port != NULL)
@@ -1599,10 +1501,10 @@ input_port_value input_port_read(running_machine &machine, const char *tag)
     a device input port specified by tag
 -------------------------------------------------*/
 
-input_port_value input_port_read(device_t *device, const char *tag)
+input_port_value input_port_read(device_t &device, const char *tag)
 {
-	astring tempstring;
-	const input_port_config *port = device->machine().port(device->subtag(tempstring, tag));
+	astring fullpath;
+	const input_port_config *port = device.machine().port(device.subtag(fullpath, tag));
 	if (port == NULL)
 		fatalerror("Unable to locate input port '%s'", tag);
 	return input_port_read_direct(port);
@@ -1734,11 +1636,7 @@ static INT32 apply_analog_settings(INT32 value, analog_field_state *analog)
 
 	/* apply reversal if needed */
 	if (analog->reverse)
-	{
 		value = analog->reverse_val - value;
-		if (analog->wraps)
-			value--;
-	}
 	else if (analog->single_scale)
 		/* it's a pedal or the default value is equal to min/max */
 		/* so we need to adjust the center to the minimum */
@@ -1824,7 +1722,7 @@ void input_port_write_safe(running_machine &machine, const char *tag, input_port
     if the given condition attached is true
 -------------------------------------------------*/
 
-int input_condition_true(running_machine &machine, const input_condition *condition,device_t &owner)
+int input_condition_true(running_machine &machine, const input_condition *condition, device_t &owner)
 {
 	input_port_value condvalue;
 
@@ -2014,48 +1912,33 @@ static const char *inputx_key_name(unicode_char ch)
     a key based on natural keyboard characters
 -------------------------------------------------*/
 
-static astring *get_keyboard_key_name(const input_field_config *field)
+static astring &get_keyboard_key_name(astring &name, const input_field_config *field)
 {
-	astring *result = astring_alloc();
 	int i;
 	unicode_char ch;
 
-
+	name.reset();
 	/* loop through each character on the field*/
 	for (i = 0; i < ARRAY_LENGTH(field->chars) && (field->chars[i] != '\0'); i++)
 	{
 		ch = get_keyboard_code(field, i);
-		astring_printf(result, "%s%-*s ", astring_c(result), MAX(SPACE_COUNT - 1, 0), inputx_key_name(ch));
+		name.catprintf("%-*s ", MAX(SPACE_COUNT - 1, 0), inputx_key_name(ch));
 	}
 
 	/* trim extra spaces */
-	astring_trimspace(result);
+	name.trimspace();
 
 	/* special case */
-	if (astring_len(result) == 0)
-		astring_cpyc(result, "Unnamed Key");
+	if (name.len() == 0)
+		name.cpy("Unnamed Key");
 
-	return result;
+	return name;
 }
 
 /*-------------------------------------------------
     init_port_state - initialize the live port
     states based on the tokens
 -------------------------------------------------*/
-
-inline const char *get_device_tag(const device_t &device, const char *tag, astring &finaltag)
-{
-	if (strcmp(tag, DEVICE_SELF) == 0)
-		finaltag.cpy(device.tag());
-	else if (strcmp(tag, DEVICE_SELF_OWNER) == 0)
-	{
-		assert(device.owner() != NULL);
-		finaltag.cpy(device.owner()->tag());
-	}
-	else
-		device.subtag(finaltag, tag);
-	return finaltag;
-}
 
 static void init_port_state(running_machine &machine)
 {
@@ -2116,7 +1999,7 @@ static void init_port_state(running_machine &machine)
 			astring devicetag;
 			if (!field->read.isnull())
 			{
-				*readdevicetail = init_field_device_info(field, get_device_tag(port->owner(), field->read_device, devicetag));
+				*readdevicetail = init_field_device_info(field, port->owner().subtag(devicetag, field->read_device));
 				field->read.late_bind(*(*readdevicetail)->device);
 				readdevicetail = &(*readdevicetail)->next;
 			}
@@ -2124,7 +2007,7 @@ static void init_port_state(running_machine &machine)
 			/* if this entry has device output, allocate memory for the tracking structure */
 			if (!field->write.isnull())
 			{
-				*writedevicetail = init_field_device_info(field, get_device_tag(port->owner(), field->write_device, devicetag));
+				*writedevicetail = init_field_device_info(field, port->owner().subtag(devicetag, field->write_device));
 				field->write.late_bind(*(*writedevicetail)->device);
 				writedevicetail = &(*writedevicetail)->next;
 			}
@@ -2132,19 +2015,15 @@ static void init_port_state(running_machine &machine)
 			/* if this entry has device output, allocate memory for the tracking structure */
 			if (!field->crossmapper.isnull())
 			{
-				device_t *device = machine.device(get_device_tag(port->owner(), field->crossmapper_device, devicetag));
+				device_t *device = machine.device(port->owner().subtag(devicetag, field->crossmapper_device));
 				field->crossmapper.late_bind(*device);
 			}
 
 			/* Name keyboard key names */
 			if ((field->type == IPT_KEYBOARD || field->type == IPT_KEYPAD) && (field->name == NULL))
 			{
-				astring *name = get_keyboard_key_name(field);
-				if (name != NULL)
-				{
-					field->state->name = auto_strdup(machine, astring_c(name));
-					astring_free(name);
-				}
+				astring name;
+				field->state->name = auto_strdup(machine, get_keyboard_key_name(name, field));
 			}
 		}
 	}
@@ -2413,9 +2292,9 @@ static analog_field_state *init_field_analog_state(const input_field_config *fie
 			/* positional controls reverse from their max range */
 			state->reverse_val = state->maximum + state->minimum;
 
-//          /* relative controls reverse from 1 past their max range */
-//          if (state->positionalscale == 0)
-//              state->reverse_val += INPUT_RELATIVE_PER_PIXEL;
+			/* relative controls reverse from 1 past their max range */
+			if (state->wraps)
+				state->reverse_val -= INPUT_RELATIVE_PER_PIXEL;
 		}
 	}
 
@@ -2553,7 +2432,7 @@ g_profiler.start(PROFILER_INPUT);
 		input_port_value mask;
 		float x, y;
 		if (mouse_target->map_point_input(mouse_target_x, mouse_target_y, tag, mask, x, y))
-			mouse_field = input_field_by_tag_and_mask(machine.m_portlist, tag, mask);
+			mouse_field = input_field_by_tag_and_mask(machine, tag, mask);
 	}
 
 	/* loop over all input ports */
@@ -2950,16 +2829,13 @@ static int frame_get_digital_field_state(const input_field_config *field, int mo
 
 UINT32 port_default_value(const char *fulltag, UINT32 mask, UINT32 defval, device_t &owner)
 {
-	astring tempstring;
-	const input_device_default *def = NULL;
-	def = owner.input_ports_defaults();
-	if (def!=NULL) {
-		while (def->tag!=NULL) {
-			if ((strcmp(fulltag,owner.subtag(tempstring,def->tag))==0) &&  (def->mask == mask)) {
+	const input_device_default *def = owner.input_ports_defaults();
+	if (def != NULL)
+	{
+		astring fullpath;
+		for ( ; def->tag != NULL; def++)
+			if (owner.subtag(fullpath, def->tag) == fulltag && def->mask == mask)
 				return def->defvalue;
-			}
-			def++;
-		}
 	}
 	return defval;
 }
@@ -3802,7 +3678,7 @@ static time_t playback_init(running_machine &machine)
 
 	/* verify the header against the current game */
 	if (memcmp(machine.system().name, header + 0x14, strlen(machine.system().name) + 1) != 0)
-		mame_printf_info("Input file is for " GAMENOUN " '%s', not for current " GAMENOUN " '%s'\n", header + 0x14, machine.system().name);
+		mame_printf_info("Input file is for %s '%s', not for current %s '%s'\n", emulator_info::get_gamenoun(), header + 0x14, emulator_info::get_gamenoun(), machine.system().name);
 
 	/* enable compression */
 	portdata->playback_file->compress(FCOMPRESS_MEDIUM);
@@ -3999,7 +3875,7 @@ static void record_init(running_machine &machine)
 	header[0x10] = INP_HEADER_MAJVERSION;
 	header[0x11] = INP_HEADER_MINVERSION;
 	strcpy((char *)header + 0x14, machine.system().name);
-	sprintf((char *)header + 0x20, APPNAME " %s", build_version);
+	sprintf((char *)header + 0x20, "%s %s", emulator_info::get_appname(), build_version);
 
 	/* write it */
 	portdata->record_file->write(header, sizeof(header));
@@ -4636,7 +4512,7 @@ static void inputx_postn_coded_rate(running_machine &machine, const char *text, 
 				key_len = strlen(codes[j].key);
 				if (i + key_len + 2 <= text_len)
 				{
-					if (!memcmp(codes[j].key, &text[i + 1], key_len) && (text[i + key_len + 1] == '}'))
+					if (!core_strnicmp(codes[j].key, &text[i + 1], key_len) && (text[i + key_len + 1] == '}'))
 					{
 						ch = codes[j].code;
 						increment = key_len + 2;
@@ -4938,6 +4814,7 @@ input_port_config *ioconfig_alloc_port(ioport_list &portlist, device_t &device, 
 {
 	astring fulltag;
 	device.subtag(fulltag, tag);
+mame_printf_verbose("ioport '%s' created\n", fulltag.cstr());
 	return &portlist.append(fulltag, *global_alloc(input_port_config(device, fulltag)));
 }
 

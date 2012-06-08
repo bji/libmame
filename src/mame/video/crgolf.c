@@ -111,15 +111,15 @@ static VIDEO_START( crgolf )
  *
  *************************************/
 
-static SCREEN_UPDATE( crgolf )
+static SCREEN_UPDATE_RGB32( crgolf )
 {
-	crgolf_state *state = screen->machine().driver_data<crgolf_state>();
+	crgolf_state *state = screen.machine().driver_data<crgolf_state>();
 	int flip = *state->m_screen_flip & 1;
 
 	offs_t offs;
 	pen_t pens[NUM_PENS];
 
-	get_pens(screen->machine(), pens);
+	get_pens(screen.machine(), pens);
 
 	/* for each byte in the video RAM */
 	for (offs = 0; offs < VIDEORAM_SIZE / 3; offs++)
@@ -165,7 +165,7 @@ static SCREEN_UPDATE( crgolf )
 			if (*state->m_color_select)
 				color = color | 0x10;
 
-			*BITMAP_ADDR32(bitmap, y, x) = pens[color];
+			bitmap.pix32(y, x) = pens[color];
 
 			/* next pixel */
 			data_a0 = data_a0 << 1;
@@ -196,10 +196,9 @@ MACHINE_CONFIG_FRAGMENT( crgolf_video )
 
 	MCFG_VIDEO_START(crgolf)
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 8, 247)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_UPDATE(crgolf)
+	MCFG_SCREEN_UPDATE_STATIC(crgolf)
 MACHINE_CONFIG_END

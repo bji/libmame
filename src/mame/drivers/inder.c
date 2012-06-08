@@ -1,3 +1,5 @@
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/z80/z80.h"
 
@@ -5,10 +7,20 @@ class inder_state : public driver_device
 {
 public:
 	inder_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
-static ADDRESS_MAP_START( inder_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( inder_map, AS_PROGRAM, 8, inder_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x0000, 0x3fff) AM_ROM
 ADDRESS_MAP_END
@@ -16,7 +28,7 @@ ADDRESS_MAP_END
 static INPUT_PORTS_START( inder )
 INPUT_PORTS_END
 
-static MACHINE_RESET( inder )
+void inder_state::machine_reset()
 {
 }
 
@@ -28,8 +40,6 @@ static MACHINE_CONFIG_START( inder, inder_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, 2500000)
 	MCFG_CPU_PROGRAM_MAP(inder_map)
-
-	MCFG_MACHINE_RESET( inder )
 MACHINE_CONFIG_END
 
 /*-------------------------------------------------------------------
@@ -155,12 +165,12 @@ ROM_START(metalman)
 	ROM_LOAD("sound_m3.bin", 0x40000, 0x20000, CRC(4d9f5ed2) SHA1(bc6b7c70369c25eddddac5304497f30cee7675d4))
 ROM_END
 
-GAME(1992,	ind250cc,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"250 CC",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	atleta,		0,		inder,	inder,	inder,	ROT0,	"Inder",		"Atleta",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1985,	brvteam,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Brave Team",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1986,	canasta,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Canasta '86'",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1988,	pinclown,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Clown (Inder)",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1989,	corsario,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Corsario",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	mundial,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Mundial 90",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1992,	metalman,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Metal Man",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1986,	lapbylap,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Lap By Lap",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1992,	ind250cc,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"250 CC",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1991,	atleta,		0,		inder,	inder,	inder,	ROT0,	"Inder",		"Atleta",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1985,	brvteam,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Brave Team",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1986,	canasta,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Canasta '86'",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1988,	pinclown,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Clown (Inder)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1989,	corsario,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Corsario",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	mundial,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Mundial 90",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1992,	metalman,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Metal Man",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1986,	lapbylap,	0,		inder,	inder,	inder,	ROT0,	"Inder",		"Lap By Lap",			GAME_IS_SKELETON_MECHANICAL)

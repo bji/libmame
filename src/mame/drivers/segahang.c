@@ -16,7 +16,6 @@
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "cpu/mcs51/mcs51.h"
-#include "deprecat.h"
 #include "includes/segas16.h"
 #include "machine/segaic16.h"
 #include "machine/fd1089.h"
@@ -141,13 +140,17 @@ static MACHINE_RESET( hangon )
 }
 
 #if 0
-static INTERRUPT_GEN( hangon_irq )
+static TIMER_DEVICE_CALLBACK( hangon_irq )
 {
+	segas1x_state *state = timer.machine().driver_data<segas1x_state>();
+	int scanline = param;
+
 	/* according to the schematics, IRQ2 is generated every 16 scanlines */
-	if (cpu_getiloops(device) != 0)
-		device_set_input_line(device, 2, HOLD_LINE);
-	else
-		device_set_input_line(device, 4, HOLD_LINE);
+	if((scanline % 16) == 0)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 4, HOLD_LINE);
 }
 #endif
 
@@ -837,9 +840,8 @@ static MACHINE_CONFIG_START( hangon_base, segas1x_state )
 	MCFG_PALETTE_LENGTH(2048*3)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK_25MHz/4, 400, 0, 320, 262, 0, 224)
-	MCFG_SCREEN_UPDATE(hangon)
+	MCFG_SCREEN_UPDATE_STATIC(hangon)
 
 	MCFG_VIDEO_START(hangon)
 MACHINE_CONFIG_END

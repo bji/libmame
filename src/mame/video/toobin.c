@@ -35,7 +35,7 @@ static TILE_GET_INFO( get_playfield_tile_info )
 	int code = data2 & 0x3fff;
 	int color = data1 & 0x0f;
 	SET_TILE_INFO(0, code, color, TILE_FLIPYX(data2 >> 14));
-	tileinfo->category = (data1 >> 4) & 3;
+	tileinfo.category = (data1 >> 4) & 3;
 }
 
 
@@ -94,10 +94,10 @@ VIDEO_START( toobin )
 
 	/* initialize the alphanumerics */
 	state->m_alpha_tilemap = tilemap_create(machine, get_alpha_tile_info, tilemap_scan_rows,  8,8, 64,48);
-	tilemap_set_transparent_pen(state->m_alpha_tilemap, 0);
+	state->m_alpha_tilemap->set_transparent_pen(0);
 
 	/* allocate a playfield bitmap for rendering */
-	state->m_pfbitmap = auto_bitmap_alloc(machine, machine.primary_screen->width(), machine.primary_screen->height(), BITMAP_FORMAT_INDEXED16);
+	machine.primary_screen->register_screen_bitmap(state->m_pfbitmap);
 
 	state->save_item(NAME(state->m_brightness));
 }
@@ -171,7 +171,7 @@ WRITE16_HANDLER( toobin_xscroll_w )
 		space->machine().primary_screen->update_partial(space->machine().primary_screen->vpos());
 
 	/* update the playfield scrolling - hscroll is clocked on the following scanline */
-	tilemap_set_scrollx(state->m_playfield_tilemap, 0, newscroll >> 6);
+	state->m_playfield_tilemap->set_scrollx(0, newscroll >> 6);
 	atarimo_set_xscroll(0, newscroll >> 6);
 
 	/* update the data */
@@ -191,7 +191,7 @@ WRITE16_HANDLER( toobin_yscroll_w )
 		space->machine().primary_screen->update_partial(space->machine().primary_screen->vpos());
 
 	/* if bit 4 is zero, the scroll value is clocked in right away */
-	tilemap_set_scrolly(state->m_playfield_tilemap, 0, newscroll >> 6);
+	state->m_playfield_tilemap->set_scrolly(0, newscroll >> 6);
 	atarimo_set_yscroll(0, (newscroll >> 6) & 0x1ff);
 
 	/* update the data */
@@ -228,31 +228,31 @@ WRITE16_HANDLER( toobin_slip_w )
  *
  *************************************/
 
-SCREEN_UPDATE( toobin )
+SCREEN_UPDATE_RGB32( toobin )
 {
-	toobin_state *state = screen->machine().driver_data<toobin_state>();
-	bitmap_t *priority_bitmap = screen->machine().priority_bitmap;
-	const rgb_t *palette = palette_entry_list_adjusted(screen->machine().palette);
+	toobin_state *state = screen.machine().driver_data<toobin_state>();
+	bitmap_ind8 &priority_bitmap = screen.machine().priority_bitmap;
+	const rgb_t *palette = palette_entry_list_adjusted(screen.machine().palette);
 	atarimo_rect_list rectlist;
-	bitmap_t *mobitmap;
+	bitmap_ind16 *mobitmap;
 	int x, y;
 
 	/* draw the playfield */
-	bitmap_fill(priority_bitmap, cliprect, 0);
-	tilemap_draw(state->m_pfbitmap, cliprect, state->m_playfield_tilemap, 0, 0);
-	tilemap_draw(state->m_pfbitmap, cliprect, state->m_playfield_tilemap, 1, 1);
-	tilemap_draw(state->m_pfbitmap, cliprect, state->m_playfield_tilemap, 2, 2);
-	tilemap_draw(state->m_pfbitmap, cliprect, state->m_playfield_tilemap, 3, 3);
+	priority_bitmap.fill(0, cliprect);
+	state->m_playfield_tilemap->draw(state->m_pfbitmap, cliprect, 0, 0);
+	state->m_playfield_tilemap->draw(state->m_pfbitmap, cliprect, 1, 1);
+	state->m_playfield_tilemap->draw(state->m_pfbitmap, cliprect, 2, 2);
+	state->m_playfield_tilemap->draw(state->m_pfbitmap, cliprect, 3, 3);
 
 	/* draw and merge the MO */
 	mobitmap = atarimo_render(0, cliprect, &rectlist);
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
-		UINT32 *dest = BITMAP_ADDR32(bitmap, y, 0);
-		UINT16 *mo = BITMAP_ADDR16(mobitmap, y, 0);
-		UINT16 *pf = BITMAP_ADDR16(state->m_pfbitmap, y, 0);
-		UINT8 *pri = BITMAP_ADDR8(priority_bitmap, y, 0);
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		UINT32 *dest = &bitmap.pix32(y);
+		UINT16 *mo = &mobitmap->pix16(y);
+		UINT16 *pf = &state->m_pfbitmap.pix16(y);
+		UINT8 *pri = &priority_bitmap.pix8(y);
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			UINT16 pix = pf[x];
 			if (mo[x])
@@ -275,6 +275,6 @@ SCREEN_UPDATE( toobin )
 	}
 
 	/* add the alpha on top */
-	tilemap_draw(bitmap, cliprect, state->m_alpha_tilemap, 0, 0);
+	state->m_alpha_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

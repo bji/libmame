@@ -1512,15 +1512,15 @@ static INPUT_PORTS_START( 39in1 )
 	PORT_SERVICE_NO_TOGGLE( 0x80000000, IP_ACTIVE_LOW )
 INPUT_PORTS_END
 
-static SCREEN_UPDATE( 39in1 )
+static SCREEN_UPDATE_RGB32( 39in1 )
 {
-	_39in1_state *state = screen->machine().driver_data<_39in1_state>();
+	_39in1_state *state = screen.machine().driver_data<_39in1_state>();
 	int x = 0;
 	int y = 0;
 
 	for(y = 0; y <= (state->m_lcd_regs.lccr2 & PXA255_LCCR2_LPP); y++)
 	{
-		UINT32 *d = BITMAP_ADDR32(bitmap, y, 0);
+		UINT32 *d = &bitmap.pix32(y);
 		for(x = 0; x <= (state->m_lcd_regs.lccr1 & PXA255_LCCR1_PPL); x++)
 		{
 			d[x] = state->m_pxa255_lcd_palette[state->m_pxa255_lcd_framebuffer[y*((state->m_lcd_regs.lccr1 & PXA255_LCCR1_PPL) + 1) + x]];
@@ -1593,10 +1593,9 @@ static MACHINE_CONFIG_START( 39in1, _39in1_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(1024, 1024)
 	MCFG_SCREEN_VISIBLE_AREA(0, 295, 0, 479)
-	MCFG_SCREEN_UPDATE(39in1)
+	MCFG_SCREEN_UPDATE_STATIC(39in1)
 
 	MCFG_PALETTE_LENGTH(256)
 

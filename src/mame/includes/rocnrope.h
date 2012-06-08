@@ -13,6 +13,8 @@ public:
 
 	/* video-related */
 	tilemap_t  *m_bg_tilemap;
+
+	UINT8    m_irq_mask;
 };
 
 /*----------- defined in video/rocnrope.c -----------*/
@@ -23,4 +25,4 @@ WRITE8_HANDLER( rocnrope_flipscreen_w );
 
 PALETTE_INIT( rocnrope );
 VIDEO_START( rocnrope );
-SCREEN_UPDATE( rocnrope );
+SCREEN_UPDATE_IND16( rocnrope );

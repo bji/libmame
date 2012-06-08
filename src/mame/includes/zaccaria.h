@@ -15,6 +15,7 @@ public:
 	tilemap_t *m_bg_tilemap;
 	UINT8 *m_spriteram;
 	UINT8 *m_spriteram2;
+	UINT8 m_nmi_mask;
 };
 
 
@@ -26,4 +27,4 @@ WRITE8_HANDLER( zaccaria_videoram_w );
 WRITE8_HANDLER( zaccaria_attributes_w );
 WRITE8_HANDLER( zaccaria_flip_screen_x_w );
 WRITE8_HANDLER( zaccaria_flip_screen_y_w );
-SCREEN_UPDATE( zaccaria );
+SCREEN_UPDATE_IND16( zaccaria );

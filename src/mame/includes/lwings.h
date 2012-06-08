@@ -27,6 +27,7 @@ public:
 	int      m_palette_pen;
 	UINT8    m_soundstate;
 	UINT8    m_adpcm;
+	UINT8    m_nmi_mask;
 };
 
 
@@ -42,6 +43,6 @@ WRITE8_HANDLER( trojan_bg2_image_w );
 VIDEO_START( lwings );
 VIDEO_START( trojan );
 VIDEO_START( avengers );
-SCREEN_UPDATE( lwings );
-SCREEN_UPDATE( trojan );
-SCREEN_EOF( lwings );
+SCREEN_UPDATE_IND16( lwings );
+SCREEN_UPDATE_IND16( trojan );
+SCREEN_VBLANK( lwings );

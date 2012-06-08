@@ -213,12 +213,12 @@ VIDEO_START( cinemat_qb3color )
  *
  *************************************/
 
-SCREEN_UPDATE( cinemat )
+SCREEN_UPDATE_RGB32( cinemat )
 {
-	SCREEN_UPDATE_CALL(vector);
+	SCREEN_UPDATE32_CALL(vector);
 	vector_clear_list();
 
-	ccpu_wdt_timer_trigger(screen->machine().device("maincpu"));
+	ccpu_wdt_timer_trigger(screen.machine().device("maincpu"));
 
 	return 0;
 }
@@ -231,11 +231,11 @@ SCREEN_UPDATE( cinemat )
  *
  *************************************/
 
-SCREEN_UPDATE( spacewar )
+SCREEN_UPDATE_RGB32( spacewar )
 {
-	int sw_option = input_port_read(screen->machine(), "INPUTS");
+	int sw_option = input_port_read(screen.machine(), "INPUTS");
 
-	SCREEN_UPDATE_CALL(cinemat);
+	SCREEN_UPDATE32_CALL(cinemat);
 
 	/* set the state of the artwork */
 	output_set_value("pressed3", (~sw_option >> 0) & 1);

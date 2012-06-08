@@ -111,11 +111,11 @@ VIDEO_START( senjyo )
 		state->m_bg3_tilemap = tilemap_create(machine, get_bg3_tile_info,      tilemap_scan_rows, 16, 16, 16, 32);	/* only 16x32 used by Star Force */
 	}
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
-	tilemap_set_transparent_pen(state->m_bg1_tilemap, 0);
-	tilemap_set_transparent_pen(state->m_bg2_tilemap, 0);
-	tilemap_set_transparent_pen(state->m_bg3_tilemap, 0);
-	tilemap_set_scroll_cols(state->m_fg_tilemap, 32);
+	state->m_fg_tilemap->set_transparent_pen(0);
+	state->m_bg1_tilemap->set_transparent_pen(0);
+	state->m_bg2_tilemap->set_transparent_pen(0);
+	state->m_bg3_tilemap->set_transparent_pen(0);
+	state->m_fg_tilemap->set_scroll_cols(32);
 }
 
 
@@ -131,35 +131,35 @@ WRITE8_HANDLER( senjyo_fgvideoram_w )
 	senjyo_state *state = space->machine().driver_data<senjyo_state>();
 
 	state->m_fgvideoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 WRITE8_HANDLER( senjyo_fgcolorram_w )
 {
 	senjyo_state *state = space->machine().driver_data<senjyo_state>();
 
 	state->m_fgcolorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 WRITE8_HANDLER( senjyo_bg1videoram_w )
 {
 	senjyo_state *state = space->machine().driver_data<senjyo_state>();
 
 	state->m_bg1videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg1_tilemap, offset);
+	state->m_bg1_tilemap->mark_tile_dirty(offset);
 }
 WRITE8_HANDLER( senjyo_bg2videoram_w )
 {
 	senjyo_state *state = space->machine().driver_data<senjyo_state>();
 
 	state->m_bg2videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg2_tilemap, offset);
+	state->m_bg2_tilemap->mark_tile_dirty(offset);
 }
 WRITE8_HANDLER( senjyo_bg3videoram_w )
 {
 	senjyo_state *state = space->machine().driver_data<senjyo_state>();
 
 	state->m_bg3videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg3_tilemap, offset);
+	state->m_bg3_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( senjyo_bgstripes_w )
@@ -175,14 +175,14 @@ WRITE8_HANDLER( senjyo_bgstripes_w )
 
 ***************************************************************************/
 
-static void draw_bgbitmap(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_bgbitmap(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	senjyo_state *state = machine.driver_data<senjyo_state>();
 	int x,y,pen,strwid,count;
 
 
 	if (state->m_bgstripes == 0xff)	/* off */
-		bitmap_fill(bitmap,cliprect,0);
+		bitmap.fill(0, cliprect);
 	else
 	{
 		int flip = flip_screen_get(machine);
@@ -197,10 +197,10 @@ static void draw_bgbitmap(running_machine &machine, bitmap_t *bitmap,const recta
 		{
 			if (flip)
 				for (y = 0;y < 256;y++)
-					*BITMAP_ADDR16(bitmap, y, 255 - x) = 384 + pen;
+					bitmap.pix16(y, 255 - x) = 384 + pen;
 			else
 				for (y = 0;y < 256;y++)
-					*BITMAP_ADDR16(bitmap, y, x) = 384 + pen;
+					bitmap.pix16(y, x) = 384 + pen;
 
 			count += 0x10;
 			if (count >= strwid)
@@ -212,7 +212,7 @@ static void draw_bgbitmap(running_machine &machine, bitmap_t *bitmap,const recta
 	}
 }
 
-static void draw_radar(running_machine &machine,bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_radar(running_machine &machine,bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	senjyo_state *state = machine.driver_data<senjyo_state>();
 	int offs,x;
@@ -232,13 +232,12 @@ static void draw_radar(running_machine &machine,bitmap_t *bitmap,const rectangle
 					sy = 255 - sy;
 				}
 
-				if (sy >= cliprect->min_y && sy <= cliprect->max_y &&
-					sx >= cliprect->min_x && sx <= cliprect->max_x)
-					*BITMAP_ADDR16(bitmap, sy, sx) = offs < 0x200 ? 512 : 513;
+				if (cliprect.contains(sx, sy))
+					bitmap.pix16(sy, sx) = offs < 0x200 ? 512 : 513;
 			}
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect,int priority)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect,int priority)
 {
 	senjyo_state *state = machine.driver_data<senjyo_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -289,29 +288,29 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 	}
 }
 
-SCREEN_UPDATE( senjyo )
+SCREEN_UPDATE_IND16( senjyo )
 {
-	senjyo_state *state = screen->machine().driver_data<senjyo_state>();
+	senjyo_state *state = screen.machine().driver_data<senjyo_state>();
 	int i;
 
 
 	/* two colors for the radar dots (verified on the real board) */
-	palette_set_color(screen->machine(),512,MAKE_RGB(0xff,0x00,0x00));	/* red for enemies */
-	palette_set_color(screen->machine(),513,MAKE_RGB(0xff,0xff,0x00));	/* yellow for player */
+	palette_set_color(screen.machine(),512,MAKE_RGB(0xff,0x00,0x00));	/* red for enemies */
+	palette_set_color(screen.machine(),513,MAKE_RGB(0xff,0xff,0x00));	/* yellow for player */
 
 	{
-		int flip = flip_screen_get(screen->machine());
+		int flip = flip_screen_get(screen.machine());
 		int scrollx,scrolly;
 
 		for (i = 0;i < 32;i++)
-			tilemap_set_scrolly(state->m_fg_tilemap, i, state->m_fgscroll[i]);
+			state->m_fg_tilemap->set_scrolly(i, state->m_fgscroll[i]);
 
 		scrollx = state->m_scrollx1[0];
 		scrolly = state->m_scrolly1[0] + 256 * state->m_scrolly1[1];
 		if (flip)
 			scrollx = -scrollx;
-		tilemap_set_scrollx(state->m_bg1_tilemap, 0, scrollx);
-		tilemap_set_scrolly(state->m_bg1_tilemap, 0, scrolly);
+		state->m_bg1_tilemap->set_scrollx(0, scrollx);
+		state->m_bg1_tilemap->set_scrolly(0, scrolly);
 
 		scrollx = state->m_scrollx2[0];
 		scrolly = state->m_scrolly2[0] + 256 * state->m_scrolly2[1];
@@ -322,27 +321,27 @@ SCREEN_UPDATE( senjyo )
 		}
 		if (flip)
 			scrollx = -scrollx;
-		tilemap_set_scrollx(state->m_bg2_tilemap, 0, scrollx);
-		tilemap_set_scrolly(state->m_bg2_tilemap, 0, scrolly);
+		state->m_bg2_tilemap->set_scrollx(0, scrollx);
+		state->m_bg2_tilemap->set_scrolly(0, scrolly);
 
 		scrollx = state->m_scrollx3[0];
 		scrolly = state->m_scrolly3[0] + 256 * state->m_scrolly3[1];
 		if (flip)
 			scrollx = -scrollx;
-		tilemap_set_scrollx(state->m_bg3_tilemap, 0, scrollx);
-		tilemap_set_scrolly(state->m_bg3_tilemap, 0, scrolly);
+		state->m_bg3_tilemap->set_scrollx(0, scrollx);
+		state->m_bg3_tilemap->set_scrolly(0, scrolly);
 	}
 
-	draw_bgbitmap(screen->machine(), bitmap, cliprect);
-	draw_sprites(screen->machine(), bitmap, cliprect, 0);
-	tilemap_draw(bitmap, cliprect, state->m_bg3_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect, 1);
-	tilemap_draw(bitmap, cliprect, state->m_bg2_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect, 2);
-	tilemap_draw(bitmap, cliprect, state->m_bg1_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect, 3);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
-	draw_radar(screen->machine(), bitmap, cliprect);
+	draw_bgbitmap(screen.machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect, 0);
+	state->m_bg3_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 1);
+	state->m_bg2_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 2);
+	state->m_bg1_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 3);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_radar(screen.machine(), bitmap, cliprect);
 
 #if 0
 {

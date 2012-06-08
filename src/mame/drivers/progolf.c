@@ -87,9 +87,9 @@ static VIDEO_START( progolf )
 }
 
 
-static SCREEN_UPDATE( progolf )
+static SCREEN_UPDATE_IND16( progolf )
 {
-	progolf_state *state = screen->machine().driver_data<progolf_state>();
+	progolf_state *state = screen.machine().driver_data<progolf_state>();
 	UINT8 *videoram = state->m_videoram;
 	int count,color,x,y,xi,yi;
 
@@ -104,9 +104,9 @@ static SCREEN_UPDATE( progolf )
 			{
 				int tile = videoram[count];
 
-				drawgfx_opaque(bitmap,cliprect,screen->machine().gfx[0],tile,1,0,0,(256-x*8)+scroll,y*8);
+				drawgfx_opaque(bitmap,cliprect,screen.machine().gfx[0],tile,1,0,0,(256-x*8)+scroll,y*8);
 				/* wrap-around */
-				drawgfx_opaque(bitmap,cliprect,screen->machine().gfx[0],tile,1,0,0,(256-x*8)+scroll-1024,y*8);
+				drawgfx_opaque(bitmap,cliprect,screen.machine().gfx[0],tile,1,0,0,(256-x*8)+scroll-1024,y*8);
 
 				count++;
 			}
@@ -127,8 +127,8 @@ static SCREEN_UPDATE( progolf )
 					{
 						color = state->m_fg_fb[(xi+yi*8)+count*0x40];
 
-						if((x+yi) <= cliprect->max_x && (256-y+xi) <= cliprect->max_y && color != 0)
-							*BITMAP_ADDR16(bitmap, x+yi, 256-y+xi) = screen->machine().pens[(color & 0x7)];
+						if(color != 0 && cliprect.contains(x+yi, 256-y+xi))
+							bitmap.pix16(x+yi, 256-y+xi) = screen.machine().pens[(color & 0x7)];
 					}
 				}
 
@@ -465,10 +465,9 @@ static MACHINE_CONFIG_START( progolf, progolf_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(3072))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(progolf)
+	MCFG_SCREEN_UPDATE_STATIC(progolf)
 
 	MCFG_GFXDECODE(progolf)
 	MCFG_PALETTE_LENGTH(32*3)

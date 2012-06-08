@@ -60,8 +60,8 @@ INLINE void get_crosshair_xy(running_machine &machine, int player, int *x, int *
 {
 	const rectangle &visarea = machine.primary_screen->visible_area();
 
-	*x = (((input_port_read(machine, player ? "GUNX2" : "GUNX1") & 0xff) * (visarea.max_x - visarea.min_x)) >> 8) + visarea.min_x;
-	*y = (((input_port_read(machine, player ? "GUNY2" : "GUNY1") & 0xff) * (visarea.max_y - visarea.min_y)) >> 8) + visarea.min_y;
+	*x = (((input_port_read(machine, player ? "GUNX2" : "GUNX1") & 0xff) * visarea.width()) >> 8) + visarea.min_x;
+	*y = (((input_port_read(machine, player ? "GUNY2" : "GUNY1") & 0xff) * visarea.height()) >> 8) + visarea.min_y;
 }
 
 
@@ -141,11 +141,11 @@ static VIDEO_START( tickee )
  *
  *************************************/
 
-static void scanline_update(screen_device &screen, bitmap_t *bitmap, int scanline, const tms34010_display_params *params)
+static void scanline_update(screen_device &screen, bitmap_rgb32 &bitmap, int scanline, const tms34010_display_params *params)
 {
 	tickee_state *state = screen.machine().driver_data<tickee_state>();
 	UINT16 *src = &state->m_vram[(params->rowaddr << 8) & 0x3ff00];
-	UINT32 *dest = BITMAP_ADDR32(bitmap, scanline, 0);
+	UINT32 *dest = &bitmap.pix32(scanline);
 	const rgb_t *pens = tlc34076_get_pens(screen.machine().device("tlc34076"));
 	int coladdr = params->coladdr << 1;
 	int x;
@@ -167,11 +167,11 @@ static void scanline_update(screen_device &screen, bitmap_t *bitmap, int scanlin
 }
 
 
-static void rapidfir_scanline_update(screen_device &screen, bitmap_t *bitmap, int scanline, const tms34010_display_params *params)
+static void rapidfir_scanline_update(screen_device &screen, bitmap_rgb32 &bitmap, int scanline, const tms34010_display_params *params)
 {
 	tickee_state *state = screen.machine().driver_data<tickee_state>();
 	UINT16 *src = &state->m_vram[(params->rowaddr << 8) & 0x3ff00];
-	UINT32 *dest = BITMAP_ADDR32(bitmap, scanline, 0);
+	UINT32 *dest = &bitmap.pix32(scanline);
 	const rgb_t *pens = tlc34076_get_pens(screen.machine().device("tlc34076"));
 	int coladdr = params->coladdr << 1;
 	int x;
@@ -725,7 +725,8 @@ static const tms34010_config tms_config =
 	"screen",						/* the screen operated on */
 	VIDEO_CLOCK/2,					/* pixel clock */
 	1,								/* pixels per clock */
-	scanline_update,				/* scanline callback */
+	NULL,							/* scanline callback (indexed16) */
+	scanline_update,				/* scanline callback (rgb32) */
 	NULL,							/* generate interrupt */
 	NULL,							/* write to shiftreg function */
 	NULL							/* read from shiftreg function */
@@ -738,7 +739,8 @@ static const tms34010_config rapidfir_tms_config =
 	"screen",						/* the screen operated on */
 	VIDEO_CLOCK/2,					/* pixel clock */
 	1,								/* pixels per clock */
-	rapidfir_scanline_update,		/* scanline callback */
+	NULL,							/* scanline callback (indexed16) */
+	rapidfir_scanline_update,		/* scanline callback (rgb32) */
 	NULL,							/* generate interrupt */
 	rapidfir_to_shiftreg,			/* write to shiftreg function */
 	rapidfir_from_shiftreg			/* read from shiftreg function */
@@ -771,9 +773,8 @@ static MACHINE_CONFIG_START( tickee, tickee_state )
 	MCFG_VIDEO_START(tickee)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(VIDEO_CLOCK/2, 444, 0, 320, 233, 0, 200)
-	MCFG_SCREEN_UPDATE(tms340x0)
+	MCFG_SCREEN_UPDATE_STATIC(tms340x0_rgb32)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -812,9 +813,8 @@ static MACHINE_CONFIG_START( rapidfir, tickee_state )
 	MCFG_VIDEO_START(tickee)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(VIDEO_CLOCK/2, 444, 0, 320, 233, 0, 200)
-	MCFG_SCREEN_UPDATE(tms340x0)
+	MCFG_SCREEN_UPDATE_STATIC(tms340x0_rgb32)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -841,9 +841,8 @@ static MACHINE_CONFIG_START( mouseatk, tickee_state )
 	MCFG_TLC34076_ADD("tlc34076", TLC34076_6_BIT)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(VIDEO_CLOCK/2, 444, 0, 320, 233, 0, 200)
-	MCFG_SCREEN_UPDATE(tms340x0)
+	MCFG_SCREEN_UPDATE_STATIC(tms340x0_rgb32)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -1070,12 +1069,28 @@ ROM_START( rapidfir ) /* Version 1.1, test menu shows "Build 239" */
 	ROM_REGION16_LE( 0x400000, "user1", 0 )	/* 34010 code */
 	ROM_LOAD16_BYTE( "rf11.u8",  0x000000, 0x80000, CRC(f7d8df33) SHA1(0abd54bbccfa90d830cbbdbcf2058197af980981) )
 	ROM_LOAD16_BYTE( "rf11.u9",  0x000001, 0x80000, CRC(a72af935) SHA1(ed0deb6f51681f70e07ad7c05a92f6a0f2063f7a) )
-	ROM_LOAD16_BYTE( "rf10.u6",  0x100000, 0x80000, CRC(e8d2e5d2) SHA1(db93014598f7b76785e0fd5c0ac8808a3be06435) )
-	ROM_LOAD16_BYTE( "rf10.u7",  0x100001, 0x80000, CRC(0e33f2ed) SHA1(9b2533e001b94ccc97b95e31762186f59d5a3b9c) )
-	ROM_LOAD16_BYTE( "rf10.u4",  0x200000, 0x80000, CRC(8a088468) SHA1(f94dc78158e5656657d3b26c5b0ca88f39eb5ff4) )
-	ROM_LOAD16_BYTE( "rf10.u5",  0x200001, 0x80000, CRC(593b3df2) SHA1(301fa06031eff54fb2d9e08f80fc3c26e5c51da9) )
+	ROM_LOAD16_BYTE( "rf10.u6",  0x100000, 0x80000, CRC(e8d2e5d2) SHA1(db93014598f7b76785e0fd5c0ac8808a3be06435) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf10.u7",  0x100001, 0x80000, CRC(0e33f2ed) SHA1(9b2533e001b94ccc97b95e31762186f59d5a3b9c) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf10.u4",  0x200000, 0x80000, CRC(8a088468) SHA1(f94dc78158e5656657d3b26c5b0ca88f39eb5ff4) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf10.u5",  0x200001, 0x80000, CRC(593b3df2) SHA1(301fa06031eff54fb2d9e08f80fc3c26e5c51da9) ) /* Can be labeled V1.0 or V1.1 */
 	ROM_LOAD16_BYTE( "rf11.u2",  0x300000, 0x80000, CRC(ffa0c695) SHA1(bccdefe7cee15999c416fdcb16a65b1bc6e12d13) )
 	ROM_LOAD16_BYTE( "rf11.u3",  0x300001, 0x80000, CRC(ac63b863) SHA1(c9160aec6179d1f550279b80fd4c2a14ce94fdab) )
+
+	ROM_REGION( 0x100000, "oki", 0 )
+	ROM_LOAD( "rf11.u507", 0x000000, 0x80000, CRC(899d1e15) SHA1(ca22b4ad714a5212bc9347eb3a5b660c02bad7e5) )
+	ROM_LOAD( "rf11.u510", 0x080000, 0x80000, CRC(6209c8fe) SHA1(bfbd63445b4ac2d4253c4b5354e1058070290084) )
+ROM_END
+
+ROM_START( rapidfira ) /* Version 1.1, test menu shows "Build 238" */
+	ROM_REGION16_LE( 0x400000, "user1", 0 )	/* 34010 code */
+	ROM_LOAD16_BYTE( "rf11.u8",  0x000000, 0x80000, CRC(f7d8df33) SHA1(0abd54bbccfa90d830cbbdbcf2058197af980981) )
+	ROM_LOAD16_BYTE( "rf11.u9",  0x000001, 0x80000, CRC(a72af935) SHA1(ed0deb6f51681f70e07ad7c05a92f6a0f2063f7a) )
+	ROM_LOAD16_BYTE( "rf10.u6",  0x100000, 0x80000, CRC(e8d2e5d2) SHA1(db93014598f7b76785e0fd5c0ac8808a3be06435) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf10.u7",  0x100001, 0x80000, CRC(0e33f2ed) SHA1(9b2533e001b94ccc97b95e31762186f59d5a3b9c) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf10.u4",  0x200000, 0x80000, CRC(8a088468) SHA1(f94dc78158e5656657d3b26c5b0ca88f39eb5ff4) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf10.u5",  0x200001, 0x80000, CRC(593b3df2) SHA1(301fa06031eff54fb2d9e08f80fc3c26e5c51da9) ) /* Can be labeled V1.0 or V1.1 */
+	ROM_LOAD16_BYTE( "rf11-u2",  0x300000, 0x80000, CRC(bcb7195a) SHA1(04b14facfe84973737f94b5278fb59668af0a47c) ) /* Only U2 & U3 differ from Build 239, labeled the same */
+	ROM_LOAD16_BYTE( "rf11-u3",  0x300001, 0x80000, CRC(e455a0b5) SHA1(5568f55ccfd6cba373f4b4f3e61f0a4f391b01c0) ) /* Only U2 & U3 differ from Build 239, labeled the same */
 
 	ROM_REGION( 0x100000, "oki", 0 )
 	ROM_LOAD( "rf11.u507", 0x000000, 0x80000, CRC(899d1e15) SHA1(ca22b4ad714a5212bc9347eb3a5b660c02bad7e5) )
@@ -1136,7 +1151,8 @@ GAME( 1994, tickee,    0,        tickee,   tickee,   0, ROT0, "Raster Elite",  "
 GAME( 1996, ghoshunt,  0,        ghoshunt, ghoshunt, 0, ROT0, "Hanaho Games",  "Ghost Hunter", 0 )
 GAME( 1996, tutstomb,  0,        ghoshunt, ghoshunt, 0, ROT0, "Island Design", "Tut's Tomb", 0 )
 GAME( 1996, mouseatk,  0,        mouseatk, mouseatk, 0, ROT0, "ICE",           "Mouse Attack", 0 )
-GAME( 1998, rapidfir,  0,        rapidfir, rapidfir, 0, ROT0, "Hanaho Games",  "Rapid Fire v1.1", 0 )
-GAME( 1998, rapidfire, rapidfir, rapidfir, rapidfir, 0, ROT0, "Hanaho Games",  "Rapid Fire v1.0", 0 )
+GAME( 1998, rapidfir,  0,        rapidfir, rapidfir, 0, ROT0, "Hanaho Games",  "Rapid Fire v1.1 (Build 239)", 0 )
+GAME( 1998, rapidfira, rapidfir, rapidfir, rapidfir, 0, ROT0, "Hanaho Games",  "Rapid Fire v1.1 (Build 238)", 0 )
+GAME( 1998, rapidfire, rapidfir, rapidfir, rapidfir, 0, ROT0, "Hanaho Games",  "Rapid Fire v1.0 (Build 236)", 0 )
 GAME( 1999, maletmad,  0,        rapidfir, rapidfir, 0, ROT0, "Hanaho Games",  "Mallet Madness v2.1", 0 )
 

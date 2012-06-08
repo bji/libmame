@@ -179,10 +179,7 @@ static MACHINE_START( cloud9 )
 	assert(state->m_vblank_end < state->m_vblank_start);
 
 	/* reconfigure the visible area to match */
-	visarea.min_x = 0;
-	visarea.max_x = 255;
-	visarea.min_y = state->m_vblank_end + 1;
-	visarea.max_y = state->m_vblank_start;
+	visarea.set(0, 255, state->m_vblank_end + 1, state->m_vblank_start);
 	machine.primary_screen->configure(320, 256, visarea, HZ_TO_ATTOSECONDS(PIXEL_CLOCK) * VTOTAL * HTOTAL);
 
 	/* create a timer for IRQs and set up the first callback */
@@ -443,12 +440,11 @@ static MACHINE_CONFIG_START( cloud9, cloud9_state )
 	MCFG_PALETTE_LENGTH(64)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE((float)PIXEL_CLOCK / (float)VTOTAL / (float)HTOTAL)
 	MCFG_SCREEN_SIZE(HTOTAL, VTOTAL)
 	MCFG_SCREEN_VBLANK_TIME(0)			/* VBLANK is handled manually */
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 0, 231)
-	MCFG_SCREEN_UPDATE(cloud9)
+	MCFG_SCREEN_UPDATE_STATIC(cloud9)
 
 	MCFG_VIDEO_START(cloud9)
 

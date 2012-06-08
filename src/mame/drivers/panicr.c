@@ -162,7 +162,7 @@ static TILE_GET_INFO( get_txttile_info )
 	int attr=videoram[tile_index*4+2];
 	int color = attr & 0x07;
 
-	tileinfo->group = color;
+	tileinfo.group = color;
 
 	SET_TILE_INFO(
 		0,
@@ -215,7 +215,7 @@ static VIDEO_START( panicr )
 	colortable_configure_tilemap_groups(machine.colortable, state->m_txttilemap, machine.gfx[0], 0);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect )
 {
 	panicr_state *state = machine.driver_data<panicr_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -239,15 +239,15 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 	}
 }
 
-static SCREEN_UPDATE( panicr)
+static SCREEN_UPDATE_IND16( panicr)
 {
-	panicr_state *state = screen->machine().driver_data<panicr_state>();
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
-	tilemap_mark_all_tiles_dirty( state->m_txttilemap );
-	tilemap_set_scrollx( state->m_bgtilemap,0, ((state->m_scrollram[0x02]&0x0f)<<12)+((state->m_scrollram[0x02]&0xf0)<<4)+((state->m_scrollram[0x04]&0x7f)<<1)+((state->m_scrollram[0x04]&0x80)>>7) );
-	tilemap_draw(bitmap,cliprect,state->m_bgtilemap,0,0);
-	draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_txttilemap,0,0);
+	panicr_state *state = screen.machine().driver_data<panicr_state>();
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	state->m_txttilemap ->mark_all_dirty();
+	state->m_bgtilemap->set_scrollx(0, ((state->m_scrollram[0x02]&0x0f)<<12)+((state->m_scrollram[0x02]&0xf0)<<4)+((state->m_scrollram[0x04]&0x7f)<<1)+((state->m_scrollram[0x04]&0x80)>>7) );
+	state->m_bgtilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_txttilemap->draw(bitmap, cliprect, 0,0);
 
 	return 0;
 }
@@ -392,10 +392,9 @@ static MACHINE_CONFIG_START( panicr, panicr_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(panicr)
+	MCFG_SCREEN_UPDATE_STATIC(panicr)
 
 	MCFG_GFXDECODE(panicr)
 	MCFG_PALETTE_LENGTH(256*3)

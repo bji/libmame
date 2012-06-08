@@ -95,12 +95,13 @@ ADDRESS_MAP_END
 
 /*******************************************************************************/
 
+/* same as Tryout */
 static ADDRESS_MAP_START( shootout_sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x07ff) AM_RAM
 	AM_RANGE(0x4000, 0x4001) AM_DEVREADWRITE("ymsnd", ym2203_r,ym2203_w)
 	AM_RANGE(0xa000, 0xa000) AM_READ(soundlatch_r)
 	AM_RANGE(0xc000, 0xffff) AM_ROM
-	AM_RANGE(0xd000, 0xd000) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xd000, 0xd000) AM_WRITENOP // unknown, NOT irq/nmi mask
 ADDRESS_MAP_END
 
 /*******************************************************************************/
@@ -273,10 +274,9 @@ static MACHINE_CONFIG_START( shootout, shootout_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(shootout)
+	MCFG_SCREEN_UPDATE_STATIC(shootout)
 
 	MCFG_GFXDECODE(shootout)
 	MCFG_PALETTE_LENGTH(256)
@@ -303,10 +303,9 @@ static MACHINE_CONFIG_START( shootouj, shootout_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(shootouj)
+	MCFG_SCREEN_UPDATE_STATIC(shootouj)
 
 	MCFG_GFXDECODE(shootout)
 	MCFG_PALETTE_LENGTH(256)

@@ -819,12 +819,12 @@ static const tc0100scn_interface cadash_tc0100scn_intf =
 
 static const pc090oj_interface asuka_pc090oj_intf =
 {
-	0, 0, 8, 0
+	0, 0, 8, 1
 };
 
-static const pc090oj_interface cadash_pc090oj_intf =
+static const pc090oj_interface bonzeadv_pc090oj_intf =
 {
-	0, 0, 8, 1
+	0, 0, 8, 0
 };
 
 static const tc0110pcr_interface asuka_tc0110pcr_intf =
@@ -874,10 +874,14 @@ static MACHINE_RESET( asuka )
 	memset(state->m_cval, 0, 26);
 }
 
-static SCREEN_EOF( asuka )
+static SCREEN_VBLANK( asuka )
 {
-	asuka_state *state = machine.driver_data<asuka_state>();
-	pc090oj_eof_callback(state->m_pc090oj);
+	// rising edge
+	if (vblank_on)
+	{
+		asuka_state *state = screen.machine().driver_data<asuka_state>();
+		pc090oj_eof_callback(state->m_pc090oj);
+	}
 }
 
 static const tc0220ioc_interface asuka_io_intf =
@@ -911,16 +915,15 @@ static MACHINE_CONFIG_START( bonzeadv, asuka_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 3*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(bonzeadv)
-	MCFG_SCREEN_EOF(asuka)
+	MCFG_SCREEN_UPDATE_STATIC(bonzeadv)
+	MCFG_SCREEN_VBLANK_STATIC(asuka)
 
 	MCFG_GFXDECODE(asuka)
 	MCFG_PALETTE_LENGTH(4096)
 
-	MCFG_PC090OJ_ADD("pc090oj", asuka_pc090oj_intf)
+	MCFG_PC090OJ_ADD("pc090oj", bonzeadv_pc090oj_intf)
 	MCFG_TC0100SCN_ADD("tc0100scn", asuka_tc0100scn_intf)
 	MCFG_TC0110PCR_ADD("tc0110pcr", asuka_tc0110pcr_intf)
 
@@ -957,11 +960,10 @@ static MACHINE_CONFIG_START( asuka, asuka_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(asuka)
-	MCFG_SCREEN_EOF(asuka)
+	MCFG_SCREEN_UPDATE_STATIC(asuka)
+	MCFG_SCREEN_VBLANK_STATIC(asuka)
 
 	MCFG_GFXDECODE(asuka)
 	MCFG_PALETTE_LENGTH(4096)
@@ -1010,16 +1012,15 @@ static MACHINE_CONFIG_START( cadash, asuka_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(bonzeadv)
-	MCFG_SCREEN_EOF(asuka)
+	MCFG_SCREEN_UPDATE_STATIC(bonzeadv)
+	MCFG_SCREEN_VBLANK_STATIC(asuka)
 
 	MCFG_GFXDECODE(asuka)
 	MCFG_PALETTE_LENGTH(4096)
 
-	MCFG_PC090OJ_ADD("pc090oj", cadash_pc090oj_intf)
+	MCFG_PC090OJ_ADD("pc090oj", asuka_pc090oj_intf)
 	MCFG_TC0100SCN_ADD("tc0100scn", cadash_tc0100scn_intf)
 	MCFG_TC0110PCR_ADD("tc0110pcr", asuka_tc0110pcr_intf)
 
@@ -1055,16 +1056,15 @@ static MACHINE_CONFIG_START( mofflott, asuka_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(asuka)
-	MCFG_SCREEN_EOF(asuka)
+	MCFG_SCREEN_UPDATE_STATIC(asuka)
+	MCFG_SCREEN_VBLANK_STATIC(asuka)
 
 	MCFG_GFXDECODE(asuka)
 	MCFG_PALETTE_LENGTH(4096)	/* only Mofflott uses full palette space */
 
-	MCFG_PC090OJ_ADD("pc090oj", asuka_pc090oj_intf)
+	MCFG_PC090OJ_ADD("pc090oj", bonzeadv_pc090oj_intf)
 	MCFG_TC0100SCN_ADD("tc0100scn", cadash_tc0100scn_intf)
 	MCFG_TC0110PCR_ADD("tc0110pcr", asuka_tc0110pcr_intf)
 
@@ -1104,16 +1104,15 @@ static MACHINE_CONFIG_START( galmedes, asuka_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(asuka)
-	MCFG_SCREEN_EOF(asuka)
+	MCFG_SCREEN_UPDATE_STATIC(asuka)
+	MCFG_SCREEN_VBLANK_STATIC(asuka)
 
 	MCFG_GFXDECODE(asuka)
 	MCFG_PALETTE_LENGTH(4096)	/* only Mofflott uses full palette space */
 
-	MCFG_PC090OJ_ADD("pc090oj", asuka_pc090oj_intf)
+	MCFG_PC090OJ_ADD("pc090oj", bonzeadv_pc090oj_intf)
 	MCFG_TC0100SCN_ADD("tc0100scn", cadash_tc0100scn_intf)
 	MCFG_TC0110PCR_ADD("tc0110pcr", asuka_tc0110pcr_intf)
 
@@ -1149,16 +1148,15 @@ static MACHINE_CONFIG_START( eto, asuka_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(asuka)
-	MCFG_SCREEN_EOF(asuka)
+	MCFG_SCREEN_UPDATE_STATIC(asuka)
+	MCFG_SCREEN_VBLANK_STATIC(asuka)
 
 	MCFG_GFXDECODE(asuka)
 	MCFG_PALETTE_LENGTH(4096)
 
-	MCFG_PC090OJ_ADD("pc090oj", asuka_pc090oj_intf)
+	MCFG_PC090OJ_ADD("pc090oj", bonzeadv_pc090oj_intf)
 	MCFG_TC0100SCN_ADD("tc0100scn", cadash_tc0100scn_intf)
 	MCFG_TC0110PCR_ADD("tc0110pcr", asuka_tc0110pcr_intf)
 

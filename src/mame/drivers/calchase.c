@@ -2,14 +2,13 @@
 
 California Chase (c) 1999 The Game Room
 
-preliminary driver by Angelo Salese
+preliminary driver by Angelo Salese & Grull Osgo
 
 TODO:
-- currently calls int 13h with ah=0 -> "Reset Disk Drives" and returns an error code
-for whatever reason;
-- video emulation not even started (it currently fills vram with 0x0720, hence it's
-unneeded for now...)
-- clean-ups;
+- get Win 98 to boot;
+- Various graphics bugs (title screen uses ROZ?);
+- fix 129 Hz refresh rate bug;
+- inputs (is there a service mode?)
 
 I/O Memo (http://bochs.sourceforge.net/techspec/PORTS.LST):
 46E8    ----    8514/A and compatible video cards (e.g. ATI Graphics Ultra)
@@ -19,11 +18,6 @@ I/O Memo (http://bochs.sourceforge.net/techspec/PORTS.LST):
 83C6-83C9 ----  Compaq Qvision EISA - DAC color registers
 
 43c4 is a 83c4 mirror?
-
-04D0-04D1 ---- EISA IRQ control
-00F0-00F5 ----  PCjr Disk Controller
-(or)
-00F0-00FF ----  coprocessor (8087..80387)
 
 =====================================================================================
 
@@ -82,6 +76,36 @@ be easily copied. Tested with another HDD.... formatted with DOS, copied
 all files across to new HDD, boots up fine.
 
 ************************************************************************************/
+/*
+Grull Osgo - Improvements
+
+-Changes about BIOS memory management so ROM Shadow now works properly.
+ The changes are:
+    Rom Memory Map remmapped to 128K size AM_RANGE(0xfffe0000, 0xffffffff) AM_ROM AM_REGION("bios", 0)
+
+-Changes in mtxc write handler and bios_ram write handler. Now The internal register access are
+compatible with chipset VIA.
+ (this motherboard has VIA Apollo VXPro chipset. It is not compatible with Intel i430).
+ With this changes now BIOS Shadow ram works fine, BIOS can relocate and decompress the full code
+ necesary to run the Extended Bios, POST and Boot). No more BIOS Checksum error.
+
+- Suppressed all video related items wich will be replaced with VGA driver.
+
+- Temporarily added a VGA driver that is working based on original IBM VGA BIOS.(From MESS)
+  (This VGA driver doesn't work yet with TRIDENT VGA BIOS as I can see).
+
+- Added the flag READONLY to the calchase imagen rom load function, to avoid
+  "DIFF CHD ERROR".
+
+- Minor changes and NOPS into address maps for debugging purposes.
+
+- Now Bios is looking for the disk (BIOS Auto detection). It seems all works fine but must be there
+something wrong in the disk geometry reported by calchase.chd (20,255,63) since BIOS does not accept
+ 255 heads as parameter. Perhaps a bad dump?
+
+ TODO: A lot of work to do yet!!!
+ */
+
 
 #include "emu.h"
 #include "cpu/i386/i386.h"
@@ -96,16 +120,19 @@ all files across to new HDD, boots up fine.
 #include "machine/8042kbdc.h"
 #include "machine/pckeybrd.h"
 #include "machine/idectrl.h"
+#include "video/pc_vga.h"
+#include "sound/dac.h"
 
 
 class calchase_state : public driver_device
 {
 public:
 	calchase_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+		  { }
 
 	UINT32 *m_bios_ram;
-	UINT32 *m_vga_vram;
 	int m_dma_channel;
 	UINT8 m_dma_offset[2][4];
 	UINT8 m_at_pages[0x10];
@@ -117,46 +144,14 @@ public:
 	device_t	*m_pic8259_2;
 	device_t	*m_dma8237_1;
 	device_t	*m_dma8237_2;
+
+	UINT32 m_idle_skip_ram;
+	required_device<cpu_device> m_maincpu;
 };
 
 
 static void ide_interrupt(device_t *device, int state);
 
-
-static VIDEO_START(calchase)
-{
-}
-
-static SCREEN_UPDATE(calchase)
-{
-	calchase_state *state = screen->machine().driver_data<calchase_state>();
-	int x,y,count,i;
-
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
-
-	count = (0);
-
-	for(y=0;y<256;y++)
-	{
-		for(x=0;x<320;x+=32)
-		{
-			for (i=0;i<32;i++)
-			{
-				UINT32 color;
-
-				color = (state->m_vga_vram[count])>>(32-i) & 0x1;
-
-				if((x+i)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, x+(32-i)) = screen->machine().pens[color];
-
-			}
-
-			count++;
-		}
-	}
-
-	return 0;
-}
 
 static READ8_DEVICE_HANDLER(at_dma8237_2_r)
 {
@@ -307,6 +302,10 @@ static WRITE32_DEVICE_HANDLER( ide_w )
 	ide_controller32_w(device, 0x1f0/4 + offset, data, mem_mask);
 }
 
+
+
+
+
 static READ32_DEVICE_HANDLER( fdc_r )
 {
 	return ide_controller32_r(device, 0x3f0/4 + offset, mem_mask);
@@ -318,7 +317,9 @@ static WRITE32_DEVICE_HANDLER( fdc_w )
 	ide_controller32_w(device, 0x3f0/4 + offset, data, mem_mask);
 }
 
+
 // Intel 82439TX System Controller (MXTC)
+// TODO: change with a VIA82C585VPX (North Bridge - APOLLO Chipset)
 
 static UINT8 mxtc_config_r(device_t *busdevice, device_t *device, int function, int reg)
 {
@@ -335,15 +336,27 @@ static void mxtc_config_w(device_t *busdevice, device_t *device, int function, i
 
 	switch(reg)
 	{
-		case 0x59:		// PAM0
+		//case 0x59:
+		case 0x63:	// PAM0
 		{
-			if (data & 0x10)		// enable RAM access to region 0xf0000 - 0xfffff
+			//if (data & 0x10)     // enable RAM access to region 0xf0000 - 0xfffff
+			if ((data & 0x50) | (data & 0xA0))
 			{
 				memory_set_bankptr(busdevice->machine(), "bank1", state->m_bios_ram);
 			}
-			else					// disable RAM access (reads go to BIOS ROM)
+			else				// disable RAM access (reads go to BIOS ROM)
 			{
-				memory_set_bankptr(busdevice->machine(), "bank1", busdevice->machine().region("bios")->base() + 0x10000);
+				//Execution Hack to avoid crash when switch back from Shadow RAM to Bios ROM, since i386 emu haven't yet pipelined execution structure.
+				//It happens when exit from BIOS SETUP.
+				#if 0
+				if ((state->m_mxtc_config_reg[0x63] & 0x50) | ( state->m_mxtc_config_reg[0x63] & 0xA0)) // Only DO if comes a change to disable ROM.
+				{
+					if ( cpu_get_pc(busdevice->machine().device("maincpu"))==0xff74e) cpu_set_reg(busdevice->machine().device("maincpu"), STATE_GENPC, 0xff74d);
+				}
+				#endif
+
+				//memory_set_bankptr(busdevice->machine(), "bank1", busdevice->machine().region("bios")->base() + 0x10000);
+				memory_set_bankptr(busdevice->machine(), "bank1", busdevice->machine().region("bios")->base());
 			}
 			break;
 		}
@@ -366,6 +379,10 @@ static void intel82439tx_init(running_machine &machine)
 static UINT32 intel82439tx_pci_r(device_t *busdevice, device_t *device, int function, int reg, UINT32 mem_mask)
 {
 	UINT32 r = 0;
+
+	if(reg == 0)
+		return 0x05851106; // VT82C585VPX, VIA
+
 	if (ACCESSING_BITS_24_31)
 	{
 		r |= mxtc_config_r(busdevice, device, function, reg + 3) << 24;
@@ -406,6 +423,7 @@ static void intel82439tx_pci_w(device_t *busdevice, device_t *device, int functi
 }
 
 // Intel 82371AB PCI-to-ISA / IDE bridge (PIIX4)
+//TODO: change with VIA82C586B (South Bridge - APOLLO Chipset)
 
 static UINT8 piix4_config_r(device_t *busdevice, device_t *device, int function, int reg)
 {
@@ -424,6 +442,10 @@ static void piix4_config_w(device_t *busdevice, device_t *device, int function, 
 static UINT32 intel82371ab_pci_r(device_t *busdevice, device_t *device, int function, int reg, UINT32 mem_mask)
 {
 	UINT32 r = 0;
+
+	if(reg == 0)
+		return 0x30401106; // VT82C586B, VIA
+
 	if (ACCESSING_BITS_24_31)
 	{
 		r |= piix4_config_r(busdevice, device, function, reg + 3) << 24;
@@ -466,28 +488,77 @@ static void intel82371ab_pci_w(device_t *busdevice, device_t *device, int functi
 static WRITE32_HANDLER(bios_ram_w)
 {
 	calchase_state *state = space->machine().driver_data<calchase_state>();
-	if (state->m_mxtc_config_reg[0x59] & 0x20)		// write to RAM if this region is write-enabled
+	//if (state->m_mxtc_config_reg[0x59] & 0x20)       // write to RAM if this region is write-enabled
+	       if (state->m_mxtc_config_reg[0x63] & 0x50)
 	{
 		COMBINE_DATA(state->m_bios_ram + offset);
 	}
 }
 
+static READ16_HANDLER( calchase_iocard1_r )
+{
+	return input_port_read(space->machine(), "IOCARD1");
+}
+
+static READ16_HANDLER( calchase_iocard2_r )
+{
+	return input_port_read(space->machine(), "IOCARD2");
+}
+
+static READ16_HANDLER( calchase_iocard3_r )
+{
+	return input_port_read(space->machine(), "IOCARD3");
+}
+
+/* These two controls wheel pot or whatever this game uses ... */
+static READ16_HANDLER( calchase_iocard4_r )
+{
+	return input_port_read(space->machine(), "IOCARD4");
+}
+
+static READ16_HANDLER( calchase_iocard5_r )
+{
+	return input_port_read(space->machine(), "IOCARD5");
+}
+
+
+static WRITE16_DEVICE_HANDLER( calchase_dac_w )
+{
+	dac_data_16_w(device, ((data & 0xfff) << 4));
+}
+
 static ADDRESS_MAP_START( calchase_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x00000000, 0x0009ffff) AM_RAM
-	AM_RANGE(0x000a0000, 0x000bffff) AM_RAM AM_BASE_MEMBER(calchase_state, m_vga_vram)
+	AM_RANGE(0x000a0000, 0x000bffff) AM_RAM // VGA VRAM
 	AM_RANGE(0x000c0000, 0x000c7fff) AM_RAM AM_REGION("video_bios", 0)
-	AM_RANGE(0x000e0000, 0x000effff) AM_RAM
-	AM_RANGE(0x000f0000, 0x000fffff) AM_ROMBANK("bank1")
-	AM_RANGE(0x000f0000, 0x000fffff) AM_WRITE(bios_ram_w)
-	AM_RANGE(0x00100000, 0x01ffffff) AM_RAM
-	AM_RANGE(0x04000000, 0x040001ff) AM_RAM
-	AM_RANGE(0x08000000, 0x080001ff) AM_RAM
-	AM_RANGE(0x0c000000, 0x0c0001ff) AM_RAM
-	AM_RANGE(0x10000000, 0x100001ff) AM_RAM
-	AM_RANGE(0x14000000, 0x140001ff) AM_RAM
-	AM_RANGE(0x18000000, 0x180001ff) AM_RAM
-	AM_RANGE(0x20000000, 0x200001ff) AM_RAM
-	AM_RANGE(0x28000000, 0x280001ff) AM_RAM
+	AM_RANGE(0x000c8000, 0x000cffff) AM_NOP
+	//AM_RANGE(0x000d0000, 0x000d0003) AM_RAM  // XYLINX - Sincronus serial communication
+	AM_RANGE(0x000d0004, 0x000d0007) AM_READ16(calchase_iocard1_r, 0x0000ffff)
+	AM_RANGE(0x000d000c, 0x000d000f) AM_READ16(calchase_iocard2_r, 0x0000ffff)
+	AM_RANGE(0x000d0030, 0x000d0033) AM_READ16(calchase_iocard3_r, 0xffff0000)
+	AM_RANGE(0x000d0030, 0x000d0033) AM_READ16(calchase_iocard4_r, 0x0000ffff)
+	AM_RANGE(0x000d0034, 0x000d0037) AM_READ16(calchase_iocard5_r, 0x0000ffff)
+	AM_RANGE(0x000d0008, 0x000d000b) AM_WRITENOP // ???
+	AM_RANGE(0x000d0024, 0x000d0027) AM_DEVWRITE16("dac_l",calchase_dac_w,0x0000ffff)
+	AM_RANGE(0x000d0028, 0x000d002b) AM_DEVWRITE16("dac_r",calchase_dac_w,0x0000ffff)
+	AM_RANGE(0x000d0800, 0x000d0fff) AM_ROM AM_REGION("nvram",0) //
+	AM_RANGE(0x000d0800, 0x000d0fff) AM_RAM  // GAME_CMOS
+
+	//GRULL AM_RANGE(0x000e0000, 0x000effff) AM_RAM
+	//GRULL-AM_RANGE(0x000f0000, 0x000fffff) AM_ROMBANK("bank1")
+	//GRULL AM_RANGE(0x000f0000, 0x000fffff) AM_WRITE(bios_ram_w)
+	AM_RANGE(0x000e0000, 0x000fffff) AM_ROMBANK("bank1")
+	AM_RANGE(0x000e0000, 0x000fffff) AM_WRITE(bios_ram_w)
+	AM_RANGE(0x00100000, 0x03ffffff) AM_RAM  // 64MB
+	AM_RANGE(0x02000000, 0x28ffffff) AM_NOP
+	//AM_RANGE(0x04000000, 0x040001ff) AM_RAM
+	//AM_RANGE(0x08000000, 0x080001ff) AM_RAM
+	//AM_RANGE(0x0c000000, 0x0c0001ff) AM_RAM
+	//AM_RANGE(0x10000000, 0x100001ff) AM_RAM
+	//AM_RANGE(0x14000000, 0x140001ff) AM_RAM
+	//AM_RANGE(0x18000000, 0x180001ff) AM_RAM
+	//AM_RANGE(0x20000000, 0x200001ff) AM_RAM
+	//AM_RANGE(0x28000000, 0x280001ff) AM_RAM
 	AM_RANGE(0xfffe0000, 0xffffffff) AM_ROM AM_REGION("bios", 0)	/* System BIOS */
 ADDRESS_MAP_END
 
@@ -496,58 +567,69 @@ static ADDRESS_MAP_START( calchase_io, AS_IO, 32)
 	AM_RANGE(0x0020, 0x003f) AM_DEVREADWRITE8("pic8259_1", pic8259_r, pic8259_w, 0xffffffff)
 	AM_RANGE(0x0040, 0x005f) AM_DEVREADWRITE8("pit8254", pit8253_r, pit8253_w, 0xffffffff)
 	AM_RANGE(0x0060, 0x006f) AM_READWRITE(kbdc8042_32le_r,			kbdc8042_32le_w)
-	AM_RANGE(0x0070, 0x007f) AM_DEVREADWRITE8_MODERN("rtc", mc146818_device, read, write, 0xffffffff)
+	AM_RANGE(0x0070, 0x007f) AM_DEVREADWRITE8_MODERN("rtc", mc146818_device, read, write, 0xffffffff) /* todo: nvram (CMOS Setup Save)*/
 	AM_RANGE(0x0080, 0x009f) AM_READWRITE(at_page32_r,				at_page32_w)
 	AM_RANGE(0x00a0, 0x00bf) AM_DEVREADWRITE8("pic8259_2", pic8259_r, pic8259_w, 0xffffffff)
 	AM_RANGE(0x00c0, 0x00df) AM_DEVREADWRITE("dma8237_2", at32_dma8237_2_r, at32_dma8237_2_w)
-	AM_RANGE(0x00e8, 0x00eb) AM_NOP
+	//AM_RANGE(0x00e8, 0x00eb) AM_NOP
+	AM_RANGE(0x00e8, 0x00ef) AM_NOP //AMI BIOS write to this ports as delays between I/O ports operations sending al value -> NEWIODELAY
+	AM_RANGE(0x0170, 0x0177) AM_NOP //To debug
 	AM_RANGE(0x01f0, 0x01f7) AM_DEVREADWRITE("ide", ide_r, ide_w)
-	AM_RANGE(0x0300, 0x03af) AM_NOP
-	AM_RANGE(0x03b0, 0x03df) AM_NOP
+	AM_RANGE(0x0200, 0x021f) AM_NOP //To debug
+	AM_RANGE(0x0260, 0x026f) AM_NOP //To debug
 	AM_RANGE(0x0278, 0x027b) AM_WRITENOP//AM_WRITE(pnp_config_w)
-	AM_RANGE(0x03f0, 0x03ff) AM_DEVREADWRITE("ide", fdc_r, fdc_w)
+	AM_RANGE(0x0280, 0x0287) AM_NOP //To debug
+	AM_RANGE(0x02a0, 0x02a7) AM_NOP //To debug
+	AM_RANGE(0x02c0, 0x02c7) AM_NOP //To debug
+	AM_RANGE(0x02e0, 0x02ef) AM_NOP //To debug
+	AM_RANGE(0x0278, 0x02ff) AM_NOP //To debug
+	AM_RANGE(0x02f8, 0x02ff) AM_NOP //To debug
+	AM_RANGE(0x0320, 0x038f) AM_NOP //To debug
+	AM_RANGE(0x03a0, 0x03a7) AM_NOP //To debug
+	AM_RANGE(0x03e0, 0x03ef) AM_NOP //To debug
+	AM_RANGE(0x0378, 0x037f) AM_NOP //To debug
+	// AM_RANGE(0x0300, 0x03af) AM_NOP
+	// AM_RANGE(0x03b0, 0x03df) AM_NOP
+	AM_RANGE(0x03f0, 0x03f7) AM_DEVREADWRITE("ide", fdc_r, fdc_w)
+	AM_RANGE(0x03f8, 0x03ff) AM_NOP // To debug Serial Port COM1:
 	AM_RANGE(0x0a78, 0x0a7b) AM_WRITENOP//AM_WRITE(pnp_data_w)
 	AM_RANGE(0x0cf8, 0x0cff) AM_DEVREADWRITE("pcibus", pci_32le_r,	pci_32le_w)
+	AM_RANGE(0x42e8, 0x43ef) AM_NOP //To debug
 	AM_RANGE(0x43c0, 0x43cf) AM_RAM AM_SHARE("share1")
+	AM_RANGE(0x46e8, 0x46ef) AM_NOP //To debug
+	AM_RANGE(0x4ae8, 0x4aef) AM_NOP //To debug
 	AM_RANGE(0x83c0, 0x83cf) AM_RAM AM_SHARE("share1")
+	AM_RANGE(0x92e8, 0x92ef) AM_NOP //To debug
+
 ADDRESS_MAP_END
-
-
-static const gfx_layout CGA_charlayout =
-{
-	8,8,
-    256,
-    1,
-    { 0 },
-    { 0,1,2,3,4,5,6,7 },
-	{ 0*8,1*8,2*8,3*8,4*8,5*8,6*8,7*8 },
-    8*8
-};
-
-static GFXDECODE_START( CGA )
-	GFXDECODE_ENTRY( "video_bios", 0x5182, CGA_charlayout,              0, 256 )
-	//there's also a 8x16 entry (just after the 8x8)
-GFXDECODE_END
 
 #define AT_KEYB_HELPER(bit, text, key1) \
 	PORT_BIT( bit, IP_ACTIVE_HIGH, IPT_KEYPAD) PORT_NAME(text) PORT_CODE(key1)
 
+
+
+#if 1
 static INPUT_PORTS_START( calchase )
 	PORT_START("pc_keyboard_0")
 	PORT_BIT ( 0x0001, 0x0000, IPT_UNUSED ) 	/* unused scancode 0 */
 	AT_KEYB_HELPER( 0x0002, "Esc",          KEYCODE_Q           ) /* Esc                         01  81 */
 
 	PORT_START("pc_keyboard_1")
+	AT_KEYB_HELPER( 0x0010, "T",            KEYCODE_T           ) /* T                           14  94 */
 	AT_KEYB_HELPER( 0x0020, "Y",            KEYCODE_Y           ) /* Y                           15  95 */
+	AT_KEYB_HELPER( 0x0100, "O",            KEYCODE_O           ) /* O                           18  98 */
 	AT_KEYB_HELPER( 0x1000, "Enter",        KEYCODE_ENTER       ) /* Enter                       1C  9C */
 
 	PORT_START("pc_keyboard_2")
 
 	PORT_START("pc_keyboard_3")
+	AT_KEYB_HELPER( 0x0001, "B",            KEYCODE_B           ) /* B                           30  B0 */
 	AT_KEYB_HELPER( 0x0002, "N",            KEYCODE_N           ) /* N                           31  B1 */
 	AT_KEYB_HELPER( 0x0800, "F1",           KEYCODE_S           ) /* F1                          3B  BB */
+//  AT_KEYB_HELPER( 0x8000, "F5",           KEYCODE_F5          )
 
 	PORT_START("pc_keyboard_4")
+//  AT_KEYB_HELPER( 0x0004, "F8",           KEYCODE_F8          )
 
 	PORT_START("pc_keyboard_5")
 
@@ -555,19 +637,161 @@ static INPUT_PORTS_START( calchase )
 	AT_KEYB_HELPER( 0x0040, "(MF2)Cursor Up",		KEYCODE_UP          ) /* Up                          67  e7 */
 	AT_KEYB_HELPER( 0x0080, "(MF2)Page Up",			KEYCODE_PGUP        ) /* Page Up                     68  e8 */
 	AT_KEYB_HELPER( 0x0100, "(MF2)Cursor Left",		KEYCODE_LEFT        ) /* Left                        69  e9 */
-	AT_KEYB_HELPER( 0x0200, "(MF2)Cursor Right",	KEYCODE_RIGHT       ) /* Right                       6a  ea */
+	AT_KEYB_HELPER( 0x0200, "(MF2)Cursor Right",		KEYCODE_RIGHT       ) /* Right                       6a  ea */
 	AT_KEYB_HELPER( 0x0800, "(MF2)Cursor Down",		KEYCODE_DOWN        ) /* Down                        6c  ec */
 	AT_KEYB_HELPER( 0x1000, "(MF2)Page Down",		KEYCODE_PGDN        ) /* Page Down                   6d  ed */
-	AT_KEYB_HELPER( 0x4000, "Del",      		    KEYCODE_A           ) /* Delete                      6f  ef */
+	AT_KEYB_HELPER( 0x4000, "Del",      		    	KEYCODE_A           ) /* Delete                      6f  ef */
 
 	PORT_START("pc_keyboard_7")
+
+	PORT_START("IOCARD1")
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_COIN1 )
+	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_COIN2 )
+	PORT_BIT( 0x0004, IP_ACTIVE_LOW, IPT_START1 )
+	PORT_DIPNAME( 0x0008, 0x0008, "1" )
+	PORT_DIPSETTING(    0x0008, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0010, 0x0010, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0010, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0020, 0x0020, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0020, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME("Accelerator")
+	PORT_DIPNAME( 0x0080, 0x0080, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0080, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_BIT( 0xff00, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_START("IOCARD2")
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_SERVICE1 ) // guess
+	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_SERVICE2 ) PORT_NAME("Reset SW")
+	PORT_DIPNAME( 0x0004, 0x0004, "2" )
+	PORT_DIPSETTING(    0x0004, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0008, 0x0008, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0008, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0010, 0x0010, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0010, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0020, 0x0020, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0020, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME("Turbo")
+	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_UNKNOWN ) // returns back to MS-DOS (likely to be unmapped and actually used as a lame protection check)
+	PORT_BIT( 0xff00, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_START("IOCARD3")
+	PORT_BIT( 0x2000, IP_ACTIVE_LOW, IPT_VBLANK )
+	PORT_BIT( 0xdfff, IP_ACTIVE_LOW, IPT_UNUSED )
+
+	PORT_START("IOCARD4")
+	PORT_DIPNAME( 0x01, 0x01, "DSWA" )
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0100, 0x0100, "DSWA" )
+	PORT_DIPSETTING(    0x0100, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0200, 0x0200, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0200, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0400, 0x0400, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0400, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0800, 0x0800, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0800, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x1000, 0x1000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x1000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x2000, 0x2000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x2000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x4000, 0x4000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x4000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x8000, 0x8000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x8000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_START("IOCARD5")
+	PORT_DIPNAME( 0x01, 0x01, "DSWA" )
+	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x08, 0x08, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x08, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x20, 0x20, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0100, 0x0100, "DSWA" )
+	PORT_DIPSETTING(    0x0100, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0200, 0x0200, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0200, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0400, 0x0400, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0400, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x0800, 0x0800, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x0800, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x1000, 0x1000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x1000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x2000, 0x2000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x2000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x4000, 0x4000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x4000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
+	PORT_DIPNAME( 0x8000, 0x8000, DEF_STR( Unknown ) )
+	PORT_DIPSETTING(    0x8000, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x0000, DEF_STR( On ) )
 INPUT_PORTS_END
+#endif
 
 static IRQ_CALLBACK(irq_callback)
 {
 	calchase_state *state = device->machine().driver_data<calchase_state>();
 	return pic8259_acknowledge( state->m_pic8259_1);
 }
+
+static READ8_HANDLER( vga_setting ) { return 0xff; } // hard-code to color
 
 static MACHINE_START(calchase)
 {
@@ -595,7 +819,7 @@ static WRITE_LINE_DEVICE_HANDLER( calchase_pic8259_1_set_int_line )
 static READ8_DEVICE_HANDLER( get_slave_ack )
 {
 	calchase_state *state = device->machine().driver_data<calchase_state>();
-	if (offset==2) { // IRQ = 2
+	if (offset==2) {
 		return pic8259_acknowledge(state->m_pic8259_2);
 	}
 	return 0x00;
@@ -614,6 +838,8 @@ static const struct pic8259_interface calchase_pic8259_2_config =
 	DEVCB_LINE_GND,
 	DEVCB_NULL
 };
+
+
 
 
 /*************************************************************
@@ -643,7 +869,8 @@ static const struct pit8253_config calchase_pit8254_config =
 
 static MACHINE_RESET(calchase)
 {
-	memory_set_bankptr(machine, "bank1", machine.region("bios")->base() + 0x10000);
+	//memory_set_bankptr(machine, "bank1", machine.region("bios")->base() + 0x10000);
+	memory_set_bankptr(machine, "bank1", machine.region("bios")->base());
 }
 
 static void set_gate_a20(running_machine &machine, int a20)
@@ -671,7 +898,7 @@ static int calchase_get_out2(running_machine &machine)
 
 static const struct kbdc8042_interface at8042 =
 {
-	KBDC8042_AT386, set_gate_a20, keyboard_interrupt, calchase_get_out2
+	KBDC8042_AT386, set_gate_a20, keyboard_interrupt, NULL, calchase_get_out2
 };
 
 static void calchase_set_keyb_int(running_machine &machine, int state)
@@ -680,9 +907,8 @@ static void calchase_set_keyb_int(running_machine &machine, int state)
 	pic8259_ir1_w(drvstate->m_pic8259_1, state);
 }
 
-
 static MACHINE_CONFIG_START( calchase, calchase_state )
-	MCFG_CPU_ADD("maincpu", PENTIUM, 200000000) // Cyrix 686MX-PR200 CPU
+	MCFG_CPU_ADD("maincpu", PENTIUM, 133000000) // Cyrix 686MX-PR200 CPU
 	MCFG_CPU_PROGRAM_MAP(calchase_map)
 	MCFG_CPU_IO_MAP(calchase_io)
 
@@ -695,37 +921,58 @@ static MACHINE_CONFIG_START( calchase, calchase_state )
 	MCFG_PIC8259_ADD( "pic8259_1", calchase_pic8259_1_config )
 	MCFG_PIC8259_ADD( "pic8259_2", calchase_pic8259_2_config )
 	MCFG_IDE_CONTROLLER_ADD("ide", ide_interrupt)
+
 	MCFG_MC146818_ADD( "rtc", MC146818_STANDARD )
 	MCFG_PCI_BUS_ADD("pcibus", 0)
 	MCFG_PCI_BUS_DEVICE(0, NULL, intel82439tx_pci_r, intel82439tx_pci_w)
 	MCFG_PCI_BUS_DEVICE(7, NULL, intel82371ab_pci_r, intel82371ab_pci_w)
 
-	MCFG_PALETTE_LENGTH(0x200)
-	MCFG_GFXDECODE( CGA )
+	/* video hardware */
+	MCFG_FRAGMENT_ADD( pcvideo_vga )
 
-	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
-	MCFG_SCREEN_SIZE(64*8, 32*8)
-	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(calchase)
+	/* sound hardware */
+	MCFG_SPEAKER_STANDARD_STEREO("lspeaker","rspeaker")
+	MCFG_SOUND_ADD("dac_l", DAC, 0)
+	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "lspeaker", 0.5)
 
-	MCFG_VIDEO_START(calchase)
+	MCFG_SOUND_ADD("dac_r", DAC, 0)
+	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "rspeaker", 0.5)
+
 MACHINE_CONFIG_END
+
+
+static READ32_HANDLER( calchase_idle_skip_r )
+{
+	calchase_state *state = space->machine().driver_data<calchase_state>();
+
+	if(cpu_get_pc(&space->device())==0x1406f48)
+		device_spin_until_interrupt(state->m_maincpu);
+
+	return state->m_idle_skip_ram;
+}
+
+static WRITE32_HANDLER( calchase_idle_skip_w )
+{
+	calchase_state *state = space->machine().driver_data<calchase_state>();
+
+	COMBINE_DATA(&state->m_idle_skip_ram);
+}
 
 static DRIVER_INIT( calchase )
 {
 	calchase_state *state = machine.driver_data<calchase_state>();
-	state->m_bios_ram = auto_alloc_array(machine, UINT32, 0x10000/4);
+	state->m_bios_ram = auto_alloc_array(machine, UINT32, 0x20000/4);
 
+	pc_vga_init(machine, vga_setting, NULL);
+	pc_svga_trident_io_init(machine, machine.device("maincpu")->memory().space(AS_PROGRAM), 0xa0000, machine.device("maincpu")->memory().space(AS_IO), 0x0000);
 	init_pc_common(machine, PCCOMMON_KEYBOARD_AT, calchase_set_keyb_int);
 
 	intel82439tx_init(machine);
 
 	kbdc8042_init(machine, &at8042);
-}
 
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0x3f0b160, 0x3f0b163, FUNC(calchase_idle_skip_r), FUNC(calchase_idle_skip_w));
+}
 
 ROM_START( calchase )
 	ROM_REGION( 0x40000, "bios", 0 )
@@ -739,8 +986,7 @@ ROM_START( calchase )
 	ROM_LOAD( "ds1220y_nv.bin", 0x000, 0x800, CRC(7912c070) SHA1(b4c55c7ca76bcd8dad1c4b50297233349ae02ed3) )
 
 	DISK_REGION( "ide" )
-	DISK_IMAGE( "calchase", 0,SHA1(487e304ffeed23ca618fa936258136605ce9d1a1) )
+	DISK_IMAGE_READONLY( "calchase", 0,SHA1(6ae51a9b3f31cf4166322328a98c0235b0874eb3) )
 ROM_END
 
-
-GAME( 1999, calchase,  0,    calchase, calchase,  calchase, ROT0, "The Game Room", "California Chase", GAME_NOT_WORKING|GAME_NO_SOUND )
+GAME( 1999, calchase,  0,    calchase, calchase,  calchase, ROT0, "The Game Room", "California Chase", GAME_NOT_WORKING|GAME_IMPERFECT_GRAPHICS )

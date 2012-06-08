@@ -44,9 +44,9 @@ VIDEO_START( bishi )
 	state->m_layer_colorbase[3] = 0xc0;
 }
 
-SCREEN_UPDATE(bishi)
+SCREEN_UPDATE_RGB32(bishi)
 {
-	bishi_state *state = screen->machine().driver_data<bishi_state>();
+	bishi_state *state = screen.machine().driver_data<bishi_state>();
 	int layers[4], layerpri[4], i;/*, old;*/
 /*  int bg_colorbase, new_colorbase, plane, dirty; */
 	static const int pris[4] = { K55_PRIINP_0, K55_PRIINP_3, K55_PRIINP_6, K55_PRIINP_7 };
@@ -63,7 +63,7 @@ SCREEN_UPDATE(bishi)
 
 	konami_sortlayers4(layers, layerpri);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	for (i = 0; i < 4; i++)
 	{

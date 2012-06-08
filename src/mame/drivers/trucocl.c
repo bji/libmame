@@ -5,8 +5,8 @@ Truco Clemente (c) 1991 Miky SRL
 driver by Ernesto Corvi
 
 Notes:
-- Audio is almost there.
 - After one game you can't play anymore.
+- Audio is almost there.
 - I think this runs on a heavily modified PacMan type of board.
 
 ----------------------------------
@@ -39,7 +39,9 @@ Daughterboard: Custom made, plugged in the 2 roms and Z80 mainboard sockets.
 
 static WRITE8_HANDLER( irq_enable_w )
 {
-	interrupt_enable_w( space, 0, (~data) & 1 );
+	trucocl_state *state = space->machine().driver_data<trucocl_state>();
+
+	state->m_irq_mask = (data & 1) ^ 1;
 }
 
 
@@ -123,7 +125,11 @@ GFXDECODE_END
 
 static INTERRUPT_GEN( trucocl_interrupt )
 {
-	irq0_line_hold(device);
+	trucocl_state *state = device->machine().driver_data<trucocl_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+
 }
 
 static MACHINE_CONFIG_START( trucocl, trucocl_state )
@@ -136,10 +142,9 @@ static MACHINE_CONFIG_START( trucocl, trucocl_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(trucocl)
+	MCFG_SCREEN_UPDATE_STATIC(trucocl)
 
 	MCFG_GFXDECODE(trucocl)
 	MCFG_PALETTE_LENGTH(32)
@@ -191,4 +196,4 @@ static DRIVER_INIT( trucocl )
 /******************************************************************************/
 /*    YEAR   NAME     PARENT  MACHINE  INPUT    INIT     MONITOR  */
 
-GAME( 1991, trucocl,  0,      trucocl, trucocl, trucocl, ROT0, "Miky SRL", "Truco Clemente", GAME_IMPERFECT_SOUND )
+GAME( 1991, trucocl,  0,      trucocl, trucocl, trucocl, ROT0, "Miky SRL", "Truco Clemente", GAME_IMPERFECT_SOUND | GAME_NOT_WORKING )

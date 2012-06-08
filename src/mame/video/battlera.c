@@ -8,7 +8,6 @@
 *******************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/h6280/h6280.h"
 #include "includes/battlera.h"
 
@@ -24,8 +23,8 @@ VIDEO_START( battlera )
 	memset(state->m_HuC6270_vram,0,0x20000);
 	memset(state->m_vram_dirty,1,0x1000);
 
-	state->m_tile_bitmap=auto_bitmap_alloc(machine,512,512,machine.primary_screen->format());
-	state->m_front_bitmap=auto_bitmap_alloc(machine,512,512,machine.primary_screen->format());
+	state->m_tile_bitmap=auto_bitmap_ind16_alloc(machine,512,512);
+	state->m_front_bitmap=auto_bitmap_ind16_alloc(machine,512,512);
 
 	state->m_vram_ptr=0;
 	state->m_inc_value=1;
@@ -242,7 +241,7 @@ WRITE8_HANDLER( HuC6270_data_w )
 
 /******************************************************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *clip,int pri)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &clip,int pri)
 {
 	battlera_state *state = machine.driver_data<battlera_state>();
 	int offs,my,mx,code,code2,fx,fy,cgy=0,cgx,colour,i,yinc;
@@ -307,15 +306,15 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 
 /******************************************************************************/
 
-SCREEN_UPDATE( battlera )
+SCREEN_UPDATE_IND16( battlera )
 {
-	battlera_state *state = screen->machine().driver_data<battlera_state>();
+	battlera_state *state = screen.machine().driver_data<battlera_state>();
 	int offs,code,scrollx,scrolly,mx,my;
 
 	/* if any tiles changed, redraw the VRAM */
-	if (screen->machine().gfx[0]->dirtyseq != state->m_tile_dirtyseq)
+	if (screen.machine().gfx[0]->dirtyseq != state->m_tile_dirtyseq)
 	{
-		state->m_tile_dirtyseq = screen->machine().gfx[0]->dirtyseq;
+		state->m_tile_dirtyseq = screen.machine().gfx[0]->dirtyseq;
 		memset(state->m_vram_dirty, 1, 0x1000);
 	}
 
@@ -330,17 +329,17 @@ SCREEN_UPDATE( battlera )
 		/* If this tile was changed OR tilemap was changed, redraw */
 		if (state->m_vram_dirty[offs/2]) {
 			state->m_vram_dirty[offs/2]=0;
-			drawgfx_opaque(state->m_tile_bitmap,0,screen->machine().gfx[0],
+			drawgfx_opaque(*state->m_tile_bitmap,state->m_tile_bitmap->cliprect(),screen.machine().gfx[0],
 					code,
 					state->m_HuC6270_vram[offs] >> 4,
 					0,0,
 					8*mx,8*my);
-			drawgfx_opaque(state->m_front_bitmap,0,screen->machine().gfx[2],
+			drawgfx_opaque(*state->m_front_bitmap,state->m_tile_bitmap->cliprect(),screen.machine().gfx[2],
 					0,
 					0,	/* fill the spot with pen 256 */
 					0,0,
 					8*mx,8*my);
-			drawgfx_transmask(state->m_front_bitmap,0,screen->machine().gfx[0],
+			drawgfx_transmask(*state->m_front_bitmap,state->m_tile_bitmap->cliprect(),screen.machine().gfx[0],
 					code,
 					state->m_HuC6270_vram[offs] >> 4,
 					0,0,
@@ -350,43 +349,43 @@ SCREEN_UPDATE( battlera )
 
 	/* Render bitmap */
 	scrollx=-state->m_HuC6270_registers[7];
-	scrolly=-state->m_HuC6270_registers[8]+cliprect->min_y-1;
+	scrolly=-state->m_HuC6270_registers[8]+cliprect.min_y-1;
 
-	copyscrollbitmap(bitmap,state->m_tile_bitmap,1,&scrollx,1,&scrolly,cliprect);
+	copyscrollbitmap(bitmap,*state->m_tile_bitmap,1,&scrollx,1,&scrolly,cliprect);
 
 	/* Todo:  Background enable (not used anyway) */
 
 	/* Render low priority sprites, if enabled */
-	if (state->m_sb_enable) draw_sprites(screen->machine(),bitmap,cliprect,0);
+	if (state->m_sb_enable) draw_sprites(screen.machine(),bitmap,cliprect,0);
 
 	/* Render background over sprites */
-	copyscrollbitmap_trans(bitmap,state->m_front_bitmap,1,&scrollx,1,&scrolly,cliprect,256);
+	copyscrollbitmap_trans(bitmap,*state->m_front_bitmap,1,&scrollx,1,&scrolly,cliprect,256);
 
 	/* Render high priority sprites, if enabled */
-	if (state->m_sb_enable) draw_sprites(screen->machine(),bitmap,cliprect,1);
+	if (state->m_sb_enable) draw_sprites(screen.machine(),bitmap,cliprect,1);
 
 	return 0;
 }
 
 /******************************************************************************/
 
-INTERRUPT_GEN( battlera_interrupt )
+TIMER_DEVICE_CALLBACK( battlera_irq )
 {
-	battlera_state *state = device->machine().driver_data<battlera_state>();
-	state->m_current_scanline=255-cpu_getiloops(device); /* 8 lines clipped at top */
+	battlera_state *state = timer.machine().driver_data<battlera_state>();
+	state->m_current_scanline = param; /* 8 lines clipped at top */
 
 	/* If raster interrupt occurs, refresh screen _up_ to this point */
 	if (state->m_rcr_enable && (state->m_current_scanline+56)==state->m_HuC6270_registers[6]) {
-		device->machine().primary_screen->update_partial(state->m_current_scanline);
-		device_set_input_line(device, 0, HOLD_LINE); /* RCR interrupt */
+		timer.machine().primary_screen->update_partial(state->m_current_scanline);
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE); /* RCR interrupt */
 	}
 
 	/* Start of vblank */
 	else if (state->m_current_scanline==240) {
 		state->m_bldwolf_vblank=1;
-		device->machine().primary_screen->update_partial(240);
+		timer.machine().primary_screen->update_partial(240);
 		if (state->m_irq_enable)
-			device_set_input_line(device, 0, HOLD_LINE); /* VBL */
+			device_set_input_line(state->m_maincpu, 0, HOLD_LINE); /* VBL */
 	}
 
 	/* End of vblank */

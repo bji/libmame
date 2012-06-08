@@ -531,8 +531,8 @@ static WRITE32_HANDLER( invasn_gun_w )
 				{ "GUNX1", "GUNY1" },
 				{ "GUNX2", "GUNY2" }
 			};
-			gun_x[player] = input_port_read(space->machine(), names[player][0]) * (visarea.max_x + 1 - visarea.min_x) / 255 + visarea.min_x + BEAM_XOFFS;
-			gun_y[player] = input_port_read(space->machine(), names[player][1]) * (visarea.max_y + 1 - visarea.min_y) / 255 + visarea.min_y;
+			gun_x[player] = input_port_read(space->machine(), names[player][0]) * visarea.width() / 255 + visarea.min_x + BEAM_XOFFS;
+			gun_y[player] = input_port_read(space->machine(), names[player][1]) * visarea.height() / 255 + visarea.min_y;
 			gun_timer[player]->adjust(space->machine().primary_screen->time_until_pos(MAX(0, gun_y[player] - BEAM_DY), MAX(0, gun_x[player] - BEAM_DX)), player);
 		}
 	}
@@ -1105,8 +1105,7 @@ static MACHINE_CONFIG_START( midzeus, midzeus_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_RAW_PARAMS(MIDZEUS_VIDEO_CLOCK/8, 529, 0, 400, 278, 0, 256)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_UPDATE(midzeus)
+	MCFG_SCREEN_UPDATE_STATIC(midzeus)
 
 	MCFG_VIDEO_START(midzeus)
 
@@ -1144,8 +1143,7 @@ static MACHINE_CONFIG_START( midzeus2, midzeus_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_RAW_PARAMS(MIDZEUS_VIDEO_CLOCK/4, 666, 0, 512, 438, 0, 400)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
-	MCFG_SCREEN_UPDATE(midzeus2)
+	MCFG_SCREEN_UPDATE_STATIC(midzeus2)
 
 	MCFG_VIDEO_START(midzeus2)
 

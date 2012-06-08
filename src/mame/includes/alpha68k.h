@@ -40,6 +40,8 @@ public:
 
 	/* devices */
 	device_t *m_audiocpu;
+	UINT8       m_sound_nmi_mask;
+	UINT8       m_sound_pa_latch;
 };
 
 /* game_id - used to deal with a few game specific situations */
@@ -58,12 +60,12 @@ PALETTE_INIT( paddlem );
 
 VIDEO_START( alpha68k );
 
-SCREEN_UPDATE( kyros );
-SCREEN_UPDATE( sstingry );
-SCREEN_UPDATE( alpha68k_I );
-SCREEN_UPDATE( alpha68k_II );
-SCREEN_UPDATE( alpha68k_V );
-SCREEN_UPDATE( alpha68k_V_sb );
+SCREEN_UPDATE_IND16( kyros );
+SCREEN_UPDATE_IND16( sstingry );
+SCREEN_UPDATE_IND16( alpha68k_I );
+SCREEN_UPDATE_IND16( alpha68k_II );
+SCREEN_UPDATE_IND16( alpha68k_V );
+SCREEN_UPDATE_IND16( alpha68k_V_sb );
 
 void alpha68k_V_video_bank_w(running_machine &machine, int bank);
 void alpha68k_flipscreen_w(running_machine &machine, int flip);

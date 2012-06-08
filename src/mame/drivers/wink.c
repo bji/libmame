@@ -52,10 +52,10 @@ static VIDEO_START( wink )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( wink )
+static SCREEN_UPDATE_IND16( wink )
 {
-	wink_state *state = screen->machine().driver_data<wink_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	wink_state *state = screen.machine().driver_data<wink_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -64,7 +64,7 @@ static WRITE8_HANDLER( bgram_w )
 	wink_state *state = space->machine().driver_data<wink_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( player_mux_w )
@@ -77,7 +77,7 @@ static WRITE8_HANDLER( tile_banking_w )
 {
 	wink_state *state = space->machine().driver_data<wink_state>();
 	state->m_tile_bank = data & 1;
-	tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+	state->m_bg_tilemap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER( wink_coin_counter_w )
@@ -350,10 +350,9 @@ static MACHINE_CONFIG_START( wink, wink_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(wink)
+	MCFG_SCREEN_UPDATE_STATIC(wink)
 
 	MCFG_GFXDECODE(wink)
 	MCFG_PALETTE_LENGTH(16)

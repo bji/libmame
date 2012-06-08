@@ -4,7 +4,9 @@ class renegade_state : public driver_device
 {
 public:
 	renegade_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT8 m_bank;
 	int m_mcu_sim;
@@ -35,12 +37,14 @@ public:
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
 	UINT8 *m_spriteram;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
 /*----------- defined in video/renegade.c -----------*/
 
-SCREEN_UPDATE( renegade );
+SCREEN_UPDATE_IND16( renegade );
 VIDEO_START( renegade );
 WRITE8_HANDLER( renegade_scroll0_w );
 WRITE8_HANDLER( renegade_scroll1_w );

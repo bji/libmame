@@ -162,7 +162,6 @@ Notes:
 #include "emu.h"
 #include "cpu/v810/v810.h"
 #include "cpu/v60/v60.h"
-#include "deprecat.h"
 #include "machine/eeprom.h"
 #include "machine/nvram.h"
 #include "sound/es5506.h"
@@ -235,38 +234,40 @@ static WRITE16_HANDLER( ssv_irq_enable_w )
 	COMBINE_DATA(&state->m_irq_enable);
 }
 
-static INTERRUPT_GEN( ssv_interrupt )
+static TIMER_DEVICE_CALLBACK( ssv_interrupt )
 {
-	ssv_state *state = device->machine().driver_data<ssv_state>();
+	ssv_state *state = timer.machine().driver_data<ssv_state>();
+	int scanline = param;
 
-	if (cpu_getiloops(device))
+	if (scanline == 0)
 	{
 		if (state->m_interrupt_ultrax)
 		{
 			state->m_requested_int |= 1 << 1;	// needed by ultrax to coin up, breaks cairblad
-			update_irq_state(device->machine());
+			update_irq_state(timer.machine());
 		}
 	}
-	else
+	else if(scanline == 240)
 	{
 		state->m_requested_int |= 1 << 3;	// vblank
-		update_irq_state(device->machine());
+		update_irq_state(timer.machine());
 	}
 }
 
-static INTERRUPT_GEN( gdfs_interrupt )
+static TIMER_DEVICE_CALLBACK( gdfs_interrupt )
 {
-	ssv_state *state = device->machine().driver_data<ssv_state>();
+	ssv_state *state = timer.machine().driver_data<ssv_state>();
+	int scanline = param;
 
-	if (cpu_getiloops(device))
+	if ((scanline % 64) == 0)
 	{
 		state->m_requested_int |= 1 << 6;	// reads lightgun (4 times for 4 axis)
-		update_irq_state(device->machine());
+		update_irq_state(timer.machine());
 	}
-	else
+	else if(scanline == 240)
 	{
 		state->m_requested_int |= 1 << 3;	// vblank
-		update_irq_state(device->machine());
+		update_irq_state(timer.machine());
 	}
 }
 
@@ -2721,17 +2722,16 @@ static MACHINE_CONFIG_START( ssv, ssv_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", V60, 16000000) /* Based on STA-0001 & STA-0001B System boards */
-	MCFG_CPU_VBLANK_INT_HACK(ssv_interrupt,2)	/* Vblank */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", ssv_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(ssv)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x1c6, 0x106)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x150-1, 0, 0xf0-1)
-	MCFG_SCREEN_UPDATE(ssv)
+	MCFG_SCREEN_UPDATE_STATIC(ssv)
 
 	MCFG_GFXDECODE(ssv)
 	MCFG_PALETTE_LENGTH(0x8000)
@@ -2772,14 +2772,15 @@ static MACHINE_CONFIG_DERIVED( gdfs, ssv )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(gdfs_map)
-	MCFG_CPU_VBLANK_INT_HACK(gdfs_interrupt,1+4)
+	MCFG_TIMER_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(gdfs_interrupt)
 
 	MCFG_EEPROM_93C46_ADD("eeprom")
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VISIBLE_AREA(0, (0xd5-0x2c)*2-1, 0, (0x102-0x12)-1)
-	MCFG_SCREEN_UPDATE(gdfs)
+	MCFG_SCREEN_UPDATE_STATIC(gdfs)
 
 	MCFG_GFXDECODE(gdfs)
 	MCFG_VIDEO_START(gdfs)
@@ -2957,7 +2958,7 @@ static MACHINE_CONFIG_DERIVED( eaglshot, ssv )
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VISIBLE_AREA(0, (0xca - 0x2a)*2-1, 0, (0xf6 - 0x16)-1)
-	MCFG_SCREEN_UPDATE(eaglshot)
+	MCFG_SCREEN_UPDATE_STATIC(eaglshot)
 
 	MCFG_GFXDECODE(eaglshot)
 	MCFG_VIDEO_START(eaglshot)

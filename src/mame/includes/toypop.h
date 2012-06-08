@@ -13,6 +13,8 @@ public:
 	int m_bitmapflip;
 	int m_palettebank;
 	int m_interrupt_enable_68k;
+	UINT8 m_main_irq_mask;
+	UINT8 m_sound_irq_mask;
 };
 
 
@@ -24,5 +26,5 @@ WRITE16_HANDLER( toypop_merged_background_w );
 WRITE8_HANDLER( toypop_palettebank_w );
 WRITE16_HANDLER( toypop_flipscreen_w );
 VIDEO_START( toypop );
-SCREEN_UPDATE( toypop );
+SCREEN_UPDATE_IND16( toypop );
 PALETTE_INIT( toypop );

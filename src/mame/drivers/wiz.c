@@ -80,7 +80,6 @@ TODO:
 
 Wiz:
 - Possible sprite/char priority issues.
-- There is unknown device (Sony CXK5808-55) on the board.
 - And the supplier of the screenshot says there still may be some wrong
   colors. Just before the break on Level 2 there is a cresent moon,
   the background should probably be black.
@@ -217,11 +216,11 @@ static WRITE8_HANDLER( wiz_coin_counter_w )
 	coin_counter_w(space->machine(), offset,data);
 }
 
-static WRITE8_HANDLER( wiz_nmi_mask_w )
+static WRITE8_HANDLER( wiz_main_nmi_mask_w )
 {
 	wiz_state *state = space->machine().driver_data<wiz_state>();
 
-	state->m_nmi_mask = data & 1;
+	state->m_main_nmi_mask = data & 1;
 }
 
 static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
@@ -240,7 +239,7 @@ static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
 	AM_RANGE(0xe000, 0xe85f) AM_RAM
 	AM_RANGE(0xf000, 0xf000) AM_READ_PORT("DSW0")
 	AM_RANGE(0xf000, 0xf000) AM_RAM AM_BASE_MEMBER(wiz_state, m_sprite_bank)
-	AM_RANGE(0xf001, 0xf001) AM_WRITE(wiz_nmi_mask_w)
+	AM_RANGE(0xf001, 0xf001) AM_WRITE(wiz_main_nmi_mask_w)
 	AM_RANGE(0xf002, 0xf003) AM_WRITE(wiz_palettebank_w)
 	AM_RANGE(0xf004, 0xf005) AM_WRITE(wiz_char_bank_select_w)
 	AM_RANGE(0xf006, 0xf006) AM_WRITE(wiz_flipx_w)
@@ -254,23 +253,32 @@ static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
 	AM_RANGE(0xf818, 0xf818) AM_WRITE(wiz_bgcolor_w)
 ADDRESS_MAP_END
 
+static WRITE8_HANDLER( wiz_sound_nmi_mask_w )
+{
+	wiz_state *state = space->machine().driver_data<wiz_state>();
+
+	state->m_sound_nmi_mask = data & 1;
+}
+
+
+/* TODO: clean this up! */
 static ADDRESS_MAP_START( sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
 	AM_RANGE(0x2000, 0x23ff) AM_RAM
-	AM_RANGE(0x3000, 0x3000) AM_READWRITE(soundlatch_r,interrupt_enable_w)	/* Stinger/Scion */
+	AM_RANGE(0x3000, 0x3000) AM_READWRITE(soundlatch_r,wiz_sound_nmi_mask_w)	/* Stinger/Scion */
 	AM_RANGE(0x4000, 0x4001) AM_DEVWRITE("8910.3", ay8910_address_data_w)
 	AM_RANGE(0x5000, 0x5001) AM_DEVWRITE("8910.1", ay8910_address_data_w)
-	AM_RANGE(0x6000, 0x6001) AM_DEVWRITE("8910.2", ay8910_address_data_w)				/* Wiz only */
-	AM_RANGE(0x7000, 0x7000) AM_READWRITE(soundlatch_r,interrupt_enable_w)	/* Wiz */
+	AM_RANGE(0x6000, 0x6001) AM_DEVWRITE("8910.2", ay8910_address_data_w)		/* Wiz only */
+	AM_RANGE(0x7000, 0x7000) AM_READWRITE(soundlatch_r,wiz_sound_nmi_mask_w)	/* Wiz */
 ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( stinger_sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x1fff) AM_ROM
 	AM_RANGE(0x2000, 0x23ff) AM_RAM
-	AM_RANGE(0x3000, 0x3000) AM_READWRITE(soundlatch_r,interrupt_enable_w)	/* Stinger/Scion */
+	AM_RANGE(0x3000, 0x3000) AM_READWRITE(soundlatch_r,wiz_sound_nmi_mask_w)	/* Stinger/Scion */
 	AM_RANGE(0x5000, 0x5001) AM_DEVWRITE("8910.1", ay8910_address_data_w)
-	AM_RANGE(0x6000, 0x6001) AM_DEVWRITE("8910.2", ay8910_address_data_w)				/* Wiz only */
-	AM_RANGE(0x7000, 0x7000) AM_READWRITE(soundlatch_r,interrupt_enable_w)	/* Wiz */
+	AM_RANGE(0x6000, 0x6001) AM_DEVWRITE("8910.2", ay8910_address_data_w)		/* Wiz only */
+	AM_RANGE(0x7000, 0x7000) AM_READWRITE(soundlatch_r,wiz_sound_nmi_mask_w)	/* Wiz */
 ADDRESS_MAP_END
 
 
@@ -697,24 +705,33 @@ static MACHINE_RESET( wiz )
 	state->m_dsc0 = state->m_dsc1 = 1;
 }
 
-static INTERRUPT_GEN( wiz_vblank_irq )
+static INTERRUPT_GEN( wiz_vblank_interrupt )
 {
 	wiz_state *state = device->machine().driver_data<wiz_state>();
 
-	if(state->m_nmi_mask & 1)
-		device_set_input_line(device,INPUT_LINE_NMI,PULSE_LINE);
+	if(state->m_main_nmi_mask & 1)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
 }
+
+static INTERRUPT_GEN( wiz_sound_interrupt )
+{
+	wiz_state *state = device->machine().driver_data<wiz_state>();
+
+	if(state->m_sound_nmi_mask & 1)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 
 static MACHINE_CONFIG_START( wiz, wiz_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, 18432000/6)	/* 3.072 MHz ??? */
 	MCFG_CPU_PROGRAM_MAP(main_map)
-	MCFG_CPU_VBLANK_INT("screen", wiz_vblank_irq)
+	MCFG_CPU_VBLANK_INT("screen", wiz_vblank_interrupt)
 
 	MCFG_CPU_ADD("audiocpu", Z80, 14318000/8)	/* ? */
 	MCFG_CPU_PROGRAM_MAP(sound_map)
-	MCFG_CPU_PERIODIC_INT(nmi_line_pulse,4*60)	/* ??? */
+	MCFG_CPU_PERIODIC_INT(wiz_sound_interrupt,4*60)	/* ??? */
 
 	MCFG_MACHINE_RESET( wiz )
 
@@ -722,10 +739,9 @@ static MACHINE_CONFIG_START( wiz, wiz_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */	/* frames per second, vblank duration */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(wiz)
+	MCFG_SCREEN_UPDATE_STATIC(wiz)
 
 	MCFG_GFXDECODE(wiz)
 	MCFG_PALETTE_LENGTH(256)
@@ -757,7 +773,7 @@ static MACHINE_CONFIG_DERIVED( stinger, wiz )
 	/* video hardware */
 	MCFG_GFXDECODE(stinger)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(stinger)
+	MCFG_SCREEN_UPDATE_STATIC(stinger)
 
 	/* sound hardware */
 	MCFG_SOUND_MODIFY("8910.1")
@@ -792,7 +808,7 @@ static MACHINE_CONFIG_DERIVED( kungfut, wiz )
 	/* video hardware */
 	MCFG_GFXDECODE(stinger)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(kungfut)
+	MCFG_SCREEN_UPDATE_STATIC(kungfut)
 
 MACHINE_CONFIG_END
 

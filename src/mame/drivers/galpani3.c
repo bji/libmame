@@ -63,7 +63,6 @@ Dumped by Uki
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "sound/ymz280b.h"
 #include "includes/kaneko16.h"
 #include "video/sknsspr.h"
@@ -72,7 +71,9 @@ class galpani3_state : public kaneko16_state
 {
 public:
 	galpani3_state(const machine_config &mconfig, device_type type, const char *tag)
-		: kaneko16_state(mconfig, type, tag) { }
+		: kaneko16_state(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT16* m_priority_buffer;
 	UINT16* m_framebuffer1;
@@ -105,7 +106,7 @@ public:
 	UINT16 *m_spriteram;
 	UINT32 *m_spriteram32;
 	UINT32 *m_spc_regs;
-	bitmap_t *m_sprite_bitmap_1;
+	bitmap_ind16 *m_sprite_bitmap_1;
 	UINT16 *m_mcu_ram;
 	UINT16 m_mcu_com[4];
 	int m_regs1_i;
@@ -115,6 +116,7 @@ public:
 	UINT16 m_regs2_address_regs[0x20];
 	UINT16 m_regs3_address_regs[0x20];
 
+	required_device<cpu_device> m_maincpu;
 	sknsspr_device* m_spritegen;
 };
 
@@ -129,14 +131,19 @@ public:
 
 
 
-static INTERRUPT_GEN( galpani3_vblank ) // 2, 3, 5 ?
+static TIMER_DEVICE_CALLBACK( galpani3_vblank ) // 2, 3, 5 ?
 {
-	switch ( cpu_getiloops(device) )
-	{
-		case 2:  device_set_input_line(device, 2, HOLD_LINE); break;
-		case 1:  device_set_input_line(device, 3, HOLD_LINE); break;
-		case 0:  device_set_input_line(device, 5, HOLD_LINE); break; // sound?
-	}
+	galpani3_state *state = timer.machine().driver_data<galpani3_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
+
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
+
+	if(scanline == 128)
+		device_set_input_line(state->m_maincpu, 5, HOLD_LINE); // timer, related to sound chip?
 }
 
 
@@ -148,7 +155,7 @@ static VIDEO_START(galpani3)
 	machine.generic.spriteram_size = 0x4000;
 	state->m_spc_regs = auto_alloc_array(machine, UINT32, 0x40/4);
 
-	state->m_sprite_bitmap_1 = auto_bitmap_alloc(machine,1024,1024,BITMAP_FORMAT_INDEXED16);
+	state->m_sprite_bitmap_1 = auto_bitmap_ind16_alloc(machine,1024,1024);
 
 	state->m_spritegen = machine.device<sknsspr_device>("spritegen");
 	state->m_spritegen->skns_sprite_kludge(0,0);
@@ -194,16 +201,16 @@ static int gp3_is_alpha_pen(running_machine &machine, int pen)
 
 }
 
-static SCREEN_UPDATE(galpani3)
+static SCREEN_UPDATE_RGB32(galpani3)
 {
-	galpani3_state *state = screen->machine().driver_data<galpani3_state>();
+	galpani3_state *state = screen.machine().driver_data<galpani3_state>();
 	int x,y;
 	UINT16* src1;
 	UINT32* dst;
 	UINT16 pixdata1;
-	const pen_t *paldata = screen->machine().pens;
+	const pen_t *paldata = screen.machine().pens;
 
-	bitmap_fill(bitmap, cliprect, 0x0000);
+	bitmap.fill(0x0000, cliprect);
 
 	{
 		int drawy, drawx;
@@ -229,7 +236,7 @@ static SCREEN_UPDATE(galpani3)
 
 				UINT8 pridat = state->m_priority_buffer[(priline*0x200)+prioffs];
 
-				UINT32* dst = BITMAP_ADDR32(bitmap, drawy, drawx);
+				UINT32* dst = &bitmap.pix32(drawy, drawx);
 
 
 
@@ -261,7 +268,7 @@ static SCREEN_UPDATE(galpani3)
 						UINT16 pen = dat1+0x4000;
 						UINT32 pal = paldata[pen];
 
-						if (gp3_is_alpha_pen(screen->machine(), pen))
+						if (gp3_is_alpha_pen(screen.machine(), pen))
 						{
 							int r,g,b;
 							r = (pal & 0x00ff0000)>>16;
@@ -289,7 +296,7 @@ static SCREEN_UPDATE(galpani3)
 						UINT16 pen = dat2+0x4100;
 						UINT32 pal = paldata[pen];
 
-						if (gp3_is_alpha_pen(screen->machine(), pen))
+						if (gp3_is_alpha_pen(screen.machine(), pen))
 						{
 							int r,g,b;
 							r = (pal & 0x00ff0000)>>16;
@@ -321,20 +328,20 @@ static SCREEN_UPDATE(galpani3)
 				/*
                 else if (pridat==0x2f) // area outside of the girl
                 {
-                    //dst[0] = screen->machine().rand()&0x3fff;
+                    //dst[0] = screen.machine().rand()&0x3fff;
                 }
 
                 else if (pridat==0x00) // the initial line / box that gets drawn
                 {
-                    //dst[0] = screen->machine().rand()&0x3fff;
+                    //dst[0] = screen.machine().rand()&0x3fff;
                 }
                 else if (pridat==0x30) // during the 'gals boxes' on the intro
                 {
-                    //dst[0] = screen->machine().rand()&0x3fff;
+                    //dst[0] = screen.machine().rand()&0x3fff;
                 }
                 else if (pridat==0x0c) // 'nice' at end of level
                 {
-                    //dst[0] = screen->machine().rand()&0x3fff;
+                    //dst[0] = screen.machine().rand()&0x3fff;
                 }
                 else
                 {
@@ -345,15 +352,15 @@ static SCREEN_UPDATE(galpani3)
 		}
 	}
 
-	bitmap_fill(state->m_sprite_bitmap_1, cliprect, 0x0000);
+	state->m_sprite_bitmap_1->fill(0x0000, cliprect);
 
-	state->m_spritegen->skns_draw_sprites(screen->machine(), state->m_sprite_bitmap_1, cliprect, state->m_spriteram32, screen->machine().generic.spriteram_size, screen->machine().region("gfx1")->base(), screen->machine().region ("gfx1")->bytes(), state->m_spc_regs );
+	state->m_spritegen->skns_draw_sprites(screen.machine(), *state->m_sprite_bitmap_1, cliprect, state->m_spriteram32, screen.machine().generic.spriteram_size, screen.machine().region("gfx1")->base(), screen.machine().region ("gfx1")->bytes(), state->m_spc_regs );
 
 	// ignoring priority bits for now..
 	for (y=0;y<240;y++)
 	{
-		src1 = BITMAP_ADDR16(state->m_sprite_bitmap_1, y, 0);
-		dst =  BITMAP_ADDR32(bitmap, y, 0);
+		src1 = &state->m_sprite_bitmap_1->pix16(y);
+		dst =  &bitmap.pix32(y);
 
 		for (x=0;x<320;x++)
 		{
@@ -946,19 +953,17 @@ static const ymz280b_interface ymz280b_intf =
 };
 
 static MACHINE_CONFIG_START( galpani3, galpani3_state )
-	MCFG_CPU_ADD("maincpu", M68000, 16000000)	 // ? (from which clock?)
+	MCFG_CPU_ADD("maincpu", M68000, XTAL_28_63636MHz/2)	// Confirmed from PCB
 	MCFG_CPU_PROGRAM_MAP(galpani3_map)
-	MCFG_CPU_VBLANK_INT_HACK(galpani3_vblank, 3)
-
+	MCFG_TIMER_ADD_SCANLINE("scantimer", galpani3_vblank, "screen", 0, 1)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 30*8-1)
 	//MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 64*8-1)
-	MCFG_SCREEN_UPDATE(galpani3)
+	MCFG_SCREEN_UPDATE_STATIC(galpani3)
 
 	MCFG_PALETTE_LENGTH(0x4303)
 
@@ -969,14 +974,38 @@ static MACHINE_CONFIG_START( galpani3, galpani3_state )
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("ymz", YMZ280B, 28636400 / 2)
+	MCFG_SOUND_ADD("ymz", YMZ280B, XTAL_33_333MHz / 2)	// Confirmed from PCB
 	MCFG_SOUND_CONFIG(ymz280b_intf)
 	MCFG_SOUND_ROUTE(0, "mono", 1.0)
 	MCFG_SOUND_ROUTE(1, "mono", 1.0)
 MACHINE_CONFIG_END
 
 
-ROM_START( galpani3 )
+ROM_START( galpani3 ) /* All game text in English */
+	ROM_REGION( 0x180000, "maincpu", 0 ) /* 68000 Code */
+	ROM_LOAD16_BYTE( "g3p0e0.u71",  0x000000, 0x080000, CRC(fa681118) SHA1(982b568a77ed620ba5708fec4c186d329d48cb48) )
+	ROM_LOAD16_BYTE( "g3p1j1.u102", 0x000001, 0x080000, CRC(f1150f1b) SHA1(a6fb719937927a9a39c7a4888017c63c47c2dd6c) ) /* Is it really G3P1J1 like below or G3P1J0?? */
+
+	ROM_REGION( 0x200000, "gfx1", 0 ) /* Sprites - RLE encoded */
+	ROM_LOAD( "gp320000.1", 0x000000, 0x200000, CRC(a0112827) SHA1(0a6c78d71b75a1d78215aab3104176aa1769b14f) )
+
+	ROM_REGION( 0x1000000, "gfx2", 0 ) /* Backgrounds - RLE encoded */
+	ROM_LOAD( "gp340000.123", 0x000000, 0x200000, CRC(a58a26b1) SHA1(832d70cce1b4f04fa50fc221962ff6cc4287cb92) )		// 19950414GROMACap
+	ROM_LOAD( "gp340100.122", 0x200000, 0x200000, CRC(746fe4a8) SHA1(a5126ae9e83d556277d31b166296a708c311a902) )		// 19950414GROMBCap
+	ROM_LOAD( "gp340200.121", 0x400000, 0x200000, CRC(e9bc15c8) SHA1(2c6a10e768709d1937d9206970553f4101ce9016) )		// 19950414GROMCCap
+	ROM_LOAD( "gp340300.120", 0x600000, 0x200000, CRC(59062eef) SHA1(936977c20d83540c1e0f65d429c7ebea201ef991) )		// 19950414GROMDCap
+	ROM_LOAD16_BYTE( "g3g0j0.101", 0xe00000, 0x040000, CRC(fbb1e0dc) SHA1(14f6377afd93054aa5dc38af235ae12b932e847f) )	// 19950523GROMECap
+	ROM_LOAD16_BYTE( "g3g1j0.100", 0xe00001, 0x040000, CRC(18edb5f0) SHA1(5e2ed0105b3e6037f6116494d3b186a368824171) )	//
+
+	ROM_REGION( 0x300000, "ymz", 0 ) /* Samples */
+	ROM_LOAD( "gp310100.40", 0x000000, 0x200000, CRC(6a0b1d12) SHA1(11fed80b96d07fddb27599743991c58c12c048e0) )
+	ROM_LOAD( "gp310000.41", 0x200000, 0x100000, CRC(641062ef) SHA1(c8902fc46319eac94b3f95d18afa24bd895078d6) )
+
+	ROM_REGION( 0x20000, "mcudata", 0 ) /* MCU Code? */
+	ROM_LOAD16_WORD_SWAP( "g3d0x0.134", 0x000000, 0x020000, CRC(4ace10f9) SHA1(d19e4540d535ce10d23cb0844be03a3239b3402e) )
+ROM_END
+
+ROM_START( galpani3j ) /* Some game text in Japanese, but no "For use in Japan" type region notice */
 	ROM_REGION( 0x180000, "maincpu", 0 ) /* 68000 Code */
 	ROM_LOAD16_BYTE( "g3p0j1.71",  0x000000, 0x080000, CRC(52893326) SHA1(78fdbf3436a4ba754d7608fedbbede5c719a4505) )
 	ROM_LOAD16_BYTE( "g3p1j1.102", 0x000001, 0x080000, CRC(05f935b4) SHA1(81e78875585bcdadad1c302614b2708e60563662) )
@@ -1009,4 +1038,5 @@ static DRIVER_INIT( galpani3 )
 	memset(state->m_mcu_com, 0, 4 * sizeof( UINT16) );
 }
 
-GAME( 1995, galpani3, 0, galpani3, galpani3, galpani3, ROT90, "Kaneko", "Gals Panic 3", GAME_IMPERFECT_GRAPHICS )
+GAME( 1995, galpani3,  0,        galpani3, galpani3, galpani3, ROT90, "Kaneko", "Gals Panic 3 (Euro)", GAME_IMPERFECT_GRAPHICS )
+GAME( 1995, galpani3j, galpani3, galpani3, galpani3, galpani3, ROT90, "Kaneko", "Gals Panic 3 (Japan)", GAME_IMPERFECT_GRAPHICS )

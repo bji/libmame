@@ -318,6 +318,7 @@ Stephh's notes (based on the games M68000 code and some tests) :
 #include "sound/3812intf.h"
 #include "sound/okim6295.h"
 #include "includes/tumbleb.h"
+#include "video/decospr.h"
 
 #define TUMBLEP_HACK	0
 #define FNCYWLD_HACK	0
@@ -346,15 +347,6 @@ static READ16_HANDLER( tumblepb_prot_r )
 {
 	return ~0;
 }
-
-#ifdef UNUSED_FUNCTION
-static WRITE16_HANDLER( tumblepb_sound_w )
-{
-	tumbleb_state *state = space->machine().driver_data<tumbleb_state>();
-	soundlatch_w(space, 0, data & 0xff);
-	device_set_input_line(state->m_audiocpu, 0, HOLD_LINE);
-}
-#endif
 
 static WRITE16_HANDLER( jumppop_sound_w )
 {
@@ -2087,10 +2079,13 @@ static MACHINE_CONFIG_START( tumblepb, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(tumblepb)
+	MCFG_SCREEN_UPDATE_STATIC(tumblepb)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(tumbleb)
 	MCFG_PALETTE_LENGTH(1024)
@@ -2119,10 +2114,13 @@ static MACHINE_CONFIG_START( tumbleb2, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(tumblepb)
+	MCFG_SCREEN_UPDATE_STATIC(tumblepb)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(tumbleb)
 	MCFG_PALETTE_LENGTH(1024)
@@ -2154,10 +2152,13 @@ static MACHINE_CONFIG_START( jumpkids, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(jumpkids)
+	MCFG_SCREEN_UPDATE_STATIC(jumpkids)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(tumbleb)
 	MCFG_PALETTE_LENGTH(1024)
@@ -2185,10 +2186,14 @@ static MACHINE_CONFIG_START( fncywld, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(fncywld)
+	MCFG_SCREEN_UPDATE_STATIC(fncywld)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
+	decospr_device::set_transpen(*device, 15);
 
 	MCFG_GFXDECODE(fncywld)
 	MCFG_PALETTE_LENGTH(0x800)
@@ -2252,10 +2257,13 @@ static MACHINE_CONFIG_START( htchctch, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2400)) // ?? cookbib needs it above ~2400 or the Joystick on the How to Play screen is the wrong colour?!
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(semicom)
+	MCFG_SCREEN_UPDATE_STATIC(semicom)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(tumbleb)
 	MCFG_PALETTE_LENGTH(1024)
@@ -2277,7 +2285,7 @@ MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( cookbib, htchctch )
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE( semicom_altoffsets )
+	MCFG_SCREEN_UPDATE_STATIC( semicom_altoffsets )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( cookbib_mcu, htchctch )
@@ -2289,12 +2297,12 @@ static MACHINE_CONFIG_DERIVED( cookbib_mcu, htchctch )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE( semicom_altoffsets )
+	MCFG_SCREEN_UPDATE_STATIC( semicom_altoffsets )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( bcstory, htchctch )
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(bcstory)
+	MCFG_SCREEN_UPDATE_STATIC(bcstory)
 
 	MCFG_SOUND_REPLACE("ymsnd", YM2151, 3427190)
 	MCFG_SOUND_CONFIG(semicom_ym2151_interface)
@@ -2304,13 +2312,13 @@ MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( semibase, bcstory )
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(semibase )
+	MCFG_SCREEN_UPDATE_STATIC(semibase )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( sdfight, bcstory )
 	MCFG_VIDEO_START(sdfight)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(sdfight)
+	MCFG_SCREEN_UPDATE_STATIC(sdfight)
 MACHINE_CONFIG_END
 
 
@@ -2341,10 +2349,13 @@ static MACHINE_CONFIG_START( jumppop, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(jumppop)
+	MCFG_SCREEN_UPDATE_STATIC(jumppop)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(jumppop)
 	MCFG_PALETTE_LENGTH(1024)
@@ -2379,10 +2390,13 @@ static MACHINE_CONFIG_START( suprtrio, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8-1, 31*8-2)
-	MCFG_SCREEN_UPDATE(suprtrio)
+	MCFG_SCREEN_UPDATE_STATIC(suprtrio)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(suprtrio)
 	MCFG_PALETTE_LENGTH(1024)
@@ -2411,10 +2425,13 @@ static MACHINE_CONFIG_START( pangpang, tumbleb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(1529))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(pangpang)
+	MCFG_SCREEN_UPDATE_STATIC(pangpang)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 3);
+	decospr_device::set_is_bootleg(*device, true);
 
 	MCFG_GFXDECODE(tumbleb)
 	MCFG_PALETTE_LENGTH(1024)
@@ -3778,16 +3795,17 @@ GAME( 1993, jumpkids, 0,       jumpkids,    tumblepb, jumpkids, ROT0, "Comad",  
 GAME( 1994, metlsavr, 0,       metlsavr,    metlsavr, chokchok, ROT0, "First Amusement", "Metal Saver", GAME_SUPPORTS_SAVE )
 GAME( 1994, pangpang, 0,       pangpang,    tumblepb, tumbleb2, ROT0, "Dong Gue La Mi Ltd.", "Pang Pang", GAME_IMPERFECT_SOUND | GAME_SUPPORTS_SAVE  ) // PIC is protected, sound simulation not 100%
 GAME( 1994, suprtrio, 0,       suprtrio,    suprtrio, suprtrio, ROT0, "Gameace", "Super Trio", GAME_SUPPORTS_SAVE )
+GAME( 1996, fncywld,  0,       fncywld,     fncywld,  fncywld,  ROT0, "Unico",   "Fancy World - Earth of Crisis" , GAME_SUPPORTS_SAVE ) // game says 1996, testmode 1995?
+GAME( 2001, jumppop,  0,       jumppop,     jumppop,  0,        ORIENTATION_FLIP_X, "ESD", "Jumping Pop", GAME_SUPPORTS_SAVE )
+
 // Should also be 'Magicball Fighting' (c)1994
+GAME( 1995, wlstar,   0,       cookbib_mcu, wlstar,   wlstar,   ROT0, "Mijin",   "Wonder League Star - Sok-Magicball Fighting (Korea)", GAME_SUPPORTS_SAVE ) // translates to 'Wonder League Star - Return of Magicball Fighting'
 GAME( 1995, htchctch, 0,       htchctch,    htchctch, htchctch, ROT0, "SemiCom", "Hatch Catch" , GAME_SUPPORTS_SAVE ) // not 100% sure about gfx offsets
 GAME( 1995, cookbib,  0,       cookbib,     cookbib,  htchctch, ROT0, "SemiCom", "Cookie & Bibi" , GAME_SUPPORTS_SAVE ) // not 100% sure about gfx offsets
 GAME( 1995, chokchok, 0,       cookbib,     chokchok, chokchok, ROT0, "SemiCom", "Choky! Choky!", GAME_IMPERFECT_GRAPHICS | GAME_SUPPORTS_SAVE  ) // corruption during attract mode (tmap disable?)
-GAME( 1995, wlstar,   0,       cookbib_mcu, wlstar,   wlstar,   ROT0, "Mijin",   "Wonder League Star - Sok-Magicball Fighting (Korea)", GAME_SUPPORTS_SAVE ) // translates to 'Wonder League Star - Return of Magicball Fighting'
 GAME( 1996, wondl96,  0,       cookbib_mcu, wondl96,  wondl96,  ROT0, "SemiCom", "Wonder League '96 (Korea)", GAME_SUPPORTS_SAVE )
-GAME( 1996, fncywld,  0,       fncywld,     fncywld,  fncywld,  ROT0, "Unico",   "Fancy World - Earth of Crisis" , GAME_SUPPORTS_SAVE ) // game says 1996, testmode 1995?
 GAME( 1996, sdfight,  0,       sdfight,     sdfight,  bcstory,  ROT0, "SemiCom", "SD Fighters (Korea)", GAME_SUPPORTS_SAVE )
 GAME( 1997, bcstry,   0,       bcstory,     bcstory,  bcstory,  ROT0, "SemiCom", "B.C. Story (set 1)", GAME_IMPERFECT_GRAPHICS | GAME_SUPPORTS_SAVE ) // gfx offsets?
 GAME( 1997, bcstrya,  bcstry,  bcstory,     bcstory,  bcstory,  ROT0, "SemiCom", "B.C. Story (set 2)", GAME_IMPERFECT_GRAPHICS | GAME_SUPPORTS_SAVE ) // gfx offsets?
 GAME( 1997, semibase, 0,       semibase,    semibase, bcstory,  ROT0, "SemiCom", "MuHanSeungBu (SemiCom Baseball) (Korea)", GAME_IMPERFECT_GRAPHICS | GAME_SUPPORTS_SAVE )// sprite offsets..
 GAME( 1998, dquizgo,  0,       cookbib,     dquizgo,  dquizgo,  ROT0, "SemiCom", "Date Quiz Go Go (Korea)", GAME_IMPERFECT_GRAPHICS | GAME_SUPPORTS_SAVE ) // check layer offsets
-GAME( 2001, jumppop,  0,       jumppop,     jumppop,  0,        ORIENTATION_FLIP_X, "ESD", "Jumping Pop", GAME_SUPPORTS_SAVE )

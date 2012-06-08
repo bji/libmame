@@ -11,7 +11,7 @@ WRITE8_HANDLER( orbit_playfield_w )
 {
 	orbit_state *state = space->machine().driver_data<orbit_state>();
 	state->m_playfield_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -37,7 +37,7 @@ VIDEO_START( orbit )
 }
 
 
-static void draw_sprites( running_machine &machine, bitmap_t* bitmap, const rectangle* cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	orbit_state *state = machine.driver_data<orbit_state>();
 	const UINT8* p = state->m_sprite_ram;
@@ -79,14 +79,14 @@ static void draw_sprites( running_machine &machine, bitmap_t* bitmap, const rect
 }
 
 
-SCREEN_UPDATE( orbit )
+SCREEN_UPDATE_IND16( orbit )
 {
-	orbit_state *state = screen->machine().driver_data<orbit_state>();
+	orbit_state *state = screen.machine().driver_data<orbit_state>();
 
-	state->m_flip_screen = input_port_read(screen->machine(), "DSW2") & 8;
+	state->m_flip_screen = input_port_read(screen.machine(), "DSW2") & 8;
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

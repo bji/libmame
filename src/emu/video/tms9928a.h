@@ -27,10 +27,10 @@
 #define __TMS9928A_H__
 
 #include "emu.h"
-#include "machine//devhelpr.h"
+#include "machine/devhelpr.h"
 
 
-#define TMS9928A_PALETTE_SIZE           16
+#define TMS9928A_PALETTE_SIZE				16
 
 
 /* Some defines used in defining the screens */
@@ -56,14 +56,12 @@
 
 #define MCFG_TMS9928A_SCREEN_ADD_NTSC(_screen_tag) \
 	MCFG_SCREEN_ADD( _screen_tag, RASTER ) \
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16) \
 	MCFG_SCREEN_RAW_PARAMS( XTAL_10_738635MHz / 2, TMS9928A_TOTAL_HORZ, TMS9928A_HORZ_DISPLAY_START-12, TMS9928A_HORZ_DISPLAY_START + 256 + 12, \
 		 TMS9928A_TOTAL_VERT_NTSC, TMS9928A_VERT_DISPLAY_START_NTSC - 12, TMS9928A_VERT_DISPLAY_START_NTSC + 192 + 12 )
 
 
 #define MCFG_TMS9928A_SCREEN_ADD_PAL(_screen_tag) \
 	MCFG_SCREEN_ADD(_screen_tag, RASTER ) \
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16) \
 	MCFG_SCREEN_RAW_PARAMS( XTAL_10_738635MHz / 2, TMS9928A_TOTAL_HORZ, TMS9928A_HORZ_DISPLAY_START-12, TMS9928A_HORZ_DISPLAY_START + 256 + 12,	\
 		 TMS9928A_TOTAL_VERT_PAL, TMS9928A_VERT_DISPLAY_START_PAL - 12, TMS9928A_VERT_DISPLAY_START_PAL + 192 + 12 )
 
@@ -104,7 +102,8 @@ public:
 	DECLARE_WRITE8_MEMBER( register_write );
 
 	/* update the screen */
-	void update( bitmap_t *bitmap, const rectangle *cliprect );
+	UINT32 screen_update( screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect );
+	bitmap_ind16 &get_bitmap() { return m_tmpbmp; }
 
 protected:
 	// device-level overrides
@@ -118,6 +117,8 @@ protected:
 
 private:
 	void change_register(UINT8 reg, UINT8 val);
+	void check_interrupt();
+	void update_backdrop();
 
 	static const device_timer_id TIMER_LINE = 0;
 
@@ -146,13 +147,13 @@ private:
 	const address_space_config		m_space_config;
 
 	UINT8		*m_vMem;
-	bitmap_t	*m_tmpbmp;
+	bitmap_ind16 m_tmpbmp;
 	emu_timer	*m_line_timer;
 	UINT8		m_mode;
 
 	/* emulation settings */
-	int			m_LimitSprites; /* max 4 sprites on a row, like original TMS9918A */
 	int			m_top_border;
+	int			m_vertical_size;
 };
 
 
@@ -176,7 +177,7 @@ class tms9118_device : public tms9928a_device
 {
 public:
 	tms9118_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock)
-		: tms9928a_device( mconfig, TMS9118, "tms9118", tag, owner, clock, false, false ) { }
+		: tms9928a_device( mconfig, TMS9118, "tms9118", tag, owner, clock, false, true ) { }
 };
 
 
@@ -184,7 +185,7 @@ class tms9128_device : public tms9928a_device
 {
 public:
 	tms9128_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock)
-		: tms9928a_device( mconfig, TMS9128, "tms9128", tag, owner, clock, false, false ) { }
+		: tms9928a_device( mconfig, TMS9128, "tms9128", tag, owner, clock, false, true ) { }
 };
 
 
@@ -208,7 +209,7 @@ class tms9129_device : public tms9928a_device
 {
 public:
 	tms9129_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock)
-		: tms9928a_device( mconfig, TMS9129, "tms9129", tag, owner, clock, true, false ) { }
+		: tms9928a_device( mconfig, TMS9129, "tms9129", tag, owner, clock, true, true ) { }
 };
 
 

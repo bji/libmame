@@ -34,6 +34,8 @@
 #define __ARM7CORE_H__
 
 #define ARM7_MMU_ENABLE_HACK 0
+#define ARM7_DEBUG_CORE 0
+
 
 /****************************************************************************************************
  *  INTERRUPT LINES/EXCEPTIONS
@@ -139,7 +141,8 @@ enum
 
 #define COPRO_DOMAIN_ACCESS_CONTROL     	cpustate->domainAccessControl
 
-#define COPRO_FAULT_STATUS      	cpustate->faultStatus
+#define COPRO_FAULT_STATUS_D    	cpustate->faultStatus[0]
+#define COPRO_FAULT_STATUS_P    	cpustate->faultStatus[1]
 
 #define COPRO_FAULT_ADDRESS     	cpustate->faultAddress
 
@@ -149,7 +152,7 @@ enum
 #define ARM7COPRO_REGS \
     UINT32 control; \
     UINT32 tlbBase; \
-    UINT32 faultStatus; \
+    UINT32 faultStatus[2]; \
     UINT32 faultAddress; \
     UINT32 fcsePID; \
     UINT32 domainAccessControl;
@@ -389,12 +392,12 @@ static const int sRegisterTable[ARM7_NUM_MODES][18] =
 #define THUMB_ADDSUB_RNIMM  ((UINT16)0x01c0)
 #define THUMB_ADDSUB_RS     ((UINT16)0x0038)
 #define THUMB_ADDSUB_RD     ((UINT16)0x0007)
-#define THUMB_INSN_ADDSUB   ((UINT16)0x0800)
 #define THUMB_INSN_CMP      ((UINT16)0x0800)
 #define THUMB_INSN_SUB      ((UINT16)0x0800)
 #define THUMB_INSN_IMM_RD   ((UINT16)0x0700)
 #define THUMB_INSN_IMM_S    ((UINT16)0x0080)
 #define THUMB_INSN_IMM      ((UINT16)0x00ff)
+#define THUMB_INSN_ADDSUB   ((UINT16)0x0800)
 #define THUMB_ADDSUB_TYPE   ((UINT16)0x0600)
 #define THUMB_HIREG_OP      ((UINT16)0x0300)
 #define THUMB_HIREG_H       ((UINT16)0x00c0)
@@ -503,16 +506,16 @@ enum
 #define MODE26					(!(GET_CPSR & 0x10))
 #define GET_PC                  (MODE32 ? R15 : R15 & 0x03FFFFFC)
 
-enum
-{
-	ARM7_TLB_NO_ABORT,
-	ARM7_TLB_ABORT_D,
-	ARM7_TLB_ABORT_P
-};
+#define ARM7_TLB_ABORT_D (1 << 0)
+#define ARM7_TLB_ABORT_P (1 << 1)
+#define ARM7_TLB_READ    (1 << 2)
+#define ARM7_TLB_WRITE   (1 << 3)
 
 /* At one point I thought these needed to be cpu implementation specific, but they don't.. */
 #define GET_REGISTER(state, reg)       GetRegister(state, reg)
 #define SET_REGISTER(state, reg, val)  SetRegister(state, reg, val)
+#define GET_MODE_REGISTER(state, mode, reg)       GetModeRegister(state, mode, reg)
+#define SET_MODE_REGISTER(state, mode, reg, val)  SetModeRegister(state, mode, reg, val)
 #define ARM7_CHECKIRQ           arm7_check_irq_state(cpustate)
 
 extern write32_device_func arm7_coproc_do_callback;

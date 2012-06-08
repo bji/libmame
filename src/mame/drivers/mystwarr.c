@@ -22,8 +22,6 @@
  */
 
 #include "emu.h"
-#include "deprecat.h"
-
 #include "video/konamiic.h"
 #include "video/k053250.h"
 #include "machine/k053252.h"
@@ -106,60 +104,52 @@ static WRITE16_HANDLER( mmeeprom_w )
 /**********************************************************************************/
 /* IRQ controllers */
 
-static INTERRUPT_GEN(mystwarr_interrupt)
+static TIMER_DEVICE_CALLBACK(mystwarr_interrupt)
 {
-	mystwarr_state *state = device->machine().driver_data<mystwarr_state>();
+	mystwarr_state *state = timer.machine().driver_data<mystwarr_state>();
+	int scanline = param;
+
 	if (!(state->m_mw_irq_control & 0x01)) return;
 
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			device_set_input_line(device, M68K_IRQ_2, HOLD_LINE);
-		break;
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, M68K_IRQ_2, HOLD_LINE);
 
-		case 1:
-			device_set_input_line(device, M68K_IRQ_4, HOLD_LINE);
-		break;
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, M68K_IRQ_4, HOLD_LINE);
 
-		case 2:
-			device_set_input_line(device, M68K_IRQ_6, HOLD_LINE);
-		break;
-	}
+	/* writes to LSB of 0x410000 port and clears a work RAM flag, almost likely not really necessary. */
+//  device_set_input_line(state->m_maincpu, M68K_IRQ_6, HOLD_LINE);
 }
 
-static INTERRUPT_GEN(metamrph_interrupt)
+static TIMER_DEVICE_CALLBACK(metamrph_interrupt)
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			device_set_input_line(device, M68K_IRQ_4, HOLD_LINE);
-		break;
+	mystwarr_state *state = timer.machine().driver_data<mystwarr_state>();
+	int scanline = param;
 
-		case 15:
-			device_set_input_line(device, M68K_IRQ_6, HOLD_LINE);
-		break;
+	/* irq 4 has an irq routine in metamrph, but it's not really called */
+//  device_set_input_line(state->m_maincpu, M68K_IRQ_4, HOLD_LINE);
 
-		case 39:
-			if (K053246_is_IRQ_enabled()) device_set_input_line(device, M68K_IRQ_5, HOLD_LINE);
-		break;
-	}
+	if(scanline == 24)
+		device_set_input_line(state->m_maincpu, M68K_IRQ_6, HOLD_LINE);
+
+	if(scanline == 248)
+		if (K053246_is_IRQ_enabled()) device_set_input_line(state->m_maincpu, M68K_IRQ_5, HOLD_LINE);
 }
 
-static INTERRUPT_GEN(mchamp_interrupt)
+static TIMER_DEVICE_CALLBACK(mchamp_interrupt)
 {
-	mystwarr_state *state = device->machine().driver_data<mystwarr_state>();
+	mystwarr_state *state = timer.machine().driver_data<mystwarr_state>();
+	int scanline = param;
+
 	if (!(state->m_mw_irq_control & 0x02)) return;
 
-	switch (cpu_getiloops(device))
+	if(scanline == 247)
 	{
-		case 0:
-			if (K053246_is_IRQ_enabled()) device_set_input_line(device, M68K_IRQ_6, HOLD_LINE);
-		break;
-
-		case 1:
-			device_set_input_line(device, M68K_IRQ_2, HOLD_LINE);
-		break;
+		if (K053246_is_IRQ_enabled()) device_set_input_line(state->m_maincpu, M68K_IRQ_6, HOLD_LINE);
 	}
+
+	if(scanline == 23)
+		device_set_input_line(state->m_maincpu, M68K_IRQ_2, HOLD_LINE);
 }
 
 static INTERRUPT_GEN(ddd_interrupt)
@@ -1005,7 +995,7 @@ static MACHINE_CONFIG_START( mystwarr, mystwarr_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 16000000)	/* 16 MHz (confirmed) */
 	MCFG_CPU_PROGRAM_MAP(mystwarr_map)
-	MCFG_CPU_VBLANK_INT_HACK(mystwarr_interrupt, 3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mystwarr_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("soundcpu", Z80, 8000000)
 	MCFG_CPU_PROGRAM_MAP(mystwarr_sound_map)
@@ -1026,10 +1016,9 @@ static MACHINE_CONFIG_START( mystwarr, mystwarr_state )
 //  MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_RAW_PARAMS(6000000, 288+16+32+48, 0, 287, 224+16+8+16, 0, 223)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(600))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(24, 24+288-1, 16, 16+224-1)
-	MCFG_SCREEN_UPDATE(mystwarr)
+	MCFG_SCREEN_UPDATE_STATIC(mystwarr)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -1059,12 +1048,13 @@ static MACHINE_CONFIG_DERIVED( viostorm, mystwarr )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(viostorm_map)
-	MCFG_CPU_VBLANK_INT_HACK(metamrph_interrupt, 40)
+	MCFG_TIMER_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(metamrph_interrupt)
 
 	/* video hardware */
 	MCFG_VIDEO_START(viostorm)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(metamrph)
+	MCFG_SCREEN_UPDATE_STATIC(metamrph)
 
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(900))
@@ -1079,7 +1069,8 @@ static MACHINE_CONFIG_DERIVED( metamrph, mystwarr )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(metamrph_map)
-	MCFG_CPU_VBLANK_INT_HACK(metamrph_interrupt, 40)
+	MCFG_TIMER_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(metamrph_interrupt)
 
 	MCFG_DEVICE_REMOVE("k053252")
 	MCFG_K053252_ADD("k053252", 6000000, metamrph_k053252_intf) // 6 MHz?
@@ -1088,7 +1079,7 @@ static MACHINE_CONFIG_DERIVED( metamrph, mystwarr )
 	/* video hardware */
 	MCFG_VIDEO_START(metamrph)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(metamrph)
+	MCFG_SCREEN_UPDATE_STATIC(metamrph)
 
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(900))
@@ -1104,6 +1095,7 @@ static MACHINE_CONFIG_DERIVED( dadandrn, mystwarr )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(dadandrn_map)
 	MCFG_CPU_VBLANK_INT("screen", ddd_interrupt)
+	MCFG_DEVICE_REMOVE("scantimer")
 
 	MCFG_DEVICE_REMOVE("k053252")
 	MCFG_K053252_ADD("k053252", 6000000, dadandrm_k053252_intf) // 6 MHz?
@@ -1113,7 +1105,7 @@ static MACHINE_CONFIG_DERIVED( dadandrn, mystwarr )
 	/* video hardware */
 	MCFG_VIDEO_START(dadandrn)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(dadandrn)
+	MCFG_SCREEN_UPDATE_STATIC(dadandrn)
 
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(600))
@@ -1129,6 +1121,7 @@ static MACHINE_CONFIG_DERIVED( gaiapols, mystwarr )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(gaiapols_map)
 	MCFG_CPU_VBLANK_INT("screen", ddd_interrupt)
+	MCFG_DEVICE_REMOVE("scantimer")
 
 	MCFG_DEVICE_REMOVE("k053252")
 	MCFG_K053252_ADD("k053252", 6000000, gaiapols_k053252_intf) // 6 MHz?
@@ -1141,7 +1134,7 @@ static MACHINE_CONFIG_DERIVED( gaiapols, mystwarr )
 	/* video hardware */
 	MCFG_VIDEO_START(gaiapols)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(dadandrn)
+	MCFG_SCREEN_UPDATE_STATIC(dadandrn)
 
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_RAW_PARAMS(8000000, 384+24+64+40, 0, 383, 224+16+8+16, 0, 223)
@@ -1157,7 +1150,8 @@ static MACHINE_CONFIG_DERIVED( martchmp, mystwarr )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(martchmp_map)
-	MCFG_CPU_VBLANK_INT_HACK(mchamp_interrupt, 2)
+	MCFG_TIMER_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(mchamp_interrupt)
 
 	MCFG_DEVICE_REMOVE("k053252")
 	MCFG_K053252_ADD("k053252", 16000000/2, martchmp_k053252_intf)
@@ -1165,11 +1159,9 @@ static MACHINE_CONFIG_DERIVED( martchmp, mystwarr )
 	MCFG_VIDEO_ATTRIBUTES(VIDEO_HAS_SHADOWS | VIDEO_HAS_HIGHLIGHTS | VIDEO_UPDATE_BEFORE_VBLANK)
 
 	MCFG_VIDEO_START(martchmp)
-	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(martchmp)
 
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
+	MCFG_SCREEN_UPDATE_STATIC(martchmp)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(32, 32+384-1, 16, 16+224-1)

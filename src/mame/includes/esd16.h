@@ -44,6 +44,4 @@ WRITE16_HANDLER( esd16_vram_1_w );
 WRITE16_HANDLER( esd16_tilemap0_color_w );
 
 VIDEO_START( esd16 );
-SCREEN_UPDATE( esd16 );
-SCREEN_UPDATE( hedpanic );
-SCREEN_UPDATE( hedpanio );
+SCREEN_UPDATE_IND16( hedpanic );

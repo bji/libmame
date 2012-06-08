@@ -55,11 +55,11 @@ VIDEO_START( blockhl )
 	state_save_register_global_pointer(machine, machine.generic.paletteram.u8, 0x800);
 }
 
-SCREEN_UPDATE( blockhl )
+SCREEN_UPDATE_IND16( blockhl )
 {
-	blockhl_state *state = screen->machine().driver_data<blockhl_state>();
+	blockhl_state *state = screen.machine().driver_data<blockhl_state>();
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	k052109_tilemap_update(state->m_k052109);
 

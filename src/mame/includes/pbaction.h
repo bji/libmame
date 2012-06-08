@@ -28,6 +28,8 @@ public:
 	/* devices */
 	device_t *m_maincpu;
 	device_t *m_audiocpu;
+
+	UINT8      m_nmi_mask;
 };
 
 
@@ -41,4 +43,4 @@ extern WRITE8_HANDLER( pbaction_flipscreen_w );
 extern WRITE8_HANDLER( pbaction_scroll_w );
 
 extern VIDEO_START( pbaction );
-extern SCREEN_UPDATE( pbaction );
+extern SCREEN_UPDATE_IND16( pbaction );

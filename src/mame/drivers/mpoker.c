@@ -191,12 +191,12 @@ static VIDEO_START(mpoker)
 
 }
 
-static SCREEN_UPDATE(mpoker)
+static SCREEN_UPDATE_IND16(mpoker)
 {
-	mpoker_state *state = screen->machine().driver_data<mpoker_state>();
+	mpoker_state *state = screen.machine().driver_data<mpoker_state>();
 	int y,x;
 	int count;
-	const gfx_element *gfx = screen->machine().gfx[0];
+	const gfx_element *gfx = screen.machine().gfx[0];
 
 	count = 0;
 	for (y=0;y<32;y++)
@@ -589,10 +589,9 @@ static MACHINE_CONFIG_START( mpoker, mpoker_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE(mpoker)
+	MCFG_SCREEN_UPDATE_STATIC(mpoker)
 
 	MCFG_GFXDECODE(mpoker)
 	MCFG_PALETTE_LENGTH(0x200)

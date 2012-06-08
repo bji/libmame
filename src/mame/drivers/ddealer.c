@@ -166,7 +166,7 @@ static VIDEO_START( ddealer )
 	state->m_back_tilemap = tilemap_create(machine, get_back_tile_info, tilemap_scan_cols, 8, 8, 64, 32);
 }
 
-static void ddealer_draw_video_layer( running_machine &machine, UINT16* vreg_base, UINT16* top, UINT16* bottom, bitmap_t* bitmap, const rectangle *cliprect, int flipy)
+static void ddealer_draw_video_layer( running_machine &machine, UINT16* vreg_base, UINT16* top, UINT16* bottom, bitmap_ind16 &bitmap, const rectangle &cliprect, int flipy)
 {
 	const gfx_element *gfx = machine.gfx[1];
 
@@ -249,12 +249,12 @@ static void ddealer_draw_video_layer( running_machine &machine, UINT16* vreg_bas
 }
 
 
-static SCREEN_UPDATE( ddealer )
+static SCREEN_UPDATE_IND16( ddealer )
 {
-	ddealer_state *state = screen->machine().driver_data<ddealer_state>();
-	tilemap_set_scrollx(state->m_back_tilemap, 0, state->m_flipscreen ? -192 : -64);
-	tilemap_set_flip(state->m_back_tilemap, state->m_flipscreen ? TILEMAP_FLIPY | TILEMAP_FLIPX : 0);
-	tilemap_draw(bitmap, cliprect, state->m_back_tilemap, 0, 0);
+	ddealer_state *state = screen.machine().driver_data<ddealer_state>();
+	state->m_back_tilemap->set_scrollx(0, state->m_flipscreen ? -192 : -64);
+	state->m_back_tilemap->set_flip(state->m_flipscreen ? TILEMAP_FLIPY | TILEMAP_FLIPX : 0);
+	state->m_back_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* the fg tilemap handling is a little hacky right now,
        i'm not sure if it should be a single tilemap with
@@ -266,24 +266,24 @@ static SCREEN_UPDATE( ddealer )
 	{
 		if (state->m_vregs[0xcc / 2] & 0x80)
 		{
-			ddealer_draw_video_layer(screen->machine(), &state->m_vregs[0x1e0 / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
-			ddealer_draw_video_layer(screen->machine(), &state->m_vregs[0xcc / 2], state->m_right_fg_vram_top, state->m_right_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
+			ddealer_draw_video_layer(screen.machine(), &state->m_vregs[0x1e0 / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
+			ddealer_draw_video_layer(screen.machine(), &state->m_vregs[0xcc / 2], state->m_right_fg_vram_top, state->m_right_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
 		}
 		else
 		{
-			ddealer_draw_video_layer(screen->machine(), &state->m_vregs[0x1e0 / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
+			ddealer_draw_video_layer(screen.machine(), &state->m_vregs[0x1e0 / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
 		}
 	}
 	else
 	{
 		if (state->m_vregs[0xcc / 2] & 0x80)
 		{
-			ddealer_draw_video_layer(screen->machine(), &state->m_vregs[0xcc / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
-			ddealer_draw_video_layer(screen->machine(), &state->m_vregs[0x1e0 / 2], state->m_right_fg_vram_top, state->m_right_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
+			ddealer_draw_video_layer(screen.machine(), &state->m_vregs[0xcc / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
+			ddealer_draw_video_layer(screen.machine(), &state->m_vregs[0x1e0 / 2], state->m_right_fg_vram_top, state->m_right_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
 		}
 		else
 		{
-			ddealer_draw_video_layer(screen->machine(), &state->m_vregs[0x1e0 / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
+			ddealer_draw_video_layer(screen.machine(), &state->m_vregs[0x1e0 / 2], state->m_left_fg_vram_top, state->m_left_fg_vram_bottom, bitmap, cliprect, state->m_flipscreen);
 		}
 
 	}
@@ -362,7 +362,7 @@ static WRITE16_HANDLER( back_vram_w )
 {
 	ddealer_state *state = space->machine().driver_data<ddealer_state>();
 	COMBINE_DATA(&state->m_back_vram[offset]);
-	tilemap_mark_tile_dirty(state->m_back_tilemap, offset);
+	state->m_back_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -630,10 +630,9 @@ static MACHINE_CONFIG_START( ddealer, ddealer_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 48*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(ddealer)
+	MCFG_SCREEN_UPDATE_STATIC(ddealer)
 
 	MCFG_PALETTE_LENGTH(0x400)
 

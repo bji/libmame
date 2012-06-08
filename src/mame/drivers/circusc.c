@@ -143,11 +143,16 @@ static WRITE8_HANDLER(circusc_sound_w)
 	}
 }
 
+static WRITE8_HANDLER( irq_mask_w )
+{
+	circusc_state *state = space->machine().driver_data<circusc_state>();
 
+	state->m_irq_mask = data & 1;
+}
 
 static ADDRESS_MAP_START( circusc_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x0000) AM_MIRROR(0x03f8) AM_WRITE(circusc_flipscreen_w)		/* FLIP */
-	AM_RANGE(0x0001, 0x0001) AM_MIRROR(0x03f8) AM_WRITE(interrupt_enable_w)			/* INTST */
+	AM_RANGE(0x0001, 0x0001) AM_MIRROR(0x03f8) AM_WRITE(irq_mask_w)					/* INTST */
 //  AM_RANGE(0x0002, 0x0002) AM_MIRROR(0x03f8) AM_WRITENOP                          /* MUT - not used /*
 	AM_RANGE(0x0003, 0x0004) AM_MIRROR(0x03f8) AM_WRITE(circusc_coin_counter_w)		/* COIN1, COIN2 */
 	AM_RANGE(0x0005, 0x0005) AM_MIRROR(0x03f8) AM_WRITEONLY AM_BASE_MEMBER(circusc_state, m_spritebank) /* OBJ CHENG */
@@ -331,15 +336,23 @@ static DISCRETE_SOUND_START( circusc )
 
 DISCRETE_SOUND_END
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	circusc_state *state = device->machine().driver_data<circusc_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
 static MACHINE_CONFIG_START( circusc, circusc_state )
 
 	/* basic machine hardware */
-	MCFG_CPU_ADD("maincpu", M6809, 2048000)        /* 2 MHz */
+	MCFG_CPU_ADD("maincpu", M6809, 2048000)        /* 2 MHz? */
 	MCFG_CPU_PROGRAM_MAP(circusc_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 	MCFG_WATCHDOG_VBLANK_INIT(8)
 
-	MCFG_CPU_ADD("audiocpu", Z80,14318180/4)     /* Z80 Clock is derived from a 14.31818 MHz crystal */
+	MCFG_CPU_ADD("audiocpu", Z80, XTAL_14_31818MHz/4)
 	MCFG_CPU_PROGRAM_MAP(sound_map)
 
 	MCFG_MACHINE_START(circusc)
@@ -349,10 +362,9 @@ static MACHINE_CONFIG_START( circusc, circusc_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(circusc)
+	MCFG_SCREEN_UPDATE_STATIC(circusc)
 
 	MCFG_GFXDECODE(circusc)
 	MCFG_PALETTE_LENGTH(16*16+16*16)
@@ -363,10 +375,10 @@ static MACHINE_CONFIG_START( circusc, circusc_state )
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("sn1", SN76496, 14318180/8)
+	MCFG_SOUND_ADD("sn1", SN76496, XTAL_14_31818MHz/8)
 	MCFG_SOUND_ROUTE_EX(0, "fltdisc", 1.0, 0)
 
-	MCFG_SOUND_ADD("sn2", SN76496, 14318180/8)
+	MCFG_SOUND_ADD("sn2", SN76496, XTAL_14_31818MHz/8)
 	MCFG_SOUND_ROUTE_EX(0, "fltdisc", 1.0, 1)
 
 	MCFG_SOUND_ADD("dac", DAC, 0)

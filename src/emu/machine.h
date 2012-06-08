@@ -169,6 +169,10 @@ const int DEBUG_FLAG_OSD_ENABLED	= 0x00001000;		// The OSD debugger is enabled
 #define auto_free(m, v)					pool_free(static_cast<running_machine &>(m).respool(), v)
 
 #define auto_bitmap_alloc(m, w, h, f)	auto_alloc(m, bitmap_t(w, h, f))
+#define auto_bitmap_ind8_alloc(m, w, h)	auto_alloc(m, bitmap_ind8(w, h))
+#define auto_bitmap_ind16_alloc(m, w, h)	auto_alloc(m, bitmap_ind16(w, h))
+#define auto_bitmap_ind32_alloc(m, w, h)	auto_alloc(m, bitmap_ind32(w, h))
+#define auto_bitmap_rgb32_alloc(m, w, h)	auto_alloc(m, bitmap_rgb32(w, h))
 #define auto_strdup(m, s)				strcpy(auto_alloc_array(m, char, strlen(s) + 1), s)
 
 
@@ -184,14 +188,13 @@ class cheat_manager;
 class render_manager;
 class sound_manager;
 class video_manager;
+class tilemap_manager;
 class debug_view_manager;
 class osd_interface;
 
 typedef struct _memory_private memory_private;
 typedef struct _palette_private palette_private;
-typedef struct _tilemap_private tilemap_private;
 typedef struct _romload_private romload_private;
-typedef struct _input_private input_private;
 typedef struct _input_port_private input_port_private;
 typedef struct _ui_input_private ui_input_private;
 typedef struct _debugcpu_private debugcpu_private;
@@ -277,7 +280,6 @@ struct generic_pointers
 	generic_ptr				buffered_spriteram2;// secondary buffered spriteram
 	generic_ptr				paletteram;			// palette RAM
 	generic_ptr				paletteram2;		// secondary palette RAM
-	bitmap_t *				tmpbitmap;			// temporary bitmap
 };
 
 
@@ -337,7 +339,7 @@ public:
 
 	// getters
 	const machine_config &config() const { return m_config; }
-	const device_list &devicelist() const { return m_config.devicelist(); }
+	device_t &root_device() const { return m_config.root_device(); }
 	const game_driver &system() const { return m_system; }
 	osd_interface &osd() const { return m_osd; }
 	resource_pool &respool() { return m_respool; }
@@ -348,9 +350,10 @@ public:
 	input_manager &input() const { assert(m_input != NULL); return *m_input; }
 	sound_manager &sound() const { assert(m_sound != NULL); return *m_sound; }
 	video_manager &video() const { assert(m_video != NULL); return *m_video; }
+	tilemap_manager &tilemap() const { assert(m_tilemap != NULL); return *m_tilemap; }
 	debug_view_manager &debug_view() const { assert(m_debug_view != NULL); return *m_debug_view; }
-	driver_device *driver_data() const { return m_driver_device; }
-	template<class _DriverClass> _DriverClass *driver_data() const { return downcast<_DriverClass *>(m_driver_device); }
+	driver_device *driver_data() const { return &downcast<driver_device &>(root_device()); }
+	template<class _DriverClass> _DriverClass *driver_data() const { return &downcast<_DriverClass &>(root_device()); }
 	machine_phase phase() const { return m_current_phase; }
     machine_init_phase init_phase() const { return m_current_init_phase; }
     int init_phase_percent_complete() const { return m_current_init_phase_pct_complete; }
@@ -371,7 +374,7 @@ public:
 	bool scheduled_event_pending() const { return m_exit_pending || m_hard_reset_pending; }
 
 	// fetch items by name
-	inline device_t *device(const char *tag);
+	inline device_t *device(const char *tag) { return root_device().subdevice(tag); }
 	template<class _DeviceClass> inline _DeviceClass *device(const char *tag) { return downcast<_DeviceClass *>(device(tag)); }
 	inline const input_port_config *port(const char *tag);
 	inline const memory_region *region(const char *tag);
@@ -416,7 +419,7 @@ public:
 	ioport_list				m_portlist;			// points to a list of input port configurations
 
 	// CPU information
-	cpu_device *			firstcpu;			// first CPU (allows for quick iteration via typenext)
+	cpu_device *			firstcpu;			// first CPU
 
 	// video-related information
 	gfx_element *			gfx[MAX_GFX_ELEMENTS];// array of pointers to graphic sets (chars, sprites)
@@ -427,7 +430,7 @@ public:
 	const pen_t *			pens;				// remapped palette pen numbers
 	colortable_t *			colortable;			// global colortable for remapping
 	pen_t *					shadow_table;		// table for looking up a shadowed pen
-	bitmap_t *				priority_bitmap;	// priority bitmap
+	bitmap_ind8				priority_bitmap;	// priority bitmap
 
 	// debugger-related information
 	UINT32					debug_flags;		// the current debug flags
@@ -438,9 +441,7 @@ public:
 	// internal core information
 	memory_private *		memory_data;		// internal data from memory.c
 	palette_private *		palette_data;		// internal data from palette.c
-	tilemap_private *		tilemap_data;		// internal data from tilemap.c
 	romload_private *		romload_data;		// internal data from romload.c
-	input_private *			input_data;			// internal data from input.c
 	input_port_private *	input_port_data;	// internal data from inptport.c
 	ui_input_private *		ui_input_data;		// internal data from uiinput.c
 	debugcpu_private *		debugcpu_data;		// internal data from debugcpu.c
@@ -459,6 +460,13 @@ private:
 	// internal callbacks
 	static void logfile_callback(running_machine &machine, const char *buffer);
 
+	// internal device helpers
+	void start_all_devices();
+	void reset_all_devices();
+	void stop_all_devices();
+	void presave_all_devices();
+	void postload_all_devices();
+
 	// internal state
 	const machine_config &	m_config;				// reference to the constructed machine_config
 	const game_driver &		m_system;				// reference to the definition of the game machine
@@ -475,10 +483,8 @@ private:
 	input_manager *			m_input;				// internal data from input.c
 	sound_manager *			m_sound;				// internal data from sound.c
 	video_manager *			m_video;				// internal data from video.c
+	tilemap_manager *		m_tilemap;				// internal data from tilemap.c
 	debug_view_manager *	m_debug_view;			// internal data from debugvw.c
-
-	// driver state
-	driver_device *			m_driver_device;		// pointer to the current driver device
 
 	// system state
 	machine_phase			m_current_phase;		// current execution phase
@@ -573,9 +579,105 @@ public:
 	static void static_set_callback(device_t &device, callback_type type, legacy_callback_func callback);
 	static void static_set_palette_init(device_t &device, palette_init_func callback);
 
-	// additional video helpers
-	virtual bool screen_update(screen_device &screen, bitmap_t &bitmap, const rectangle &cliprect);
-	virtual void screen_eof();
+	// generic helpers
+
+	// watchdog read/write handlers
+	DECLARE_WRITE8_MEMBER( watchdog_reset_w );
+	DECLARE_READ8_MEMBER( watchdog_reset_r );
+	DECLARE_WRITE16_MEMBER( watchdog_reset16_w );
+	DECLARE_READ16_MEMBER( watchdog_reset16_r );
+	DECLARE_WRITE32_MEMBER( watchdog_reset32_w );
+	DECLARE_READ32_MEMBER( watchdog_reset32_r );
+
+	// sound latch readers
+	DECLARE_READ8_MEMBER( soundlatch_r );
+	DECLARE_READ8_MEMBER( soundlatch2_r );
+	DECLARE_READ8_MEMBER( soundlatch3_r );
+	DECLARE_READ8_MEMBER( soundlatch4_r );
+	DECLARE_READ16_MEMBER( soundlatch_word_r );
+	DECLARE_READ16_MEMBER( soundlatch2_word_r );
+	DECLARE_READ16_MEMBER( soundlatch3_word_r );
+	DECLARE_READ16_MEMBER( soundlatch4_word_r );
+
+	// sound latch writers
+	DECLARE_WRITE8_MEMBER( soundlatch_w );
+	DECLARE_WRITE8_MEMBER( soundlatch2_w );
+	DECLARE_WRITE8_MEMBER( soundlatch3_w );
+	DECLARE_WRITE8_MEMBER( soundlatch4_w );
+	DECLARE_WRITE16_MEMBER( soundlatch_word_w );
+	DECLARE_WRITE16_MEMBER( soundlatch2_word_w );
+	DECLARE_WRITE16_MEMBER( soundlatch3_word_w );
+	DECLARE_WRITE16_MEMBER( soundlatch4_word_w );
+
+	// sound latch clearers
+	DECLARE_WRITE8_MEMBER( soundlatch_clear_w );
+	DECLARE_WRITE8_MEMBER( soundlatch2_clear_w );
+	DECLARE_WRITE8_MEMBER( soundlatch3_clear_w );
+	DECLARE_WRITE8_MEMBER( soundlatch4_clear_w );
+
+	// 3-3-2 RGB palette write handlers
+	DECLARE_WRITE8_MEMBER( paletteram_BBGGGRRR_w );
+	DECLARE_WRITE8_MEMBER( paletteram_RRRGGGBB_w );
+	DECLARE_WRITE8_MEMBER( paletteram_BBGGRRII_w );
+	DECLARE_WRITE8_MEMBER( paletteram_IIBBGGRR_w );
+
+	// 4-4-4 RGB palette write handlers
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBGGGGRRRR_le_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBGGGGRRRR_be_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBGGGGRRRR_split1_w );	// uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBGGGGRRRR_split2_w );	// uses paletteram2
+	DECLARE_WRITE16_MEMBER( paletteram16_xxxxBBBBGGGGRRRR_word_w );
+
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBRRRRGGGG_le_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBRRRRGGGG_be_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBRRRRGGGG_split1_w );	// uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxBBBBRRRRGGGG_split2_w );	// uses paletteram2
+	DECLARE_WRITE16_MEMBER( paletteram16_xxxxBBBBRRRRGGGG_word_w );
+
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxRRRRBBBBGGGG_split1_w );	// uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxRRRRBBBBGGGG_split2_w );	// uses paletteram2
+
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxRRRRGGGGBBBB_le_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxRRRRGGGGBBBB_be_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxRRRRGGGGBBBB_split1_w );	// uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_xxxxRRRRGGGGBBBB_split2_w );	// uses paletteram2
+	DECLARE_WRITE16_MEMBER( paletteram16_xxxxRRRRGGGGBBBB_word_w );
+
+	DECLARE_WRITE8_MEMBER( paletteram_RRRRGGGGBBBBxxxx_be_w );
+	DECLARE_WRITE8_MEMBER( paletteram_RRRRGGGGBBBBxxxx_split1_w );	// uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_RRRRGGGGBBBBxxxx_split2_w );	// uses paletteram2
+	DECLARE_WRITE16_MEMBER( paletteram16_RRRRGGGGBBBBxxxx_word_w );
+
+	// 4-4-4-4 IRGB palette write handlers
+	DECLARE_WRITE16_MEMBER( paletteram16_IIIIRRRRGGGGBBBB_word_w );
+	DECLARE_WRITE16_MEMBER( paletteram16_RRRRGGGGBBBBIIII_word_w );
+
+	// 5-5-5 RGB palette write handlers
+	DECLARE_WRITE8_MEMBER( paletteram_xBBBBBGGGGGRRRRR_le_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xBBBBBGGGGGRRRRR_be_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xBBBBBGGGGGRRRRR_split1_w );	// uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_xBBBBBGGGGGRRRRR_split2_w );	// uses paletteram2
+	DECLARE_WRITE16_MEMBER( paletteram16_xBBBBBGGGGGRRRRR_word_w );
+
+	DECLARE_WRITE8_MEMBER( paletteram_xBBBBBRRRRRGGGGG_split1_w );  // uses paletteram
+	DECLARE_WRITE8_MEMBER( paletteram_xBBBBBRRRRRGGGGG_split2_w );  // uses paletteram2
+
+	DECLARE_WRITE8_MEMBER( paletteram_xRRRRRGGGGGBBBBB_le_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xRRRRRGGGGGBBBBB_be_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xRRRRRGGGGGBBBBB_split1_w );
+	DECLARE_WRITE8_MEMBER( paletteram_xRRRRRGGGGGBBBBB_split2_w );
+	DECLARE_WRITE16_MEMBER( paletteram16_xRRRRRGGGGGBBBBB_word_w );
+
+	DECLARE_WRITE16_MEMBER( paletteram16_xGGGGGRRRRRBBBBB_word_w );
+	DECLARE_WRITE16_MEMBER( paletteram16_xGGGGGBBBBBRRRRR_word_w );
+
+	DECLARE_WRITE16_MEMBER( paletteram16_RRRRRGGGGGBBBBBx_word_w );
+	DECLARE_WRITE16_MEMBER( paletteram16_GGGGGRRRRRBBBBBx_word_w );
+	DECLARE_WRITE16_MEMBER( paletteram16_RRRRGGGGBBBBRGBx_word_w );
+
+	// 8-8-8 RGB palette write handlers
+	DECLARE_WRITE16_MEMBER( paletteram16_xrgb_word_be_w );
+	DECLARE_WRITE16_MEMBER( paletteram16_xbgr_word_be_w );
 
 protected:
 	// helpers called at startup
@@ -594,13 +696,24 @@ protected:
 	virtual const rom_entry *device_rom_region() const;
 	virtual ioport_constructor device_input_ports() const;
 	virtual void device_start();
-	virtual void device_reset();
+	virtual void device_reset_after_children();
+
+	// internal helpers
+	inline UINT16 paletteram16_le(offs_t offset) const { return m_generic_paletteram[offset & ~1] | (m_generic_paletteram[offset |  1] << 8); }
+	inline UINT16 paletteram16_be(offs_t offset) const { return m_generic_paletteram[offset |  1] | (m_generic_paletteram[offset & ~1] << 8); }
+	inline UINT16 paletteram16_split(offs_t offset) const { return m_generic_paletteram[offset] | (m_generic_paletteram2[offset] << 8); }
+	inline UINT32 paletteram32_be(offs_t offset) const { return m_generic_paletteram16[offset | 1] | (m_generic_paletteram16[offset & ~1] << 16); }
 
 	// internal state
 	const game_driver *		m_system;					// pointer to the game driver
 
 	legacy_callback_func	m_callbacks[CB_COUNT];		// generic legacy callbacks
 	palette_init_func		m_palette_init;				// one-time palette init callback
+
+	// generic pointers
+	optional_shared_ptr<UINT8> m_generic_paletteram;
+	optional_shared_ptr<UINT16> m_generic_paletteram16;
+	optional_shared_ptr<UINT8> m_generic_paletteram2;
 };
 
 
@@ -619,25 +732,26 @@ device_t *driver_device_creator(const machine_config &mconfig, const char *tag, 
 //  INLINE FUNCTIONS
 //**************************************************************************
 
-inline device_t *running_machine::device(const char *tag)
-{
-	return devicelist().find(tag);
-}
-
 inline const input_port_config *running_machine::port(const char *tag)
 {
-	return m_portlist.find(tag);
+	// if tag begins with a :, it's absolute
+	if (tag[0] == ':')
+		return m_portlist.find(tag);
+
+	// otherwise, compute it relative to the root device
+	astring fulltag;
+	return m_portlist.find(root_device().subtag(fulltag, tag).cstr());
 }
 
 inline const memory_region *running_machine::region(const char *tag)
 {
 	// if tag begins with a :, it's absolute
 	if (tag[0] == ':')
-	{
-		return m_regionlist.find(&tag[1]);
-	}
+		return m_regionlist.find(tag);
 
-	return m_regionlist.find(tag);
+	// otherwise, compute it relative to the root device
+	astring fulltag;
+	return m_regionlist.find(root_device().subtag(fulltag, tag).cstr());
 }
 
 

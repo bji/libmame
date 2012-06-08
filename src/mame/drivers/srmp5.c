@@ -85,14 +85,13 @@ public:
 };
 
 
-static SCREEN_UPDATE( srmp5 )
+static SCREEN_UPDATE_RGB32( srmp5 )
 {
-	srmp5_state *state = screen->machine().driver_data<srmp5_state>();
+	srmp5_state *state = screen.machine().driver_data<srmp5_state>();
 	int x,y,address,xs,xs2,ys,ys2,height,width,xw,yw,xb,yb,sizex,sizey;
 	UINT16 *sprite_list=state->m_sprram;
 	UINT16 *sprite_list_end=&state->m_sprram[0x4000]; //guess
 	UINT8 *pixels=(UINT8 *)state->m_tileram;
-	const rectangle &visarea = screen->visible_area();
 
 //Table surface seems to be tiles, but display corrupts when switching the scene if always ON.
 //Currently the tiles are OFF.
@@ -119,7 +118,7 @@ static SCREEN_UPDATE( srmp5 )
 						if(pen)
 						{
 							UINT16 pixdata=state->m_palram[pen];
-							*BITMAP_ADDR32(bitmap, yw * 16 + y, xw * 16 + x) = ((pixdata&0x7c00)>>7) | ((pixdata&0x3e0)<<6) | ((pixdata&0x1f)<<19);
+							bitmap.pix32(yw * 16 + y, xw * 16 + x) = ((pixdata&0x7c00)>>7) | ((pixdata&0x3e0)<<6) | ((pixdata&0x1f)<<19);
 						}
 						address++;
 					}
@@ -129,7 +128,7 @@ static SCREEN_UPDATE( srmp5 )
 	}
 	else
 #endif
-		bitmap_fill(bitmap,cliprect,0);
+		bitmap.fill(0, cliprect);
 
 	while((sprite_list[SUBLIST_OFFSET]&SPRITE_LIST_END_MARKER)==0 && sprite_list<sprite_list_end)
 	{
@@ -168,10 +167,10 @@ static SCREEN_UPDATE( srmp5 )
 								xs2 = (sprite_sublist[SPRITE_PALETTE] & 0x8000) ? (sizex - xs) : xs;
 								if(pen)
 								{
-									if(xb+xs2<=visarea.max_x && xb+xs2>=visarea.min_x && yb+ys2<=visarea.max_y && yb+ys2>=visarea.min_y )
+									if(cliprect.contains(xb+xs2, yb+ys2))
 									{
 										UINT16 pixdata=state->m_palram[pen+((sprite_sublist[SPRITE_PALETTE]&0xff)<<8)];
-										*BITMAP_ADDR32(bitmap, yb+ys2, xb+xs2) = ((pixdata&0x7c00)>>7) | ((pixdata&0x3e0)<<6) | ((pixdata&0x1f)<<19);
+										bitmap.pix32(yb+ys2, xb+xs2) = ((pixdata&0x7c00)>>7) | ((pixdata&0x3e0)<<6) | ((pixdata&0x1f)<<19);
 									}
 								}
 								++address;
@@ -193,7 +192,7 @@ static SCREEN_UPDATE( srmp5 )
 		{
 			if (state->m_tileduty[i] == 1)
 			{
-				gfx_element_decode(screen->machine().gfx[0], i);
+				gfx_element_decode(screen.machine().gfx[0], i);
 				state->m_tileduty[i] = 0;
 			}
 		}
@@ -570,10 +569,9 @@ static MACHINE_CONFIG_START( srmp5, srmp5_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(96*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 42*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(srmp5)
+	MCFG_SCREEN_UPDATE_STATIC(srmp5)
 
 	MCFG_PALETTE_LENGTH(0x1800)
 #ifdef DEBUG_CHAR

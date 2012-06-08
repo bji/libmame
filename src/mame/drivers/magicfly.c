@@ -439,14 +439,14 @@ static WRITE8_HANDLER( magicfly_videoram_w )
 {
 	magicfly_state *state = space->machine().driver_data<magicfly_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( magicfly_colorram_w )
 {
 	magicfly_state *state = space->machine().driver_data<magicfly_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_magicfly_tile_info )
@@ -513,10 +513,10 @@ static VIDEO_START( 7mezzo )
 	state->m_bg_tilemap = tilemap_create(machine, get_7mezzo_tile_info, tilemap_scan_rows, 8, 8, 32, 29);
 }
 
-static SCREEN_UPDATE( magicfly )
+static SCREEN_UPDATE_IND16( magicfly )
 {
-	magicfly_state *state = screen->machine().driver_data<magicfly_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	magicfly_state *state = screen.machine().driver_data<magicfly_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -809,10 +809,9 @@ static MACHINE_CONFIG_START( magicfly, magicfly_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((39+1)*8, (31+1)*8)				/* Taken from MC6845 init, registers 00 & 04. Normally programmed with (value-1). */
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 29*8-1)	/* Taken from MC6845 init, registers 01 & 06. */
-	MCFG_SCREEN_UPDATE(magicfly)
+	MCFG_SCREEN_UPDATE_STATIC(magicfly)
 
 	MCFG_GFXDECODE(magicfly)
 	MCFG_PALETTE_LENGTH(32)

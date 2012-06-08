@@ -73,8 +73,8 @@ VIDEO_START( dogfgt )
 	state->m_bitmapram = auto_alloc_array(machine, UINT8, BITMAPRAM_SIZE);
 	state->save_pointer(NAME(state->m_bitmapram), BITMAPRAM_SIZE);
 
-	state->m_pixbitmap = machine.primary_screen->alloc_compatible_bitmap();
-	state->save_item(NAME(*state->m_pixbitmap));
+	machine.primary_screen->register_screen_bitmap(state->m_pixbitmap);
+	state->save_item(NAME(state->m_pixbitmap));
 }
 
 
@@ -123,9 +123,9 @@ static WRITE8_HANDLER( internal_bitmapram_w )
 			color |= ((state->m_bitmapram[offset + BITMAPRAM_SIZE / 3 * i] >> subx) & 1) << i;
 
 		if (flip_screen_get(space->machine()))
-			*BITMAP_ADDR16(state->m_pixbitmap, y ^ 0xff, (x + subx) ^ 0xff) = PIXMAP_COLOR_BASE + 8 * state->m_pixcolor + color;
+			state->m_pixbitmap.pix16(y ^ 0xff, (x + subx) ^ 0xff) = PIXMAP_COLOR_BASE + 8 * state->m_pixcolor + color;
 		else
-			*BITMAP_ADDR16(state->m_pixbitmap, y, x + subx) = PIXMAP_COLOR_BASE + 8 * state->m_pixcolor + color;
+			state->m_pixbitmap.pix16(y, x + subx) = PIXMAP_COLOR_BASE + 8 * state->m_pixcolor + color;
 	}
 }
 
@@ -147,7 +147,7 @@ WRITE8_HANDLER( dogfgt_bgvideoram_w )
 	dogfgt_state *state = space->machine().driver_data<dogfgt_state>();
 
 	state->m_bgvideoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset & 0x3ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 WRITE8_HANDLER( dogfgt_scroll_w )
@@ -155,8 +155,8 @@ WRITE8_HANDLER( dogfgt_scroll_w )
 	dogfgt_state *state = space->machine().driver_data<dogfgt_state>();
 
 	state->m_scroll[offset] = data;
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_scroll[0] + 256 * state->m_scroll[1] + 256);
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, state->m_scroll[2] + 256 * state->m_scroll[3]);
+	state->m_bg_tilemap->set_scrollx(0, state->m_scroll[0] + 256 * state->m_scroll[1] + 256);
+	state->m_bg_tilemap->set_scrolly(0, state->m_scroll[2] + 256 * state->m_scroll[3]);
 }
 
 WRITE8_HANDLER( dogfgt_1800_w )
@@ -184,7 +184,7 @@ WRITE8_HANDLER( dogfgt_1800_w )
 
 ***************************************************************************/
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect )
 {
 	dogfgt_state *state = machine.driver_data<dogfgt_state>();
 	int offs;
@@ -217,16 +217,16 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap,const recta
 }
 
 
-SCREEN_UPDATE( dogfgt )
+SCREEN_UPDATE_IND16( dogfgt )
 {
-	dogfgt_state *state = screen->machine().driver_data<dogfgt_state>();
+	dogfgt_state *state = screen.machine().driver_data<dogfgt_state>();
 	int offs;
 
-	if (state->m_lastflip != flip_screen_get(screen->machine()) || state->m_lastpixcolor != state->m_pixcolor)
+	if (state->m_lastflip != flip_screen_get(screen.machine()) || state->m_lastpixcolor != state->m_pixcolor)
 	{
-		address_space *space = screen->machine().device("maincpu")->memory().space(AS_PROGRAM);
+		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
 
-		state->m_lastflip = flip_screen_get(screen->machine());
+		state->m_lastflip = flip_screen_get(screen.machine());
 		state->m_lastpixcolor = state->m_pixcolor;
 
 		for (offs = 0; offs < BITMAPRAM_SIZE; offs++)
@@ -234,9 +234,9 @@ SCREEN_UPDATE( dogfgt )
 	}
 
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 
 	copybitmap_trans(bitmap, state->m_pixbitmap, 0, 0, 0, 0, cliprect, PIXMAP_COLOR_BASE + 8 * state->m_pixcolor);
 	return 0;

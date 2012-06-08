@@ -256,25 +256,23 @@ static WRITE8_HANDLER(toprollr_rombank_w)
 		memory_set_bank(space->machine(), "bank1", state->m_toprollr_rombank);
 }
 
-
-static TIMER_CALLBACK( disable_interrupts )
-{
-	cpu_interrupt_enable(machine.device("maincpu"), 0);
-}
-
-
 static MACHINE_RESET( cclimber )
 {
 	cclimber_state *state = machine.driver_data<cclimber_state>();
-	/* Disable interrupts, River Patrol / Silver Land needs this */
 
-	/* we must do this on a timer in order to have it take effect */
-	/* otherwise, the reset process will override our changes */
-	machine.scheduler().synchronize(FUNC(disable_interrupts));
+	/* Disable interrupts, River Patrol / Silver Land needs this otherwise returns bad RAM on POST */
+	state->m_nmi_mask = 0;
 
 	state->m_toprollr_rombank = 0;
 }
 
+
+static WRITE8_HANDLER( nmi_mask_w )
+{
+	cclimber_state *state = space->machine().driver_data<cclimber_state>();
+
+	state->m_nmi_mask = data & 1;
+}
 
 
 /* Note that River Patrol reads/writes to a000-a4f0. This is a bug in the code.
@@ -294,9 +292,9 @@ static ADDRESS_MAP_START( cclimber_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x98dc, 0x98df) AM_RAM AM_BASE_MEMBER(cclimber_state, m_bigsprite_control)
 	AM_RANGE(0x9800, 0x9bff) AM_RAM  /* not used, but initialized */
 	AM_RANGE(0x9c00, 0x9fff) AM_RAM_WRITE(cclimber_colorram_w) AM_BASE_MEMBER(cclimber_state, m_colorram)
-	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xa001, 0xa002) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_flip_screen)
-	AM_RANGE(0xa003, 0xa003) AM_WRITE(interrupt_enable_w) //used by Crazy Kong Bootleg with alt levels and speed up
+	AM_RANGE(0xa003, 0xa003) AM_WRITE(nmi_mask_w) //used by Crazy Kong Bootleg with alt levels and speed up
 	AM_RANGE(0xa004, 0xa004) AM_WRITE(cclimber_sample_trigger_w)
 	AM_RANGE(0xa800, 0xa800) AM_READ_PORT("P2") AM_WRITE(cclimber_sample_rate_w)
 	AM_RANGE(0xb000, 0xb000) AM_READ_PORT("DSW") AM_WRITE(cclimber_sample_volume_w)
@@ -318,7 +316,7 @@ static ADDRESS_MAP_START( cannonb_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x98dc, 0x98df) AM_RAM AM_BASE_MEMBER(cclimber_state, m_bigsprite_control)
 	AM_RANGE(0x9800, 0x9bff) AM_RAM  /* not used, but initialized */
 	AM_RANGE(0x9c00, 0x9fff) AM_RAM_WRITE(cclimber_colorram_w) AM_BASE_MEMBER(cclimber_state, m_colorram)
-	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xa001, 0xa002) AM_WRITE(cannonb_flip_screen_w) AM_BASE_MEMBER(cclimber_state, m_flip_screen)
 	AM_RANGE(0xa004, 0xa004) AM_WRITE(cclimber_sample_trigger_w)
 	AM_RANGE(0xa800, 0xa800) AM_READ_PORT("P2") AM_WRITE(cclimber_sample_rate_w)
@@ -335,7 +333,7 @@ static ADDRESS_MAP_START( swimmer_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x9880, 0x989f) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_spriteram)
 	AM_RANGE(0x98fc, 0x98ff) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_bigsprite_control)
 	AM_RANGE(0x9c00, 0x9fff) AM_RAM_WRITE(cclimber_colorram_w) AM_BASE_MEMBER(cclimber_state, m_colorram)
-	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P2") AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P2") AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xa001, 0xa002) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_flip_screen)
 	AM_RANGE(0xa003, 0xa003) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_swimmer_side_background_enabled)
 	AM_RANGE(0xa004, 0xa004) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_swimmer_palettebank)
@@ -361,7 +359,7 @@ static ADDRESS_MAP_START( yamato_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x98dc, 0x98df) AM_RAM AM_BASE_MEMBER(cclimber_state, m_bigsprite_control)
 	AM_RANGE(0x9800, 0x9bff) AM_RAM  /* not used, but initialized */
 	AM_RANGE(0x9c00, 0x9fff) AM_RAM_WRITE(cclimber_colorram_w) AM_BASE_MEMBER(cclimber_state, m_colorram)
-	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xa001, 0xa002) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_flip_screen)
 	AM_RANGE(0xa800, 0xa800) AM_READ_PORT("P2")
 	AM_RANGE(0xb000, 0xb000) AM_READ_PORT("DSW")
@@ -380,7 +378,7 @@ static ADDRESS_MAP_START( toprollr_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x9880, 0x995f) AM_RAM AM_BASE_MEMBER(cclimber_state, m_spriteram)
 	AM_RANGE(0x99dc, 0x99df) AM_RAM AM_BASE_MEMBER(cclimber_state, m_bigsprite_control)
 	AM_RANGE(0x9c00, 0x9fff) AM_RAM AM_BASE_MEMBER(cclimber_state, m_colorram)
-	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xa000, 0xa000) AM_READ_PORT("P1") AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xa001, 0xa002) AM_WRITEONLY AM_BASE_MEMBER(cclimber_state, m_flip_screen)
 	AM_RANGE(0xa004, 0xa004) AM_WRITE(cclimber_sample_trigger_w)
 	AM_RANGE(0xa005, 0xa006) AM_WRITE(toprollr_rombank_w)
@@ -982,7 +980,13 @@ static GFXDECODE_START( toprollr )
 	GFXDECODE_ENTRY( "gfx3", 0x0000, cclimber_charlayout,   24*4, 16 )
 GFXDECODE_END
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	cclimber_state *state = device->machine().driver_data<cclimber_state>();
 
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
 
 static MACHINE_CONFIG_START( root, cclimber_state )
 
@@ -990,7 +994,7 @@ static MACHINE_CONFIG_START( root, cclimber_state )
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/3/2)	/* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(cclimber_map)
 	MCFG_CPU_IO_MAP(cclimber_portmap)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_RESET(cclimber)
 
@@ -998,10 +1002,9 @@ static MACHINE_CONFIG_START( root, cclimber_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(cclimber)
+	MCFG_SCREEN_UPDATE_STATIC(cclimber)
 
 	MCFG_GFXDECODE(cclimber)
 	MCFG_PALETTE_LENGTH(16*4+8*4)
@@ -1052,7 +1055,7 @@ static MACHINE_CONFIG_DERIVED( yamato, root )
 	MCFG_PALETTE_LENGTH(16*4+8*4+256)
 	MCFG_PALETTE_INIT(yamato)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(yamato)
+	MCFG_SCREEN_UPDATE_STATIC(yamato)
 
 	/* audio hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -1078,7 +1081,7 @@ static MACHINE_CONFIG_DERIVED( toprollr, cclimber )
 
 	MCFG_VIDEO_START(toprollr)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(toprollr)
+	MCFG_SCREEN_UPDATE_STATIC(toprollr)
 MACHINE_CONFIG_END
 
 
@@ -1087,7 +1090,7 @@ static MACHINE_CONFIG_START( swimmer, cclimber_state )
 	/* basic machine hardware */
     MCFG_CPU_ADD("maincpu", Z80, XTAL_18_432MHz/6)    /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(swimmer_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
     MCFG_CPU_ADD("audiocpu", Z80,XTAL_4MHz/2)  /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(swimmer_audio_map)
@@ -1098,10 +1101,9 @@ static MACHINE_CONFIG_START( swimmer, cclimber_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
     MCFG_SCREEN_REFRESH_RATE(60.57) /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(swimmer)
+	MCFG_SCREEN_UPDATE_STATIC(swimmer)
 
 	MCFG_GFXDECODE(swimmer)
 	MCFG_PALETTE_LENGTH(32*8+4*8+1)
@@ -1958,6 +1960,37 @@ ROM_START( guzzler )
 	ROM_LOAD( "guzzler.001",  0x0200, 0x020, CRC(69089495) SHA1(96b067b22be14536bac748f8d61e5587a8a04e92) )
 ROM_END
 
+ROM_START( guzzlers ) /* Swimmer Conversion, 1k vs 2k romsize in maincpu */
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "guzz1.l9",  0x0000, 0x1000, CRC(48f751ee) SHA1(a8ff19d150d382a43ad705fe2a470450e317aac3) )
+	ROM_LOAD( "guzz2.k9",  0x1000, 0x1000, CRC(c13f23e6) SHA1(2cd31e0419875c50433f1763e35e32afcaf68fde) )
+	ROM_LOAD( "guzz3.j9",  0x2000, 0x1000, CRC(7a523fd8) SHA1(683249d2ffdde21f74d80280e538645ac143d45c) )
+	ROM_LOAD( "guzz4.f9",  0x3000, 0x1000, CRC(d2bb2204) SHA1(87f821f1cb92577e10beb67be29d9eecd9e8a04f) )
+	ROM_LOAD( "guzz5.e9",  0x4000, 0x1000, CRC(09856fd0) SHA1(f2eeffe2c35f652a855502f808fd5056252ce7fd) )
+	ROM_LOAD( "guzz6.d9",  0x5000, 0x1000, CRC(80990d1e) SHA1(282f5247b88f29ee6178c771ecddf2a5ed995913) )
+	ROM_LOAD( "guzz7.c9",  0x6000, 0x1000, CRC(fe37b99d) SHA1(9219fe4506e81e574f5ae84ec10dc1df511f76a1) )
+	ROM_LOAD( "guzz8.a9",  0x7000, 0x1000, CRC(8d44f5f8) SHA1(957f1b880f6f815ac31c1a37c40cdff75dd119cf) )
+	ROM_LOAD( "guzz-16.bin",  0xe000, 0x2000, CRC(61ee00b7) SHA1(ea8516c8dfb2de32a8034f94c7d0c086e3596740) ) // 16.
+
+	ROM_REGION( 0x10000, "audiocpu", 0 )
+	ROM_LOAD( "guzz-12.bin",  0x0000, 0x1000, CRC(f3754d9e) SHA1(bb30832aba4e82ab0ecce40fc1223d9771ff7dd2) ) // GUZZ12.L4
+
+	ROM_REGION( 0x3000, "gfx1", 0 ) /* chars */
+	ROM_LOAD( "guzz-13.bin",  0x0000, 0x1000, CRC(afc464e2) SHA1(61730b5e5add24ba3d4e8903c5d71cf4df9b77e0) ) // GUZZ13.JK18
+	ROM_LOAD( "guzz-14.bin",  0x1000, 0x1000, CRC(acbdfe1f) SHA1(ab7abe4bb321fc7dc4e73acab4b1a7133e6bcf20) ) // GUZZ14.L18
+	ROM_LOAD( "guzz-15.bin",  0x2000, 0x1000, CRC(66978c05) SHA1(2c8d5545f8b1d3cd7cd63448f8064fd3712d6fee) ) // GUZZ15.MN18
+
+	ROM_REGION( 0x3000, "gfx2", 0 ) /* big sprite */
+	ROM_LOAD( "guzz-11.bin",  0x0000, 0x1000, CRC(ec2e9d86) SHA1(2fc631229e78db68777e74a03f98f660f324a885) ) // 11.C6
+	ROM_LOAD( "guzz-10.bin",  0x1000, 0x1000, CRC(bd3f0bf7) SHA1(c57aff05812801c22104a4afc8a8a6bca33dda96) ) // 10.C5
+	ROM_LOAD( "guzz-09.bin",  0x2000, 0x1000, CRC(18927579) SHA1(414676193ef1f6ce79a4cba73e4d017312f766f4) ) // 9.C4
+
+	ROM_REGION( 0x0220, "proms", 0 )
+	ROM_LOAD( "guzzler.003",  0x0000, 0x100, CRC(f86930c1) SHA1(58efc8cbef05e1612d12e2f0babddf15571d42bb) ) // B.B13
+	ROM_LOAD( "guzzler.002",  0x0100, 0x100, CRC(b566ea9e) SHA1(345078af6a339fbe6cd966046acd9d04c8926b5c) ) // A.A13
+	ROM_LOAD( "c.c12",        0x0200, 0x020, CRC(51cd9980) SHA1(9c4858a01c9b03ff8c87ba9f11049e0c1af5d519) )
+ROM_END
+
 ROM_START( yamato )
 	ROM_REGION( 2*0x10000, "maincpu", 0 )
 	ROM_LOAD( "2.5de",        0x0000, 0x2000, CRC(20895096) SHA1(af76786e3c519e710899f143d46c53087e9817c7) )
@@ -2117,6 +2150,7 @@ GAME( 1982, swimmera,    swimmer,  swimmer,  swimmer,  0,        ROT0,   "Tehkan
 GAME( 1982, swimmerb,    swimmer,  swimmer,  swimmerb, 0,        ROT0,   "Tehkan", "Swimmer (set 3)", 0 )
 
 GAME( 1983, guzzler,     0,        swimmer,  guzzler,  0,        ROT90,  "Tehkan", "Guzzler", 0 )
+GAME( 1983, guzzlers,    guzzler,  swimmer,  guzzler,  0,        ROT90,  "Tehkan", "Guzzler (Swimmer Conversion)", 0 )
 
 GAME( 1983, yamato,      0,        yamato,   yamato,   yamato,   ROT90,  "Sega", "Yamato (US)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1983, yamato2,     yamato,   yamato,   yamato,   yamato,   ROT90,  "Sega", "Yamato (World?)", GAME_IMPERFECT_GRAPHICS )

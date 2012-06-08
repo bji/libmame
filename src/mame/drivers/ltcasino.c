@@ -56,14 +56,14 @@ static WRITE8_HANDLER( ltcasino_tile_num_w )
 {
 	ltcasino_state *state = space->machine().driver_data<ltcasino_state>();
 	state->m_tile_num_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap,offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( ltcasino_tile_atr_w )
 {
 	ltcasino_state *state = space->machine().driver_data<ltcasino_state>();
 	state->m_tile_atr_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap,offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -632,10 +632,10 @@ static GFXDECODE_START( ltcasino )
 GFXDECODE_END
 
 
-static SCREEN_UPDATE(ltcasino)
+static SCREEN_UPDATE_IND16(ltcasino)
 {
-	ltcasino_state *state = screen->machine().driver_data<ltcasino_state>();
-	tilemap_draw(bitmap,cliprect,state->m_tilemap,0,0);
+	ltcasino_state *state = screen.machine().driver_data<ltcasino_state>();
+	state->m_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -650,10 +650,9 @@ static MACHINE_CONFIG_START( ltcasino, ltcasino_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(6*8, 58*8-1, 0, 32*8-1)
-	MCFG_SCREEN_UPDATE(ltcasino)
+	MCFG_SCREEN_UPDATE_STATIC(ltcasino)
 
 	MCFG_GFXDECODE(ltcasino)
 	MCFG_PALETTE_LENGTH(0x100)

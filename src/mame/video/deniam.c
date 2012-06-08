@@ -112,8 +112,8 @@ VIDEO_START( deniam )
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, scan_pages, 8, 8, 128, 64);
 	state->m_tx_tilemap = tilemap_create(machine, get_tx_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
-	tilemap_set_transparent_pen(state->m_tx_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
+	state->m_tx_tilemap->set_transparent_pen(0);
 }
 
 
@@ -134,9 +134,9 @@ WRITE16_HANDLER( deniam_videoram_w )
 	for (i = 0; i < 4; i++)
 	{
 		if (state->m_bg_page[i] == page)
-			tilemap_mark_tile_dirty(state->m_bg_tilemap, i * 0x800 + (offset & 0x7ff));
+			state->m_bg_tilemap->mark_tile_dirty(i * 0x800 + (offset & 0x7ff));
 		if (state->m_fg_page[i] == page)
-			tilemap_mark_tile_dirty(state->m_fg_tilemap, i * 0x800 + (offset & 0x7ff));
+			state->m_fg_tilemap->mark_tile_dirty(i * 0x800 + (offset & 0x7ff));
 	}
 }
 
@@ -145,7 +145,7 @@ WRITE16_HANDLER( deniam_textram_w )
 {
 	deniam_state *state = space->machine().driver_data<deniam_state>();
 	COMBINE_DATA(&state->m_textram[offset]);
-	tilemap_mark_tile_dirty(state->m_tx_tilemap, offset);
+	state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -214,7 +214,7 @@ WRITE16_HANDLER( deniam_coinctrl_w )
  *   c  | ---------------- | zoomy like in System 16?
  *   e  | ---------------- |
  */
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	deniam_state *state = machine.driver_data<deniam_state>();
 	int offs;
@@ -269,12 +269,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 					{
 						if (rom[i] & 0x0f)
 						{
-							if (sx + x >= cliprect->min_x && sx + x <= cliprect->max_x &&
-								y >= cliprect->min_y && y <= cliprect->max_y)
+							if (cliprect.contains(sx + x, y))
 							{
-								if ((*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) & primask) == 0)
-									*BITMAP_ADDR16(bitmap, y, sx + x) = color * 16 + (rom[i] & 0x0f);
-								*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) = 8;
+								if ((machine.priority_bitmap.pix8(y, sx + x) & primask) == 0)
+									bitmap.pix16(y, sx + x) = color * 16 + (rom[i] & 0x0f);
+								machine.priority_bitmap.pix8(y, sx + x) = 8;
 							}
 						}
 						x++;
@@ -289,12 +288,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 					{
 						if (rom[i] & 0xf0)
 						{
-							if (sx + x >= cliprect->min_x && sx + x <= cliprect->max_x &&
-								y >= cliprect->min_y && y <= cliprect->max_y)
+							if (cliprect.contains(sx + x, y))
 							{
-								if ((*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) & primask) == 0)
-									*BITMAP_ADDR16(bitmap, y, sx + x) = color * 16+(rom[i] >> 4);
-								*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) = 8;
+								if ((machine.priority_bitmap.pix8(y, sx + x) & primask) == 0)
+									bitmap.pix16(y, sx + x) = color * 16+(rom[i] >> 4);
+								machine.priority_bitmap.pix8(y, sx + x) = 8;
 							}
 						}
 						x++;
@@ -313,12 +311,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 					{
 						if (rom[i] & 0xf0)
 						{
-							if (sx + x >= cliprect->min_x && sx + x <= cliprect->max_x &&
-								y >= cliprect->min_y && y <= cliprect->max_y)
+							if (cliprect.contains(sx + x, y))
 							{
-								if ((*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) & primask) == 0)
-									*BITMAP_ADDR16(bitmap, y, sx + x) = color * 16 + (rom[i] >> 4);
-								*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) = 8;
+								if ((machine.priority_bitmap.pix8(y, sx + x) & primask) == 0)
+									bitmap.pix16(y, sx + x) = color * 16 + (rom[i] >> 4);
+								machine.priority_bitmap.pix8(y, sx + x) = 8;
 							}
 						}
 						x++;
@@ -333,12 +330,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 					{
 						if (rom[i] & 0x0f)
 						{
-							if (sx + x >= cliprect->min_x && sx + x <= cliprect->max_x &&
-								y >= cliprect->min_y && y <= cliprect->max_y)
+							if (cliprect.contains(sx + x, y))
 							{
-								if ((*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) & primask) == 0)
-									*BITMAP_ADDR16(bitmap, y, sx + x) = color * 16 + (rom[i] & 0x0f);
-								*BITMAP_ADDR8(machine.priority_bitmap, y, sx + x) = 8;
+								if ((machine.priority_bitmap.pix8(y, sx + x) & primask) == 0)
+									bitmap.pix16(y, sx + x) = color * 16 + (rom[i] & 0x0f);
+								machine.priority_bitmap.pix8(y, sx + x) = 8;
 							}
 						}
 						x++;
@@ -360,7 +356,7 @@ static void set_bg_page( running_machine &machine, int page, int value )
 	{
 		state->m_bg_page[page] = value;
 		for (tile_index = page * 0x800; tile_index < (page + 1) * 0x800; tile_index++)
-			tilemap_mark_tile_dirty(state->m_bg_tilemap, tile_index);
+			state->m_bg_tilemap->mark_tile_dirty(tile_index);
 	}
 }
 
@@ -373,13 +369,13 @@ static void set_fg_page( running_machine &machine, int page, int value )
 	{
 		state->m_fg_page[page] = value;
 		for (tile_index = page * 0x800; tile_index < (page + 1) * 0x800; tile_index++)
-			tilemap_mark_tile_dirty(state->m_fg_tilemap, tile_index);
+			state->m_fg_tilemap->mark_tile_dirty(tile_index);
 	}
 }
 
-SCREEN_UPDATE( deniam )
+SCREEN_UPDATE_IND16( deniam )
 {
-	deniam_state *state = screen->machine().driver_data<deniam_state>();
+	deniam_state *state = screen.machine().driver_data<deniam_state>();
 	int bg_scrollx, bg_scrolly, fg_scrollx, fg_scrolly;
 	int page;
 
@@ -389,30 +385,30 @@ SCREEN_UPDATE( deniam )
 	bg_scrollx = state->m_textram[state->m_bg_scrollx_reg] - state->m_bg_scrollx_offs;
 	bg_scrolly = (state->m_textram[state->m_bg_scrolly_reg] & 0xff) - state->m_bg_scrolly_offs;
 	page = state->m_textram[state->m_bg_page_reg];
-	set_bg_page(screen->machine(), 3, (page >>12) & 0x0f);
-	set_bg_page(screen->machine(), 2, (page >> 8) & 0x0f);
-	set_bg_page(screen->machine(), 1, (page >> 4) & 0x0f);
-	set_bg_page(screen->machine(), 0, (page >> 0) & 0x0f);
+	set_bg_page(screen.machine(), 3, (page >>12) & 0x0f);
+	set_bg_page(screen.machine(), 2, (page >> 8) & 0x0f);
+	set_bg_page(screen.machine(), 1, (page >> 4) & 0x0f);
+	set_bg_page(screen.machine(), 0, (page >> 0) & 0x0f);
 
 	fg_scrollx = state->m_textram[state->m_fg_scrollx_reg] - state->m_fg_scrollx_offs;
 	fg_scrolly = (state->m_textram[state->m_fg_scrolly_reg] & 0xff) - state->m_fg_scrolly_offs;
 	page = state->m_textram[state->m_fg_page_reg];
-	set_fg_page(screen->machine(), 3, (page >>12) & 0x0f);
-	set_fg_page(screen->machine(), 2, (page >> 8) & 0x0f);
-	set_fg_page(screen->machine(), 1, (page >> 4) & 0x0f);
-	set_fg_page(screen->machine(), 0, (page >> 0) & 0x0f);
+	set_fg_page(screen.machine(), 3, (page >>12) & 0x0f);
+	set_fg_page(screen.machine(), 2, (page >> 8) & 0x0f);
+	set_fg_page(screen.machine(), 1, (page >> 4) & 0x0f);
+	set_fg_page(screen.machine(), 0, (page >> 0) & 0x0f);
 
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, bg_scrollx & 0x1ff);
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, bg_scrolly & 0x0ff);
-	tilemap_set_scrollx(state->m_fg_tilemap, 0, fg_scrollx & 0x1ff);
-	tilemap_set_scrolly(state->m_fg_tilemap, 0, fg_scrolly & 0x0ff);
+	state->m_bg_tilemap->set_scrollx(0, bg_scrollx & 0x1ff);
+	state->m_bg_tilemap->set_scrolly(0, bg_scrolly & 0x0ff);
+	state->m_fg_tilemap->set_scrollx(0, fg_scrollx & 0x1ff);
+	state->m_fg_tilemap->set_scrolly(0, fg_scrolly & 0x0ff);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 1);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 2);
-	tilemap_draw(bitmap, cliprect, state->m_tx_tilemap, 0, 4);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 1);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 2);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0, 4);
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

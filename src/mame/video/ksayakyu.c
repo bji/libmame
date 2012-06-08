@@ -6,7 +6,7 @@ WRITE8_HANDLER(ksayakyu_videoram_w)
 {
 	ksayakyu_state *state = space->machine().driver_data<ksayakyu_state>();
 	state->m_videoram[offset]=data;
-	tilemap_mark_tile_dirty(state->m_textmap, offset >> 1);
+	state->m_textmap->mark_tile_dirty(offset >> 1);
 }
 
 WRITE8_HANDLER(ksayakyu_videoctrl_w)
@@ -25,11 +25,11 @@ WRITE8_HANDLER(ksayakyu_videoctrl_w)
 
 	state->m_flipscreen = data & 4;
 	flip_screen_set(space->machine(), state->m_flipscreen);
-	tilemap_set_scrolly(state->m_tilemap, 0, (data & 0xe0) << 3);
+	state->m_tilemap->set_scrolly(0, (data & 0xe0) << 3);
 	if(state->m_flipscreen)
-		tilemap_set_flip(state->m_tilemap, (data & 2) ? TILEMAP_FLIPY : TILEMAP_FLIPX | TILEMAP_FLIPY);
+		state->m_tilemap->set_flip((data & 2) ? TILEMAP_FLIPY : TILEMAP_FLIPX | TILEMAP_FLIPY);
 	else
-		tilemap_set_flip(state->m_tilemap, (data & 2) ? TILEMAP_FLIPX : 0);
+		state->m_tilemap->set_flip((data & 2) ? TILEMAP_FLIPX : 0);
 }
 
 PALETTE_INIT( ksayakyu )
@@ -81,7 +81,7 @@ static TILE_GET_INFO( get_text_tile_info )
 [3]
 */
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	ksayakyu_state *state = machine.driver_data<ksayakyu_state>();
 	const UINT8 *source = state->m_spriteram + state->m_spriteram_size - 4;
@@ -121,19 +121,19 @@ VIDEO_START(ksayakyu)
 	ksayakyu_state *state = machine.driver_data<ksayakyu_state>();
 	state->m_tilemap = tilemap_create(machine, get_ksayakyu_tile_info, tilemap_scan_rows, 8, 8, 32, 32 * 8);
 	state->m_textmap = tilemap_create(machine, get_text_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_textmap, 0);
+	state->m_textmap->set_transparent_pen(0);
 }
 
-SCREEN_UPDATE(ksayakyu)
+SCREEN_UPDATE_IND16(ksayakyu)
 {
-	ksayakyu_state *state = screen->machine().driver_data<ksayakyu_state>();
+	ksayakyu_state *state = screen.machine().driver_data<ksayakyu_state>();
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	if (state->m_video_ctrl & 1)
-		tilemap_draw(bitmap, cliprect,state->m_tilemap, 0, 0);
+		state->m_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	tilemap_draw(bitmap, cliprect, state->m_textmap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_textmap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

@@ -1,6 +1,9 @@
 /*
     Williams System 11a
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
@@ -8,18 +11,28 @@ class williams_s11a_state : public driver_device
 {
 public:
 	williams_s11a_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( williams_s11a_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( williams_s11a_map, AS_PROGRAM, 8, williams_s11a_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( williams_s11a )
 INPUT_PORTS_END
 
-static MACHINE_RESET( williams_s11a )
+void williams_s11a_state::machine_reset()
 {
 }
 
@@ -31,8 +44,6 @@ static MACHINE_CONFIG_START( williams_s11a, williams_s11a_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(williams_s11a_map)
-
-	MCFG_MACHINE_RESET( williams_s11a )
 MACHINE_CONFIG_END
 
 /*--------------------
@@ -178,11 +189,11 @@ ROM_START(pb_l3)
 	ROM_RELOAD(0x10000+0x8000, 0x8000)
 ROM_END
 
-GAME(1987,	f14_l1,		0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"F14 Tomcat (L-1)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	f14_p3,		f14_l1,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"F14 Tomcat (P-3)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	f14_p4,		f14_l1,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"F14 Tomcat (P-4)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	fire_l3,	0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"Fire! (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	milln_l3,	0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"Millionaire (L-3)",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	pb_l5,		0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"Pinbot (L-5)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	pb_l2,		pb_l5,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"Pinbot (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1987,	pb_l3,		pb_l5,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",				"Pinbot (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1987,	f14_l1,		0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"F14 Tomcat (L-1)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1987,	f14_p3,		f14_l1,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"F14 Tomcat (P-3)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1987,	f14_p4,		f14_l1,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"F14 Tomcat (P-4)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1987,	fire_l3,	0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"Fire! (L-3)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1987,	milln_l3,	0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"Millionaire (L-3)",	GAME_IS_SKELETON_MECHANICAL)
+GAME(1986,	pb_l5,		0,		williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"Pin-Bot (L-5)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1986,	pb_l2,		pb_l5,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"Pin-Bot (L-2)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1986,	pb_l3,		pb_l5,	williams_s11a,	williams_s11a,	williams_s11a,	ROT0,	"Williams",		"Pin-Bot (L-3)",		GAME_IS_SKELETON_MECHANICAL)

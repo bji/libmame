@@ -1263,7 +1263,7 @@ time_t input_port_init(running_machine &machine);
 void input_port_list_init(device_t &device, ioport_list &portlist, astring &errorbuf);
 
 /* return the field that matches the given tag and mask */
-const input_field_config *input_field_by_tag_and_mask(const ioport_list &portlist, const char *tag, input_port_value mask);
+const input_field_config *input_field_by_tag_and_mask(running_machine &machine, const char *tag, input_port_value mask);
 
 
 
@@ -1343,7 +1343,7 @@ input_port_value input_port_read_direct(const input_port_config *port);
 input_port_value input_port_read(running_machine &machine, const char *tag);
 
 /* return the value of a device input port specified by tag */
-input_port_value input_port_read(device_t *device, const char *tag);
+input_port_value input_port_read(device_t &device, const char *tag);
 
 /* return the value of an input port specified by tag, or a default value if the port does not exist */
 input_port_value input_port_read_safe(running_machine &machine, const char *tag, input_port_value defvalue);

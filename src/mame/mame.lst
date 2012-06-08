@@ -59,6 +59,7 @@ hangly			// hack
 hangly2			// hack
 hangly3			// hack
 popeyeman		// hack
+crockman		// 1980 bootleg (RENE PIERRE)
 piranhah		// hack
 abscam			// hack
 crush			// (c) 1981 Kural Samno Electric Ltd
@@ -78,7 +79,9 @@ joyman			// hack
 ctrpllrp		// hack
 eyes			// (c) 1982 Digitrex Techstar + "Rockola presents"
 eyes2			// (c) 1982 Techstar + "Rockola presents"
-eyeszac			// (c) 1982 Zaccaria / bootleg
+eyeszac			// (c) 1982 Techstar / Zaccaria
+eyeszacb		// bootleg
+birdiy			// (c) 1983 Mama Top
 mrtnt			// (c) 1983 Telko
 gorkans			// (c) 1984 Techstar
 eggor			// (c) 1983 Telko
@@ -395,6 +398,7 @@ swimmer			// (c) 1982 Tehkan
 swimmera		// (c) 1982 Tehkan
 swimmerb		// (c) 1982 Tehkan
 guzzler			// (c) 1983 Tehkan
+guzzlers		// (c) 1983 Tehkan (Swimmer Conversion)
 cannonb			// (c) 1985 Soft
 cannonb2		// (c) 1985 TV Game Gruenberg
 cannonb3		// (c) 1985 Soft
@@ -406,6 +410,7 @@ wiping			// (c) 1982
 rugrats			// (c) 1983
 dacholer		// (c) 1983
 kickboy			// (c) 1983
+itaten			// (c) 1984 + Alice
 friskyt			// (c) 1981
 friskyta		// (c) 1981
 radrad			// (c) 1982 Nichibutsu USA
@@ -1100,6 +1105,7 @@ highspltb		// (c) 1979 Nintendo
 spacelnc		// (c) 1979 Nintendo
 sheriff			// (c) 1979 Nintendo
 bandido			// (c) 1980 Exidy
+westgun2		// (c) 1980 Taito Corporation
 helifire		// (c) 1980 Nintendo
 helifirea		// (c) 1980 Nintendo
 radarscp		// (c) 1980 Nintendo
@@ -1556,6 +1562,8 @@ nstocker		// (c) 1986
 nstocker2		// (c) 1986
 sfootbal		// (c) 1986
 spiker			// (c) 1986
+spiker2                 // (c) 1986
+spiker3                 // (c) 1986
 stompin			// (c) 1986
 rescraid		// (c) 1987
 rescraida		// (c) 1987
@@ -1922,9 +1930,9 @@ othunder		// B67 (c) 1988 Taito Corporation Japan (World)
 othunderu		// B67 (c) 1988 Taito America Corporation (US)
 othunderuo		// B67 (c) 1988 Taito America Corporation (US)
 othunderj		// B67 (c) 1988 Taito Corporation (Japan)
-rainbow			// B22 (c) 1987 Taito Corporation
-rainbowo		// B22 (c) 1987 Taito Corporation
-rainbowe		// B39 (c) 1988 Taito Corporation
+rbisland		// B22 (c) 1987 Taito Corporation
+rbislando		// B22 (c) 1987 Taito Corporation
+rbislande		// B39 (c) 1988 Taito Corporation
 jumping			// bootleg
 arkanoid		// A75 (c) 1986 Taito Corporation Japan (World)
 arkanoidu		// A75 (c) 1986 Taito America Corporation + Romstar license (US)
@@ -1959,6 +1967,7 @@ pbillian		// (c) 1986 Taito
 hotsmash		// B18 (c) 1987 Taito
 exzisus			// B12 (c) 1987 Taito Corporation (Japan)
 exzisusa		// B23 (c) 1987 Taito Corporation (Japan)
+exzisust		// B23 (c) 1987 TAD Corp (based on Japan Conversion)
 minivadr		// D26 cabinet test board
 volfied			// C04 (c) 1989 Taito Corporation Japan (World)
 volfiedu		// C04 (c) 1989 Taito America Corporation (US)
@@ -1995,6 +2004,7 @@ ashnojoe		// ??? (c) 1990 Wave / Taito
 
 // Taito multi-screen games
 ninjaw			// B31 (c) 1987 Taito Corporation Japan (World)
+ninjawu			// B31 (c) 1987 Taito America Corporation (US)
 ninjawj			// B31 (c) 1987 Taito Corporation (Japan)
 darius2			// C07 (c) 1989 Taito Corporation (Japan)
 sagaia			// C07 (c) 1989 Taito Corporation Japan (World)
@@ -2141,6 +2151,8 @@ aquajack		// B77 (c) 1990 Taito Corporation Japan (World)
 aquajacku		// B77 (c) 1990 Taito America Corporation (US)
 aquajackj		// B77 (c) 1990 Taito Corporation (Japan)
 spacegun		// C57 (c) 1990 Taito Corporation Japan (World)
+spacegunu		// C57 (c) 1990 Taito America Corporation (US)
+spacegunj		// C57 (c) 1990 Taito Corporation (Japan)
 dblaxle			// C78 (c) 1991 Taito America Corporation (US)
 pwheelsj		// C78 (c) 1991 Taito Corporation (Japan)
 racingb			// C84 (c) 1991 Taito Coropration ..
@@ -2362,6 +2374,7 @@ fshark			// B02 / TP-007 (c) 1987 Taito Corporation (World)
 skyshark		// B02 / TP-007 (c) 1987 Taito America Corporation + Romstar license (US)
 hishouza		// B02 / TP-007 (c) 1987 Taito Corporation (Japan)
 fsharkbt		// bootleg
+fsharkbla
 wardner			// B25 / TP-009 (c) 1987 Taito Corporation Japan (World)
 pyros			// B25 / TP-009 (c) 1987 Taito America Corporation (US)
 wardnerj		// B25 / TP-009 (c) 1987 Taito Corporation (Japan)
@@ -2402,10 +2415,13 @@ snowbrosc		// MIN16-02 (c) 1990 Toaplan + Romstar license
 snowbrosj		// MIN16-02 (c) 1990 Toaplan
 snowbrosd		// MIN16-02 (c) 1990 Toaplan + Dooyong license
 wintbob			// bootleg
+// modifeid snowbros 'clone' hardware
 honeydol		// (c) 1995 Barko Corp
 twinadv			// (c) 1995 Barko Corp
 twinadvk		// (c) 1995 Barko Corp
-				// SemiCom games on snowbros like hardware
+snowbros3		// (c) 2002 Syrmex
+// SemiCom games on "SnowBros"-like hardware
+finalttr		// (c) 1993 Jeil Computer System
 hyperpac		// (c) 1995 SemiCom
 hyperpacb		// bootleg
 toppyrap		// (c) 1996 SemiCom
@@ -2416,9 +2432,8 @@ pzlbreak		// (c) 1997 SemiCom
 3in1semi		// (c) 1998 SemiCom
 moremore		// (c) 1999 SemiCom + Exit
 moremorp		// (c) 1999 SemiCom + Exit
-4in1boot		// (c) 2002 but bootleg of 1999 release?
-snowbros3		// (c) 2002 but hack / bootleg of snowbros?
-finalttr		// (c) 1993 Jeil Computer System
+4in1boot		// (c) 2002 KISoft (includes hacks of Semicom games + Snowbros)
+
 
 // More Toaplan Games
 tekipaki		// TP-020 (c) 1991 Toaplan
@@ -2777,7 +2792,7 @@ area88			//  8/1989 (c) 1989 (Japan)
 area88r			//  8/1989 (c) 1989 (Japan)
 ffight			// 12/1989 (c) 1989 (World)
 ffightu			// 12/1989 (c) 1989 (USA)
-ffightu1		// 12/1989 (c) 1989 (USA) (4 eprom instead of mask rom)
+ffightu1		// 12/1989 (c) 1989 (USA)
 ffightua		// 12/01/1990 (c) 1989 (USA)
 ffightub		// 13/06/1990 (c) 1989 (USA)
 ffightj			// 12/1989 (c) 1989 (Japan)
@@ -2801,6 +2816,7 @@ cawing			// 12/10/1990 (c) 1990 (World)
 cawingr1		// 09/10/1990 (c) 1990 (World)
 cawingu			// 12/10/1990 (c) 1990 (USA)
 cawingj			// 12/10/1990 (c) 1990 (Japan)
+cawingbl
 nemo			// 30/11/1990 (c) 1990 (World)
 nemoj			// 20/11/1990 (c) 1990 (Japan)
 sf2				// 22/05/1991 (c) 1991 (World)
@@ -2870,13 +2886,15 @@ varth			// 14/07/1992 (c) 1992 (World)
 varthr1			// 12/06/1992 (c) 1992 (World)
 varthu			// 12/06/1992 (c) 1992 (USA)
 varthj			// 14/07/1992 (c) 1992 (Japan)
-qad				// 01/07/1992 (c) 1992 (USA)
+qad			// 01/07/1992 (c) 1992 (USA)
 qadj			// 21/09/1994 (c) 1994 (Japan)
-wof				// 02/10/1992 (c) 1992 (World) (CPS1 + QSound)
+wof			// 31/10/1992 (c) 1992 (World) (CPS1 + QSound)
+wofr1			// 02/10/1992 (c) 1992 (World) (CPS1 + QSound)
 wofu			// 31/10/1992 (c) 1992 (USA) (CPS1 + QSound)
 wofa			// 05/10/1992 (c) 1992 (Asia)  (CPS1 + QSound)
 wofj			// 31/10/1992 (c) 1992 (Japan) (CPS1 + QSound)
 wofhfh			// bootleg
+sgyxz			// bootleg (All-In Electronics)
 sf2hf			// 09/12/1992 (c) 1992 (World)
 sf2hfu			// 09/12/1992 (c) 1992 (USA)
 sf2hfj			// 09/12/1992 (c) 1992 (Japan)
@@ -2902,8 +2920,9 @@ mbombrdj		// 06/12/1993 (c) 1993 (Japan) (CPS1 + QSound)
 pnickj			// 08/06/1994 (c) 1994 Compile + Capcom license (Japan) not listed on Capcom's site
 qtono2j			// 23/01/1995 (c) 1995 (Japan)
 pang3			// 01/06/1995 (c) 1995 Mitchell (Euro) not listed on Capcom's site
-pang3n			// 11/05/1995 (c) 1995 Mitchell (Euro) not listed on Capcom's site
+pang3r1			// 11/05/1995 (c) 1995 Mitchell (Euro) not listed on Capcom's site
 pang3j			// 11/05/1995 (c) 1995 Mitchell (Japan) not listed on Capcom's site
+pang3b			// bootleg
 megaman			// 06/10/1995 (c) 1995 (USA)
 megamana		// 06/10/1995 (c) 1995 (Asia)
 rockmanj		// 22/09/1995 (c) 1995 (Japan)
@@ -3204,8 +3223,10 @@ jojo			// 08/01/1999 (c) 1998 (USA)
 jojoa			// 02/12/1998 (c) 1998 (USA)
 jojoj			// 08/01/1999 (c) 1998 (Japan)
 jojoaj			// 02/12/1998 (c) 1998 (Japan)
-sfiii3			// 08/06/1999 (c) 1999 (USA)
-sfiii3a			// 12/05/1999 (c) 1999 (USA)
+sfiii3			// 08/06/1999 (c) 1999 (Euro)
+sfiii3a			// 12/05/1999 (c) 1999 (Euro)
+sfiii3u			// 08/06/1999 (c) 1999 (USA)
+sfiii3au		// 12/05/1999 (c) 1999 (USA)
 jojoba			// 13/09/1999 (c) 1999 (Japan)
 
 sfiiin			// 04/02/1997 (c) 1997 (Asia)
@@ -3219,7 +3240,8 @@ jojobane		// 13/09/1999 (c) 1999 (Euro)
 
 // Capcom ZN1
 cpzn1
-ts2				// Battle Arena Toshinden 2 (USA 951124)
+ts2			// Battle Arena Toshinden 2 (USA 951124)
+ts2a			// Battle Arena Toshinden 2 (USA 951124)
 ts2j			// Battle Arena Toshinden 2 (JAPAN 951124)
 starglad		// Star Gladiator (USA 960627)
 stargladj		// Star Gladiator (JAPAN 960627)
@@ -3234,7 +3256,8 @@ sfexpj			// Street Fighter EX Plus (JAPAN 970311)
 
 // Capcom ZN2
 cpzn2
-rvschool		// Rival Schools (USA 971117)
+rvschool		// Rival Schools (EURO 971117)
+rvschoolu		// Rival Schools (USA 971117)
 rvschoola		// Rival Schools (ASIA 971117)
 jgakuen			// Justice Gakuen (JAPAN 971117)
 sfex2			// Street Fighter EX 2 (USA 980526)
@@ -3428,6 +3451,7 @@ pacapp2			// 1999.07 Paca Paca Passion 2 (Japan, PKS1/VER.A)
 				// 1999.07 Bust A Move 2 (Metro)
 tektagt			// 1999.?? Tekken Tag Tournament (US, TEG3/VER.C1)
 tektagtac		// 1999.?? Tekken Tag Tournament (Asia, TEG2/VER.C1)
+tektagtac1		// 1999.?? Tekken Tag Tournament (Asia, TEG2/VER.C1) - alt mainboard & rom board
 tektagtub		// 1999.?? Tekken Tag Tournament (US, TEG3/VER.B)
 tektagtjb		// 1999.07 Tekken Tag Tournament (Japan, TEG1/VER.B)
 tektagtja		// 1999.07 Tekken Tag Tournament (Japan, TEG1/VER.A)
@@ -4008,6 +4032,9 @@ fantzn2			// (c) 1988
 opaopa
 tetrisse		// (c) 1988
 
+// Shooting Zone (SMS Gun Games on a timer)
+shtzone			// (c) 1987
+
 // other Sega 8-bit games
 turbo			// (c) 1981 Sega
 turboa			// (c) 1981 Sega
@@ -4430,12 +4457,15 @@ puyosun			// 1996.12 Puyo Puyo SUN (Compile)
 colmns97		// 1997.01 Columns 97
 shienryu		// 1997.02 Shienryu (Warashi)
 vmahjong		// 1997.02 Virtual Mahjong (Micronet)
+pclub2kc		// 1997.02 Print Club Kome Kome Club
+pclub2fc		// 1997.04 Print Club 2 Felix The Cat
 groovef			// 1997.05 Groove on Fight (Atlus)
 nclubv3			// 1997.07 Name Club Ver. 3
 pclub2			// 1997.09 Print Club 2
 thunt			// 1997.09 Puzzle & Action Treasure Hunt (Sega (Deniam License))
 thuntk
 winterht		// 1997.10 Winter Heat (Data East)
+pclub298		// 1997.10 Print Club 2 '98 Spring Ver
 cotton2			// 1997.11 Cotton 2 (Success)
 hanagumi		// 1997.11 Sakura Taisen Hanagumi Taisen Columns
 findlove		// 1997.12 Find Love (Daiki / FCF)
@@ -4451,6 +4481,8 @@ rsgun			// 1998.05 Radient Silver Gun (Treasure)
 astrass			// 1998.06 Astra Super Stars (Sunsoft)
 myfairld		// 1998.07 My Fair Lady (Micronet)
 othellos		// 1998.07 Othello Shiyouyo (Success)
+pclubol			// 1998.07 Print Club Olive
+pclb298a		// 1998.08 Print Club 2 '98 Autumn Ver
 cottonbm		// 1998.09 Cotton Boomerang (Success)
 stress			// 1998.10 Stress Busters
 elandore		// 1998.11 Touryuu Densetsu Elandore (Sai-Mate)
@@ -4461,7 +4493,10 @@ sanjeon			// 1999.04 Sanjun Sujun (Sega / Deniam)
 danchih			// 1999.06 Danchi de Hanafuda Okusan Komeya Desuyo! (Altron (Tecmo License))
 ffreveng		// 1999.09 Final Fight Revenge (Capcom)
 pclubpok		// 1999.11 Print Club Pokemon
+pclubor			// 1999.11 Print Club Goukakenran
 danchiq			// 2000.12 Danchi de Quiz Okusan Yontaku Desuyo! (Altron)
+
+
 
 // Sega Model 2 Games
 
@@ -4789,14 +4824,15 @@ spawn			// 1999.?? Spawn In the Demon's Hand
 18wheels		// 2000.01 18 Wheeler (Rev A)
 doa2m			// 2000.01 Dead or Alive 2 Millennium
 totd			// 2000.01 The Typing of the Dead (Rev A)
-				// 2000.02 Touch de UNO! 2
+tduno2			// 2000.02 Touch de UNO! 2
 virnba			// 2000.02 Virtua NBA
 virnbao			// 2000.02 Virtua NBA (original)
+virnbap			// 2000.02 Virtua NBA (prototype)
 mvsc2			// 2000.03 Marvel Vs. Capcom 2 New Age of Heroes (Rev A)
 smarinef		// 2000.03 Sega Marine Fishing
 wldkicks		// 2000.03 World Kicks
 pstone2			// 2000.04 Power Stone 2
-				// 2000.04 Shin Nihon Prowrestling Toukon Retsuden 4 Arcade Edition
+toukon4			// 2000.04 Shin Nihon Prowrestling Toukon Retsuden 4 Arcade Edition
 qmegamis		// 2000.05 Quiz Ah Megamisama
 derbyo2k		// 2000.06 Derby Owners Club 2000 Ver.2 (Rev A)
 vonot			// 2000.06 Virtual-on Oratorio Tangram M.S.B.S. ver.5.66 2000 Edition
@@ -4870,7 +4906,7 @@ moeru			// 2002.12 Moeru Casinyo
 quizqgd			// 2002.?? Quiz Keitai Q mode
 shootopl		// 2002.?? Shootout Pool
 shootpl			// 2002.?? Shootout Pool / Shootout Pool Prize (Rev A)
-				// 2003.02 MushiKing The King Of Beetle
+mtkob2			// 2003.02 MushiKing The King Of Beetle
 				// 2003.03 Sega Network Taisen Mahjong MJ
 ggxxrl			// 2003.03 Guilty Gear XX # Reload (Rev A)
 shikgam2		// 2003.04 Shikigami No Shiro II / The Castle of Shikigami II
@@ -4923,7 +4959,7 @@ illvelo			// 2008.06 Illvelo (Illmatic Envelope)
 				// 2008.07 Mamoru-kun wa Norowarete Shimatta!
 mbaa			// 2008.09 Melty Blood Actress Again
 				// 2008.12 Melty Blood Actress Again ver.A
-				// 2009.06 Radirgy Noah
+				// 2009.06 Radirgy Noa
 				// 2009.?? Project Cerberus (planned to be released in 2009)
 ngdup23a		// DIMM Firmware Updater (Rev A)
 ngdup23c        // DIMM Firmware Updater (Rev C)
@@ -5132,48 +5168,49 @@ ctsttape		// ?
 chwy			// 01 1980.12 Highway Chase
 				// 02 1980.12 Sengoku Ninjatai
 				// 03 1981.01 Manhattan
-cterrani		// 04 1981.02 Terranian
+cterrani		// 04 1981.02 Terranean
 				// 05 1981.?? Missile Sprinter
-				// 06 1980.12 Nebbler
+				// 06 1980.12 Nebula
 castfant		// 07 1981.02 Astro Fantasia
 				// 08 1981.03 The Tower
 csuperas		// 09 1981.05 Super Astro Fighter
 				// 10 1981.?? Ocean to Ocean (medal)
-clocknch		// 11 1981.04 Rock'n Chase
+clocknch		// 11 1981.04 Lock'n'Chase
 				// 12 1981.08 Flash Boy/DECO Kid
-cprogolf		// 13 1981.08 Pro Golf
+cprogolf		// 13 1981.08 Tournament Pro Golf
 				// 14 1981.06 DS Telejan
 cluckypo		// 15 1981.?? Lucky Poker
 ctisland		// 16 1982.02 Treasure Island
 ctisland2		// 16
 ctisland3		// 16
-				// 17 1981.10 Bobbit
+				// 17 1981.10 Bobbitto
 cexplore		// 18 1982.02 Explorer
 cdiscon1		// 19 1982.04 Disco No.1
-csweetht		// 19
+csweetht		// 19         Sweet Heart
 ctornado		// 20 1982.05 Tornado
-cmissnx			// 21 1982.04 Mission X/Zoar
+cmissnx			// 21 1982.04 Mission-X/Zoar
 cptennis		// 22 1982.06 Pro Tennis
 				// 23 1982.?? 18 Hole Pro Golf
 				// 24 1982.07 Tsumego Kaisyou
-				// 25 1982.10 Fishing
+				// 25 1982.10 Angler Dangler? (fishing)
 cbtime			// 26 1982.08 Hamburger/Burger Time
-cburnrub		// 27 1982.11 Burnin' Rubber/Bump'n Jump
+cburnrub		// 27 1982.11 Burnin' Rubber
 cburnrub2		// 27
-cbnj			// 27
-cgraplop		// 28 1982.11 Grapelop
+cbnj			// 27         Bump 'n' Jump
+cgraplop		// 28 1982.11 Cluster Buster / Graplop
 cgraplop2		// 28
-clapapa			// 29 1982.11 Lapapa/Rootin' Tootin'
-clapapa2		// 29 // this one doesn't display lapapa anywhere
+clapapa			// 29 1982.11 La-Pa-Pa
+clapapa2		// 29         Rootin' Tootin'  // this one doesn't display lapapa anywhere
 				// 30 1983.03 Skater
 cprobowl		// 31 1983.03 Pro Bowling
 cnightst		// 32 1983.04 Night Star
 cnightst2		// 32
-cprosocc		// 33 1982.08 Pro Soccer
+cpsoccer		// 33 1982.08 Pro Soccer
+cpsoccerj		// 33 1982.08 Pro Soccer (Japan)
 				// 34 1983.09 Super Doubles Tennis
-cflyball		// 35 1983.?? Bampoline/Flying Ball
+cflyball		// 35 1983.?? Flying Ball/Bampoline
 				// 36 1984.04 Genesis/Boomer Rang'r
-czeroize		// 37 1983.10 Zeroize // doesn't work at all
+czeroize		// 37 1983.10 Zeroize
 cscrtry			// 38 1984.03 Scrum Try
 cscrtry2		// 38
 cppicf			// 39 1984.02 Peter Pepper's Ice Cream Factory
@@ -5183,8 +5220,8 @@ cfghtice		// 40 1984.04 Fighting Ice Hockey
 				// 42 1984.08 Hellow Gateball // not a typo, this is official spelling
 				// 43 1984.08 Yellow Cab
 cbdash			// 44 1985.08 Boulder Dash
-				// UX7 1984.12 Tokyo Mie Shinryoujo
-				// UX8 1985.01 Tokyo Mie Shinryoujo Part 2
+				// UX7 1984.12 Tokyo MIE Clinic/Tokyo MIE Shinryoujo
+				// UX8 1985.01 Tokyo MIE Clinic/Tokyo MIE Shinryoujo Part 2
 				// UX9 1985.05 Geinoujin Shikaku Shiken
 
 // Data East LD games
@@ -5398,18 +5435,7 @@ tumbleb2		// bootleg
 jumpkids		// (c) 1993 Comad
 jumppop			// (c) 2001 ESD
 pangpang		// (c) 1994 Dong Gue La Mi Ltd.
-sdfight			// (c) 1996 SemiCom
-wlstar			// (c) 1995 Mijin
-wondl96			// (c) 1996 SemiCom
 fncywld			// (c) 1996 Unico
-htchctch		// (c) 1995 SemiCom
-cookbib			// (c) 1995 SemiCom
-chokchok		// (c) 1995 SemiCom
-metlsavr		// (c) 1994
-bcstry			// (c) 1997 SemiCom
-bcstrya			// (c) 1997 SemiCom
-semibase		// (c) 1997 SemiCom
-dquizgo			// (c) 1998 SemiCom
 suprtrio		// (c) 1994 GameAce
 lemmings		// prototype (c) 1991 Data East USA (US)
 				// MAQ ??
@@ -5453,8 +5479,9 @@ nslashers		// MBH (c) 1993 Data East Corporation (Japan)
 				// MBJ ??
 				// MBK ??
 				// MBL ??
-lockload		// MBM (c) 1994 Data East Corporation (US)
+lockload		// MBM (c) 1994 Data East Corporation (World)
 lockloadu		// MBM (c) 1994 Data East Corporation (US)
+gunhard			// MBM (c) 1994 Data East Corporation (Japan)
 joemacr			// MBN (c) 1994
 joemacra		// MBN (c) 1994
 				// MBO ??
@@ -5496,6 +5523,19 @@ skullfng		// MCH (c) 1996 Data East Corporation (World)
 skullfngj		// MCH (c) 1996 Data East Corporation (Japan)
 stadhr96		// MCM (c) 1996 Data East
 stadhr96j		// MCM (c) 1996 Data East
+
+// SemiCom games on "tumblpop"-like hardware
+metlsavr		// (c) 1994 First Amusements
+wlstar			// (c) 1995 Mijin
+sdfight			// (c) 1996 SemiCom
+wondl96			// (c) 1996 SemiCom
+htchctch		// (c) 1995 SemiCom
+cookbib			// (c) 1995 SemiCom
+chokchok		// (c) 1995 SemiCom
+bcstry			// (c) 1997 SemiCom
+bcstrya			// (c) 1997 SemiCom
+semibase		// (c) 1997 SemiCom
+dquizgo			// (c) 1998 SemiCom
 
 // Tehkan / Tecmo games (Tehkan became Tecmo in 1986)
 senjyo			// (c) 1983 Tehkan
@@ -5841,6 +5881,7 @@ ssriders2		// bootleg
 xmen			// GX065 (c) 1992 (US)
 xmenj			// GX065 (c) 1992 (Japan)
 xmene			// GX065 (c) 1992 (Europe)
+xmena			// GX065 (c) 1992 (Asia)
 xmen2pe			// GX065 (c) 1992 (World)
 xmen2pa			// GX065 (c) 1992 (Asia)
 xmen2pj			// GX065 (c) 1992 (Japan)
@@ -6093,6 +6134,7 @@ mtrap			// (c) 1981
 mtrap3			// (c) 1981
 mtrap4			// (c) 1981
 pepper2			// (c) 1982
+pepper27		// (c) 1982
 hardhat			// (c) 1982
 fax				// (c) 1983
 fax2			// (c) 1983
@@ -6207,6 +6249,7 @@ asteroid2		// 035127-035145    (c) 1979
 asteroid1		// 035127-035145    no copyright notice
 asteroidb		// (bootleg)
 asterock		// Sidam bootleg    (c) 1979
+hyperspc		// Rumiano bootleg  (c) 1979
 meteorts		// VCC bootleg      (c) 1979
 meteorho		// Hoei? bootleg    (c) 1980
 astdelux		// 0351xx           (c) 1980
@@ -6987,14 +7030,16 @@ samsh5sp		// 0272 (c) 2004 Playmore
 samsh5sph		// 0272 (c) 2004 Playmore
 samsh5spn		// 0272 (c) 2004 Playmore
 
-// The BrezzaSoft games don't have proper ID codes
+// Unlicensed commercial releases (no game ID)
 jockeygp
 jockeygpa
 vliner
 vlinero
 
-// Nor does Digger Man
 diggerma		// No Game ID (unlicensed), (c) 2000 Kyle Hodgetts, prototype
+
+sbp				// (c)2004 Vektorlogik
+
 
 // Hyper NeoGeo 64 uses a 3 digit rom code?
 
@@ -7427,6 +7472,7 @@ cartfury		// (c) 2000 Midway Games
 hydrthnd		// (c) 1999 Midway Games
 offrthnd		// (c) 2000 Midway Games
 arctthnd		// (c) 2001 Midway Games
+arctthndult		// (c) 2001 Midway Games
 
 // Midway Touchmaster / Galaxy Games
 tm				// (c) 1996 Midway Games
@@ -7635,7 +7681,8 @@ senkyu			// (c) 1995 Seibu Kaihatsu
 senkyua			// (c) 1995 Seibu Kaihatsu
 batlball		// (c) 1995 Seibu Kaihatsu (Tuning License)
 batlballa		// (c) 1995 Seibu Kaihatsu (Metrotainment License)
-batlballu		// (c) 1995 Seibu Kaihatsu (Metrotainment License)
+batlballe		// (c) 1995 Seibu Kaihatsu (Metrotainment License)
+batlballu		// (c) 1995 Seibu Kaihatsu (Fabtek license)
 
 viprp1			// (c) 1995 Seibu Kaihatsu
 viprp1u			// (c) 1995 Seibu Kaihatsu (Fabtek license)
@@ -7897,6 +7944,7 @@ fromanc4		// (c) 1998 Video System Co. (Japan)
 inufuku			// (c) 1998 Video System Co. (Japan)
 
 // Psikyo games
+// 68020 board
 samuraia		// (c) 1993 (World)
 sngkace			// (c) 1993 (Japan)
 gunbird			// (c) 1994
@@ -7911,6 +7959,11 @@ s1945bl			// (c) 1995 (Hong Kong bootleg)
 s1945k			// (c) 1995
 tengai			// (c) 1996
 tengaij			// (c) 1996
+// Semicom games on "Psikyo 68020"-like hardware
+baryon			// (c) 1997 SemiCom
+dreamwld		// (c) 2000 SemiCom
+
+// SH2 board
 s1945ii			// (c) 1997
 soldivid		// (c) 1997
 sbomber			// (c) 1998
@@ -7931,6 +7984,8 @@ hotgmcki		// (c) 2001
 loderndf		// (c) 2000
 loderndfa		// (c) 2000
 hotdebut		// (c) 2000
+
+
 
 // Orca games
 marineb			// (c) 1982 Orca
@@ -8058,7 +8113,8 @@ gp2quiz			// (c) 1993 Kaneko
 gp2se			// (c) 1994 Kaneko
 jchan			// (c) 1995 Kaneko
 jchan2			// (c) 1995 Kaneko
-galpani3		// (c) 1995 Kaneko
+galpani3		// (c) 1995 Kaneko (World)
+galpani3j		// (c) 1995 Kaneko (Japan)
 
 // Kaneko "AX System" games
 berlwall		// (c) 1991 Kaneko
@@ -8077,6 +8133,7 @@ shogwarru		// (c) 1992 Kaneko
 fjbuster		// (c) 1992 Kaneko
 brapboys		// (c) 1992 Kaneko
 brapboysj		// (c) 1992 Kaneko
+brapboysu		// (c) 1992 Kaneko
 bloodwar		// (c) 1994 Kaneko
 oedfight		// (c) 1994 Kaneko
 bonkadv			// (c) 1994 Kaneko
@@ -8095,7 +8152,8 @@ galpani4k		// 1996.09 (c) 1996 Kaneko (Korea)
 jjparads		// 1996.12 (c) 1996 Electro Design Co. (Japan)
 sarukani		// 1997.01 (c) 1997 Kaneko / Mediaworks (Japan)
 vblokbrk		// 1997.?? (c) 1997 Kaneko / Mediaworks (Asia)
-galpanis		// 1997.04 (c) 1997 Kaneko (Japan)
+galpanis		// 1997.04 (c) 1997 Kaneko (Europe)
+galpanisj		// 1997.04 (c) 1997 Kaneko (Japan)
 galpanisk		// 1997.04 (c) 1997 Kaneko (Korea)
 sengekis		// 1997.?? (c) 1997 Kaneko / Warashi (Asia)
 sengekisj		// 1997.07 (c) 1997 Kaneko / Warashi (Japan)
@@ -8165,6 +8223,7 @@ zingzipbl		// bootleg
 atehate			// (C) 1993 Athena
 jjsquawk		// (c) 1993 Athena / Able
 jjsquawkb		// bootleg
+jjsquawkb2		// bootleg
 kamenrid		// (c) 1993 Toei / Banpresto
 madshark		// (c) 1993 Allumer
 msgundam		// (c) 1993 Banpresto
@@ -8417,6 +8476,7 @@ bigtwin			// (c) 1995
 bigtwinb		// (c) 1995
 wbeachvl		// (c) 1995
 wbeachvl2		// (c) 1995
+wbeachvl3		// (c) 1995
 excelsr			// (c) 1995
 hotmind			// (c) 1995
 hrdtimes		// (c) 1994
@@ -8814,6 +8874,8 @@ lhzb3			// (c) 200?
 lhzb4			// (c) 200?
 klxyj			// (c) 200?
 mgfx			// (c) 200?
+gonefsh2		// (c) 200?
+chessc2			// (c) 200?
 
 // IGS PGM System Games
 pgm
@@ -8836,11 +8898,15 @@ killbld104		// (c) 1998
 kov				// (c) 1999
 kovplus			// (c) 1999
 kovplusa		// (c) 1999
+kovsgqyz		// bootleg
+kovsgqyza		// bootleg
+kovsgqyzb		// bootleg
 kov115			// (c) 1999
 kov100			// (c) 1999
 kovsh			// (c) 1999
 kovsh103		// (c) 1999
 kovqhsgs		// bootleg
+kovlsqh			// bootleg
 kovlsqh2		// bootleg
 kovlsjb			// bootleg
 kovlsjba		// bootleg
@@ -8886,9 +8952,13 @@ ddpdojb			// (c) 2002 Cave
 ddpdojblk		// (c) 2002 Cave
 espgal			// (c) 2003 Cave
 orleg2			// (c) 2007
+orleg2o			//
+kov2nl			// (c) 2008
+kov2nlo			//
 
 // IGS PC based HW
 speeddrv		// (c) 2004
+eztouch			// (c) 200?
 
 // Spirit Tech. Corp.
 dunhuang		// (c) 1995
@@ -9852,9 +9922,9 @@ dlaira			// (c) 1983 Cinematronics
 dleuro			// (c) 1983 Atari
 dlital			// (c) 1983 Sidam
 spaceace		// (c) 1983 Cinematronics
-spaceaa2		// (c) 1983 Cinematronics
-spaceaa			// (c) 1983 Cinematronics
-saeuro			// (c) 1983 Atari
+spaceacea2		// (c) 1983 Cinematronics
+spaceacea		// (c) 1983 Cinematronics
+spaceaceeuro	// (c) 1983 Atari
 aztarac			// (c) 1983 Centuri (vector game)
 mole			// (c) 1982 Yachiyo Electronics, Ltd.
 thehand			// (c) 1981 T.I.C.
@@ -9889,7 +9959,7 @@ sshooter11		// (c) 1998 P&P Marketing
 pass			// (c) 1992 Oksan
 news			// "Virus"??? ((c) 1993 Poby in ROM VIRUS.4)
 newsa			// "Jeansole / Poby
-taxidrvr		// [1984 Graphic Techno]
+taxidriv		// [1984 Graphic Techno]
 xyonix			// [1989 Philko]
 gt507uk			// (c) 1986 Grayhound Electronics
 gt5				// (c) 1984 Grayhound Electronics
@@ -9945,7 +10015,7 @@ fitfight		// bootleg of Art of Fighting
 histryma		// bootleg of Fighter's History
 bbprot			// unfinished prototype
 beaminv			// (c) 1979 Tekunon Kougyou (Arcade TV Game List - P.95, Left, 9 from top)
-beaminva		// (c) 1979 Tekunon Kougyou (Arcade TV Game List - P.95, Left, 9 from top)
+pacominv		// (c) 1979 Pacom Corporation
 mcatadv			// (c) 1993 Wintechno
 mcatadvj		// (c) 1993 Wintechno
 catt			// (c) 1993 Wintechno
@@ -9953,6 +10023,7 @@ nost			// (c) 1993 Face
 nostj			// (c) 1993 Face
 nostk			// (c) 1993 Face
 4enraya			// (c) 1990 IDSA
+unkpacg			// (c) 19?? ???
 oneshot			// no copyright notice
 maddonna		// (c) 1995 Tuning
 maddonnb		// (c) 1995 Tuning
@@ -9994,6 +10065,7 @@ ghoshunt		// (c) 1995? Hanaho Games
 tutstomb		// (c) 199?? Island Design
 mouseatk		// (c) 1996 ICE
 rapidfir		// (c) 1998 Hanaho Games
+rapidfira		// (c) 1998 Hanaho Games
 rapidfire		// (c) 1998 Hanaho Games
 maletmad		// (c) 1999 Hanaho Games, licensed to Capcom
 crgolf			// (c) 1984 Nasco Japan
@@ -10038,6 +10110,7 @@ jmpbreak		// (c) 1999 F2 System
 vamphalf		// (c) 1999 DanBi & F2 System
 vamphalfk		// (c) 1999 DanBi & F2 System
 dquizgo2		// (c) 2000 Semicom
+toyland			// (c) 2001 Semicom
 misncrft		// (c) 2000 Sun
 mrdig			// (c) 2000 Sun
 hidnctch		// (c) 1998 Eolith
@@ -10051,6 +10124,7 @@ nhidctch		// (c) 1999 Eolith
 landbrk			// (c) 1999 Eolith
 landbrka		// (c) 1999 Eolith
 penfan			// (c) 1999 Eolith
+stealsee		// (c) 2000 Moov Generation / Eolith
 raccoon			// (c) 1999 Eolith
 fort2b			// (c) 2001 Eolith
 fort2ba			// (c) 2001 Eolith
@@ -10104,9 +10178,12 @@ othello			// (c) 1984 Success
 sothello		// (c) 1986 Success / Fujiwara
 quake			// (c) 19?? Lazer-Tron / iD Software
 majorpkr		// (c) 1994 PAL System.
+su2000			// (c) 1993 Virtuality
+boonggab		// (c) 2001 Taff System
 
 // Nexus 3D
 
+acheart
 acheartf		// (c) 2006 Examu
 
 // Multi Amenity Cassette System
@@ -10118,14 +10195,15 @@ cultname		// (c) 1995 I'Max
 yuka			// (c) 1999 Yubis
 yujan			// (C) 1999 Yubis
 
-onetwo			// (c) 1997 Barko
-onetwoe			// (c) 1997 Barko
-1945kiii		// (c) 2000 Oriental
-witch			// (c) 1992 Sega / Vic Tokai / Excellent Systems
-pbchmp95		// (c) 1995 Veltmeijer Automaten
-cardline		// (c) 199? Veltmeijer
+// BMC
+
 bmcbowl			// (c) 1994 BMC
 koftball		// (c) 1995 BMC
+bmcpokr			// (c) 1999 BMC
+popobear		// (c) 2000 BMC
+
+// Merit
+
 mpoker			// (c) 1983 Merit
 pitboss			// (c) 1983 Merit
 pitbossa		// (c) 1983 Merit
@@ -10189,6 +10267,13 @@ megat5nj		// (c) 1997 Merit
 megat5tg		// (c) 1997 Merit
 megat6			// (c) 1998 Merit
 suprgolf		// (c) 1989 Nasco
+
+onetwo			// (c) 1997 Barko
+onetwoe			// (c) 1997 Barko
+1945kiii		// (c) 2000 Oriental
+witch			// (c) 1992 Sega / Vic Tokai / Excellent Systems
+pbchmp95		// (c) 1995 Veltmeijer Automaten
+cardline		// (c) 199? Veltmeijer
 albatross
 hotblock		// (c) 1993 Nics? / Nix?
 pntnpuzl		// Century?
@@ -10217,12 +10302,11 @@ turbosub6		// (c) 1985 Entertainment Sciences
 pipeline		// (c) 1990 Daehyun Electronics
 ttchamp
 ttchampa
-baryon			// (c) 1997 SemiCom
-dreamwld		// (c) 2000 SemiCom
 cybertnk		// (c) 1990 Coreland
 cubeqst			// (c) 1983 Simutrek Inc.
 cubeqsta		// (c) 1983 Simutrek Inc.
 pkscram			// (c) 1993 Cosmo Electronics Corporation
+
 
 // Funworld
 jollycrd		// (c) 1985 TAB-Austria
@@ -10312,6 +10396,7 @@ sigma2k			// (c) 2000 Sigma
 
 attckufo		// (c) 1980 Ryoto Electric Co.
 fortecar
+fortecrd
 jackpool		// (c) 1997 Electronic Projects
 murogem			// ???
 murogema		// ???
@@ -10555,6 +10640,7 @@ esh				// (c) 1984 Funai / Gakken
 esha			// (c) 1984 Funai / Gakken
 eshb			// (c) 1984 Funai / Gakken
 comebaby		// (c) 2000 ExPotato
+bntyhunt		// (c) 200? GCTech Co., LTD
 peset038		// (c) 1987 IGT - International Gaming Technology
 pepp0043		// (c) 1987 IGT - International Gaming Technology
 pepp0065		// (c) 1987 IGT - International Gaming Technology
@@ -10589,8 +10675,18 @@ drw80pkr		// (c) 1982 IGT
 drw80pk2		// (c) 1983 IGT
 fortune1		// (c) 1984 IGT
 blazlaz			// (c) 1989 Hudson Soft
+keith			// (c) 1989 Hudson Soft
+aliencr			// (c) 1989 Hudson Soft
+paclandp		// (c) 1989 Namco
 ggconnie		// (c) ???? Capcom
 paranoia		// (c) 1990 Naxat Soft
+tourvis			// (c) ???? Tourvision
+tvusapb			// (c) 1989 Aicom (Tourvision bootleg)
+tvdunexp		// (c) 1989 Hudson / Atlus (Tourvision bootleg)
+tvthbld			// (c) 1990 Sega / NEC Avenue (Tourvision bootleg)
+tvrs2			// (c) 1990 Taito (Tourvision bootleg)
+tvpwlg4			// (c) 1991 Hudson (Tourvision bootleg)
+tvsci			// (c) 1991 Taito (Tourvision bootleg)
 vcombat			// (c) 1993 VR8 Inc.
 shadfgtr		// (c) 1993 DUTECH Inc.
 skimaxx			// (c) 1996 Kyle Hodgetts/ICE
@@ -10614,6 +10710,7 @@ bingor3			// (c) 2002 Unknown
 bingor4			// (c) 2002 Unknown
 bingor5			// (c) 2002 Unknown
 galgame			// (c) 1971 Computer Recreations, Inc
+ichiban			// (c) 199? Excel
 
 // InterFlip / Recreativos Franco
 videopkr		// (c) 1984 InterFlip
@@ -10803,6 +10900,7 @@ lucky8			// (c) 1989 Wing Co. Ltd
 lucky8a			// (c) 1989 Wing Co. Ltd
 lucky8b			// (c) 1989 Wing Co. Ltd
 luckgrln		// (c) 1991 Wing Co. Ltd
+7smash			// (c) 1993 Sovic
 luckylad		// (c) 1985 Wing Co. Ltd
 bingowng		// (c) 1993 Wing Co. Ltd
 bingownga		// (c) 1993 Wing Co. Ltd
@@ -11192,6 +11290,13 @@ fcockt_9		// (c) 2003
 fcockt_10		// (c) 2003
 fcockt_11		// (c) 2003
 fcockt_12		// (c) 2003
+fcockt2_3
+fcockt2_4
+fcockt2_4a
+fcockt2_4b
+fcockt2_4d
+fcockt2_4f
+fcockt2_5
 
 // Lucky Haunter
 //lhaunt		// (c) 2003
@@ -11673,9 +11778,12 @@ cashtrn		//
 // Quizard (Philips CD-I based HW)
 cdimono1		// Base unit
 quizard			// (c) TAB Austria 1996
-quizrd22		// (c) TAB Austria 1995
-quizrd17		// (c) TAB Austria 1996
 quizrd12		// (c) TAB Austria 1996
+quizrd17		// (c) TAB Austria 1996
+quizrd18		// (c) TAB Austria 199?
+quizrd22		// (c) TAB Austria 1995
+quizrd23		// (c) TAB Austria 199?
+quizrd34		// (c) TAB Austria 199?
 quizrr42		// (c) TAB Austria 1998
 quizrr41		// (c) TAB Austria 1998
 quizrr40		// (c) TAB Austria 1997
@@ -16746,8 +16854,34 @@ m1cluessr
 m1cluessrp
 m1cluesss
 m1cluesssp
-m1coderd	// Code Red Club (Maygay)
+m1coderd
+m1coderdp
 m1coro		// Coronation Street (Maygay)
+m1corop
+m1coro32g
+m1coro32gh
+m1coro12g
+m1coro12gp
+m1coro12a
+m1coro10h1
+m1coro10h2
+m1coro10h3
+m1coro81
+m1coro81p
+m1coro32n
+m1coro32np
+m1coro22n
+m1coro21n
+m1coro21np
+m1coro12n
+m1coro12np
+m1coro11n
+m1coro11np
+m1coro31
+m1coro31p
+m1coro30h
+m1coro21v
+m1coro21vp
 m1cororr	// Coronation Street - Rovers Return (Maygay)
 m1corocb	// Coronation Street Club (Maygay)
 m1corosh	// Coronation Street Showcase (Maygay)
@@ -18071,7 +18205,7 @@ m5addladb	//
 m5fire		// All Fired Up (Barcrest)
 m5arab		// Arabian Nights (Barcrest)
 m5austin	// Austin Powers (Barcrest)
-m5bankrl	// Bank Roll (Barcrest)
+m5bankrl	// The Bank Roll (Barcrest)
 m5barkng	// Barking Mad (Barcrest)
 m5barmy		// Barmy Army (Barcrest)
 m5baxe		// Battle Axe (Barcrest)
@@ -18094,7 +18228,7 @@ m5cos		// Costa Del Cash Casino (Barcrest)
 m5cosclb	// Costa Del Cash Club (Barcrest)
 m5crzkni	// Crazy Crazy Knights (Barcrest)
 m5doshpk	// Do$h & Pecks (Barcrest)
-m5draclb	// Dracula Club (Barcrest)
+m5draclb	// Ooh Aah Dracula Club (Barcrest)
 m5ewn		// Each Way Nudge (Barcrest)
 m5elim		// Eliminator (Barcrest)
 m5egr		// Elvis Gold Rush (Barcrest)

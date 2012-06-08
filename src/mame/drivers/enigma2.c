@@ -196,13 +196,13 @@ static void get_pens(pen_t *pens)
 }
 
 
-static SCREEN_UPDATE( enigma2 )
+static SCREEN_UPDATE_RGB32( enigma2 )
 {
-	enigma2_state *state = screen->machine().driver_data<enigma2_state>();
+	enigma2_state *state = screen.machine().driver_data<enigma2_state>();
 	pen_t pens[NUM_PENS];
 
-	const rectangle &visarea = screen->visible_area();
-	UINT8 *prom = screen->machine().region("proms")->base();
+	const rectangle &visarea = screen.visible_area();
+	UINT8 *prom = screen.machine().region("proms")->base();
 	UINT8 *color_map_base = state->m_flip_screen ? &prom[0x0400] : &prom[0x0000];
 	UINT8 *star_map_base = (state->m_blink_count & 0x08) ? &prom[0x0c00] : &prom[0x0800];
 
@@ -226,7 +226,7 @@ static SCREEN_UPDATE( enigma2 )
 			offs_t color_map_address = (y >> 3 << 5) | (x >> 3);
 			/* the schematics shows it like this, but it doesn't work as this would
                produce no stars, due to the contents of the PROM -- maybe there is
-               a star disabled bit somewhere that's connected here instead of flip_screen_get(screen->machine()) */
+               a star disabled bit somewhere that's connected here instead of flip_screen_get(screen.machine()) */
 			/* star_map_address = (y >> 4 << 6) | (engima2_flip_screen_get() << 5) | (x >> 3); */
 			offs_t star_map_address = (y >> 4 << 6) | 0x20 | (x >> 3);
 
@@ -260,7 +260,7 @@ static SCREEN_UPDATE( enigma2 )
 			/* stars only appear at certain positions */
 			color = ((x & y & 0x0f) == 0x0f) ? star_color : 0;
 
-		*BITMAP_ADDR32(bitmap, bitmap_y, x) = pens[color];
+		bitmap.pix32(bitmap_y, x) = pens[color];
 
 		/* next pixel */
 		x = x + 1;
@@ -284,11 +284,11 @@ static SCREEN_UPDATE( enigma2 )
 }
 
 
-static SCREEN_UPDATE( enigma2a )
+static SCREEN_UPDATE_RGB32( enigma2a )
 {
-	enigma2_state *state = screen->machine().driver_data<enigma2_state>();
+	enigma2_state *state = screen.machine().driver_data<enigma2_state>();
 	UINT8 x = 0;
-	const rectangle &visarea = screen->visible_area();
+	const rectangle &visarea = screen.visible_area();
 	UINT16 bitmap_y = visarea.min_y;
 	UINT8 y = (UINT8)vpos_to_vysnc_chain_counter(bitmap_y);
 	UINT8 video_data = 0;
@@ -323,7 +323,7 @@ static SCREEN_UPDATE( enigma2a )
 		}
 
 		pen = bit ? RGB_WHITE : RGB_BLACK;
-		*BITMAP_ADDR32(bitmap, bitmap_y, x) = pen;
+		bitmap.pix32(bitmap_y, x) = pen;
 
 		/* next pixel */
 		x = x + 1;
@@ -615,9 +615,8 @@ static MACHINE_CONFIG_START( enigma2, enigma2_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, HTOTAL, HBEND, HBSTART, VTOTAL, VBEND, VBSTART)
-	MCFG_SCREEN_UPDATE(enigma2)
+	MCFG_SCREEN_UPDATE_STATIC(enigma2)
 
 	/* audio hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -644,9 +643,8 @@ static MACHINE_CONFIG_START( enigma2a, enigma2_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, HTOTAL, HBEND, HBSTART, VTOTAL, VBEND, VBSTART)
-	MCFG_SCREEN_UPDATE(enigma2a)
+	MCFG_SCREEN_UPDATE_STATIC(enigma2a)
 
 	/* audio hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

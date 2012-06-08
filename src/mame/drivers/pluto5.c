@@ -25,6 +25,152 @@
       they have the sound integrated, and the sound hw is just DAC style
 
 
+  ---------------------------------------------------------------------
+
+  Pluto 5 Technical Notes....
+
+
+  * Clocks...
+
+  - Main Clock, EXTAL for MC68340 Processor @32.768kHz.
+  - MC68340 Serial Module @3.6864MHz.
+  - OKI MSM6585 devices, U8/39 @640KHz.
+
+
+  * EPROMs...
+
+  The 2 EPROM positions, U1 and U2, are configured such that 4 possible configurations
+  of programme memory are possible (assuming no external memory expansion via P15):
+
+  Possible EPROM Configurations...
+
+     U1   |   U2   |  Mode  | Configuration | Total Size | Addresses Scrambled
+  --------+--------+--------+---------------+------------+---------------------
+   27C040 |  omit  | 8 bit  |    512k*8     |  512Kbyte  |        no
+  --------+--------+--------+---------------+------------+---------------------
+   27C040 | 27C040 | 16 bit |    512K*16    |   1Mbyte   |        yes
+  --------+--------+--------+---------------+------------+---------------------
+   27C801 |  omit  | 8 bit  |    1024k*8    |   1Mbyte   |        no
+  --------+--------+--------+---------------+------------+---------------------
+   27C801 | 27C801 | 16 bit |    1024k*16   |   2Mbyte   |        yes
+  --------+--------+--------+---------------+------------+---------------------
+
+
+  EPROM Address Line Scrambling in 16 Bit Mode
+  2*27C040 EPROMs
+
+  In 16 bit mode, running with 2 * 27C040 EPROMs, the scrambling of the address lines cause the
+  following effect on the memory mapping in the EPROMs. Note that this table applies to the re-
+  mapping that occurs to the EPROM contents, rather than the actual address lines.
+
+
+  Re-Mapping of Address Lines in 2*27C040 Mode:
+
+  68340 Address Bus |      EPROM Address
+  ------------------+---------------------------
+   A0               | (not used in 16 bit mode)
+  ------------------+---------------------------
+   A1-A18           | A2-A19
+  ------------------+---------------------------
+   A19              | A1
+  ------------------+---------------------------
+
+
+  Re-Mapping of EPROM Contents in 2*27C040 Mode:
+
+  68340 Access Address | Will Read From This Location in EPROM
+  ---------------------+---------------------------------------
+   0000 0000           | 0000 0000
+  ---------------------+---------------------------------------
+   0000 0002           | 0000 0004
+  ---------------------+---------------------------------------
+   0000 0004           | 0000 0008
+  ---------------------+---------------------------------------
+   0000 0006           | 0000 000C
+  ---------------------+---------------------------------------
+   0000 0008           | 0000 0010
+  ---------------------+---------------------------------------
+  ---------------------+---------------------------------------
+   0007 FFFC           | 000F FFF8
+  ---------------------+---------------------------------------
+   0007 FFFE           | 000F FFFC
+  ---------------------+---------------------------------------
+   0008 0000           | 0000 0002
+  ---------------------+---------------------------------------
+   0008 0002           | 0000 0006
+  ---------------------+---------------------------------------
+  ---------------------+---------------------------------------
+   000F FFFC           | 000F FFFA
+  ---------------------+---------------------------------------
+   000F FFFE           | 000F FFFE
+  ---------------------+---------------------------------------
+
+
+  2*27C801 EPROMs
+
+  In 16 bit mode, running with 2 * 27C801 EPROMs, the scrambling of the address lines cause the
+  following effect on the memory mapping in the EPROMs. Note that this table applies to the re-
+  mapping that occurs to the EPROM contents, rather than the actual address lines.
+
+  Re-Mapping of Address Lines in 2*27C801 Mode:
+
+  68340 Address Bus |      EPROM Address
+  ------------------+---------------------------
+   A0               | (not used in 16 bit mode)
+  ------------------+---------------------------
+   A1-A18           | A2-A19
+  ------------------+---------------------------
+   A19              | A1
+  ------------------+---------------------------
+   A20              | A20
+  ------------------+---------------------------
+
+
+  Re-Mapping of EPROM Contents in 2*27C801 Mode:
+
+  68340 Access Address | Will Read From This Location in EPROM
+  ---------------------+---------------------------------------
+   0000 0000           | 0000 0000
+  ---------------------+---------------------------------------
+   0000 0002           | 0000 0004
+  ---------------------+---------------------------------------
+   0000 0004           | 0000 0008
+  ---------------------+---------------------------------------
+  ---------------------+---------------------------------------
+   0007 FFFC           | 000F FFF8
+  ---------------------+---------------------------------------
+   0007 FFFE           | 000F FFFC
+  ---------------------+---------------------------------------
+   0008 0000           | 0000 0002
+  ---------------------+---------------------------------------
+   0008 0002           | 0000 0006
+  ---------------------+---------------------------------------
+  ---------------------+---------------------------------------
+   000F FFFC           | 000F FFFA
+  ---------------------+---------------------------------------
+   000F FFFE           | 000F FFFA
+  ---------------------+---------------------------------------
+   0010 0000           | 0010 0000
+  ---------------------+---------------------------------------
+   0010 0002           | 0010 0004
+  ---------------------+---------------------------------------
+   0010 0004           | 0010 0008
+  ---------------------+---------------------------------------
+  ---------------------+---------------------------------------
+   0017 FFFC           | 001F FFF8
+  ---------------------+---------------------------------------
+   0017 FFFE           | 001F FFFC
+  ---------------------+---------------------------------------
+   0018 0000           | 0010 0002
+  ---------------------+---------------------------------------
+   0018 0002           | 0010 0006
+  ---------------------+---------------------------------------
+  ---------------------+---------------------------------------
+   001F FFFC           | 001F FFFA
+  ---------------------+---------------------------------------
+   001F FFFE           | 001F FFFA
+  ---------------------+---------------------------------------
+
 */
 
 #include "emu.h"
@@ -372,23 +518,23 @@ static DRIVER_INIT( hb )
 }
 
 
-GAME( 200?, hb_cr		,0,			pluto5, pluto5, hb, ROT0, "Qps","Cash Raker (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_bar7		,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Bar Seven (Fairgames)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_bigx		,0,			pluto5, pluto5, hb, ROT0, "Jpm","Big X (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_ccow		,0,			pluto5, pluto5, hb, ROT0, "Qps","Cash Cow (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_cashc	,0,			pluto5, pluto5, hb, ROT0, "Qps","Cash Crusade (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_cashx	,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Cash X (Fairgames)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_cwf		,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Cherry Win Falls (Fairgames)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_dac		,0,			pluto5, pluto5, hb, ROT0, "Qps","Dough & Arrow Club (Qps, set 1)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_daca		,hb_dac,	pluto5, pluto5, hb, ROT0, "Qps","Dough & Arrow Club (Qps, set 2)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_frtcl	,0,			pluto5, pluto5, hb, ROT0, "Qps","Fruitopia Club (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_gpal		,0,			pluto5, pluto5, hb, ROT0, "Qps","Golden Palace (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_gldpl	,0,			pluto5, pluto5, hb, ROT0, "Qps / Mazooma","Golden Palace (Qps / Mazooma)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL ) // rebuild?
-GAME( 200?, hb_gldwn	,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Golden Winner (Fairgames)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_jailb	,0,			pluto5, pluto5, hb, ROT0, "Qps","Jail Break (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_jkrwl	,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Jokers Wild (Fairgames)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_mrmon	,0,			pluto5, pluto5, hb, ROT0, "Qps","Mr Money (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_rhv		,0,			pluto5, pluto5, hb, ROT0, "Qps","Red Hot Voucher (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_ringb	,0,			pluto5, pluto5, hb, ROT0, "Jpm","Ring A Bell (Jpm)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_rckrl	,0,			pluto5, pluto5, hb, ROT0, "Qps","Rock 'n' Roll (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 200?, hb_ydd		,0,			pluto5, pluto5, hb, ROT0, "Qps","Yabba Dabba Dough (Qps)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 200?, hb_cr		,0,			pluto5, pluto5, hb, ROT0, "Qps","Cash Raker (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_bar7		,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Bar Seven (Fairgames)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_bigx		,0,			pluto5, pluto5, hb, ROT0, "Jpm","Big X (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_ccow		,0,			pluto5, pluto5, hb, ROT0, "Qps","Cash Cow (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_cashc	,0,			pluto5, pluto5, hb, ROT0, "Qps","Cash Crusade (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_cashx	,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Cash X (Fairgames)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_cwf		,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Cherry Win Falls (Fairgames)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_dac		,0,			pluto5, pluto5, hb, ROT0, "Qps","Dough & Arrow Club (Qps, set 1)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_daca		,hb_dac,	pluto5, pluto5, hb, ROT0, "Qps","Dough & Arrow Club (Qps, set 2)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_frtcl	,0,			pluto5, pluto5, hb, ROT0, "Qps","Fruitopia Club (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_gpal		,0,			pluto5, pluto5, hb, ROT0, "Qps","Golden Palace (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_gldpl	,0,			pluto5, pluto5, hb, ROT0, "Qps / Mazooma","Golden Palace (Qps / Mazooma)", GAME_IS_SKELETON_MECHANICAL ) // rebuild?
+GAME( 200?, hb_gldwn	,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Golden Winner (Fairgames)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_jailb	,0,			pluto5, pluto5, hb, ROT0, "Qps","Jail Break (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_jkrwl	,0,			pluto5, pluto5, hb, ROT0, "Fairgames","Jokers Wild (Fairgames)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_mrmon	,0,			pluto5, pluto5, hb, ROT0, "Qps","Mr Money (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_rhv		,0,			pluto5, pluto5, hb, ROT0, "Qps","Red Hot Voucher (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_ringb	,0,			pluto5, pluto5, hb, ROT0, "Jpm","Ring A Bell (Jpm)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_rckrl	,0,			pluto5, pluto5, hb, ROT0, "Qps","Rock 'n' Roll (Qps)", GAME_IS_SKELETON_MECHANICAL )
+GAME( 200?, hb_ydd		,0,			pluto5, pluto5, hb, ROT0, "Qps","Yabba Dabba Dough (Qps)", GAME_IS_SKELETON_MECHANICAL )

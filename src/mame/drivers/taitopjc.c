@@ -71,7 +71,7 @@ static VIDEO_START( taitopjc )
 
 }
 
-static SCREEN_UPDATE( taitopjc )
+static SCREEN_UPDATE_RGB32( taitopjc )
 {
 	{
 		UINT8 *s = (UINT8*)jc_char_ram;
@@ -95,7 +95,7 @@ static SCREEN_UPDATE( taitopjc )
 
 				for (y=0; y < 16; y++)
 				{
-					UINT32 *fb = BITMAP_ADDR32(bitmap, y+(u*16), 0);
+					UINT32 *fb = &bitmap.pix32(y+(u*16));
 					for (x=0; x < 16; x++)
 					{
 						UINT8 p = s[((tile*256) + ((y*16)+x)) ^3];
@@ -407,12 +407,11 @@ static MACHINE_CONFIG_START( taitopjc, driver_device )
 	MCFG_QUANTUM_TIME(attotime::from_hz(6000))
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(640, 768)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 767)
-	MCFG_SCREEN_UPDATE(taitopjc)
+	MCFG_SCREEN_UPDATE_STATIC(taitopjc)
 
 	MCFG_VIDEO_START(taitopjc)
 MACHINE_CONFIG_END

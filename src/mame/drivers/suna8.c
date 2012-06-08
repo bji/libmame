@@ -36,7 +36,6 @@ Notes:
 ***************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "sound/ay8910.h"
 #include "sound/2203intf.h"
@@ -1511,10 +1510,9 @@ static MACHINE_CONFIG_START( hardhead, suna8_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.10)  /* verified on pcb */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna8)
+	MCFG_SCREEN_UPDATE_STATIC(suna8)
 
 	MCFG_GFXDECODE(suna8)
 	MCFG_PALETTE_LENGTH(256)
@@ -1576,10 +1574,9 @@ static MACHINE_CONFIG_START( rranger, suna8_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna8)
+	MCFG_SCREEN_UPDATE_STATIC(suna8)
 
 	MCFG_GFXDECODE(suna8)
 	MCFG_PALETTE_LENGTH(256)
@@ -1616,18 +1613,25 @@ static const ym3812_interface brickzn_ym3812_interface =
 	soundirq	/* IRQ Line */
 };
 
-static INTERRUPT_GEN( brickzn_interrupt )
+static TIMER_DEVICE_CALLBACK( brickzn_interrupt )
 {
-	if (cpu_getiloops(device)) device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	else				 device_set_input_line(device, 0, HOLD_LINE);
+	suna8_state *state = timer.machine().driver_data<suna8_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+	if(scanline == 112)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
+
+	// TODO: NMI enable
 }
+
 
 static MACHINE_CONFIG_START( brickzn, suna8_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, SUNA8_MASTER_CLOCK / 4)		/* SUNA PROTECTION BLOCK */
 	MCFG_CPU_PROGRAM_MAP(brickzn_map)
-//  MCFG_CPU_VBLANK_INT_HACK(brickzn_interrupt, 2)
 	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)	// nmi breaks ramtest but is needed!
 
 	MCFG_CPU_ADD("audiocpu", Z80, SUNA8_MASTER_CLOCK / 4)	/* Z0840006PSC */
@@ -1641,10 +1645,9 @@ static MACHINE_CONFIG_START( brickzn, suna8_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)	// we're using IPT_VBLANK
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna8)
+	MCFG_SCREEN_UPDATE_STATIC(suna8)
 
 	MCFG_GFXDECODE(suna8)
 	MCFG_PALETTE_LENGTH(512)
@@ -1683,14 +1686,15 @@ MACHINE_CONFIG_END
 
 /* 1 x 24 MHz crystal */
 
-static INTERRUPT_GEN( hardhea2_interrupt )
+static TIMER_DEVICE_CALLBACK( hardhea2_interrupt )
 {
-	if (cpu_getiloops(device))
-	{
-		suna8_state *state = device->machine().driver_data<suna8_state>();
-		if (state->m_nmi_enable)	device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	}
-	else device_set_input_line(device, 0, HOLD_LINE);
+	suna8_state *state = timer.machine().driver_data<suna8_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+	if(scanline == 112)
+		if (state->m_nmi_enable)	device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 }
 
 static MACHINE_RESET( hardhea2 )
@@ -1700,9 +1704,11 @@ static MACHINE_RESET( hardhea2 )
 }
 
 static MACHINE_CONFIG_DERIVED( hardhea2, brickzn )
-	MCFG_CPU_MODIFY("maincpu")			/* SUNA T568009 */
+	MCFG_DEVICE_REMOVE("maincpu")
+
+	MCFG_CPU_ADD("maincpu", Z80, SUNA8_MASTER_CLOCK / 4)		/* SUNA T568009 */
 	MCFG_CPU_PROGRAM_MAP(hardhea2_map)
-	MCFG_CPU_VBLANK_INT_HACK(hardhea2_interrupt,2)	/* IRQ & NMI */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", hardhea2_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(hardhea2)
 	MCFG_PALETTE_LENGTH(256)
@@ -1728,7 +1734,7 @@ static MACHINE_CONFIG_START( starfigh, suna8_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, SUNA8_MASTER_CLOCK / 4)					/* ? */
 	MCFG_CPU_PROGRAM_MAP(starfigh_map)
-	MCFG_CPU_VBLANK_INT_HACK(brickzn_interrupt,2)	/* IRQ & NMI */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", brickzn_interrupt, "screen", 0, 1)
 
 	/* The sound section is identical to that of hardhead */
 	MCFG_CPU_ADD("audiocpu", Z80, SUNA8_MASTER_CLOCK / 4)					/* ? */
@@ -1740,10 +1746,9 @@ static MACHINE_CONFIG_START( starfigh, suna8_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna8)
+	MCFG_SCREEN_UPDATE_STATIC(suna8)
 
 	MCFG_GFXDECODE(suna8)
 	MCFG_PALETTE_LENGTH(256)
@@ -1773,22 +1778,12 @@ MACHINE_CONFIG_END
                                 Spark Man
 ***************************************************************************/
 
-static INTERRUPT_GEN( sparkman_interrupt )
-{
-	if (cpu_getiloops(device))
-	{
-		suna8_state *state = device->machine().driver_data<suna8_state>();
-		if (state->m_nmi_enable)	device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	}
-	else device_set_input_line(device, 0, HOLD_LINE);
-}
-
 static MACHINE_CONFIG_START( sparkman, suna8_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, SUNA8_MASTER_CLOCK / 4)					/* ? */
 	MCFG_CPU_PROGRAM_MAP(sparkman_map)
-	MCFG_CPU_VBLANK_INT_HACK(sparkman_interrupt,2)	/* IRQ & NMI */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", hardhea2_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80, SUNA8_MASTER_CLOCK / 4)				/* ? */
 	MCFG_CPU_PROGRAM_MAP(hardhead_sound_map)
@@ -1799,10 +1794,9 @@ static MACHINE_CONFIG_START( sparkman, suna8_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna8)
+	MCFG_SCREEN_UPDATE_STATIC(suna8)
 
 	MCFG_GFXDECODE(suna8)
 	MCFG_PALETTE_LENGTH(512)

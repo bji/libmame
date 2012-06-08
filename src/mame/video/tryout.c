@@ -68,7 +68,7 @@ WRITE8_HANDLER( tryout_videoram_w )
 	tryout_state *state = space->machine().driver_data<tryout_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset & 0x3ff);
+	state->m_fg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 WRITE8_HANDLER( tryout_vram_w )
@@ -94,7 +94,7 @@ WRITE8_HANDLER( tryout_vram_w )
 		int newoff=offset&0x3ff;
 
 		state->m_vram[newoff]=data;
-		tilemap_mark_tile_dirty(state->m_bg_tilemap,newoff);
+		state->m_bg_tilemap->mark_tile_dirty(newoff);
 		return;
 	}
 
@@ -179,10 +179,10 @@ VIDEO_START( tryout )
 
 	gfx_element_set_source(machine.gfx[2], state->m_vram_gfx);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	tryout_state *state = machine.driver_data<tryout_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -233,34 +233,34 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 	}
 }
 
-SCREEN_UPDATE( tryout )
+SCREEN_UPDATE_IND16( tryout )
 {
-	tryout_state *state = screen->machine().driver_data<tryout_state>();
+	tryout_state *state = screen.machine().driver_data<tryout_state>();
 	int scrollx = 0;
 
-	if (!flip_screen_get(screen->machine()))
-		tilemap_set_scrollx(state->m_fg_tilemap, 0, 16); /* Assumed hard-wired */
+	if (!flip_screen_get(screen.machine()))
+		state->m_fg_tilemap->set_scrollx(0, 16); /* Assumed hard-wired */
 	else
-		tilemap_set_scrollx(state->m_fg_tilemap, 0, -8); /* Assumed hard-wired */
+		state->m_fg_tilemap->set_scrollx(0, -8); /* Assumed hard-wired */
 
 	scrollx = state->m_gfx_control[1] + ((state->m_gfx_control[0]&1)<<8) + ((state->m_gfx_control[0]&4)<<7) - ((state->m_gfx_control[0] & 2) ? 0 : 0x100);
 
 	/* wrap-around */
 	if(state->m_gfx_control[1] == 0) { scrollx+=0x100; }
 
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, scrollx+2); /* why +2? hard-wired? */
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, -state->m_gfx_control[2]);
+	state->m_bg_tilemap->set_scrollx(0, scrollx+2); /* why +2? hard-wired? */
+	state->m_bg_tilemap->set_scrolly(0, -state->m_gfx_control[2]);
 
 	if(!(state->m_gfx_control[0] & 0x8)) // screen disable
 	{
 		/* TODO: Color might be different, needs a video from an original pcb. */
-		bitmap_fill(bitmap, cliprect, screen->machine().pens[0x10]);
+		bitmap.fill(screen.machine().pens[0x10], cliprect);
 	}
 	else
 	{
-		tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-		tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
-		draw_sprites(screen->machine(), bitmap,cliprect);
+		state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
+		draw_sprites(screen.machine(), bitmap,cliprect);
 	}
 
 //  popmessage("%02x %02x %02x %02x",state->m_gfx_control[0],state->m_gfx_control[1],state->m_gfx_control[2],scrollx);

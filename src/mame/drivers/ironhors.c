@@ -8,7 +8,6 @@
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "cpu/m6809/m6809.h"
 #include "sound/2203intf.h"
 #include "sound/discrete.h"
@@ -21,19 +20,20 @@
  *
  *************************************/
 
-static INTERRUPT_GEN( ironhors_interrupt )
+static TIMER_DEVICE_CALLBACK( ironhors_irq )
 {
-	ironhors_state *state = device->machine().driver_data<ironhors_state>();
+	ironhors_state *state = timer.machine().driver_data<ironhors_state>();
+	int scanline = param;
 
-	if (cpu_getiloops(device) == 0)
+	if (scanline == 240)
 	{
 		if (*state->m_interrupt_enable & 4)
-			device_set_input_line(device, M6809_FIRQ_LINE, HOLD_LINE);
+			device_set_input_line(state->m_maincpu, M6809_FIRQ_LINE, HOLD_LINE);
 	}
-	else if (cpu_getiloops(device) % 2)
+	else if (((scanline+16) % 64) == 0)
 	{
 		if (*state->m_interrupt_enable & 1)
-			device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+			device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 	}
 }
 
@@ -67,8 +67,8 @@ static ADDRESS_MAP_START( master_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0060, 0x00df) AM_RAM
 	AM_RANGE(0x0800, 0x0800) AM_WRITE(soundlatch_w)
 	AM_RANGE(0x0900, 0x0900) AM_READ_PORT("DSW3") AM_WRITE(ironhors_sh_irqtrigger_w)
-	AM_RANGE(0x0a00, 0x0a00) AM_READ_PORT("DSW1") AM_WRITE(ironhors_palettebank_w)
-	AM_RANGE(0x0b00, 0x0b00) AM_READ_PORT("DSW2") AM_WRITE(ironhors_flipscreen_w)
+	AM_RANGE(0x0a00, 0x0a00) AM_READ_PORT("DSW2") AM_WRITE(ironhors_palettebank_w)
+	AM_RANGE(0x0b00, 0x0b00) AM_READ_PORT("DSW1") AM_WRITE(ironhors_flipscreen_w)
 	AM_RANGE(0x0b01, 0x0b01) AM_READ_PORT("P2")
 	AM_RANGE(0x0b02, 0x0b02) AM_READ_PORT("P1")
 	AM_RANGE(0x0b03, 0x0b03) AM_READ_PORT("SYSTEM")
@@ -106,9 +106,9 @@ static ADDRESS_MAP_START( farwest_master_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0060, 0x00ff) AM_RAM
 	AM_RANGE(0x0800, 0x0800) AM_WRITE(soundlatch_w)
 	AM_RANGE(0x0900, 0x0900) /*AM_READ_PORT("DSW3") */AM_WRITE(ironhors_sh_irqtrigger_w)
-	AM_RANGE(0x0a00, 0x0a00) AM_READ_PORT("DSW1") //AM_WRITE(ironhors_palettebank_w)
-	AM_RANGE(0x0b00, 0x0b00) AM_READ_PORT("DSW2") AM_WRITE(ironhors_flipscreen_w)
-	AM_RANGE(0x0b01, 0x0b01) AM_READ_PORT("DSW1") //AM_WRITE(ironhors_palettebank_w)
+	AM_RANGE(0x0a00, 0x0a00) AM_READ_PORT("DSW2") //AM_WRITE(ironhors_palettebank_w)
+	AM_RANGE(0x0b00, 0x0b00) AM_READ_PORT("DSW1") AM_WRITE(ironhors_flipscreen_w)
+	AM_RANGE(0x0b01, 0x0b01) AM_READ_PORT("DSW2") //AM_WRITE(ironhors_palettebank_w)
 	AM_RANGE(0x0b02, 0x0b02) AM_READ_PORT("P1")
 	AM_RANGE(0x0b03, 0x0b03) AM_READ_PORT("SYSTEM")
 
@@ -154,40 +154,40 @@ static INPUT_PORTS_START( dairesya )
 	KONAMI8_COCKTAIL_4WAY_B123_UNK
 
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x03, 0x02, DEF_STR( Lives ) )
+	KONAMI_COINAGE_LOC(DEF_STR( Free_Play ), "No Coin B", SW1)
+	/* "No Coin B" = coins produce sound, but no effect on coin counter */
+
+	PORT_START("DSW2")
+	PORT_DIPNAME( 0x03, 0x02, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "2" )
 	PORT_DIPSETTING(    0x02, "3" )
 	PORT_DIPSETTING(    0x01, "5" )
 	PORT_DIPSETTING(    0x00, "7" )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(    0x18, "30K 70K+" )
 	PORT_DIPSETTING(    0x10, "40K 80K+" )
 	PORT_DIPSETTING(    0x08, "40K" )
 	PORT_DIPSETTING(    0x00, "50K" )
-	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
-	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
-	PORT_DIPSETTING(    0x20, DEF_STR( Hard ) )
+	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )		// factory default (JP)
+	PORT_DIPSETTING(    0x20, DEF_STR( Hard ) )			// factory default (US)
 	PORT_DIPSETTING(    0x00, DEF_STR( Very_Hard ) )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 
-	PORT_START("DSW2")
-	KONAMI_COINAGE(DEF_STR( Free_Play ), "No Coin B")
-	/* "No Coin B" = coins produce sound, but no effect on coin counter */
-
 	PORT_START("DSW3")
-	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Flip_Screen ) )
+	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Flip_Screen ) )	PORT_DIPLOCATION("SW3:1")
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, "Upright Controls" )
+	PORT_DIPNAME( 0x02, 0x02, "Upright Controls" )		PORT_DIPLOCATION("SW3:2")
 	PORT_DIPSETTING(    0x02, DEF_STR( Single ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Dual ) )
-	PORT_DIPNAME( 0x04, 0x04, "Button Layout" )
+	PORT_DIPNAME( 0x04, 0x04, "Button Layout" )			PORT_DIPLOCATION("SW3:3") // though US manual says unused
 	PORT_DIPSETTING(    0x04, "Power Attack Squat" )
 	PORT_DIPSETTING(    0x00, "Squat Attack Power" )
 	PORT_BIT( 0xf8, IP_ACTIVE_LOW, IPT_UNUSED )
@@ -360,6 +360,7 @@ static MACHINE_START( ironhors )
 {
 	ironhors_state *state = machine.driver_data<ironhors_state>();
 
+	state->m_maincpu = machine.device("maincpu");
 	state->m_soundcpu = machine.device("soundcpu");
 
 	state->save_item(NAME(state->m_palettebank));
@@ -381,7 +382,7 @@ static MACHINE_CONFIG_START( ironhors, ironhors_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809,18432000/6)        /* 3.072 MHz??? mod by Shingo Suzuki 1999/10/15 */
 	MCFG_CPU_PROGRAM_MAP(master_map)
-	MCFG_CPU_VBLANK_INT_HACK(ironhors_interrupt,8)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", ironhors_irq, "screen", 0, 1)
 
 	MCFG_CPU_ADD("soundcpu",Z80,18432000/6)		 /* 3.072 MHz */
 	MCFG_CPU_PROGRAM_MAP(slave_map)
@@ -394,10 +395,9 @@ static MACHINE_CONFIG_START( ironhors, ironhors_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(30)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(ironhors)
+	MCFG_SCREEN_UPDATE_STATIC(ironhors)
 
 	MCFG_GFXDECODE(ironhors)
 	MCFG_PALETTE_LENGTH(16*8*16+16*8*16)
@@ -422,19 +422,20 @@ static MACHINE_CONFIG_START( ironhors, ironhors_state )
 
 MACHINE_CONFIG_END
 
-static INTERRUPT_GEN( farwest_interrupt )
+static TIMER_DEVICE_CALLBACK( farwest_irq )
 {
-	ironhors_state *state = device->machine().driver_data<ironhors_state>();
+	ironhors_state *state = timer.machine().driver_data<ironhors_state>();
+	int scanline = param;
 
-	if (cpu_getiloops(device) &1)
+	if ((scanline % 2) == 1)
 	{
 		if (*state->m_interrupt_enable & 4)
-			device_set_input_line(device, M6809_FIRQ_LINE, HOLD_LINE);
+			device_set_input_line(state->m_maincpu, M6809_FIRQ_LINE, HOLD_LINE);
 	}
-	else //if (cpu_getiloops() % 2)
+	else if ((scanline % 2) == 0)
 	{
 		if (*state->m_interrupt_enable & 1)
-			device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+			device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 	}
 }
 
@@ -464,7 +465,8 @@ static MACHINE_CONFIG_DERIVED( farwest, ironhors )
 
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(farwest_master_map)
-	MCFG_CPU_VBLANK_INT_HACK(farwest_interrupt,255)
+	MCFG_DEVICE_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(farwest_irq)
 
 	MCFG_CPU_MODIFY("soundcpu")
 	MCFG_CPU_PROGRAM_MAP(farwest_slave_map)
@@ -473,7 +475,7 @@ static MACHINE_CONFIG_DERIVED( farwest, ironhors )
 	MCFG_GFXDECODE(farwest)
 	MCFG_VIDEO_START(farwest)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(farwest)
+	MCFG_SCREEN_UPDATE_STATIC(farwest)
 
 	MCFG_SOUND_MODIFY("ym2203")
 	MCFG_SOUND_CONFIG(farwest_ym2203_config)

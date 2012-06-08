@@ -256,9 +256,9 @@ static VIDEO_START( goldngam )
 
 }
 
-static SCREEN_UPDATE( goldngam )
+static SCREEN_UPDATE_IND16( goldngam )
 {
-	goldngam_state *state = screen->machine().driver_data<goldngam_state>();
+	goldngam_state *state = screen.machine().driver_data<goldngam_state>();
 
 	int x, y;
 
@@ -269,7 +269,7 @@ static SCREEN_UPDATE( goldngam )
 	{
 		for(x = 0; x < 384; ++x)
 		{
-		  *BITMAP_ADDR16(bitmap, y, x) = tmp[index ^ 1]; /* swapped bytes in 16 bit word */
+		  bitmap.pix16(y, x) = tmp[index ^ 1]; /* swapped bytes in 16 bit word */
 			++index;
 		}
 	}
@@ -561,10 +561,9 @@ static MACHINE_CONFIG_START( swisspkr, goldngam_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(4*8, 43*8-1, 1*8, 37*8-1)	// 312x288
-	MCFG_SCREEN_UPDATE(goldngam)
+	MCFG_SCREEN_UPDATE_STATIC(goldngam)
 
 	MCFG_GFXDECODE(goldngam)
 

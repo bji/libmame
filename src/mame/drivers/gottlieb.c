@@ -196,7 +196,6 @@ VBlank duration: 1/VSYNC * (16/256) = 1017.6 us
 #include "emu.h"
 #include "cpu/i86/i86.h"
 #include "machine/6532riot.h"
-#include "machine/laserdsc.h"
 #include "sound/ay8910.h"
 #include "sound/dac.h"
 #include "sound/samples.h"
@@ -244,7 +243,6 @@ static MACHINE_START( gottlieb )
 	state_save_register_global_array(machine, state->m_track);
 
 	/* see if we have a laserdisc */
-	state->m_laserdisc = machine.devicelist().first(PIONEER_PR8210);
 	if (state->m_laserdisc != NULL)
 	{
 		/* attach to the I/O ports */
@@ -436,7 +434,7 @@ static WRITE8_HANDLER( laserdisc_command_w )
 static TIMER_CALLBACK( laserdisc_philips_callback )
 {
 	gottlieb_state *state = machine.driver_data<gottlieb_state>();
-	int newcode = laserdisc_get_field_code(state->m_laserdisc, (param == 17) ? LASERDISC_CODE_LINE17 : LASERDISC_CODE_LINE18, TRUE);
+	UINT32 newcode = state->m_laserdisc->get_field_code((param == 17) ? LASERDISC_CODE_LINE17 : LASERDISC_CODE_LINE18, TRUE);
 
 	/* the PR8210 sends line 17/18 data on each frame; the laserdisc interface
        board receives notification and latches the most recent frame number */
@@ -458,7 +456,7 @@ static TIMER_CALLBACK( laserdisc_bit_off_callback )
 {
 	gottlieb_state *state = machine.driver_data<gottlieb_state>();
 	/* deassert the control line */
-	laserdisc_line_w(state->m_laserdisc, LASERDISC_LINE_CONTROL, CLEAR_LINE);
+	state->m_laserdisc->control_w(CLEAR_LINE);
 }
 
 
@@ -470,7 +468,7 @@ static TIMER_CALLBACK( laserdisc_bit_callback )
 	attotime duration;
 
 	/* assert the line and set a timer for deassertion */
-	laserdisc_line_w(state->m_laserdisc, LASERDISC_LINE_CONTROL, ASSERT_LINE);
+	state->m_laserdisc->control_w(ASSERT_LINE);
 	machine.scheduler().timer_set(LASERDISC_CLOCK * 10, FUNC(laserdisc_bit_off_callback));
 
 	/* determine how long for the next command; there is a 555 timer with a
@@ -596,10 +594,10 @@ static void audio_handle_zero_crossing(gottlieb_state *state, attotime zerotime,
 }
 
 
-static void laserdisc_audio_process(device_t *device, int samplerate, int samples, const INT16 *ch0, const INT16 *ch1)
+static void laserdisc_audio_process(device_t *dummy, laserdisc_device &device, int samplerate, int samples, const INT16 *ch0, const INT16 *ch1)
 {
-	gottlieb_state *state = device->machine().driver_data<gottlieb_state>();
-	int logit = LOG_AUDIO_DECODE && device->machine().input().code_pressed(KEYCODE_L);
+	gottlieb_state *state = device.machine().driver_data<gottlieb_state>();
+	int logit = LOG_AUDIO_DECODE && device.machine().input().code_pressed(KEYCODE_L);
 	attotime time_per_sample = attotime::from_hz(samplerate);
 	attotime curtime = state->m_laserdisc_last_time;
 	int cursamp;
@@ -680,10 +678,8 @@ static INTERRUPT_GEN( gottlieb_interrupt )
 	/* if we have a laserdisc, update it */
 	if (state->m_laserdisc != NULL)
 	{
-		bitmap_t *dummy;
-
 		/* set the "disc ready" bit, which basically indicates whether or not we have a proper video frame */
-		if (!laserdisc_get_video(state->m_laserdisc, &dummy))
+		if (!state->m_laserdisc->video_active())
 			state->m_laserdisc_status &= ~0x20;
 		else
 			state->m_laserdisc_status |= 0x20;
@@ -1750,77 +1746,77 @@ GFXDECODE_END
 static const char *const reactor_sample_names[] =
 {
 	"*reactor",
-	"fx_53.wav", /* "8 left" */
-	"fx_54.wav", /* "16 left" */
-	"fx_55.wav", /* "24 left" */
-	"fx_56.wav", /* "32 left" */
-	"fx_57.wav", /* "40 left" */
-	"fx_58.wav", /* "warning, core unstable" */
-	"fx_59.wav", /* "bonus" */
-	"fx_31.wav", /* "chamber activated" */
-	"fx_39a.wav", /* "2000" */
-	"fx_39b.wav", /* "5000" */
-	"fx_39c.wav", /* "10000" */
-	"fx_39d.wav", /* "15000" */
-	"fx_39e.wav", /* "20000" */
-	"fx_39f.wav", /* "25000" */
-	"fx_39g.wav", /* "30000" */
-	"fx_39h.wav", /* "35000" */
-	"fx_39i.wav", /* "40000" */
-	"fx_39j.wav", /* "45000" */
-	"fx_39k.wav", /* "50000" */
-	"fx_39l.wav", /* "55000" */
+	"fx_53", /* "8 left" */
+	"fx_54", /* "16 left" */
+	"fx_55", /* "24 left" */
+	"fx_56", /* "32 left" */
+	"fx_57", /* "40 left" */
+	"fx_58", /* "warning, core unstable" */
+	"fx_59", /* "bonus" */
+	"fx_31", /* "chamber activated" */
+	"fx_39a", /* "2000" */
+	"fx_39b", /* "5000" */
+	"fx_39c", /* "10000" */
+	"fx_39d", /* "15000" */
+	"fx_39e", /* "20000" */
+	"fx_39f", /* "25000" */
+	"fx_39g", /* "30000" */
+	"fx_39h", /* "35000" */
+	"fx_39i", /* "40000" */
+	"fx_39j", /* "45000" */
+	"fx_39k", /* "50000" */
+	"fx_39l", /* "55000" */
      0	/* end of array */
 };
 
 static const char *const qbert_sample_names[] =
 {
 	"*qbert",
-	"fx_17a.wav", /* random speech, voice clock 255 */
-	"fx_17b.wav", /* random speech, voice clock 255 */
-	"fx_17c.wav", /* random speech, voice clock 255 */
-	"fx_17d.wav", /* random speech, voice clock 255 */
-	"fx_17e.wav", /* random speech, voice clock 255 */
-	"fx_17f.wav", /* random speech, voice clock 255 */
-	"fx_17g.wav", /* random speech, voice clock 255 */
-	"fx_17h.wav", /* random speech, voice clock 255 */
-	"fx_18a.wav", /* random speech, voice clock 176 */
-	"fx_18b.wav", /* random speech, voice clock 176 */
-	"fx_18c.wav", /* random speech, voice clock 176 */
-	"fx_18d.wav", /* random speech, voice clock 176 */
-	"fx_18e.wav", /* random speech, voice clock 176 */
-	"fx_18f.wav", /* random speech, voice clock 176 */
-	"fx_18g.wav", /* random speech, voice clock 176 */
-	"fx_18h.wav", /* random speech, voice clock 176 */
-	"fx_19a.wav", /* random speech, voice clock 128 */
-	"fx_19b.wav", /* random speech, voice clock 128 */
-	"fx_19c.wav", /* random speech, voice clock 128 */
-	"fx_19d.wav", /* random speech, voice clock 128 */
-	"fx_19e.wav", /* random speech, voice clock 128 */
-	"fx_19f.wav", /* random speech, voice clock 128 */
-	"fx_19g.wav", /* random speech, voice clock 128 */
-	"fx_19h.wav", /* random speech, voice clock 128 */
-	"fx_20a.wav", /* random speech, voice clock 96 */
-	"fx_20b.wav", /* random speech, voice clock 96 */
-	"fx_20c.wav", /* random speech, voice clock 96 */
-	"fx_20d.wav", /* random speech, voice clock 96 */
-	"fx_20e.wav", /* random speech, voice clock 96 */
-	"fx_20f.wav", /* random speech, voice clock 96 */
-	"fx_20g.wav", /* random speech, voice clock 96 */
-	"fx_20h.wav", /* random speech, voice clock 96 */
-	"fx_21a.wav", /* random speech, voice clock 62 */
-	"fx_21b.wav", /* random speech, voice clock 62 */
-	"fx_21c.wav", /* random speech, voice clock 62 */
-	"fx_21d.wav", /* random speech, voice clock 62 */
-	"fx_21e.wav", /* random speech, voice clock 62 */
-	"fx_21f.wav", /* random speech, voice clock 62 */
-	"fx_21g.wav", /* random speech, voice clock 62 */
-	"fx_21h.wav", /* random speech, voice clock 62 */
-	"fx_22.wav", /* EH2 with decreasing voice clock */
-	"fx_23.wav", /* O1 with varying voice clock */
-	"fx_28.wav",
-	"fx_36.wav",
-	"knocker.wav",
+	"fx_17a", /* random speech, voice clock 255 */
+	"fx_17b", /* random speech, voice clock 255 */
+	"fx_17c", /* random speech, voice clock 255 */
+	"fx_17d", /* random speech, voice clock 255 */
+	"fx_17e", /* random speech, voice clock 255 */
+	"fx_17f", /* random speech, voice clock 255 */
+	"fx_17g", /* random speech, voice clock 255 */
+	"fx_17h", /* random speech, voice clock 255 */
+	"fx_18a", /* random speech, voice clock 176 */
+	"fx_18b", /* random speech, voice clock 176 */
+	"fx_18c", /* random speech, voice clock 176 */
+	"fx_18d", /* random speech, voice clock 176 */
+	"fx_18e", /* random speech, voice clock 176 */
+	"fx_18f", /* random speech, voice clock 176 */
+	"fx_18g", /* random speech, voice clock 176 */
+	"fx_18h", /* random speech, voice clock 176 */
+	"fx_19a", /* random speech, voice clock 128 */
+	"fx_19b", /* random speech, voice clock 128 */
+	"fx_19c", /* random speech, voice clock 128 */
+	"fx_19d", /* random speech, voice clock 128 */
+	"fx_19e", /* random speech, voice clock 128 */
+	"fx_19f", /* random speech, voice clock 128 */
+	"fx_19g", /* random speech, voice clock 128 */
+	"fx_19h", /* random speech, voice clock 128 */
+	"fx_20a", /* random speech, voice clock 96 */
+	"fx_20b", /* random speech, voice clock 96 */
+	"fx_20c", /* random speech, voice clock 96 */
+	"fx_20d", /* random speech, voice clock 96 */
+	"fx_20e", /* random speech, voice clock 96 */
+	"fx_20f", /* random speech, voice clock 96 */
+	"fx_20g", /* random speech, voice clock 96 */
+	"fx_20h", /* random speech, voice clock 96 */
+	"fx_21a", /* random speech, voice clock 62 */
+	"fx_21b", /* random speech, voice clock 62 */
+	"fx_21c", /* random speech, voice clock 62 */
+	"fx_21d", /* random speech, voice clock 62 */
+	"fx_21e", /* random speech, voice clock 62 */
+	"fx_21f", /* random speech, voice clock 62 */
+	"fx_21g", /* random speech, voice clock 62 */
+	"fx_21h", /* random speech, voice clock 62 */
+	"fx_22", /* EH2 with decreasing voice clock */
+	"fx_23", /* O1 with varying voice clock */
+	"fx_28",
+	"fx_36",
+	"knocker",
 	0	/* end of array */
 };
 
@@ -1858,9 +1854,8 @@ static MACHINE_CONFIG_START( gottlieb_core, gottlieb_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(SYSTEM_CLOCK/4, GOTTLIEB_VIDEO_HCOUNT, 0, GOTTLIEB_VIDEO_HBLANK, GOTTLIEB_VIDEO_VCOUNT, 0, GOTTLIEB_VIDEO_VBLANK)
-	MCFG_SCREEN_UPDATE(gottlieb)
+	MCFG_SCREEN_UPDATE_STATIC(gottlieb)
 
 	MCFG_GFXDECODE(gfxdecode)
 	MCFG_PALETTE_LENGTH(16)
@@ -1885,19 +1880,16 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( g2laser, gottlieb_core )
 	MCFG_FRAGMENT_ADD(gottlieb_soundrev2)
 
-	MCFG_LASERDISC_ADD("laserdisc", PIONEER_PR8210, "screen", "ldsound")
-	MCFG_LASERDISC_AUDIO(laserdisc_audio_process)
-	MCFG_LASERDISC_OVERLAY(gottlieb, GOTTLIEB_VIDEO_HCOUNT, GOTTLIEB_VIDEO_VCOUNT, BITMAP_FORMAT_INDEXED16)
+	MCFG_LASERDISC_PR8210_ADD("laserdisc")
+	MCFG_LASERDISC_AUDIO(laserdisc_audio_delegate(FUNC(laserdisc_audio_process), device))
+	MCFG_LASERDISC_OVERLAY_STATIC(GOTTLIEB_VIDEO_HCOUNT, GOTTLIEB_VIDEO_VCOUNT, gottlieb)
 	MCFG_LASERDISC_OVERLAY_CLIP(0, GOTTLIEB_VIDEO_HBLANK-1, 0, GOTTLIEB_VIDEO_VBLANK-8)
-
-	MCFG_DEVICE_REMOVE("screen")
-	MCFG_LASERDISC_SCREEN_ADD_NTSC("screen", BITMAP_FORMAT_INDEXED16)
-
-	MCFG_SOUND_ADD("ldsound", LASERDISC_SOUND, 0)
 	MCFG_SOUND_ROUTE(0, "mono", 1.0)
 	/* right channel is processed as data */
-MACHINE_CONFIG_END
 
+	MCFG_DEVICE_REMOVE("screen")
+	MCFG_LASERDISC_SCREEN_ADD_NTSC("screen", "laserdisc")
+MACHINE_CONFIG_END
 
 
 /*************************************
@@ -1935,15 +1927,24 @@ static MACHINE_CONFIG_DERIVED( screwloo, gottlieb2 )
 	MCFG_VIDEO_START(screwloo)
 MACHINE_CONFIG_END
 
+static MACHINE_CONFIG_DERIVED( cobram3, gottlieb_core )
+	MCFG_FRAGMENT_ADD(gottlieb_cobram3_soundrev2)
 
-static MACHINE_CONFIG_DERIVED( cobram3, g2laser )
+	MCFG_LASERDISC_PR8210_ADD("laserdisc")
+	MCFG_LASERDISC_AUDIO(laserdisc_audio_delegate(FUNC(laserdisc_audio_process), device))
+	MCFG_LASERDISC_OVERLAY_STATIC(GOTTLIEB_VIDEO_HCOUNT, GOTTLIEB_VIDEO_VCOUNT, gottlieb)
+	MCFG_LASERDISC_OVERLAY_CLIP(0, GOTTLIEB_VIDEO_HBLANK-1, 0, GOTTLIEB_VIDEO_VBLANK-8)
+	MCFG_SOUND_ROUTE(0, "mono", 1.0)
+	/* right channel is processed as data */
+
+	MCFG_DEVICE_REMOVE("screen")
+	MCFG_LASERDISC_SCREEN_ADD_NTSC("screen", "laserdisc")
 
 	/* sound hardware */
 	MCFG_SOUND_MODIFY("dac1")
 	MCFG_SOUND_ROUTES_RESET()
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.00)
 MACHINE_CONFIG_END
-
 
 
 /*************************************

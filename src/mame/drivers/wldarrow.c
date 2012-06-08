@@ -58,9 +58,9 @@ static void get_pens(pen_t *pens)
 }
 
 
-static SCREEN_UPDATE( wldarrow )
+static SCREEN_UPDATE_RGB32( wldarrow )
 {
-	wldarrow_state *state = screen->machine().driver_data<wldarrow_state>();
+	wldarrow_state *state = screen.machine().driver_data<wldarrow_state>();
 	pen_t pens[NUM_PENS];
 	offs_t offs;
 
@@ -89,7 +89,7 @@ static SCREEN_UPDATE( wldarrow )
 						  ((data_g >> 6) & 0x02) |
 						  ((data_b >> 7) & 0x01);
 
-			*BITMAP_ADDR32(bitmap, y, x) = pens[color];
+			bitmap.pix32(y, x) = pens[color];
 
 			data_r = data_r << 1;
 			data_g = data_g << 1;
@@ -362,12 +362,11 @@ static MACHINE_CONFIG_START( wldarrow, wldarrow_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 4*8, 32*8-1)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_UPDATE(wldarrow)
+	MCFG_SCREEN_UPDATE_STATIC(wldarrow)
 
 	/* audio hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

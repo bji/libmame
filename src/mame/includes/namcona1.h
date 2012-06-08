@@ -20,7 +20,10 @@ class namcona1_state : public driver_device
 {
 public:
 	namcona1_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu"),
+		m_mcu(*this,"mcu")
+		{ }
 
 	UINT16 *m_videoram;
 	UINT16 *m_spriteram;
@@ -48,6 +51,9 @@ public:
 	int m_palette_is_dirty;
 	UINT8 m_mask_data[8];
 	UINT8 m_conv_data[9];
+
+	required_device<cpu_device> m_maincpu;
+	required_device<cpu_device> m_mcu;
 };
 
 
@@ -63,5 +69,5 @@ extern WRITE16_HANDLER( namcona1_gfxram_w );
 extern READ16_HANDLER( namcona1_paletteram_r );
 extern WRITE16_HANDLER( namcona1_paletteram_w );
 
-extern SCREEN_UPDATE( namcona1 );
+extern SCREEN_UPDATE_IND16( namcona1 );
 extern VIDEO_START( namcona1 );

@@ -277,16 +277,16 @@ static WRITE8_HANDLER( gfx0_vram_w )
 {
 	witch_state *state = space->machine().driver_data<witch_state>();
 	state->m_gfx0_vram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_gfx0a_tilemap,offset);
-	tilemap_mark_tile_dirty(state->m_gfx0b_tilemap,offset);
+	state->m_gfx0a_tilemap->mark_tile_dirty(offset);
+	state->m_gfx0b_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( gfx0_cram_w )
 {
 	witch_state *state = space->machine().driver_data<witch_state>();
 	state->m_gfx0_cram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_gfx0a_tilemap,offset);
-	tilemap_mark_tile_dirty(state->m_gfx0b_tilemap,offset);
+	state->m_gfx0a_tilemap->mark_tile_dirty(offset);
+	state->m_gfx0b_tilemap->mark_tile_dirty(offset);
 }
 static READ8_HANDLER( gfx0_vram_r )
 {
@@ -308,7 +308,7 @@ static WRITE8_HANDLER( gfx1_vram_w )
 	witch_state *state = space->machine().driver_data<witch_state>();
 	FIX_OFFSET();
 	state->m_gfx1_vram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_gfx1_tilemap,offset);
+	state->m_gfx1_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( gfx1_cram_w )
@@ -316,7 +316,7 @@ static WRITE8_HANDLER( gfx1_cram_w )
 	witch_state *state = space->machine().driver_data<witch_state>();
 	FIX_OFFSET();
 	state->m_gfx1_cram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_gfx1_tilemap,offset);
+	state->m_gfx1_tilemap->mark_tile_dirty(offset);
 }
 static READ8_HANDLER( gfx1_vram_r )
 {
@@ -701,14 +701,14 @@ static VIDEO_START(witch)
 	state->m_gfx0b_tilemap = tilemap_create(machine, get_gfx0b_tile_info,tilemap_scan_rows,8,8,32,32);
 	state->m_gfx1_tilemap = tilemap_create(machine, get_gfx1_tile_info,tilemap_scan_rows,8,8,32,32);
 
-	tilemap_set_transparent_pen(state->m_gfx0a_tilemap,0);
-	tilemap_set_transparent_pen(state->m_gfx0b_tilemap,0);
-	tilemap_set_palette_offset(state->m_gfx0a_tilemap,0x100);
-	tilemap_set_palette_offset(state->m_gfx0b_tilemap,0x100);
-	tilemap_set_palette_offset(state->m_gfx1_tilemap,0x200);
+	state->m_gfx0a_tilemap->set_transparent_pen(0);
+	state->m_gfx0b_tilemap->set_transparent_pen(0);
+	state->m_gfx0a_tilemap->set_palette_offset(0x100);
+	state->m_gfx0b_tilemap->set_palette_offset(0x100);
+	state->m_gfx1_tilemap->set_palette_offset(0x200);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	witch_state *state = machine.driver_data<witch_state>();
 	int i,sx,sy,tileno,flags,color;
@@ -756,18 +756,18 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 
 }
 
-static SCREEN_UPDATE(witch)
+static SCREEN_UPDATE_IND16(witch)
 {
-	witch_state *state = screen->machine().driver_data<witch_state>();
-	tilemap_set_scrollx( state->m_gfx1_tilemap, 0, state->m_scrollx-7 ); //offset to have it aligned with the sprites
-	tilemap_set_scrolly( state->m_gfx1_tilemap, 0, state->m_scrolly+8 );
+	witch_state *state = screen.machine().driver_data<witch_state>();
+	state->m_gfx1_tilemap->set_scrollx(0, state->m_scrollx-7 ); //offset to have it aligned with the sprites
+	state->m_gfx1_tilemap->set_scrolly(0, state->m_scrolly+8 );
 
 
 
-	tilemap_draw(bitmap,cliprect,state->m_gfx1_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_gfx0a_tilemap,0,0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_gfx0b_tilemap,0,0);
+	state->m_gfx1_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_gfx0a_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_gfx0b_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -798,10 +798,9 @@ static MACHINE_CONFIG_START( witch, witch_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(8, 256-1-8, 8*4, 256-8*4-1)
-	MCFG_SCREEN_UPDATE(witch)
+	MCFG_SCREEN_UPDATE_STATIC(witch)
 
 	MCFG_GFXDECODE(witch)
 	MCFG_PALETTE_LENGTH(0x800)

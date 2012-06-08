@@ -79,12 +79,19 @@ public:
 	gei_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag) { }
 
+	virtual void video_start();
+
+	UINT32 screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
+
+	bitmap_ind16 m_bitmap;
+
 	UINT8 m_drawctrl[3];
 	UINT8 m_color[8];
 	int m_prevoffset;
 	int m_yadd;
 	int m_signature_answer;
 	int m_signature_pos;
+	UINT8 m_nmi_mask;
 };
 
 
@@ -115,7 +122,7 @@ static WRITE8_HANDLER( gei_bitmap_w )
 
 
 	for (i = 0; i < 8; i++)
-		*BITMAP_ADDR16(space->machine().generic.tmpbitmap, sy, sx+i) = state->m_color[8-i-1];
+		state->m_bitmap.pix16(sy, sx+i) = state->m_color[8-i-1];
 }
 
 static PALETTE_INIT(gei)
@@ -138,6 +145,17 @@ static PALETTE_INIT(quizvid)
 	}
 }
 
+void gei_state::video_start()
+{
+	machine().primary_screen->register_screen_bitmap(m_bitmap);
+}
+
+UINT32 gei_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
+{
+	copybitmap(bitmap, m_bitmap, 0, 0, 0, 0, cliprect);
+	return 0;
+}
+
 static WRITE8_DEVICE_HANDLER( lamps_w )
 {
 	/* 5 button lamps */
@@ -157,6 +175,7 @@ static WRITE8_DEVICE_HANDLER( lamps_w )
 static WRITE8_DEVICE_HANDLER( sound_w )
 {
 	address_space *space = device->machine().device("maincpu")->memory().space(AS_PROGRAM);
+	gei_state *state = space->machine().driver_data<gei_state>();
 
 	/* bit 3 - coin lockout, lamp10 in poker / lamp6 in trivia test modes */
 	coin_lockout_global_w(device->machine(), ~data & 0x08);
@@ -166,7 +185,7 @@ static WRITE8_DEVICE_HANDLER( sound_w )
 	ticket_dispenser_w(device->machine().device("ticket"), 0, (data & 0x20)<< 2);
 
 	/* bit 6 enables NMI */
-	interrupt_enable_w(space, 0, data & 0x40);
+	state->m_nmi_mask = data & 0x40;
 
 	/* bit 7 goes directly to the sound amplifier */
 	dac_data_w(device->machine().device("dac"), ((data & 0x80) >> 7) * 255);
@@ -198,12 +217,13 @@ static WRITE8_DEVICE_HANDLER( lamps2_w )
 static WRITE8_DEVICE_HANDLER( nmi_w )
 {
 	address_space *space = device->machine().device("maincpu")->memory().space(AS_PROGRAM);
+	gei_state *state = space->machine().driver_data<gei_state>();
 
 	/* bit 4 - play/raise button lamp, lamp 9 in selection test mode  */
 	set_led_status(device->machine(), 8,data & 0x10);
 
 	/* bit 6 enables NMI */
-	interrupt_enable_w(space, 0, data & 0x40);
+	state->m_nmi_mask = data & 0x40;
 }
 
 static READ8_HANDLER( catchall )
@@ -1063,26 +1083,32 @@ static const ppi8255_interface findout_ppi8255_intf[2] =
 	}
 };
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	gei_state *state = device->machine().driver_data<gei_state>();
+
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
+
 static MACHINE_CONFIG_START( getrivia, gei_state )
 	MCFG_CPU_ADD("maincpu",Z80,4000000) /* 4 MHz */
 	MCFG_CPU_PROGRAM_MAP(getrivia_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
+	MCFG_SCREEN_UPDATE_DRIVER(gei_state, screen_update)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(48, 511-48, 16, 255-16)
-	MCFG_SCREEN_UPDATE(generic_bitmapped)
 
 	MCFG_PALETTE_LENGTH(8)
 	MCFG_PALETTE_INIT(gei)
 
 	MCFG_NVRAM_ADD_0FILL("nvram")
-
-	MCFG_VIDEO_START(generic_bitmapped)
 
 	MCFG_PPI8255_ADD( "ppi8255_0", getrivia_ppi8255_intf[0] )
 	MCFG_PPI8255_ADD( "ppi8255_1", getrivia_ppi8255_intf[1] )

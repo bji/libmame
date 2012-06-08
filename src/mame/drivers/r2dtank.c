@@ -366,7 +366,7 @@ static MC6845_UPDATE_ROW( update_row )
 			}
 
 			color = bit ? fore_color : RGB_BLACK;
-			*BITMAP_ADDR32(bitmap, y, x) = pens[color];
+			bitmap.pix32(y, x) = pens[color];
 
 			x = x + 1;
 		}
@@ -395,15 +395,6 @@ static const mc6845_interface mc6845_intf =
 	DEVCB_NULL,				/* VSYNC callback */
 	NULL					/* update address callback */
 };
-
-
-static SCREEN_UPDATE( r2dtank )
-{
-	mc6845_device *mc6845 = screen->machine().device<mc6845_device>("crtc");
-	mc6845->update(bitmap, cliprect);
-
-	return 0;
-}
 
 
 
@@ -543,9 +534,8 @@ static MACHINE_CONFIG_START( r2dtank, r2dtank_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, 256, 0, 256, 256, 0, 256)	/* temporary, CRTC will configure screen */
-	MCFG_SCREEN_UPDATE(r2dtank)
+	MCFG_SCREEN_UPDATE_DEVICE("crtc", mc6845_device, screen_update)
 
 	MCFG_MC6845_ADD("crtc", MC6845, CRTC_CLOCK, mc6845_intf)
 

@@ -31,7 +31,6 @@
 #include "cpu/z80/z80.h"
 #include "cpu/m68000/m68000.h"
 #include "cpu/mcs51/mcs51.h"
-#include "deprecat.h"
 #include "machine/segaic16.h"
 #include "machine/nvram.h"
 #include "includes/segas16.h"
@@ -1242,10 +1241,9 @@ static MACHINE_CONFIG_START( system18, segas1x_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57.23)    /* verified on pcb */
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(342,262)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(system18)
+	MCFG_SCREEN_UPDATE_STATIC(system18)
 
 	MCFG_GFXDECODE(segas18)
 	MCFG_PALETTE_LENGTH(2048*3+2048)
@@ -1270,7 +1268,7 @@ MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( system18_8751, system18 )
 	MCFG_CPU_MODIFY("maincpu")
-	MCFG_CPU_VBLANK_INT_HACK(NULL,0) /* TODO: ??? */
+	MCFG_CPU_VBLANK_INT(NULL, NULL)
 
 	MCFG_CPU_ADD("mcu", I8751, 8000000)
 	MCFG_CPU_IO_MAP(mcu_io_map)

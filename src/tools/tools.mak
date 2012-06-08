@@ -71,9 +71,9 @@ TOOLS += \
 ROMCMPOBJS = \
 	$(TOOLSOBJ)/romcmp.o \
 
-romcmp$(EXE): $(ROMCMPOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+romcmp$(EXE): $(ROMCMPOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(LIBOCORE)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
 
@@ -84,9 +84,9 @@ romcmp$(EXE): $(ROMCMPOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDE
 CHDMANOBJS = \
 	$(TOOLSOBJ)/chdman.o \
 
-chdman$(EXE): $(VERSIONOBJ) $(CHDMANOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+chdman$(EXE): $(VERSIONOBJ) $(CHDMANOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(FLAC_LIB) $(LIBOCORE)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) $(FLAC_LIB) -o $@
 
 
 
@@ -97,9 +97,9 @@ chdman$(EXE): $(VERSIONOBJ) $(CHDMANOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LI
 JEDUTILOBJS = \
 	$(TOOLSOBJ)/jedutil.o \
 
-jedutil$(EXE): $(JEDUTILOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+jedutil$(EXE): $(JEDUTILOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
 
@@ -110,9 +110,9 @@ jedutil$(EXE): $(JEDUTILOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPEN
 UNIDASMOBJS = \
 	$(TOOLSOBJ)/unidasm.o \
 
-unidasm$(EXE): $(UNIDASMOBJS) $(LIBDASM) $(LIBEMU) $(LIBUTIL) $(TOOLS_LIBOCORE_DEPENDENCY) $(ZLIB) $(EXPAT)
+unidasm$(EXE): $(UNIDASMOBJS) $(LIBDASM) $(LIBEMU) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
 
@@ -123,9 +123,9 @@ unidasm$(EXE): $(UNIDASMOBJS) $(LIBDASM) $(LIBEMU) $(LIBUTIL) $(TOOLS_LIBOCORE_D
 LDRESAMPLEOBJS = \
 	$(TOOLSOBJ)/ldresample.o \
 
-ldresample$(EXE): $(LDRESAMPLEOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+ldresample$(EXE): $(LDRESAMPLEOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(FLAC_LIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) $(FLAC_LIB) -o $@
 
 
 
@@ -136,9 +136,9 @@ ldresample$(EXE): $(LDRESAMPLEOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE
 LDVERIFYOBJS = \
 	$(TOOLSOBJ)/ldverify.o \
 
-ldverify$(EXE): $(LDVERIFYOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY) 
+ldverify$(EXE): $(LDVERIFYOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(FLAC_LIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) $(FLAC_LIB) -o $@
 
 
 
@@ -149,9 +149,9 @@ ldverify$(EXE): $(LDVERIFYOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEP
 REGREPOBJS = \
 	$(TOOLSOBJ)/regrep.o \
 
-regrep$(EXE): $(REGREPOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+regrep$(EXE): $(REGREPOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
 
@@ -162,9 +162,9 @@ regrep$(EXE): $(REGREPOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDE
 SRCCLEANOBJS = \
 	$(TOOLSOBJ)/srcclean.o \
 
-srcclean$(EXE): $(SRCCLEANOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+srcclean$(EXE): $(SRCCLEANOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
 
@@ -175,9 +175,9 @@ srcclean$(EXE): $(SRCCLEANOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEP
 SRC2HTMLOBJS = \
 	$(TOOLSOBJ)/src2html.o \
 
-src2html$(EXE): $(SRC2HTMLOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+src2html$(EXE): $(SRC2HTMLOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
 
@@ -188,6 +188,6 @@ src2html$(EXE): $(SRC2HTMLOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEP
 SPLITOBJS = \
 	$(TOOLSOBJ)/split.o \
 
-split$(EXE): $(SPLITOBJS) $(LIBUTIL) $(ZLIB) $(EXPAT) $(TOOLS_LIBOCORE_DEPENDENCY)
+split$(EXE): $(SPLITOBJS) $(LIBUTIL) $(LIBOCORE) $(ZLIB) $(EXPAT)
 	@echo Linking $@...
-	$(LD) $(LDFLAGS) $^ $(TOOLS_LIBOCORE_LINK) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@

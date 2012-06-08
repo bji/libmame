@@ -117,35 +117,35 @@ static WRITE16_HANDLER( galaxi_bg1_w )
 {
 	galaxi_state *state = space->machine().driver_data<galaxi_state>();
 	COMBINE_DATA(&state->m_bg1_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg1_tmap, offset);
+	state->m_bg1_tmap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( galaxi_bg2_w )
 {
 	galaxi_state *state = space->machine().driver_data<galaxi_state>();
 	COMBINE_DATA(&state->m_bg2_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg2_tmap, offset);
+	state->m_bg2_tmap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( galaxi_bg3_w )
 {
 	galaxi_state *state = space->machine().driver_data<galaxi_state>();
 	COMBINE_DATA(&state->m_bg3_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg3_tmap, offset);
+	state->m_bg3_tmap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( galaxi_bg4_w )
 {
 	galaxi_state *state = space->machine().driver_data<galaxi_state>();
 	COMBINE_DATA(&state->m_bg4_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg4_tmap, offset);
+	state->m_bg4_tmap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( galaxi_fg_w )
 {
 	galaxi_state *state = space->machine().driver_data<galaxi_state>();
 	COMBINE_DATA(&state->m_fg_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_fg_tmap, offset);
+	state->m_fg_tmap->mark_tile_dirty(offset);
 }
 
 static VIDEO_START(galaxi)
@@ -159,41 +159,41 @@ static VIDEO_START(galaxi)
 
 	state->m_fg_tmap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 0x40, 0x20);
 
-	tilemap_set_transparent_pen(state->m_bg1_tmap, 0);
-	tilemap_set_transparent_pen(state->m_bg2_tmap, 0);
-	tilemap_set_transparent_pen(state->m_bg3_tmap, 0);
-	tilemap_set_transparent_pen(state->m_bg4_tmap, 0);
+	state->m_bg1_tmap->set_transparent_pen(0);
+	state->m_bg2_tmap->set_transparent_pen(0);
+	state->m_bg3_tmap->set_transparent_pen(0);
+	state->m_bg4_tmap->set_transparent_pen(0);
 
-	tilemap_set_transparent_pen(state->m_fg_tmap, 0);
+	state->m_fg_tmap->set_transparent_pen(0);
 
-	tilemap_set_scrolldx(state->m_bg3_tmap, -8, 0);
+	state->m_bg3_tmap->set_scrolldx(-8, 0);
 }
 
-static SCREEN_UPDATE(galaxi)
+static SCREEN_UPDATE_IND16(galaxi)
 {
-	galaxi_state *state = screen->machine().driver_data<galaxi_state>();
+	galaxi_state *state = screen.machine().driver_data<galaxi_state>();
 	int layers_ctrl = -1;
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_R))	// remapped due to inputs changes.
+	if (screen.machine().input().code_pressed(KEYCODE_R))	// remapped due to inputs changes.
 	{
 		int msk = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_T))	msk |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_Y))	msk |= 2;
-		if (screen->machine().input().code_pressed(KEYCODE_U))	msk |= 4;
-		if (screen->machine().input().code_pressed(KEYCODE_I))	msk |= 8;
-		if (screen->machine().input().code_pressed(KEYCODE_O))	msk |= 16;
+		if (screen.machine().input().code_pressed(KEYCODE_T))	msk |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_Y))	msk |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_U))	msk |= 4;
+		if (screen.machine().input().code_pressed(KEYCODE_I))	msk |= 8;
+		if (screen.machine().input().code_pressed(KEYCODE_O))	msk |= 16;
 		if (msk != 0) layers_ctrl &= msk;
 	}
 #endif
 
-	if (layers_ctrl & 1)	tilemap_draw(bitmap, cliprect, state->m_bg1_tmap, TILEMAP_DRAW_OPAQUE, 0);
-	else				bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	if (layers_ctrl & 2)	tilemap_draw(bitmap, cliprect, state->m_bg2_tmap, 0, 0);
-	if (layers_ctrl & 4)	tilemap_draw(bitmap, cliprect, state->m_bg3_tmap, 0, 0);
-	if (layers_ctrl & 8)	tilemap_draw(bitmap, cliprect, state->m_bg4_tmap, 0, 0);
+	if (layers_ctrl & 1)	state->m_bg1_tmap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
+	else				bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	if (layers_ctrl & 2)	state->m_bg2_tmap->draw(bitmap, cliprect, 0, 0);
+	if (layers_ctrl & 4)	state->m_bg3_tmap->draw(bitmap, cliprect, 0, 0);
+	if (layers_ctrl & 8)	state->m_bg4_tmap->draw(bitmap, cliprect, 0, 0);
 
-	if (layers_ctrl & 16)	tilemap_draw(bitmap, cliprect, state->m_fg_tmap, 0, 0);
+	if (layers_ctrl & 16)	state->m_fg_tmap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -411,10 +411,9 @@ static MACHINE_CONFIG_START( galaxi, galaxi_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(16*5, 512-16*2-1, 16*1, 256-1)
-	MCFG_SCREEN_UPDATE(galaxi)
+	MCFG_SCREEN_UPDATE_STATIC(galaxi)
 
 	MCFG_GFXDECODE(galaxi)
 	MCFG_PALETTE_LENGTH(0x400)

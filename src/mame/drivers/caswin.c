@@ -79,10 +79,10 @@ static VIDEO_START(vvillage)
 	state->m_sc0_tilemap = tilemap_create(machine, get_sc0_tile_info,tilemap_scan_rows,8,8,32,32);
 }
 
-static SCREEN_UPDATE(vvillage)
+static SCREEN_UPDATE_IND16(vvillage)
 {
-	caswin_state *state = screen->machine().driver_data<caswin_state>();
-	tilemap_draw(bitmap,cliprect,state->m_sc0_tilemap,0,0);
+	caswin_state *state = screen.machine().driver_data<caswin_state>();
+	state->m_sc0_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -90,14 +90,14 @@ static WRITE8_HANDLER( sc0_vram_w )
 {
 	caswin_state *state = space->machine().driver_data<caswin_state>();
 	state->m_sc0_vram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_sc0_tilemap,offset);
+	state->m_sc0_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( sc0_attr_w )
 {
 	caswin_state *state = space->machine().driver_data<caswin_state>();
 	state->m_sc0_attr[offset] = data;
-	tilemap_mark_tile_dirty(state->m_sc0_tilemap,offset);
+	state->m_sc0_tilemap->mark_tile_dirty(offset);
 }
 
 /*These two are tested during the two cherry sub-games.I really don't know what is supposed to do...*/
@@ -302,10 +302,9 @@ static MACHINE_CONFIG_START( vvillage, caswin_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(vvillage)
+	MCFG_SCREEN_UPDATE_STATIC(vvillage)
 
 	MCFG_NVRAM_ADD_0FILL("nvram")
 

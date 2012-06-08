@@ -214,6 +214,8 @@ bits(7:4) and bit(24)), X, and Y:
  *
  *************************************/
 
+static const rectangle global_cliprect(-4096, 4095, -4096, 4095);
+
 /* fast dither lookup */
 static UINT8 dither4_lookup[256*16*2];
 static UINT8 dither2_lookup[256*16*2];
@@ -327,7 +329,7 @@ INLINE voodoo_state *get_safe_token(device_t *device)
  *
  *************************************/
 
-int voodoo_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect)
+int voodoo_update(device_t *device, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	voodoo_state *v = get_safe_token(device);
 	int changed = v->fbi.video_changed;
@@ -341,7 +343,7 @@ int voodoo_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect)
 	/* if we are blank, just fill with black */
 	if (v->type <= VOODOO_2 && FBIINIT1_SOFTWARE_BLANK(v->reg[fbiInit1].u))
 	{
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(0, cliprect);
 		return changed;
 	}
 
@@ -422,12 +424,12 @@ int voodoo_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect)
 		drawbuf = v->fbi.backbuf;
 
 	/* copy from the current front buffer */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 		if (y >= v->fbi.yoffs)
 		{
 			UINT16 *src = (UINT16 *)(v->fbi.ram + v->fbi.rgboffs[drawbuf]) + (y - v->fbi.yoffs) * v->fbi.rowpixels - v->fbi.xoffs;
-			UINT32 *dst = BITMAP_ADDR32(bitmap, y, 0);
-			for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+			UINT32 *dst = &bitmap.pix32(y);
+			for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 				dst[x] = v->fbi.pen[src[x]];
 		}
 
@@ -445,11 +447,11 @@ int voodoo_update(device_t *device, bitmap_t *bitmap, const rectangle *cliprect)
 	v->stats.render_override = device->machine().input().code_pressed(KEYCODE_ENTER);
 	if (DEBUG_DEPTH && v->stats.render_override)
 	{
-		for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+		for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 		{
 			UINT16 *src = (UINT16 *)(v->fbi.ram + v->fbi.auxoffs) + (y - v->fbi.yoffs) * v->fbi.rowpixels - v->fbi.xoffs;
-			UINT32 *dst = BITMAP_ADDR32(bitmap, y, 0);
-			for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+			UINT32 *dst = &bitmap.pix32(y);
+			for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 				dst[x] = ((src[x] << 8) & 0xff0000) | ((src[x] >> 0) & 0xff00) | ((src[x] >> 8) & 0xff);
 		}
 	}
@@ -928,7 +930,7 @@ static void swap_buffers(voodoo_state *v)
 	if (v->stats.display)
 	{
 		const rectangle &visible_area = v->screen->visible_area();
-		int screen_area = (visible_area.max_x - visible_area.min_x + 1) * (visible_area.max_y - visible_area.min_y + 1);
+		int screen_area = visible_area.width() * visible_area.height();
 		char *statsptr = v->stats.buffer;
 		int pixelcount;
 		int i;
@@ -2571,10 +2573,7 @@ static INT32 register_w(voodoo_state *v, offs_t offset, UINT32 data)
 					rectangle visarea;
 
 					/* create a new visarea */
-					visarea.min_x = hbp;
-					visarea.max_x = hbp + hvis - 1;
-					visarea.min_y = vbp;
-					visarea.max_y = vbp + vvis - 1;
+					visarea.set(hbp, hbp + hvis - 1, vbp, vbp + vvis - 1);
 
 					/* keep within bounds */
 					visarea.max_x = MIN(visarea.max_x, htotal - 1);
@@ -4911,7 +4910,15 @@ static DEVICE_START( voodoo )
 	}
 
 	/* set the type, and initialize the chip mask */
-	v->index = device->machine().devicelist().indexof(device->type(), device->tag());
+	device_iterator iter(device->machine().root_device());
+	v->index = 0;
+	for (device_t *scan = iter.first(); scan != NULL; scan = iter.next())
+		if (scan->type() == device->type())
+		{
+			if (scan == device)
+				break;
+			v->index++;
+		}
 	v->screen = downcast<screen_device *>(device->machine().device(config->screen));
 	assert_always(v->screen != NULL, "Unable to find screen attached to voodoo");
 	v->cpu = device->machine().device(config->cputag);
@@ -5118,7 +5125,7 @@ static INT32 fastfill(voodoo_state *v)
 		extra->state = v;
 		memcpy(extra->dither, dithermatrix, sizeof(extra->dither));
 
-		pixels += poly_render_triangle_custom(v->poly, drawbuf, NULL, raster_fastfill, y, count, extents);
+		pixels += poly_render_triangle_custom(v->poly, drawbuf, global_cliprect, raster_fastfill, y, count, extents);
 	}
 
 	/* 2 pixels per clock */
@@ -5525,7 +5532,7 @@ static INT32 triangle_create_work_item(voodoo_state *v, UINT16 *drawbuf, int tex
 
 	/* farm the rasterization out to other threads */
 	info->polys++;
-	return poly_render_triangle(v->poly, drawbuf, NULL, info->callback, 0, &vert[0], &vert[1], &vert[2]);
+	return poly_render_triangle(v->poly, drawbuf, global_cliprect, info->callback, 0, &vert[0], &vert[1], &vert[2]);
 }
 
 

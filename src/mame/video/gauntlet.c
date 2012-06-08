@@ -96,7 +96,7 @@ VIDEO_START( gauntlet )
 
 	/* initialize the alphanumerics */
 	state->m_alpha_tilemap = tilemap_create(machine, get_alpha_tile_info, tilemap_scan_rows,  8,8, 64,32);
-	tilemap_set_transparent_pen(state->m_alpha_tilemap, 0);
+	state->m_alpha_tilemap->set_transparent_pen(0);
 
 	/* modify the motion object code lookup table to account for the code XOR */
 	codelookup = atarimo_get_code_lookup(0, &size);
@@ -131,7 +131,7 @@ WRITE16_HANDLER( gauntlet_xscroll_w )
 		space->machine().primary_screen->update_partial(space->machine().primary_screen->vpos());
 
 		/* adjust the scrolls */
-		tilemap_set_scrollx(state->m_playfield_tilemap, 0, *state->m_xscroll);
+		state->m_playfield_tilemap->set_scrollx(0, *state->m_xscroll);
 		atarimo_set_xscroll(0, *state->m_xscroll & 0x1ff);
 	}
 }
@@ -159,11 +159,11 @@ WRITE16_HANDLER( gauntlet_yscroll_w )
 		if (state->m_playfield_tile_bank != (*state->m_yscroll & 3))
 		{
 			state->m_playfield_tile_bank = *state->m_yscroll & 3;
-			tilemap_mark_all_tiles_dirty(state->m_playfield_tilemap);
+			state->m_playfield_tilemap->mark_all_dirty();
 		}
 
 		/* adjust the scrolls */
-		tilemap_set_scrolly(state->m_playfield_tilemap, 0, *state->m_yscroll >> 7);
+		state->m_playfield_tilemap->set_scrolly(0, *state->m_yscroll >> 7);
 		atarimo_set_yscroll(0, (*state->m_yscroll >> 7) & 0x1ff);
 	}
 }
@@ -176,23 +176,23 @@ WRITE16_HANDLER( gauntlet_yscroll_w )
  *
  *************************************/
 
-SCREEN_UPDATE( gauntlet )
+SCREEN_UPDATE_IND16( gauntlet )
 {
-	gauntlet_state *state = screen->machine().driver_data<gauntlet_state>();
+	gauntlet_state *state = screen.machine().driver_data<gauntlet_state>();
 	atarimo_rect_list rectlist;
-	bitmap_t *mobitmap;
+	bitmap_ind16 *mobitmap;
 	int x, y, r;
 
 	/* draw the playfield */
-	tilemap_draw(bitmap, cliprect, state->m_playfield_tilemap, 0, 0);
+	state->m_playfield_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* draw and merge the MO */
 	mobitmap = atarimo_render(0, cliprect, &rectlist);
 	for (r = 0; r < rectlist.numrects; r++, rectlist.rect++)
 		for (y = rectlist.rect->min_y; y <= rectlist.rect->max_y; y++)
 		{
-			UINT16 *mo = (UINT16 *)mobitmap->base + mobitmap->rowpixels * y;
-			UINT16 *pf = (UINT16 *)bitmap->base + bitmap->rowpixels * y;
+			UINT16 *mo = &mobitmap->pix16(y);
+			UINT16 *pf = &bitmap.pix16(y);
 			for (x = rectlist.rect->min_x; x <= rectlist.rect->max_x; x++)
 				if (mo[x])
 				{
@@ -215,6 +215,6 @@ SCREEN_UPDATE( gauntlet )
 		}
 
 	/* add the alpha on top */
-	tilemap_draw(bitmap, cliprect, state->m_alpha_tilemap, 0, 0);
+	state->m_alpha_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

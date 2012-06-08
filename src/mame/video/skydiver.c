@@ -67,7 +67,7 @@ WRITE8_HANDLER( skydiver_videoram_w )
 {
 	skydiver_state *state = space->machine().driver_data<skydiver_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -168,7 +168,7 @@ WRITE8_HANDLER( skydiver_2000_201F_w )
  *
  *************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	skydiver_state *state = machine.driver_data<skydiver_state>();
 	int pic;
@@ -206,11 +206,11 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 }
 
 
-SCREEN_UPDATE( skydiver )
+SCREEN_UPDATE_IND16( skydiver )
 {
-	skydiver_state *state = screen->machine().driver_data<skydiver_state>();
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
+	skydiver_state *state = screen.machine().driver_data<skydiver_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

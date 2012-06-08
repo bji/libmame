@@ -5,6 +5,7 @@ Notes:
 - tilemap system is identical to Namco System2
 
 ToDo:
+- improve interrupts
 - gunbulet force feedback
 - music tempo is too fast in Nebulas Ray, JLS V-Shoot and the Great Sluggers games
 
@@ -270,7 +271,6 @@ GFX:                Custom 145     ( 80 pin PQFP)
 */
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "includes/namconb1.h"
 #include "includes/namcos2.h"
 #include "includes/namcoic.h"
@@ -281,6 +281,20 @@ GFX:                Custom 145     ( 80 pin PQFP)
 
 
 /****************************************************************************/
+
+
+static TIMER_DEVICE_CALLBACK( mcu_interrupt )
+{
+	int scanline = param;
+
+	/* TODO: real sources of these */
+	if (scanline == 224)
+		cputag_set_input_line(timer.machine(), "mcu", M37710_LINE_IRQ0, HOLD_LINE);
+	else if (scanline == 0)
+		cputag_set_input_line(timer.machine(), "mcu", M37710_LINE_IRQ2, HOLD_LINE);
+	else if (scanline == 128)
+		cputag_set_input_line(timer.machine(), "mcu", M37710_LINE_ADC, HOLD_LINE);
+}
 
 
 static TIMER_CALLBACK( namconb1_TriggerPOSIRQ )
@@ -348,21 +362,6 @@ static INTERRUPT_GEN( namconb1_interrupt )
 	}
 } /* namconb1_interrupt */
 
-static INTERRUPT_GEN( mcu_interrupt )
-{
-	if (cpu_getiloops(device) == 0)
-	{
-		device_set_input_line(device, M37710_LINE_IRQ0, HOLD_LINE);
-	}
-	else if (cpu_getiloops(device) == 1)
-	{
-		device_set_input_line(device, M37710_LINE_IRQ2, HOLD_LINE);
-	}
-	else
-	{
-		device_set_input_line(device, M37710_LINE_ADC, HOLD_LINE);
-	}
-}
 
 static TIMER_CALLBACK( namconb2_TriggerPOSIRQ )
 {
@@ -1027,7 +1026,7 @@ static MACHINE_CONFIG_START( namconb1, namconb1_state )
 	MCFG_CPU_ADD("mcu", M37702, MASTER_CLOCK_HZ/3)
 	MCFG_CPU_PROGRAM_MAP(namcoc75_am)
 	MCFG_CPU_IO_MAP(namcoc75_io)
-	MCFG_CPU_VBLANK_INT_HACK(mcu_interrupt, 3)
+	MCFG_TIMER_ADD_SCANLINE("mcu_st", mcu_interrupt, "screen", 0, 1)
 
 	MCFG_NVRAM_HANDLER(namconb1)
 	MCFG_MACHINE_START(namconb)
@@ -1035,10 +1034,9 @@ static MACHINE_CONFIG_START( namconb1, namconb1_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.7)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(NAMCONB1_HTOTAL, NAMCONB1_VTOTAL)
 	MCFG_SCREEN_VISIBLE_AREA(0, NAMCONB1_HBSTART-1, 0, NAMCONB1_VBSTART-1)
-	MCFG_SCREEN_UPDATE(namconb1)
+	MCFG_SCREEN_UPDATE_STATIC(namconb1)
 
 	MCFG_GFXDECODE(namconb1)
 	MCFG_PALETTE_LENGTH(0x2000)
@@ -1060,7 +1058,7 @@ static MACHINE_CONFIG_START( namconb2, namconb1_state )
 	MCFG_CPU_ADD("mcu", M37702, MASTER_CLOCK_HZ/3)
 	MCFG_CPU_PROGRAM_MAP(namcoc75_am)
 	MCFG_CPU_IO_MAP(namcoc75_io)
-	MCFG_CPU_VBLANK_INT_HACK(mcu_interrupt, 3)
+	MCFG_TIMER_ADD_SCANLINE("mcu_st", mcu_interrupt, "screen", 0, 1)
 
 	MCFG_NVRAM_HANDLER(namconb1)
 	MCFG_MACHINE_START(namconb)
@@ -1068,10 +1066,9 @@ static MACHINE_CONFIG_START( namconb2, namconb1_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.7)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(NAMCONB1_HTOTAL, NAMCONB1_VTOTAL)
 	MCFG_SCREEN_VISIBLE_AREA(0, NAMCONB1_HBSTART-1, 0, NAMCONB1_VBSTART-1)
-	MCFG_SCREEN_UPDATE(namconb2)
+	MCFG_SCREEN_UPDATE_STATIC(namconb2)
 
 	MCFG_GFXDECODE(2)
 	MCFG_PALETTE_LENGTH(0x2000)

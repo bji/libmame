@@ -491,9 +491,9 @@ static VIDEO_START(rbmk)
 {
 }
 
-static SCREEN_UPDATE(rbmk)
+static SCREEN_UPDATE_IND16(rbmk)
 {
-	rbmk_state *state = screen->machine().driver_data<rbmk_state>();
+	rbmk_state *state = screen.machine().driver_data<rbmk_state>();
 	int x,y;
 	int count = 0;
 
@@ -502,7 +502,7 @@ static SCREEN_UPDATE(rbmk)
 		for (x=0;x<64;x++)
 		{
 			int tile = state->m_gms_vidram2[count+0x600];
-			drawgfx_opaque(bitmap,cliprect,screen->machine().gfx[0],(tile&0xfff)+((state->m_tilebank&0x10)>>4)*0x1000,tile>>12,0,0,x*8,y*32);
+			drawgfx_opaque(bitmap,cliprect,screen.machine().gfx[0],(tile&0xfff)+((state->m_tilebank&0x10)>>4)*0x1000,tile>>12,0,0,x*8,y*32);
 			count++;
 		}
 	}
@@ -514,7 +514,7 @@ static SCREEN_UPDATE(rbmk)
 		for (x=0;x<64;x++)
 		{
 			int tile = state->m_gms_vidram[count];
-			drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[1],(tile&0xfff)+((state->m_tilebank>>1)&3)*0x1000,tile>>12,0,0,x*8,y*8,0);
+			drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[1],(tile&0xfff)+((state->m_tilebank>>1)&3)*0x1000,tile>>12,0,0,x*8,y*8,0);
 			count++;
 		}
 	}
@@ -542,10 +542,9 @@ static MACHINE_CONFIG_START( rbmk, rbmk_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(rbmk)
+	MCFG_SCREEN_UPDATE_STATIC(rbmk)
 
 	MCFG_PALETTE_LENGTH(0x800)
 

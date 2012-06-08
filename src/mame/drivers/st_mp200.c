@@ -2,6 +2,9 @@
     Stern MP-200 MPU
     (almost identical to Bally MPU-35)
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
@@ -9,18 +12,28 @@ class st_mp200_state : public driver_device
 {
 public:
 	st_mp200_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( st_mp200_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( st_mp200_map, AS_PROGRAM, 8, st_mp200_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( st_mp200 )
 INPUT_PORTS_END
 
-static MACHINE_RESET( st_mp200 )
+void st_mp200_state::machine_reset()
 {
 }
 
@@ -32,8 +45,6 @@ static MACHINE_CONFIG_START( st_mp200, st_mp200_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(st_mp200_map)
-
-	MCFG_MACHINE_RESET( st_mp200 )
 MACHINE_CONFIG_END
 
 /*--------------------------------
@@ -60,6 +71,7 @@ ROM_START(biggame)
 	ROM_LOAD( "cpu_u6.716", 0x5800, 0x0800, CRC(801e9a66) SHA1(8634d6bd4af3e5ec3b736679393462961b76ede1))
 	ROM_RELOAD( 0xf800, 0x0800)
 ROM_END
+
 /*--------------------------------
 / Catacomb
 /-------------------------------*/
@@ -334,26 +346,26 @@ ROM_START(st_game)
 ROM_END
 
 
-//GAME(1982,    cue,        0,      st_mp200,   st_mp200,   st_mp200,   ROT0,   "Stern",                "Cue",              GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	ali,		0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Ali",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	biggame,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Big Game",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	catacomp,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Catacomb (Pinball)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	cheetah,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Cheetah",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1982,	dragfist,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Dragonfist",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	flight2k,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Flight 2000",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	freefall,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Freefall",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	galaxypi,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Galaxy",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	ironmaid,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Iron Maiden",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1984,	lazrlord,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Lazer Lord",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	lightnin,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Lightning",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1979,	meteorp,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Meteor (Stern)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	nineball,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Nine Ball",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1982,	orbitor1,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Orbitor 1",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	quicksil,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Quicksilver",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	seawitch,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Seawitch",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	splitsec,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Split Second",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	stargzr,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Stargazer",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	viperp,		0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Viper (Pinball)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1985,	gamatron,	flight2k,	st_mp200,	st_mp200,	st_mp200,	ROT0,	"Pinstar",				"Gamatron",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1978,	blkshpsq,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Astro",				"Black Sheep Squadron",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(198?,	st_game,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"<unknown>",			"unknown pinball game",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+//GAME(1982,    cue,        0,      st_mp200,   st_mp200,   st_mp200,   ROT0,   "Stern",                "Cue",              GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	ali,		0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Ali",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	biggame,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Big Game",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	catacomp,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Catacomb (Pinball)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	cheetah,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Cheetah",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1982,	dragfist,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Dragonfist",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	flight2k,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Flight 2000",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	freefall,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Freefall",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	galaxypi,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Galaxy",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	ironmaid,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Iron Maiden",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1984,	lazrlord,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Lazer Lord",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	lightnin,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Lightning",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1979,	meteorp,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Meteor (Stern)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	nineball,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Nine Ball",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1982,	orbitor1,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Orbitor 1",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	quicksil,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Quicksilver",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	seawitch,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Seawitch",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	splitsec,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Split Second",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	stargzr,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Stargazer",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	viperp,		0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Stern",				"Viper (Pinball)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1985,	gamatron,	flight2k,	st_mp200,	st_mp200,	st_mp200,	ROT0,	"Pinstar",				"Gamatron",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1978,	blkshpsq,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"Astro",				"Black Sheep Squadron",				GAME_IS_SKELETON_MECHANICAL)
+GAME(198?,	st_game,	0,			st_mp200,	st_mp200,	st_mp200,	ROT0,	"<unknown>",			"unknown pinball game",				GAME_IS_SKELETON_MECHANICAL)

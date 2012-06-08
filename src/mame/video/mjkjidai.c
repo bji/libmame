@@ -45,7 +45,7 @@ WRITE8_HANDLER( mjkjidai_videoram_w )
 	mjkjidai_state *state = space->machine().driver_data<mjkjidai_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset & 0x7ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset & 0x7ff);
 }
 
 WRITE8_HANDLER( mjkjidai_ctrl_w )
@@ -56,7 +56,7 @@ WRITE8_HANDLER( mjkjidai_ctrl_w )
 //  logerror("%04x: port c0 = %02x\n",cpu_get_pc(&space->device()),data);
 
 	/* bit 0 = NMI enable */
-	interrupt_enable_w(space,0,data & 1);
+	state->m_nmi_mask = data & 1;
 
 	/* bit 1 = flip screen */
 	flip_screen_set(space->machine(), data & 0x02);
@@ -87,7 +87,7 @@ WRITE8_HANDLER( mjkjidai_ctrl_w )
 
 ***************************************************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	mjkjidai_state *state = machine.driver_data<mjkjidai_state>();
 	UINT8 *spriteram = state->m_spriteram1;
@@ -129,15 +129,15 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 
 
 
-SCREEN_UPDATE( mjkjidai )
+SCREEN_UPDATE_IND16( mjkjidai )
 {
-	mjkjidai_state *state = screen->machine().driver_data<mjkjidai_state>();
+	mjkjidai_state *state = screen.machine().driver_data<mjkjidai_state>();
 	if (!state->m_display_enable)
-		bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 	else
 	{
-		tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-		draw_sprites(screen->machine(), bitmap,cliprect);
+		state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+		draw_sprites(screen.machine(), bitmap,cliprect);
 	}
 	return 0;
 }

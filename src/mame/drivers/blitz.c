@@ -315,14 +315,14 @@ static WRITE8_HANDLER( megadpkr_videoram_w )
 {
 	blitz_state *state = space->machine().driver_data<blitz_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( megadpkr_colorram_w )
 {
 	blitz_state *state = space->machine().driver_data<blitz_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -352,10 +352,10 @@ static VIDEO_START( megadpkr )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( megadpkr )
+static SCREEN_UPDATE_IND16( megadpkr )
 {
-	blitz_state *state = screen->machine().driver_data<blitz_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	blitz_state *state = screen.machine().driver_data<blitz_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -802,10 +802,9 @@ static MACHINE_CONFIG_START( megadpkr, blitz_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((32)*8, (32)*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(megadpkr)
+	MCFG_SCREEN_UPDATE_STATIC(megadpkr)
 
 	MCFG_MC6845_ADD("crtc", MC6845, CPU_CLOCK, mc6845_intf)
 

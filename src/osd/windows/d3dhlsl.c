@@ -1,6 +1,6 @@
 //============================================================
 //
-//  drawd3d.c - Win32 Direct3D HLSL implementation
+//  d3dhlsl.c - Win32 Direct3D HLSL implementation
 //
 //============================================================
 //
@@ -196,7 +196,6 @@ hlsl_info::hlsl_info()
 	prescale_force_x = 0;
 	prescale_force_y = 0;
 	preset = -1;
-	shadow_bitmap = NULL;
 	shadow_texture = NULL;
 	registered_targets = 0;
 	cyclic_target_idx = 0;
@@ -213,6 +212,7 @@ hlsl_info::hlsl_info()
 
 hlsl_info::~hlsl_info()
 {
+	global_free(options);
 }
 
 
@@ -283,13 +283,9 @@ void hlsl_info::avi_update_snap(d3d_surface *surface)
 	D3DLOCKED_RECT rect;
 
 	// if we don't have a bitmap, or if it's not the right size, allocate a new one
-	if (avi_snap == NULL || (int)snap_width != avi_snap->width || (int)snap_height != avi_snap->height)
+	if (!avi_snap.valid() || (int)snap_width != avi_snap.width() || (int)snap_height != avi_snap.height())
 	{
-		if (avi_snap != NULL)
-		{
-			auto_free(window->machine(), avi_snap);
-		}
-		avi_snap = auto_alloc(window->machine(), bitmap_t((int)snap_width, (int)snap_height, BITMAP_FORMAT_RGB32));
+		avi_snap.allocate((int)snap_width, (int)snap_height);
 	}
 
 	// copy the texture
@@ -311,16 +307,11 @@ void hlsl_info::avi_update_snap(d3d_surface *surface)
 	// loop over Y
 	for (int srcy = 0; srcy < (int)snap_height; srcy++)
 	{
-		BYTE *src = (BYTE *)rect.pBits + srcy * rect.Pitch;
-		BYTE *dst = (BYTE *)avi_snap->base + srcy * avi_snap->rowpixels * 4;
+		DWORD *src = (DWORD *)((BYTE *)rect.pBits + srcy * rect.Pitch);
+		UINT32 *dst = &avi_snap.pix32(srcy);
 
 		for(int x = 0; x < snap_width; x++)
-		{
 			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = *src++;
-		}
 	}
 
 	// unlock
@@ -346,13 +337,9 @@ void hlsl_info::render_snapshot(d3d_surface *surface)
 	render_snap = false;
 
 	// if we don't have a bitmap, or if it's not the right size, allocate a new one
-	if (avi_snap == NULL || snap_width != (avi_snap->width / 2) || snap_height != (avi_snap->height / 2))
+	if (!avi_snap.valid() || snap_width != (avi_snap.width() / 2) || snap_height != (avi_snap.height() / 2))
 	{
-		if (avi_snap != NULL)
-		{
-			auto_free(window->machine(), avi_snap);
-		}
-		avi_snap = auto_alloc(window->machine(), bitmap_t(snap_width / 2, snap_height / 2, BITMAP_FORMAT_RGB32));
+		avi_snap.allocate(snap_width / 2, snap_height / 2);
 	}
 
 	// copy the texture
@@ -380,16 +367,11 @@ void hlsl_info::render_snapshot(d3d_surface *surface)
 			{
 				int toty = (srcy + cy * (snap_height / 2));
 				int totx = cx * (snap_width / 2);
-				BYTE *src = (BYTE *)rect.pBits + toty * rect.Pitch + totx * 4;
-				BYTE *dst = (BYTE *)avi_snap->base + srcy * avi_snap->rowpixels * 4;
+				DWORD *src = (DWORD *)((BYTE *)rect.pBits + toty * rect.Pitch + totx * 4);
+				UINT32 *dst = &avi_snap.pix32(srcy);
 
 				for(int x = 0; x < snap_width / 2; x++)
-				{
 					*dst++ = *src++;
-					*dst++ = *src++;
-					*dst++ = *src++;
-					*dst++ = *src++;
-				}
 			}
 
 			int idx = cy * 2 + cx;
@@ -400,7 +382,7 @@ void hlsl_info::render_snapshot(d3d_surface *surface)
 				return;
 
 			// add two text entries describing the image
-			astring text1(APPNAME, " ", build_version);
+			astring text1(emulator_info::get_appname(), " ", build_version);
 			astring text2(window->machine().system().manufacturer, " ", window->machine().system().description);
 			png_info pnginfo = { 0 };
 			png_add_text(&pnginfo, "Software", text1);
@@ -471,7 +453,7 @@ void hlsl_info::record_texture()
 	{
 		// handle an AVI recording
 		// write the next frame
-		avi_error avierr = avi_append_video_frame_rgb32(avi_output_file, avi_snap);
+		avi_error avierr = avi_append_video_frame(avi_output_file, avi_snap);
 		if (avierr != AVIERR_NONE)
 		{
 			end_avi_recording();
@@ -921,18 +903,18 @@ int hlsl_info::create_resources()
 	// experimental: load a PNG to use for vector rendering; it is treated
 	// as a brightness map
 	emu_file file(window->machine().options().art_path(), OPEN_FLAG_READ);
-	shadow_bitmap = render_load_png(file, NULL, options->shadow_mask_texture, NULL, NULL);
 
 	// experimental: if we have a shadow bitmap, create a texture for it
-	if (shadow_bitmap != NULL)
+	render_load_png(shadow_bitmap, file, NULL, options->shadow_mask_texture);
+	if (shadow_bitmap.valid())
 	{
 		render_texinfo texture;
 
 		// fake in the basic data so it looks like it came from render.c
-		texture.base = shadow_bitmap->base;
-		texture.rowpixels = shadow_bitmap->rowpixels;
-		texture.width = shadow_bitmap->width;
-		texture.height = shadow_bitmap->height;
+		texture.base = shadow_bitmap.raw_pixptr(0);
+		texture.rowpixels = shadow_bitmap.rowpixels();
+		texture.width = shadow_bitmap.width();
+		texture.height = shadow_bitmap.height();
 		texture.palette = NULL;
 		texture.seqid = 0;
 
@@ -1734,34 +1716,37 @@ void hlsl_info::end()
 				if(target_in_use[index] != NULL)
 				{
 					d3d_texture_info *tex = target_in_use[index];
-
-					if(d3d->texlist == tex)
+					bool found_in_active_list = false;
+					d3d_texture_info *test_tex = d3d->texlist;
+					while (test_tex != NULL)
 					{
-						d3d->texlist = tex->next;
-						if(d3d->texlist != NULL)
+						if(test_tex == tex)
 						{
-							d3d->texlist->prev = NULL;
+							found_in_active_list = true;
+							break;
 						}
-					}
-					else
-					{
-						if(tex->next != NULL)
-						{
-							tex->next->prev = tex->prev;
-						}
-						if(tex->prev != NULL)
-						{
-							tex->prev->next = tex->next;
-						}
+						test_tex = test_tex->next;
 					}
 
-					if (tex->d3dfinaltex != NULL)
-						(*d3dintf->texture.release)(tex->d3dfinaltex);
-					if (tex->d3dtex != NULL && tex->d3dtex != tex->d3dfinaltex)
-						(*d3dintf->texture.release)(tex->d3dtex);
-					if (tex->d3dsurface != NULL)
-						(*d3dintf->surface.release)(tex->d3dsurface);
-					global_free(tex);
+					// only clean up a texture if it won't be cleaned up by drawd3d
+					if(!found_in_active_list)
+					{
+						if (tex->d3dfinaltex != NULL)
+						{
+							(*d3dintf->texture.release)(tex->d3dfinaltex);
+							tex->d3dfinaltex = NULL;
+						}
+						if (tex->d3dtex != NULL && tex->d3dtex != tex->d3dfinaltex)
+						{
+							(*d3dintf->texture.release)(tex->d3dtex);
+							tex->d3dtex = NULL;
+						}
+						if (tex->d3dsurface != NULL)
+						{
+							(*d3dintf->surface.release)(tex->d3dsurface);
+						}
+						global_free(tex);
+					}
 				}
 
 				if (prescaletexture0[index] != NULL)
@@ -1943,14 +1928,8 @@ int hlsl_info::register_prescaled_texture(d3d_texture_info *texture, int scwidth
 //============================================================
 void hlsl_info::enumerate_screens()
 {
-	screen_device *screen = window->machine().first_screen();
-	num_screens = 0;
-	while(screen != NULL)
-	{
-		num_screens++;
-		screen = screen->next_screen();
-		//printf("Encountered %d screens\n", num_screens);
-	}
+	screen_device_iterator iter(window->machine().root_device());
+	num_screens = iter.count();
 }
 
 //============================================================
@@ -2267,17 +2246,7 @@ void hlsl_info::delete_resources()
 
 	registered_targets = 0;
 
-	if (shadow_texture != NULL)
-	{
-		global_free(shadow_texture);
-		shadow_texture = NULL;
-	}
-
-	if (shadow_bitmap != NULL)
-	{
-		global_free(shadow_bitmap);
-		shadow_bitmap = NULL;
-	}
+	shadow_bitmap.reset();
 }
 
 
@@ -2817,8 +2786,8 @@ static file_error open_next(d3d_info *d3d, emu_file &file, const char *templ, co
 			snapdevname.cpysubstr(snapstr, pos + 3, end - pos - 3);
 
 			// verify that there is such a device for this system
-			device_image_interface *image = NULL;
-			for (bool gotone = d3d->window->machine().devicelist().first(image); gotone; gotone = image->next(image))
+			image_interface_iterator iter(d3d->window->machine().root_device());
+			for (device_image_interface *image = iter.first(); image != NULL; iter.next())
 			{
 				// get the device name
 				astring tempdevname(image->brief_instance_name());

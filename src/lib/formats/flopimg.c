@@ -938,18 +938,56 @@ LEGACY_FLOPPY_OPTIONS_START(default)
 LEGACY_FLOPPY_OPTIONS_END
 
 
-//////////////////////////////////////////////////////////
-/// New implementation
-//////////////////////////////////////////////////////////
+/***************************************************************************
 
-floppy_image::floppy_image(int _tracks, int _heads)
+    New implementation
+
+****************************************************************************
+
+    Copyright Olivier Galibert
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in
+          the documentation and/or other materials provided with the
+          distribution.
+        * Neither the name 'MAME' nor the names of its contributors may be
+          used to endorse or promote products derived from this software
+          without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY AARON GILES ''AS IS'' AND ANY EXPRESS OR
+    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL AARON GILES BE LIABLE FOR ANY DIRECT,
+    INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+    IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+
+
+floppy_image::floppy_image(int _tracks, int _heads, UINT32 _form_factor)
 {
 	tracks = _tracks;
 	heads = _heads;
 
+	form_factor = _form_factor;
+	variant = 0;
+
 	memset(cell_data, 0, sizeof(cell_data));
 	memset(track_size, 0, sizeof(track_size));
 	memset(track_alloc_size, 0, sizeof(track_alloc_size));
+	memset(write_splice, 0, sizeof(write_splice));
 }
 
 floppy_image::~floppy_image()
@@ -992,17 +1030,28 @@ void floppy_image::get_actual_geometry(int &_tracks, int &_heads)
 
 void floppy_image::ensure_alloc(int track, int head)
 {
-	int idx = (track << 1) + head;
-	if(track_size[idx] > track_alloc_size[idx]) {
-		UINT32 new_size = track_size[idx]*11/10;
+	if(track_size[track][head] > track_alloc_size[track][head]) {
+		UINT32 new_size = track_size[track][head]*11/10;
 		UINT32 *new_array = global_alloc_array(UINT32, new_size);
-		if(track_alloc_size[idx]) {
-			memcpy(new_array, cell_data[idx], track_alloc_size[idx]*4);
-			global_free(cell_data[idx]);
+		if(track_alloc_size[track][head]) {
+			memcpy(new_array, cell_data[track][head], track_alloc_size[track][head]*4);
+			global_free(cell_data[track][head]);
 		}
-		cell_data[idx] = new_array;
-		track_alloc_size[idx] = new_size;
+		cell_data[track][head] = new_array;
+		track_alloc_size[track][head] = new_size;
 	}
+}
+
+const char *floppy_image::get_variant_name(UINT32 form_factor, UINT32 variant)
+{
+	switch(variant) {
+	case SSSD: return "Single side, single density";
+	case SSDD: return "Single side, double density";
+	case DSDD: return "Double side, double density";
+	case DSHD: return "Double side, high density";
+	case DSED: return "Double side, extended density";
+	}
+	return "Unknown";
 }
 
 floppy_image_format_t::floppy_image_format_t()
@@ -1027,10 +1076,32 @@ bool floppy_image_format_t::save(io_generic *, floppy_image *)
 	return false;
 }
 
+bool floppy_image_format_t::extension_matches(const char *file_name) const
+{
+	const char *ext = strrchr(file_name, '.');
+	if(!ext)
+		return false;
+	ext++;
+	int elen = strlen(ext);
+	const char *rext = extensions();
+	for(;;) {
+		const char *next = strchr(rext, ',');
+		int rlen = next ? next - rext : strlen(rext);
+		if(rlen == elen && !memcmp(ext, rext, rlen))
+			return true;
+		if(next)
+			rext = next+1;
+		else
+			break;
+	}
+	return false;
+}
+
 bool floppy_image_format_t::type_no_data(int type) const
 {
 	return type == CRC_CCITT_START ||
 		type == CRC_AMIGA_START ||
+		type == CRC_MACHEAD_START ||
 		type == CRC_END ||
 		type == SECTOR_LOOP_START ||
 		type == SECTOR_LOOP_END ||
@@ -1059,6 +1130,9 @@ void floppy_image_format_t::collect_crcs(const desc_e *desc, gen_crc_info *crcs)
 		case CRC_AMIGA_START:
 			crcs[desc[i].p1].type = CRC_AMIGA;
 			break;
+		case CRC_MACHEAD_START:
+			crcs[desc[i].p1].type = CRC_MACHEAD;
+			break;
 		}
 
 	for(int i=0; desc[i].type != END; i++)
@@ -1074,52 +1148,58 @@ int floppy_image_format_t::crc_cells_size(int type) const
 	switch(type) {
 	case CRC_CCITT: return 32;
 	case CRC_AMIGA: return 64;
+	case CRC_MACHEAD: return 8;
 	default: return 0;
 	}
 }
 
-bool floppy_image_format_t::bit_r(UINT8 *buffer, int offset)
+bool floppy_image_format_t::bit_r(const UINT32 *buffer, int offset)
 {
-	return (buffer[offset >> 3] >> ((offset & 7) ^ 7)) & 1;
+	return (buffer[offset] & floppy_image::MG_MASK) == MG_1;
 }
 
-void floppy_image_format_t::bit_w(UINT8 *buffer, int offset, bool val)
+UINT32 floppy_image_format_t::bitn_r(const UINT32 *buffer, int offset, int count)
 {
-	if(val)
-		buffer[offset >> 3] |= 0x80 >> (offset & 7);
-	else
-		buffer[offset >> 3] &= ~(0x80 >> (offset & 7));
+	UINT32 r = 0;
+	for(int i=0; i<count; i++)
+		r = (r << 1) | bit_r(buffer, offset+i);
+	return r;
 }
 
-void floppy_image_format_t::raw_w(UINT8 *buffer, int &offset, int n, UINT32 val)
+void floppy_image_format_t::bit_w(UINT32 *buffer, int offset, bool val, UINT32 size)
+{
+	buffer[offset] = (val ? MG_1 : MG_0) | size;
+}
+
+void floppy_image_format_t::raw_w(UINT32 *buffer, int &offset, int n, UINT32 val, UINT32 size)
 {
 	for(int i=n-1; i>=0; i--)
-		bit_w(buffer, offset++, (val >> i) & 1);
+		bit_w(buffer, offset++, (val >> i) & 1, size);
 }
 
-void floppy_image_format_t::mfm_w(UINT8 *buffer, int &offset, int n, UINT32 val)
+void floppy_image_format_t::mfm_w(UINT32 *buffer, int &offset, int n, UINT32 val, UINT32 size)
 {
 	int prec = offset ? bit_r(buffer, offset-1) : 0;
 	for(int i=n-1; i>=0; i--) {
 		int bit = (val >> i) & 1;
-		bit_w(buffer, offset++, !(prec || bit));
-		bit_w(buffer, offset++, bit);
+		bit_w(buffer, offset++, !(prec || bit), size);
+		bit_w(buffer, offset++, bit, size);
 		prec = bit;
 	}
 }
 
-void floppy_image_format_t::mfm_half_w(UINT8 *buffer, int &offset, int start_bit, UINT32 val)
+void floppy_image_format_t::mfm_half_w(UINT32 *buffer, int &offset, int start_bit, UINT32 val, UINT32 size)
 {
 	int prec = offset ? bit_r(buffer, offset-1) : 0;
 	for(int i=start_bit; i>=0; i-=2) {
 		int bit = (val >> i) & 1;
-		bit_w(buffer, offset++, !(prec || bit));
-		bit_w(buffer, offset++, bit);
+		bit_w(buffer, offset++, !(prec || bit), size);
+		bit_w(buffer, offset++, bit, size);
 		prec = bit;
 	}
 }
 
-void floppy_image_format_t::fixup_crc_amiga(UINT8 *buffer, const gen_crc_info *crc)
+void floppy_image_format_t::fixup_crc_amiga(UINT32 *buffer, const gen_crc_info *crc)
 {
 	UINT16 res = 0;
 	int size = crc->end - crc->start;
@@ -1131,28 +1211,43 @@ void floppy_image_format_t::fixup_crc_amiga(UINT8 *buffer, const gen_crc_info *c
 	mfm_w(buffer, offset, 16, res);
 }
 
-void floppy_image_format_t::fixup_crc_ccitt(UINT8 *buffer, const gen_crc_info *crc)
+UINT16 floppy_image_format_t::calc_crc_ccitt(const UINT32 *buffer, int start, int end)
 {
 	UINT32 res = 0xffff;
-	int size = crc->end - crc->start;
+	int size = end - start;
 	for(int i=1; i<size; i+=2) {
 		res <<= 1;
-		if(bit_r(buffer, crc->start + i))
+		if(bit_r(buffer, start + i))
 			res ^= 0x10000;
 		if(res & 0x10000)
 			res ^= 0x11021;
 	}
-	int offset = crc->write;
-	mfm_w(buffer, offset, 16, res);
+	return res;
 }
 
-void floppy_image_format_t::fixup_crcs(UINT8 *buffer, gen_crc_info *crcs)
+void floppy_image_format_t::fixup_crc_ccitt(UINT32 *buffer, const gen_crc_info *crc)
+{
+	int offset = crc->write;
+	mfm_w(buffer, offset, 16, calc_crc_ccitt(buffer, crc->start, crc->end));
+}
+
+void floppy_image_format_t::fixup_crc_machead(UINT32 *buffer, const gen_crc_info *crc)
+{
+	UINT8 v = 0;
+	for(int o = crc->start; o < crc->end; o+=8)
+		v = v ^ gcr6bw_tb[bitn_r(buffer, o, 8)];
+	int offset = crc->write;
+	raw_w(buffer, offset, 8, gcr6fw_tb[v]);
+}
+
+void floppy_image_format_t::fixup_crcs(UINT32 *buffer, gen_crc_info *crcs)
 {
 	for(int i=0; i != MAX_CRC_COUNT; i++)
 		if(crcs[i].write != -1) {
 			switch(crcs[i].type) {
-			case CRC_AMIGA: fixup_crc_amiga(buffer, crcs+i); break;
-			case CRC_CCITT: fixup_crc_ccitt(buffer, crcs+i); break;
+			case CRC_AMIGA:   fixup_crc_amiga(buffer, crcs+i); break;
+			case CRC_CCITT:   fixup_crc_ccitt(buffer, crcs+i); break;
+			case CRC_MACHEAD: fixup_crc_machead(buffer, crcs+i); break;
 			}
 			if(crcs[i].fixup_mfm_clock) {
 				int offset = crcs[i].write + crc_cells_size(crcs[i].type);
@@ -1161,6 +1256,39 @@ void floppy_image_format_t::fixup_crcs(UINT8 *buffer, gen_crc_info *crcs)
 			crcs[i].write = -1;
 		}
 }
+
+UINT32 floppy_image_format_t::gcr6_encode(UINT8 va, UINT8 vb, UINT8 vc)
+{
+	UINT32 r;
+	r = gcr6fw_tb[((va >> 2) & 0x30) | ((vb >> 4) & 0x0c) | ((vc >> 6) & 0x03)] << 24;
+	r |= gcr6fw_tb[va & 0x3f] << 16;
+	r |= gcr6fw_tb[vb & 0x3f] << 8;
+	r |= gcr6fw_tb[vc & 0x3f];
+	return r;
+}
+
+void floppy_image_format_t::gcr6_decode(UINT8 e0, UINT8 e1, UINT8 e2, UINT8 e3, UINT8 &va, UINT8 &vb, UINT8 &vc)
+{
+	e0 = gcr6bw_tb[e0];
+	e1 = gcr6bw_tb[e1];
+	e2 = gcr6bw_tb[e2];
+	e3 = gcr6bw_tb[e3];
+
+	va = ((e0 << 2) & 0xc0) | e1;
+	vb = ((e0 << 4) & 0xc0) | e2;
+	vc = ((e0 << 6) & 0xc0) | e3;
+}
+
+UINT16 floppy_image_format_t::gcr4_encode(UINT8 va)
+{
+	return (va << 7) | va | 0xaaaa;
+}
+
+UINT8 floppy_image_format_t::gcr4_decode(UINT8 e0, UINT8 e1)
+{
+	return ((e0 << 1) & 0xaa) | (e1 & 0x55);
+}
+
 
 int floppy_image_format_t::calc_sector_index(int num, int interleave, int skew, int total_sectors, int track_head)
 {
@@ -1183,7 +1311,7 @@ int floppy_image_format_t::calc_sector_index(int num, int interleave, int skew, 
 
 void floppy_image_format_t::generate_track(const desc_e *desc, int track, int head, const desc_s *sect, int sect_count, int track_size, floppy_image *image)
 {
-	UINT8 *buffer = global_alloc_array_clear(UINT8, (track_size+7)/8);
+	UINT32 *buffer = global_alloc_array_clear(UINT32, track_size);
 
 	gen_crc_info crcs[MAX_CRC_COUNT];
 	collect_crcs(desc, crcs);
@@ -1222,12 +1350,24 @@ void floppy_image_format_t::generate_track(const desc_e *desc, int track, int he
 			mfm_w(buffer, offset, 8, track);
 			break;
 
+		case TRACK_ID_GCR6:
+			raw_w(buffer, offset, 8, gcr6fw_tb[track & 0x3f]);
+			break;
+
 		case HEAD_ID:
 			mfm_w(buffer, offset, 8, head);
 			break;
 
+		case TRACK_HEAD_ID_GCR6:
+			raw_w(buffer, offset, 8, gcr6fw_tb[(track & 0x40 ? 1 : 0) | (head ? 0x20 : 0)]);
+			break;
+
 		case SECTOR_ID:
 			mfm_w(buffer, offset, 8, sect[sector_idx].sector_id);
+			break;
+
+		case SECTOR_ID_GCR6:
+			raw_w(buffer, offset, 8, gcr6fw_tb[sect[sector_idx].sector_id]);
 			break;
 
 		case SIZE_ID: {
@@ -1237,6 +1377,10 @@ void floppy_image_format_t::generate_track(const desc_e *desc, int track, int he
 			mfm_w(buffer, offset, 8, id);
 			break;
 		}
+
+		case SECTOR_INFO_GCR6:
+			raw_w(buffer, offset, 8, gcr6fw_tb[sect[sector_idx].sector_info]);
+			break;
 
 		case OFFSET_ID_O:
 			mfm_half_w(buffer, offset, 7, track*2+head);
@@ -1267,7 +1411,7 @@ void floppy_image_format_t::generate_track(const desc_e *desc, int track, int he
 			sector_loop_start = index;
 			sector_idx = desc[index].p1;
 			sector_cnt = sector_idx;
-			sector_limit = desc[index].p2;
+			sector_limit = desc[index].p2 == -1 ? sector_idx+sect_count-1 : desc[index].p2;
 			sector_idx = calc_sector_index(sector_cnt,sector_interleave,sector_skew,sector_limit+1,track*2 + head);
 			break;
 
@@ -1287,6 +1431,7 @@ void floppy_image_format_t::generate_track(const desc_e *desc, int track, int he
 
 		case CRC_AMIGA_START:
 		case CRC_CCITT_START:
+		case CRC_MACHEAD_START:
 			crcs[desc[index].p1].start = offset;
 			break;
 
@@ -1320,6 +1465,34 @@ void floppy_image_format_t::generate_track(const desc_e *desc, int track, int he
 			break;
 		}
 
+		case SECTOR_DATA_MAC: {
+			const desc_s *csect = sect + (desc[index].p1 >= 0 ? desc[index].p1 : sector_idx);
+			const UINT8 *data = csect->data;
+			int size = csect->size;
+			UINT8 ca = 0, cb = 0, cc = 0;
+			for(int i=0; i < size; i+=3) {
+				int dt = size-i;
+				UINT8 va = data[i];
+				UINT8 vb = dt > 1 ? data[i+1] : 0;
+				UINT8 vc = dt > 2 ? data[i+2] : 0;
+
+				cc = (cc << 1) | (cc >> 7);
+				int suma = ca + va + (cc & 1);
+				ca = suma;
+				va = va ^ cc;
+				int sumb = cb + vb + (suma >> 8);
+				cb = sumb;
+				vb = vb ^ ca;
+				cc = cc + vc + (sumb >> 8);
+				vc = vc ^ cb;
+
+				int nb = dt > 2 ? 32 : dt > 1 ? 24 : 16;
+				raw_w(buffer, offset, nb, gcr6_encode(va, vb, vc) >> (32-nb));
+			}
+			raw_w(buffer, offset, 32, gcr6_encode(ca, cb, cc));
+			break;
+		}
+
 		default:
 			printf("%d.%d.%d (%d) unhandled\n", desc[index].type, desc[index].p1, desc[index].p2, index);
 			break;
@@ -1332,7 +1505,7 @@ void floppy_image_format_t::generate_track(const desc_e *desc, int track, int he
 
 	fixup_crcs(buffer, crcs);
 
-	generate_track_from_bitstream(track, head, buffer, track_size, image);
+	generate_track_from_levels(track, head, buffer, track_size, 0, image);
 	global_free(buffer);
 }
 
@@ -1373,10 +1546,15 @@ void floppy_image_format_t::generate_track_from_bitstream(int track, int head, c
 	int size = dest - base;
 	normalize_times(base, size);
 	image->set_track_size(track, head, size);
+	image->set_write_splice_position(track, head, 0);
 }
 
 void floppy_image_format_t::generate_track_from_levels(int track, int head, UINT32 *trackbuf, int track_size, int splice_pos, floppy_image *image)
 {
+	// Retrieve the angular splice pos before messing with the data
+	splice_pos = splice_pos % track_size;
+	UINT32 splice_angular_pos = trackbuf[splice_pos] & floppy_image::TIME_MASK;
+
 	// Check if we need to invert a cell to get an even number of
 	// transitions on the whole track
 	//
@@ -1404,7 +1582,6 @@ void floppy_image_format_t::generate_track_from_levels(int track, int head, UINT
 	}
 
 	if(transition_count & 1) {
-		splice_pos = splice_pos % track_size;
 		int pos = splice_pos;
 		while((trackbuf[pos] & floppy_image::MG_MASK) != MG_0 && (trackbuf[pos] & floppy_image::MG_MASK) != MG_1) {
 			pos++;
@@ -1455,7 +1632,41 @@ void floppy_image_format_t::generate_track_from_levels(int track, int head, UINT
 	int size = dest - base;
 	normalize_times(base, size);
 	image->set_track_size(track, head, size);
+	image->set_write_splice_position(track, head, splice_angular_pos);
 }
+
+const UINT8 floppy_image_format_t::gcr6fw_tb[0x40] =
+{
+	0x96, 0x97, 0x9a, 0x9b, 0x9d, 0x9e, 0x9f, 0xa6,
+	0xa7, 0xab, 0xac, 0xad, 0xae, 0xaf, 0xb2, 0xb3,
+	0xb4, 0xb5, 0xb6, 0xb7, 0xb9, 0xba, 0xbb, 0xbc,
+	0xbd, 0xbe, 0xbf, 0xcb, 0xcd, 0xce, 0xcf, 0xd3,
+	0xd6, 0xd7, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde,
+	0xdf, 0xe5, 0xe6, 0xe7, 0xe9, 0xea, 0xeb, 0xec,
+	0xed, 0xee, 0xef, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6,
+	0xf7, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+};
+
+const UINT8 floppy_image_format_t::gcr6bw_tb[0x100] =
+{
+	// 0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x02, 0x03, 0x00, 0x04, 0x05, 0x06,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x08, 0x00, 0x00, 0x00, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+	0x00, 0x00, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x00, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1b, 0x00, 0x1c, 0x1d, 0x1e,
+	0x00, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x20, 0x21, 0x00, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x29, 0x2a, 0x2b, 0x00, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32,
+	0x00, 0x00, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x00, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
+};
 
 //  Atari ST Fastcopy Pro layouts
 
@@ -1790,6 +2001,32 @@ const floppy_image_format_t::desc_e floppy_image_format_t::amiga_11[] = {
 	{ END }
 };
 
+const floppy_image_format_t::desc_e floppy_image_format_t::amiga_22[] = {
+	{ SECTOR_LOOP_START, 0, 21 },
+	{   MFM, 0x00, 2 },
+	{   RAW, 0x4489, 2 },
+	{   CRC_AMIGA_START, 1 },
+	{     MFMBITS, 0xf, 4 },
+	{     OFFSET_ID_O },
+	{     SECTOR_ID_O },
+	{     REMAIN_O, 11 },
+	{     MFMBITS, 0xf, 4 },
+	{     OFFSET_ID_E },
+	{     SECTOR_ID_E },
+	{     REMAIN_E, 11 },
+	{     MFM, 0x00, 16 },
+	{   CRC_END, 1 },
+	{   CRC, 1 },
+	{   CRC, 2 },
+	{   CRC_AMIGA_START, 2 },
+	{     SECTOR_DATA_O, -1 },
+	{     SECTOR_DATA_E, -1 },
+	{   CRC_END, 2 },
+	{ SECTOR_LOOP_END },
+	{ MFM, 0x00, 532 },
+	{ END }
+};
+
 void floppy_image_format_t::generate_bitstream_from_track(int track, int head, int cell_size, UINT8 *trackbuf, int &track_size, floppy_image *image)
 {
 	int tsize = image->get_track_size(track, head);
@@ -1800,18 +2037,15 @@ void floppy_image_format_t::generate_bitstream_from_track(int track, int head, i
 		return;
 	}
 
-	// Start a little before the end of the track to pre-synchronize
-	// the pll
+	// Start at the write splice
 	const UINT32 *tbuf = image->get_buffer(track, head);
-	int cur_pos = 190000000;
-	int cur_entry = tsize-1;
-	while((tbuf[cur_entry] & floppy_image::TIME_MASK) > cur_pos)
-		cur_entry--;
-	cur_entry++;
-	if(cur_entry == tsize)
-		cur_entry = 0;
+	UINT32 splice = image->get_write_splice_position(track, head);
+	int cur_pos = splice;
+	int cur_entry = 0;
+	while(cur_entry < tsize-1 && (tbuf[cur_entry+1] & floppy_image::TIME_MASK) < cur_pos)
+		cur_entry++;
 
-	int cur_bit = -1;
+	int cur_bit = 0;
 
 	int period = cell_size;
 	int period_adjust_base = period * 0.05;
@@ -1821,28 +2055,26 @@ void floppy_image_format_t::generate_bitstream_from_track(int track, int head, i
 	int phase_adjust = 0;
 	int freq_hist = 0;
 
-	for(;;) {
+	UINT32 scanned = 0;
+	while(scanned < 200000000) {
 		// Note that all magnetic cell type changes are considered
 		// edges.  No randomness added for neutral/damaged cells
 		int edge = tbuf[cur_entry] & floppy_image::TIME_MASK;
 		if(edge < cur_pos)
 			edge += 200000000;
 		int next = cur_pos + period + phase_adjust;
+		scanned += period + phase_adjust;
 
 		if(edge >= next) {
 			// No transition in the window means 0 and pll in free run mode
-			if(cur_bit >= 0) {
-				trackbuf[cur_bit >> 3] &= ~(0x80 >> (cur_bit & 7));
-				cur_bit++;
-			}
+			trackbuf[cur_bit >> 3] &= ~(0x80 >> (cur_bit & 7));
+			cur_bit++;
 			phase_adjust = 0;
 
 		} else {
 			// Transition in the window means 1, and the pll is adjusted
-			if(cur_bit >= 0) {
-				trackbuf[cur_bit >> 3] |= 0x80 >> (cur_bit & 7);
-				cur_bit++;
-			}
+			trackbuf[cur_bit >> 3] |= 0x80 >> (cur_bit & 7);
+			cur_bit++;
 
 			int delta = edge - (next - period/2);
 
@@ -1879,9 +2111,6 @@ void floppy_image_format_t::generate_bitstream_from_track(int track, int head, i
 
 		cur_pos = next;
 		if(cur_pos >= 200000000) {
-			if(cur_bit >= 0)
-				break;
-			cur_bit = 0;
 			cur_pos -= 200000000;
 			cur_entry = 0;
 		}
@@ -1990,6 +2219,7 @@ void floppy_image_format_t::extract_sectors_from_bitstream_mfm_pc(const UINT8 *b
 		UINT8 head = sbyte_mfm_r(bitstream, pos, track_size);
 		UINT8 sector = sbyte_mfm_r(bitstream, pos, track_size);
 		UINT8 size = sbyte_mfm_r(bitstream, pos, track_size);
+
 		if(size >= 8)
 			continue;
 		int ssize = 128 << size;
@@ -1999,13 +2229,13 @@ void floppy_image_format_t::extract_sectors_from_bitstream_mfm_pc(const UINT8 *b
 			continue;
 
 		// Start of IDAM and DAM are supposed to be exactly 704 cells
-		// apart.  Of course the hardware is tolerant, but not that
-		// tolerant.  Accept +/- 32 cells of shift.
+		// apart.  Of course the hardware is tolerant.  Accept +/- 128
+		// cells of shift.
 
 		int d_index;
 		for(d_index = 0; d_index < dblk_count; d_index++) {
 			int delta = dblk[d_index] - idblk[i];
-			if(delta >= 704-32 && delta <= 704+32)
+			if(delta >= 704-128 && delta <= 704+128)
 				break;
 		}
 		if(d_index == dblk_count)
@@ -2026,6 +2256,11 @@ void floppy_image_format_t::get_geometry_mfm_pc(floppy_image *image, int cell_si
 {
 	image->get_actual_geometry(track_count, head_count);
 
+	if(!track_count) {
+		sector_count = 0;
+		return;
+	}
+
 	UINT8 bitstream[500000/8];
 	UINT8 sectdata[50000];
 	desc_xs sectors[256];
@@ -2038,7 +2273,7 @@ void floppy_image_format_t::get_geometry_mfm_pc(floppy_image *image, int cell_si
 	// 0-10, not near the end like 70+, no special effects on sync
 	// like 33
 
-	generate_bitstream_from_track(20, 0, cell_size, bitstream, track_size, image);
+	generate_bitstream_from_track(track_count > 20 ? 20 : 0, 0, cell_size, bitstream, track_size, image);
 	extract_sectors_from_bitstream_mfm_pc(bitstream, track_size, sectors, sectdata, sizeof(sectdata));
 
 	for(sector_count = 44; sector_count > 0 && !sectors[sector_count].data; sector_count--);

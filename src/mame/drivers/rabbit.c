@@ -103,7 +103,7 @@ public:
 	UINT32 *m_tilemap_regs[4];
 	UINT32 *m_spriteregs;
 	UINT32 *m_blitterregs;
-	bitmap_t *m_sprite_bitmap;
+	bitmap_ind16 *m_sprite_bitmap;
 	rectangle m_sprite_clip;
 	int m_vblirqlevel;
 	int m_bltirqlevel;
@@ -115,7 +115,7 @@ public:
 
 
 /* call with tilesize = 0 for 8x8 or 1 for 16x16 */
-INLINE void get_rabbit_tilemap_info(running_machine &machine, tile_data *tileinfo, int tile_index, int whichtilemap, int tilesize)
+INLINE void get_rabbit_tilemap_info(running_machine &machine, tile_data &tileinfo, int tile_index, int whichtilemap, int tilesize)
 {
 	rabbit_state *state = machine.driver_data<rabbit_state>();
 	int tileno,colour,flipxy, depth;
@@ -147,7 +147,7 @@ INLINE void get_rabbit_tilemap_info(running_machine &machine, tile_data *tileinf
 		tileno >>=(1+tilesize*2);
 		colour&=0x0f;
 		colour+=0x20;
-		tileinfo->group = 1;
+		tileinfo.group = 1;
 		SET_TILE_INFO(6+tilesize,tileno,colour,TILE_FLIPXY(flipxy));
 	}
 	else
@@ -155,7 +155,7 @@ INLINE void get_rabbit_tilemap_info(running_machine &machine, tile_data *tileinf
 		tileno >>=(0+tilesize*2);
 		//colour&=0x3f; // fixes status bar.. but breaks other stuff
 		colour+=0x200;
-		tileinfo->group = 0;
+		tileinfo.group = 0;
 		SET_TILE_INFO(4+tilesize,tileno,colour,TILE_FLIPXY(flipxy));
 	}
 }
@@ -186,21 +186,21 @@ static WRITE32_HANDLER( rabbit_tilemap0_w )
 {
 	rabbit_state *state = space->machine().driver_data<rabbit_state>();
 	COMBINE_DATA(&state->m_tilemap_ram[0][offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap[0],offset);
+	state->m_tilemap[0]->mark_tile_dirty(offset);
 }
 
 static WRITE32_HANDLER( rabbit_tilemap1_w )
 {
 	rabbit_state *state = space->machine().driver_data<rabbit_state>();
 	COMBINE_DATA(&state->m_tilemap_ram[1][offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap[1],offset);
+	state->m_tilemap[1]->mark_tile_dirty(offset);
 }
 
 static WRITE32_HANDLER( rabbit_tilemap2_w )
 {
 	rabbit_state *state = space->machine().driver_data<rabbit_state>();
 	COMBINE_DATA(&state->m_tilemap_ram[2][offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap[2],offset);
+	state->m_tilemap[2]->mark_tile_dirty(offset);
 }
 
 
@@ -208,7 +208,7 @@ static WRITE32_HANDLER( rabbit_tilemap3_w )
 {
 	rabbit_state *state = space->machine().driver_data<rabbit_state>();
 	COMBINE_DATA(&state->m_tilemap_ram[3][offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap[3],offset);
+	state->m_tilemap[3]->mark_tile_dirty(offset);
 }
 
 /*
@@ -230,7 +230,7 @@ sprites invisible at the end of a round in rabbit, why?
 
 */
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	rabbit_state *state = machine.driver_data<rabbit_state>();
 	int xpos,ypos,tileno,xflip,yflip, colr;
@@ -240,7 +240,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	UINT32 *source = (state->m_spriteram+ (todraw*2))-2;
 	UINT32 *finish = state->m_spriteram;
 
-//  bitmap_fill(state->m_sprite_bitmap, &state->m_sprite_clip, 0x0); // sloooow
+//  state->m_sprite_bitmap->fill(0x0, state->m_sprite_clip); // sloooow
 
 	while( source>=finish )
 	{
@@ -258,7 +258,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 
 		if(xpos&0x800)xpos-=0x1000;
 
-		drawgfx_transpen(state->m_sprite_bitmap,&state->m_sprite_clip,gfx,tileno,colr,!xflip/*wrongdecode?*/,yflip,xpos+0x20-8/*-(state->m_spriteregs[0]&0x00000fff)*/,ypos-24/*-((state->m_spriteregs[1]&0x0fff0000)>>16)*/,15);
+		drawgfx_transpen(*state->m_sprite_bitmap,state->m_sprite_clip,gfx,tileno,colr,!xflip/*wrongdecode?*/,yflip,xpos+0x20-8/*-(state->m_spriteregs[0]&0x00000fff)*/,ypos-24/*-((state->m_spriteregs[1]&0x0fff0000)>>16)*/,15);
 //      drawgfx_transpen(bitmap,cliprect,gfx,tileno,colr,!xflip/*wrongdecode?*/,yflip,xpos+0xa0-8/*-(state->m_spriteregs[0]&0x00000fff)*/,ypos-24+0x80/*-((state->m_spriteregs[1]&0x0fff0000)>>16)*/,0);
 
 
@@ -269,7 +269,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 }
 
 /* the sprite bitmap can probably be handled better than this ... */
-static void rabbit_clearspritebitmap( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void rabbit_clearspritebitmap( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	rabbit_state *state = machine.driver_data<rabbit_state>();
 	int startx, starty;
@@ -291,13 +291,13 @@ static void rabbit_clearspritebitmap( running_machine &machine, bitmap_t *bitmap
 
 	for (y=0; y<amounty;y++)
 	{
-		dstline = BITMAP_ADDR16(state->m_sprite_bitmap, (starty+y)&0xfff, 0);
+		dstline = &state->m_sprite_bitmap->pix16((starty+y)&0xfff);
 		memset(dstline+startx,0x00,amountx*2);
 	}
 }
 
 /* todo: fix zoom, its inaccurate and this code is ugly */
-static void draw_sprite_bitmap( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprite_bitmap( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	rabbit_state *state = machine.driver_data<rabbit_state>();
 
@@ -330,10 +330,10 @@ static void draw_sprite_bitmap( running_machine &machine, bitmap_t *bitmap, cons
 		ydrawpos = ((y>>7)*ystep);
 		ydrawpos >>=16;
 
-		if ((ydrawpos >= cliprect->min_y) && (ydrawpos <= cliprect->max_y))
+		if ((ydrawpos >= cliprect.min_y) && (ydrawpos <= cliprect.max_y))
 		{
-			srcline = BITMAP_ADDR16(state->m_sprite_bitmap, (starty+(y>>7))&0xfff, 0);
-			dstline = BITMAP_ADDR16(bitmap, ydrawpos, 0);
+			srcline = &state->m_sprite_bitmap->pix16((starty+(y>>7))&0xfff);
+			dstline = &bitmap.pix16(ydrawpos);
 
 			for (x=0;x<xsize;x+=0x80)
 			{
@@ -342,7 +342,7 @@ static void draw_sprite_bitmap( running_machine &machine, bitmap_t *bitmap, cons
 				pixdata = srcline[(startx+(x>>7))&0xfff];
 
 				if (pixdata)
-					if ((xdrawpos >= cliprect->min_x) && (xdrawpos <= cliprect->max_x))
+					if ((xdrawpos >= cliprect.min_x) && (xdrawpos <= cliprect.max_x))
 						dstline[xdrawpos] = pixdata;
 			}
 		}
@@ -367,20 +367,17 @@ static VIDEO_START(rabbit)
 	state->m_tilemap[3] = tilemap_create(machine, get_rabbit_tilemap3_tile_info,tilemap_scan_rows, 8,  8, 128,32);
 
 	/* the tilemaps mix 4bpp and 8bbp tiles, we split these into 2 groups, and set a different transpen for each group */
-    tilemap_map_pen_to_layer(state->m_tilemap[0], 0, 15,  TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[0], 1, 255, TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[1], 0, 15,  TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[1], 1, 255, TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[2], 0, 15,  TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[2], 1, 255, TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[3], 0, 15,  TILEMAP_PIXEL_TRANSPARENT);
-    tilemap_map_pen_to_layer(state->m_tilemap[3], 1, 255, TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[0]->map_pen_to_layer(0, 15,  TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[0]->map_pen_to_layer(1, 255, TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[1]->map_pen_to_layer(0, 15,  TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[1]->map_pen_to_layer(1, 255, TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[2]->map_pen_to_layer(0, 15,  TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[2]->map_pen_to_layer(1, 255, TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[3]->map_pen_to_layer(0, 15,  TILEMAP_PIXEL_TRANSPARENT);
+    state->m_tilemap[3]->map_pen_to_layer(1, 255, TILEMAP_PIXEL_TRANSPARENT);
 
-	state->m_sprite_bitmap = auto_bitmap_alloc(machine,0x1000,0x1000,machine.primary_screen->format());
-	state->m_sprite_clip.min_x = 0;
-	state->m_sprite_clip.max_x = 0x1000-1;
-	state->m_sprite_clip.min_y = 0;
-	state->m_sprite_clip.max_y = 0x1000-1;
+	state->m_sprite_bitmap = auto_bitmap_ind16_alloc(machine,0x1000,0x1000);
+	state->m_sprite_clip.set(0, 0x1000-1, 0, 0x1000-1);
 }
 
 /*
@@ -405,7 +402,7 @@ each line represents the differences on each tilemap for unknown variables
 
 */
 
-static void rabbit_drawtilemap( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int whichtilemap )
+static void rabbit_drawtilemap( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int whichtilemap )
 {
 	rabbit_state *state = machine.driver_data<rabbit_state>();
 	INT32 startx, starty, incxx, incxy, incyx, incyy, tran;
@@ -423,18 +420,18 @@ static void rabbit_drawtilemap( running_machine &machine, bitmap_t *bitmap, cons
        startx/starty are also 16.16 scrolling
       */
 
-	tilemap_draw_roz(bitmap,cliprect,state->m_tilemap[whichtilemap],startx << 12,starty << 12,
+	state->m_tilemap[whichtilemap]->draw_roz(bitmap, cliprect, startx << 12,starty << 12,
 			incxx << 5,incxy << 8,incyx << 8,incyy << 5,
 			1,	/* wraparound */
 			tran ? 0 : TILEMAP_DRAW_OPAQUE,0);
 }
 
-static SCREEN_UPDATE(rabbit)
+static SCREEN_UPDATE_IND16(rabbit)
 {
-	rabbit_state *state = screen->machine().driver_data<rabbit_state>();
+	rabbit_state *state = screen.machine().driver_data<rabbit_state>();
 	int prilevel;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 //  popmessage("%08x %08x", state->m_viewregs0[0], state->m_viewregs0[1]);
 //  popmessage("%08x %08x %08x %08x %08x %08x", state->m_tilemap_regs[0][0],state->m_tilemap_regs[0][1],state->m_tilemap_regs[0][2],state->m_tilemap_regs[0][3],state->m_tilemap_regs[0][4],state->m_tilemap_regs[0][5]);
@@ -452,16 +449,16 @@ static SCREEN_UPDATE(rabbit)
 	/* prio isnt certain but seems to work.. */
 	for (prilevel = 0xf; prilevel >0; prilevel--)
 	{
-		if (prilevel == ((state->m_tilemap_regs[3][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen->machine(),bitmap,cliprect, 3);
-		if (prilevel == ((state->m_tilemap_regs[2][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen->machine(),bitmap,cliprect, 2);
-		if (prilevel == ((state->m_tilemap_regs[1][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen->machine(),bitmap,cliprect, 1);
-		if (prilevel == ((state->m_tilemap_regs[0][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen->machine(),bitmap,cliprect, 0);
+		if (prilevel == ((state->m_tilemap_regs[3][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen.machine(),bitmap,cliprect, 3);
+		if (prilevel == ((state->m_tilemap_regs[2][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen.machine(),bitmap,cliprect, 2);
+		if (prilevel == ((state->m_tilemap_regs[1][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen.machine(),bitmap,cliprect, 1);
+		if (prilevel == ((state->m_tilemap_regs[0][0]&0x0f000000)>>24)) rabbit_drawtilemap(screen.machine(),bitmap,cliprect, 0);
 
 		if (prilevel == 0x09) // should it be selectable?
 		{
-			rabbit_clearspritebitmap(screen->machine(),bitmap,cliprect);
-			draw_sprites(screen->machine(),bitmap,cliprect);  // render to bitmap
-			draw_sprite_bitmap(screen->machine(),bitmap,cliprect); // copy bitmap to screen
+			rabbit_clearspritebitmap(screen.machine(),bitmap,cliprect);
+			draw_sprites(screen.machine(),bitmap,cliprect);  // render to bitmap
+			draw_sprite_bitmap(screen.machine(),bitmap,cliprect); // copy bitmap to screen
 		}
 	}
 	return 0;
@@ -666,7 +663,7 @@ static void rabbit_do_blit(running_machine &machine)
 					blt_source+=2;
 					writeoffs=blt_oddflg+blt_column;
 					state->m_tilemap_ram[blt_tilemp][writeoffs]=(state->m_tilemap_ram[blt_tilemp][writeoffs]&mask)|(blt_value<<shift);
-					tilemap_mark_tile_dirty(state->m_tilemap[blt_tilemp],writeoffs);
+					state->m_tilemap[blt_tilemp]->mark_tile_dirty(writeoffs);
 
 					blt_column++;
 					blt_column&=0x7f;
@@ -683,7 +680,7 @@ static void rabbit_do_blit(running_machine &machine)
 				{
 					writeoffs=blt_oddflg+blt_column;
 					state->m_tilemap_ram[blt_tilemp][writeoffs]=(state->m_tilemap_ram[blt_tilemp][writeoffs]&mask)|(blt_value<<shift);
-					tilemap_mark_tile_dirty(state->m_tilemap[blt_tilemp],writeoffs);
+					state->m_tilemap[blt_tilemp]->mark_tile_dirty(writeoffs);
 					blt_column++;
 					blt_column&=0x7f;
 				}
@@ -964,12 +961,11 @@ static MACHINE_CONFIG_START( rabbit, rabbit_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*16, 64*16)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 28*8-1)
 //  MCFG_SCREEN_VISIBLE_AREA(0*8, 64*16-1, 0*16, 64*16-1)
 //  MCFG_SCREEN_VISIBLE_AREA(0*8, 20*16-1, 32*16, 48*16-1)
-	MCFG_SCREEN_UPDATE(rabbit)
+	MCFG_SCREEN_UPDATE_STATIC(rabbit)
 
 	MCFG_PALETTE_LENGTH(0x4000)
 	MCFG_PALETTE_INIT( all_black ) // the status bar palette doesn't get transfered (or our colour select is wrong).. more obvious when it's black than in 'MAME default' colours

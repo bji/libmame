@@ -1,5 +1,4 @@
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m6502/m6502.h"
 #include "includes/spdodgeb.h"
 
@@ -84,20 +83,20 @@ VIDEO_START( spdodgeb )
 ***************************************************************************/
 
 
-INTERRUPT_GEN( spdodgeb_interrupt )
+TIMER_DEVICE_CALLBACK( spdodgeb_interrupt )
 {
-	int iloop = cpu_getiloops(device);
-	int scanline = (32-iloop) * 8;
+	spdodgeb_state *state = timer.machine().driver_data<spdodgeb_state>();
+	int scanline = param;
 
-	if (iloop > 1 && iloop < 32)
+	if (scanline == 256)
 	{
-		device_set_input_line(device, M6502_IRQ_LINE, HOLD_LINE);
-		device->machine().primary_screen->update_partial(scanline+7);
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
+		timer.machine().primary_screen->update_partial(256);
 	}
-	else if (!iloop)
+	else if ((scanline % 8) == 0)
 	{
-		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-		device->machine().primary_screen->update_partial(256);
+		device_set_input_line(state->m_maincpu, M6502_IRQ_LINE, HOLD_LINE);
+		timer.machine().primary_screen->update_partial(scanline+16); /* TODO: pretty off ... */
 	}
 }
 
@@ -127,7 +126,7 @@ WRITE8_HANDLER( spdodgeb_ctrl_w )
 	if (state->m_tile_palbank != ((data & 0x30) >> 4))
 	{
 		state->m_tile_palbank = ((data & 0x30) >> 4);
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 	}
 	state->m_sprite_palbank = (data & 0xc0) >> 6;
 }
@@ -136,7 +135,7 @@ WRITE8_HANDLER( spdodgeb_videoram_w )
 {
 	spdodgeb_state *state = space->machine().driver_data<spdodgeb_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset & 0x7ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset & 0x7ff);
 }
 
 
@@ -151,7 +150,7 @@ WRITE8_HANDLER( spdodgeb_videoram_w )
 					cliprect,gfx, \
 					(which+order),color+ 8 * state->m_sprite_palbank,flipx,flipy,sx,sy,0);
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	spdodgeb_state *state = machine.driver_data<spdodgeb_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -209,11 +208,11 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 #undef DRAW_SPRITE
 
 
-SCREEN_UPDATE( spdodgeb )
+SCREEN_UPDATE_IND16( spdodgeb )
 {
-	spdodgeb_state *state = screen->machine().driver_data<spdodgeb_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap,0,state->m_lastscroll+5);
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	draw_sprites(screen->machine(), bitmap,cliprect);
+	spdodgeb_state *state = screen.machine().driver_data<spdodgeb_state>();
+	state->m_bg_tilemap->set_scrollx(0,state->m_lastscroll+5);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap,cliprect);
 	return 0;
 }

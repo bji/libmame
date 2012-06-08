@@ -224,7 +224,7 @@ Stephh's notes (based on the games M68000 code and some tests) :
 #include "cpu/m68000/m68000.h"
 #include "sound/okim6295.h"
 #include "sound/3812intf.h"
-
+#include "video/decospr.h"
 
 class nmg5_state : public driver_device
 {
@@ -262,14 +262,14 @@ static WRITE16_HANDLER( fg_videoram_w )
 {
 	nmg5_state *state = space->machine().driver_data<nmg5_state>();
 	COMBINE_DATA(&state->m_fg_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( bg_videoram_w )
 {
 	nmg5_state *state = space->machine().driver_data<nmg5_state>();
 	COMBINE_DATA(&state->m_bg_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( nmg5_soundlatch_w )
@@ -302,7 +302,7 @@ static WRITE16_HANDLER( gfx_bank_w )
 	if (state->m_gfx_bank != (data & 3))
 	{
 		state->m_gfx_bank = data & 3;
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -827,7 +827,7 @@ static INPUT_PORTS_START( wondstck )
 INPUT_PORTS_END
 
 
-INLINE void get_tile_info( running_machine &machine, tile_data *tileinfo, int tile_index, UINT16 *vram, int color )
+INLINE void get_tile_info( running_machine &machine, tile_data &tileinfo, int tile_index, UINT16 *vram, int color )
 {
 	nmg5_state *state = machine.driver_data<nmg5_state>();
 	SET_TILE_INFO(0, vram[tile_index] | (state->m_gfx_bank << 16), color, 0);
@@ -842,46 +842,12 @@ static VIDEO_START( nmg5 )
 
 	state->m_bg_tilemap = tilemap_create(machine, bg_get_tile_info, tilemap_scan_rows, 8, 8, 64, 64);
 	state->m_fg_tilemap = tilemap_create(machine, fg_get_tile_info, tilemap_scan_rows, 8, 8, 64, 64);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
-{
-	nmg5_state *state = machine.driver_data<nmg5_state>();
-	UINT16 *spriteram = state->m_spriteram;
-	int offs;
 
-	for (offs = 0; offs < state->m_spriteram_size / 2; offs += 4)
-	{
-		int sx, sy, code, color, flipx, flipy, height, y;
 
-		sx = spriteram[offs + 2];
-		sy = spriteram[offs + 0];
-		code = spriteram[offs + 1];
-		color = (spriteram[offs + 2] >> 9) & 0xf;
-		height = 1 << ((spriteram[offs + 0] & 0x0600) >> 9);
-		flipx = spriteram[offs + 0] & 0x2000;
-		flipy = spriteram[offs + 0] & 0x4000;
-
-		for (y = 0; y < height; y++)
-		{
-			drawgfx_transpen(bitmap,cliprect,machine.gfx[1],
-					code + (flipy ? height-1 - y : y),
-					color,
-					flipx,flipy,
-					sx & 0x1ff,248 - ((sy + 0x10 * (height - y)) & 0x1ff),0);
-
-			/* wrap around */
-			drawgfx_transpen(bitmap,cliprect,machine.gfx[1],
-					code + (flipy ? height-1 - y : y),
-					color,
-					flipx,flipy,
-					(sx & 0x1ff) - 512,248 - ((sy + 0x10 * (height - y)) & 0x1ff),0);
-		}
-	}
-}
-
-static void draw_bitmap( running_machine &machine, bitmap_t *bitmap )
+static void draw_bitmap( running_machine &machine, bitmap_ind16 &bitmap )
 {
 	nmg5_state *state = machine.driver_data<nmg5_state>();
 	int yyy = 256;
@@ -897,13 +863,13 @@ static void draw_bitmap( running_machine &machine, bitmap_t *bitmap )
 		for (x = 0; x < xxx; x++)
 		{
 			pix = (state->m_bitmap[count] & 0xf000) >> 12;
-			if (pix) *BITMAP_ADDR16(bitmap, y + yoff, x * 4 + 0 + xoff) = pix + 0x300;
+			if (pix) bitmap.pix16(y + yoff, x * 4 + 0 + xoff) = pix + 0x300;
 			pix = (state->m_bitmap[count] & 0x0f00) >> 8;
-			if (pix) *BITMAP_ADDR16(bitmap, y + yoff, x * 4 + 1 + xoff) = pix + 0x300;
+			if (pix) bitmap.pix16(y + yoff, x * 4 + 1 + xoff) = pix + 0x300;
 			pix = (state->m_bitmap[count] & 0x00f0) >> 4;
-			if (pix) *BITMAP_ADDR16(bitmap, y + yoff, x * 4 + 2 + xoff) = pix + 0x300;
+			if (pix) bitmap.pix16(y + yoff, x * 4 + 2 + xoff) = pix + 0x300;
 			pix = (state->m_bitmap[count] & 0x000f) >> 0;
-			if (pix) *BITMAP_ADDR16(bitmap, y + yoff, x * 4 + 3 + xoff) = pix + 0x300;
+			if (pix) bitmap.pix16(y + yoff, x * 4 + 3 + xoff) = pix + 0x300;
 
 			count++;
 		}
@@ -911,46 +877,46 @@ static void draw_bitmap( running_machine &machine, bitmap_t *bitmap )
 }
 
 
-static SCREEN_UPDATE( nmg5 )
+static SCREEN_UPDATE_IND16( nmg5 )
 {
-	nmg5_state *state = screen->machine().driver_data<nmg5_state>();
+	nmg5_state *state = screen.machine().driver_data<nmg5_state>();
 
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, state->m_scroll_ram[3] + 9);
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_scroll_ram[2] + 3);
-	tilemap_set_scrolly(state->m_fg_tilemap, 0, state->m_scroll_ram[1] + 9);
-	tilemap_set_scrollx(state->m_fg_tilemap, 0, state->m_scroll_ram[0] - 1);
+	state->m_bg_tilemap->set_scrolly(0, state->m_scroll_ram[3] + 9);
+	state->m_bg_tilemap->set_scrollx(0, state->m_scroll_ram[2] + 3);
+	state->m_fg_tilemap->set_scrolly(0, state->m_scroll_ram[1] + 9);
+	state->m_fg_tilemap->set_scrollx(0, state->m_scroll_ram[0] - 1);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	if (state->m_priority_reg == 0)
 	{
-		draw_sprites(screen->machine(), bitmap, cliprect);
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
-		draw_bitmap(screen->machine(), bitmap);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram, 0x400);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
+		draw_bitmap(screen.machine(), bitmap);
 	}
 	else if (state->m_priority_reg == 1)
 	{
-		draw_bitmap(screen->machine(), bitmap);
-		draw_sprites(screen->machine(), bitmap, cliprect);
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		draw_bitmap(screen.machine(), bitmap);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram, 0x400);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 	else if (state->m_priority_reg == 2)
 	{
-		draw_sprites(screen->machine(), bitmap, cliprect);
-		draw_bitmap(screen->machine(), bitmap);
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram, 0x400);
+		draw_bitmap(screen.machine(), bitmap);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 	else if (state->m_priority_reg == 3)
 	{
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
-		draw_sprites(screen->machine(), bitmap, cliprect);
-		draw_bitmap(screen->machine(), bitmap);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram, 0x400);
+		draw_bitmap(screen.machine(), bitmap);
 	}
 	else if (state->m_priority_reg == 7)
 	{
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
-		draw_bitmap(screen->machine(), bitmap);
-		draw_sprites(screen->machine(), bitmap, cliprect);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
+		draw_bitmap(screen.machine(), bitmap);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram, 0x400);
 	}
 	return 0;
 }
@@ -984,7 +950,7 @@ static const gfx_layout layout_16x16x5 =
 	RGN_FRAC(1,5),
 	5,
 	{ RGN_FRAC(2,5),RGN_FRAC(3,5),RGN_FRAC(1,5),RGN_FRAC(4,5),RGN_FRAC(0,5) },
-	{ 7,6,5,4,3,2,1,0,135,134,133,132,131,130,129,128 },
+	{ 128,129,130,131,132,133,134,135, 0,1,2,3,4,5,6,7, },
 	{ 0*8,1*8,2*8,3*8,4*8,5*8,6*8,7*8,8*8,9*8,10*8,11*8,12*8,13*8,14*8,15*8 },
 	32*8
 };
@@ -1052,15 +1018,21 @@ static MACHINE_CONFIG_START( nmg5, nmg5_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 319, 0, 239)
-	MCFG_SCREEN_UPDATE(nmg5)
+	MCFG_SCREEN_UPDATE_STATIC(nmg5)
 
 	MCFG_GFXDECODE(nmg5)
 	MCFG_PALETTE_LENGTH(0x400)
 
 	MCFG_VIDEO_START(nmg5)
+
+	MCFG_DEVICE_ADD("spritegen", DECO_SPRITE, 0)
+	decospr_device::set_gfx_region(*device, 1);
+	decospr_device::set_is_bootleg(*device, true);
+	decospr_device::set_flipallx(*device, 1);
+	decospr_device::set_offsets(*device, 0,8);
+
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

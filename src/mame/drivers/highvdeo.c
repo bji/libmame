@@ -110,28 +110,28 @@ static VIDEO_START(tourvisn)
 
 }
 
-static SCREEN_UPDATE(tourvisn)
+static SCREEN_UPDATE_RGB32(tourvisn)
 {
-	highvdeo_state *state = screen->machine().driver_data<highvdeo_state>();
+	highvdeo_state *state = screen.machine().driver_data<highvdeo_state>();
 	int x,y,count;
 
 	count = (0/2);
 
-	for(y=0;y<(screen->visible_area().max_y+1);y++)
+	for(y=0;y<(screen.visible_area().max_y+1);y++)
 	{
-		for(x=0;x<(screen->visible_area().max_x+1)/2;x++)
+		for(x=0;x<(screen.visible_area().max_x+1)/2;x++)
 		{
 			UINT32 color;
 
 			color = ((state->m_blit_ram[count]) & 0x00ff)>>0;
 
-			if((x*2)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, (x*2)+0) = screen->machine().pens[color];
+			if(cliprect.contains((x*2)+0, y))
+				bitmap.pix32(y, (x*2)+0) = screen.machine().pens[color];
 
 			color = ((state->m_blit_ram[count]) & 0xff00)>>8;
 
-			if(((x*2)+1)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, (x*2)+1) = screen->machine().pens[color];
+			if(cliprect.contains((x*2)+1, y))
+				bitmap.pix32(y, (x*2)+1) = screen.machine().pens[color];
 
 			count++;
 		}
@@ -141,9 +141,9 @@ static SCREEN_UPDATE(tourvisn)
 }
 
 /*Later HW, RGB565 instead of RAM-based pens (+ ramdac).*/
-static SCREEN_UPDATE(brasil)
+static SCREEN_UPDATE_RGB32(brasil)
 {
-	highvdeo_state *state = screen->machine().driver_data<highvdeo_state>();
+	highvdeo_state *state = screen.machine().driver_data<highvdeo_state>();
 	int x,y,count;
 
 	count = (0/2);
@@ -162,8 +162,8 @@ static SCREEN_UPDATE(brasil)
 			b = (color & 0x001f) << 3;
 			g = (color & 0x07e0) >> 3;
 			r = (color & 0xf800) >> 8;
-			if(x<screen->visible_area().max_x && y<screen->visible_area().max_y)
-				*BITMAP_ADDR32(bitmap, y, x) = b | (g<<8) | (r<<16);
+			if(cliprect.contains(x, y))
+				bitmap.pix32(y, x) = b | (g<<8) | (r<<16);
 
 			count++;
 		}
@@ -912,10 +912,9 @@ static MACHINE_CONFIG_START( tv_vcf, highvdeo_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(400, 300)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 200-1)
-	MCFG_SCREEN_UPDATE(tourvisn)
+	MCFG_SCREEN_UPDATE_STATIC(tourvisn)
 
 	MCFG_PALETTE_LENGTH(0x100)
 
@@ -979,10 +978,9 @@ static MACHINE_CONFIG_START( brasil, highvdeo_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(400, 300)
 	MCFG_SCREEN_VISIBLE_AREA(0, 400-1, 0, 300-1)
-	MCFG_SCREEN_UPDATE(brasil)
+	MCFG_SCREEN_UPDATE_STATIC(brasil)
 
 	MCFG_PALETTE_LENGTH(0x100)
 

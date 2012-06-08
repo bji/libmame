@@ -739,14 +739,14 @@ static WRITE8_HANDLER( goldnpkr_videoram_w )
 {
 	goldnpkr_state *state = space->machine().driver_data<goldnpkr_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( goldnpkr_colorram_w )
 {
 	goldnpkr_state *state = space->machine().driver_data<goldnpkr_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -800,10 +800,10 @@ static VIDEO_START( wcrdxtnd )
 	state->m_bg_tilemap = tilemap_create(machine, xtnd_get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( goldnpkr )
+static SCREEN_UPDATE_IND16( goldnpkr )
 {
-	goldnpkr_state *state = screen->machine().driver_data<goldnpkr_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	goldnpkr_state *state = screen.machine().driver_data<goldnpkr_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -2935,10 +2935,9 @@ static MACHINE_CONFIG_START( goldnpkr_base, goldnpkr_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((39+1)*8, (31+1)*8)                  /* From MC6845 init, registers 00 & 04 (programmed with value-1). */
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 29*8-1)    /* From MC6845 init, registers 01 & 06. */
-	MCFG_SCREEN_UPDATE(goldnpkr)
+	MCFG_SCREEN_UPDATE_STATIC(goldnpkr)
 
 	MCFG_MC6845_ADD("crtc", MC6845, CPU_CLOCK, mc6845_intf)	/* 68B45 or 6845s @ CPU clock */
 

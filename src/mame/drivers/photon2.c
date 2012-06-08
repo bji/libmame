@@ -9,7 +9,6 @@
 */
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "sound/speaker.h"
 
@@ -18,13 +17,17 @@ class photon2_state : public driver_device
 {
 public:
 	photon2_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT8 *m_spectrum_video_ram;
 	int m_spectrum_frame_number;
 	int m_spectrum_flash_invert;
 	UINT8 m_spectrum_port_fe;
 	UINT8 m_nmi_enable;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -97,25 +100,29 @@ INLINE unsigned char get_display_color (unsigned char color, int invert)
 
 /* Code to change the FLASH status every 25 frames. Note this must be
    independent of frame skip etc. */
-static SCREEN_EOF( spectrum )
+static SCREEN_VBLANK( spectrum )
 {
-	photon2_state *state = machine.driver_data<photon2_state>();
-    state->m_spectrum_frame_number++;
-    if (state->m_spectrum_frame_number >= 25)
-    {
-        state->m_spectrum_frame_number = 0;
-        state->m_spectrum_flash_invert = !state->m_spectrum_flash_invert;
-    }
+	// rising edge
+	if (vblank_on)
+	{
+		photon2_state *state = screen.machine().driver_data<photon2_state>();
+	    state->m_spectrum_frame_number++;
+	    if (state->m_spectrum_frame_number >= 25)
+	    {
+	        state->m_spectrum_frame_number = 0;
+	        state->m_spectrum_flash_invert = !state->m_spectrum_flash_invert;
+	    }
+	}
 }
 
-INLINE void spectrum_plot_pixel(bitmap_t *bitmap, int x, int y, UINT32 color)
+INLINE void spectrum_plot_pixel(bitmap_ind16 &bitmap, int x, int y, UINT32 color)
 {
-	*BITMAP_ADDR16(bitmap, y, x) = (UINT16)color;
+	bitmap.pix16(y, x) = (UINT16)color;
 }
 
-static SCREEN_UPDATE( spectrum )
+static SCREEN_UPDATE_IND16( spectrum )
 {
-	photon2_state *state = screen->machine().driver_data<photon2_state>();
+	photon2_state *state = screen.machine().driver_data<photon2_state>();
     /* for now do a full-refresh */
     int x, y, b, scrx, scry;
     unsigned short ink, pap;
@@ -124,7 +131,7 @@ static SCREEN_UPDATE( spectrum )
 
     scr=state->m_spectrum_video_ram;
 
-	bitmap_fill(bitmap, cliprect, state->m_spectrum_port_fe & 0x07);
+	bitmap.fill(state->m_spectrum_port_fe & 0x07, cliprect);
 
     for (y=0; y<192; y++)
     {
@@ -283,18 +290,20 @@ INPUT_PORTS_END
  *
  *************************************/
 
-static INTERRUPT_GEN( spec_interrupt_hack )
+static TIMER_DEVICE_CALLBACK( spec_interrupt_hack )
 {
-	photon2_state *state = device->machine().driver_data<photon2_state>();
-	if (cpu_getiloops(device) == 1)
+	photon2_state *state = timer.machine().driver_data<photon2_state>();
+	int scanline = param;
+
+	if (scanline == SPEC_SCREEN_HEIGHT/2)
 	{
-		device_set_input_line(device, 0, HOLD_LINE);
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
 	}
-	else
+	else if(scanline == 0)
 	{
 		if ( state->m_nmi_enable )
 		{
-			cputag_set_input_line(device->machine(), "maincpu", INPUT_LINE_NMI, PULSE_LINE);
+			device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 		}
 	}
 }
@@ -309,7 +318,7 @@ static MACHINE_CONFIG_START( photon2, photon2_state )
 	MCFG_CPU_ADD("maincpu", Z80, 3500000)        /* 3.5 MHz */
 	MCFG_CPU_PROGRAM_MAP(spectrum_mem)
 	MCFG_CPU_IO_MAP(spectrum_io)
-	MCFG_CPU_VBLANK_INT_HACK(spec_interrupt_hack, 2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", spec_interrupt_hack, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET( photon2 )
 
@@ -317,11 +326,10 @@ static MACHINE_CONFIG_START( photon2, photon2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(50.08)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500)) /* not accurate */
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(SPEC_SCREEN_WIDTH, SPEC_SCREEN_HEIGHT)
 	MCFG_SCREEN_VISIBLE_AREA(0, SPEC_SCREEN_WIDTH-1, 0, SPEC_SCREEN_HEIGHT-1)
-	MCFG_SCREEN_UPDATE( spectrum )
-	MCFG_SCREEN_EOF( spectrum )
+	MCFG_SCREEN_UPDATE_STATIC( spectrum )
+	MCFG_SCREEN_VBLANK_STATIC( spectrum )
 
 	MCFG_PALETTE_LENGTH(16)
 	MCFG_PALETTE_INIT( spectrum )

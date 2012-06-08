@@ -19,6 +19,7 @@ public:
 	UINT8 m_yamato_p0;
 	UINT8 m_yamato_p1;
 	UINT8 m_toprollr_rombank;
+	UINT8 m_nmi_mask;
 	tilemap_t *m_pf_tilemap;
 	tilemap_t *m_bs_tilemap;
 	tilemap_t *m_toproller_bg_tilemap;
@@ -40,15 +41,15 @@ WRITE8_HANDLER( cannonb_flip_screen_w );
 
 PALETTE_INIT( cclimber );
 VIDEO_START( cclimber );
-SCREEN_UPDATE( cclimber );
+SCREEN_UPDATE_IND16( cclimber );
 
 PALETTE_INIT( swimmer );
 VIDEO_START( swimmer );
-SCREEN_UPDATE( swimmer );
+SCREEN_UPDATE_IND16( swimmer );
 
 PALETTE_INIT( yamato );
-SCREEN_UPDATE( yamato );
+SCREEN_UPDATE_IND16( yamato );
 
 PALETTE_INIT( toprollr );
 VIDEO_START( toprollr );
-SCREEN_UPDATE( toprollr );
+SCREEN_UPDATE_IND16( toprollr );

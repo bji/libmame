@@ -103,7 +103,6 @@
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "machine/z80ctc.h"
 #include "audio/mcr.h"
 #include "machine/nvram.h"
@@ -1094,7 +1093,7 @@ static MACHINE_CONFIG_START( mcrmono, mcr3_state )
 	MCFG_CPU_PROGRAM_MAP(mcrmono_map)
 	MCFG_CPU_IO_MAP(mcrmono_portmap)
 	MCFG_CPU_CONFIG(mcr_daisy_chain)
-	MCFG_CPU_VBLANK_INT_HACK(mcr_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mcr_interrupt, "screen", 0, 1)
 
 	MCFG_Z80CTC_ADD("ctc", MASTER_CLOCK/4 /* same as "maincpu" */, mcr_ctc_intf)
 
@@ -1109,10 +1108,9 @@ static MACHINE_CONFIG_START( mcrmono, mcr3_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(30)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 30*16)
 	MCFG_SCREEN_VISIBLE_AREA(0*16, 32*16-1, 0*16, 30*16-1)
-	MCFG_SCREEN_UPDATE(mcr3)
+	MCFG_SCREEN_UPDATE_STATIC(mcr3)
 
 	MCFG_GFXDECODE(mcr3)
 	MCFG_PALETTE_LENGTH(64)
@@ -1157,7 +1155,7 @@ static MACHINE_CONFIG_DERIVED( mcrscroll, mcrmono )
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_SIZE(30*16, 30*16)
 	MCFG_SCREEN_VISIBLE_AREA(0, 30*16-1, 0, 30*16-1)
-	MCFG_SCREEN_UPDATE(spyhunt)
+	MCFG_SCREEN_UPDATE_STATIC(spyhunt)
 	MCFG_GFXDECODE(spyhunt)
 	MCFG_PALETTE_LENGTH(64+4)
 

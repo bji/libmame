@@ -17,7 +17,7 @@ jchan  : "1995/05/24 The kung-Fu Master Jackie Chan   "
 jchan2 : "1995/10/24 Fists Of Fire"
 
 
- main2sub comunication is done within $400000-$403fff (mainsub_shared_ram):
+ main2sub communication is done within $400000-$403fff (mainsub_shared_ram):
  - $403C02(W) : ]
  - $403C04(W) : ] main68k sets parameters before calling subcpu routine, when required
  - $403C06(W) : ]
@@ -169,7 +169,6 @@ there are 9 PALS on the pcb (not dumped)
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "machine/nvram.h"
 #include "sound/ymz280b.h"
 #include "includes/kaneko16.h"
@@ -179,10 +178,13 @@ class jchan_state : public kaneko16_state
 {
 public:
 	jchan_state(const machine_config &mconfig, device_type type, const char *tag)
-		: kaneko16_state(mconfig, type, tag) { }
+		: kaneko16_state(mconfig, type, tag),
+		m_maincpu(*this,"maincpu"),
+		m_subcpu(*this,"sub")
+		{ }
 
-	bitmap_t *m_sprite_bitmap_1;
-	bitmap_t *m_sprite_bitmap_2;
+	bitmap_ind16 *m_sprite_bitmap_1;
+	bitmap_ind16 *m_sprite_bitmap_2;
 	UINT32* m_sprite_ram32_1;
 	UINT32* m_sprite_ram32_2;
 	UINT32* m_sprite_regs32_1;
@@ -198,6 +200,8 @@ public:
 	UINT16 m_mcu_com[4];
 	UINT16 *m_ctrl;
 
+	required_device<cpu_device> m_maincpu;
+	required_device<cpu_device> m_subcpu;
 	sknsspr_device* m_spritegen1;
 	sknsspr_device* m_spritegen2;
 };
@@ -297,41 +301,27 @@ static READ16_HANDLER( jchan_mcu_status_r )
 //  if it is incorrect jchan2 will crash when
 //  certain characters win/lose but no finish
 //  move was performed
-static INTERRUPT_GEN( jchan_vblank )
+static TIMER_DEVICE_CALLBACK( jchan_vblank )
 {
-	jchan_state *state = device->machine().driver_data<jchan_state>();
-	int i = cpu_getiloops(device);
-	switch (i)
-	{
+	jchan_state *state = timer.machine().driver_data<jchan_state>();
+	int scanline = param;
 
-		case 0:
-			device_set_input_line(device, 1, HOLD_LINE);
-			break;
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
 
-		case 100:
-			device_set_input_line(device, 2, HOLD_LINE);
-			break;
-
-	}
+	if(scanline == 11)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
 
 	if (state->m_irq_sub_enable)
 	{
-		switch (i)
-		{
+		if(scanline == 240)
+			device_set_input_line(state->m_subcpu, 1, HOLD_LINE);
 
-			case 0:
-				cputag_set_input_line(device->machine(), "sub", 1, HOLD_LINE);
-				break;
+		if(scanline == 249)
+			device_set_input_line(state->m_subcpu, 2, HOLD_LINE);
 
-			case 220:
-				cputag_set_input_line(device->machine(), "sub", 2, HOLD_LINE);
-				break;
-
-			case 100:
-				cputag_set_input_line(device->machine(), "sub", 3, HOLD_LINE);
-				break;
-
-		}
+		if(scanline == 11)
+			device_set_input_line(state->m_subcpu, 3, HOLD_LINE);
 	}
 }
 
@@ -349,8 +339,8 @@ static VIDEO_START(jchan)
 	state->m_sprite_regs32_1 = auto_alloc_array(machine, UINT32, 0x40/4);
 	state->m_sprite_regs32_2 = auto_alloc_array(machine, UINT32, 0x40/4);
 
-	state->m_sprite_bitmap_1 = auto_bitmap_alloc(machine,1024,1024,BITMAP_FORMAT_INDEXED16);
-	state->m_sprite_bitmap_2 = auto_bitmap_alloc(machine,1024,1024,BITMAP_FORMAT_INDEXED16);
+	state->m_sprite_bitmap_1 = auto_bitmap_ind16_alloc(machine,1024,1024);
+	state->m_sprite_bitmap_2 = auto_bitmap_ind16_alloc(machine,1024,1024);
 
 	state->m_spritegen1 = machine.device<sknsspr_device>("spritegen1");
 	state->m_spritegen2 = machine.device<sknsspr_device>("spritegen2");
@@ -368,9 +358,9 @@ static VIDEO_START(jchan)
 
 
 
-static SCREEN_UPDATE(jchan)
+static SCREEN_UPDATE_IND16(jchan)
 {
-	jchan_state *state = screen->machine().driver_data<jchan_state>();
+	jchan_state *state = screen.machine().driver_data<jchan_state>();
 	int x,y;
 	UINT16* src1;
 	UINT16* src2;
@@ -378,22 +368,22 @@ static SCREEN_UPDATE(jchan)
 	UINT16 pixdata1;
 	UINT16 pixdata2;
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
-	SCREEN_UPDATE_CALL(jchan_view2);
+	SCREEN_UPDATE16_CALL(jchan_view2);
 
-	bitmap_fill(state->m_sprite_bitmap_1, cliprect, 0x0000);
-	bitmap_fill(state->m_sprite_bitmap_2, cliprect, 0x0000);
+	state->m_sprite_bitmap_1->fill(0x0000, cliprect);
+	state->m_sprite_bitmap_2->fill(0x0000, cliprect);
 
-	state->m_spritegen1->skns_draw_sprites(screen->machine(), state->m_sprite_bitmap_1, cliprect, state->m_sprite_ram32_1, 0x4000, screen->machine().region("gfx1")->base(), screen->machine().region ("gfx1")->bytes(), state->m_sprite_regs32_1 );
-	state->m_spritegen2->skns_draw_sprites(screen->machine(), state->m_sprite_bitmap_2, cliprect, state->m_sprite_ram32_2, 0x4000, screen->machine().region("gfx2")->base(), screen->machine().region ("gfx2")->bytes(), state->m_sprite_regs32_2 );
+	state->m_spritegen1->skns_draw_sprites(screen.machine(), *state->m_sprite_bitmap_1, cliprect, state->m_sprite_ram32_1, 0x4000, screen.machine().region("gfx1")->base(), screen.machine().region ("gfx1")->bytes(), state->m_sprite_regs32_1 );
+	state->m_spritegen2->skns_draw_sprites(screen.machine(), *state->m_sprite_bitmap_2, cliprect, state->m_sprite_ram32_2, 0x4000, screen.machine().region("gfx2")->base(), screen.machine().region ("gfx2")->bytes(), state->m_sprite_regs32_2 );
 
 	// ignoring priority bits for now - might use alpha too, check 0x8000 of palette writes
 	for (y=0;y<240;y++)
 	{
-		src1 = BITMAP_ADDR16(state->m_sprite_bitmap_1, y, 0);
-		src2 = BITMAP_ADDR16(state->m_sprite_bitmap_2, y, 0);
-		dst =  BITMAP_ADDR16(bitmap, y, 0);
+		src1 = &state->m_sprite_bitmap_1->pix16(y);
+		src2 = &state->m_sprite_bitmap_2->pix16(y);
+		dst =  &bitmap.pix16(y);
 
 		for (x=0;x<320;x++)
 		{
@@ -668,7 +658,7 @@ static MACHINE_CONFIG_START( jchan, jchan_state )
 
 	MCFG_CPU_ADD("maincpu", M68000, 16000000)
 	MCFG_CPU_PROGRAM_MAP(jchan_main)
-	MCFG_CPU_VBLANK_INT_HACK(jchan_vblank, 224)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", jchan_vblank, "screen", 0, 1)
 
 	MCFG_CPU_ADD("sub", M68000, 16000000)
 	MCFG_CPU_PROGRAM_MAP(jchan_sub)
@@ -679,10 +669,9 @@ static MACHINE_CONFIG_START( jchan, jchan_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(jchan)
+	MCFG_SCREEN_UPDATE_STATIC(jchan)
 
 	MCFG_PALETTE_LENGTH(0x10000)
 

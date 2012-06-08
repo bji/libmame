@@ -22,7 +22,7 @@ static TILE_GET_INFO( get_mcatadv_tile_info1 )
 	int pri = (state->m_videoram1[tile_index * 2] & 0xc000) >> 14;
 
 	SET_TILE_INFO(0,tileno,colour + state->m_palette_bank1 * 0x40, 0);
-	tileinfo->category = pri;
+	tileinfo.category = pri;
 }
 
 WRITE16_HANDLER( mcatadv_videoram1_w )
@@ -30,7 +30,7 @@ WRITE16_HANDLER( mcatadv_videoram1_w )
 	mcatadv_state *state = space->machine().driver_data<mcatadv_state>();
 
 	COMBINE_DATA(&state->m_videoram1[offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap1, offset / 2);
+	state->m_tilemap1->mark_tile_dirty(offset / 2);
 }
 
 static TILE_GET_INFO( get_mcatadv_tile_info2 )
@@ -41,7 +41,7 @@ static TILE_GET_INFO( get_mcatadv_tile_info2 )
 	int pri = (state->m_videoram2[tile_index * 2] & 0xc000) >> 14;
 
 	SET_TILE_INFO(1, tileno, colour + state->m_palette_bank2 * 0x40, 0);
-	tileinfo->category = pri;
+	tileinfo.category = pri;
 }
 
 WRITE16_HANDLER( mcatadv_videoram2_w )
@@ -49,11 +49,11 @@ WRITE16_HANDLER( mcatadv_videoram2_w )
 	mcatadv_state *state = space->machine().driver_data<mcatadv_state>();
 
 	COMBINE_DATA(&state->m_videoram2[offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap2, offset / 2);
+	state->m_tilemap2->mark_tile_dirty(offset / 2);
 }
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	mcatadv_state *state = machine.driver_data<mcatadv_state>();
 	UINT16 *source = state->m_spriteram_old;
@@ -121,10 +121,10 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 			{
 				drawypos = y + ycnt - global_y;
 
-				if ((drawypos >= cliprect->min_y) && (drawypos <= cliprect->max_y))
+				if ((drawypos >= cliprect.min_y) && (drawypos <= cliprect.max_y))
 				{
-					destline = BITMAP_ADDR16(bitmap, drawypos, 0);
-					priline = BITMAP_ADDR8(machine.priority_bitmap, drawypos, 0);
+					destline = &bitmap.pix16(drawypos);
+					priline = &machine.priority_bitmap.pix8(drawypos);
 
 					for (xcnt = xstart; xcnt != xend; xcnt += xinc)
 					{
@@ -140,7 +140,7 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 								pix = pix >> 4;
 							pix &= 0x0f;
 
-							if ((drawxpos >= cliprect->min_x) && (drawxpos <= cliprect->max_x) && pix)
+							if ((drawxpos >= cliprect.min_x) && (drawxpos <= cliprect.max_x) && pix)
 								destline[drawxpos] = (pix + (pen << 4));
 						}
 						offset++;
@@ -156,16 +156,16 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-static void mcatadv_draw_tilemap_part( UINT16* current_scroll, UINT16* current_videoram1, int i, tilemap_t* current_tilemap, bitmap_t *bitmap, const rectangle *cliprect )
+static void mcatadv_draw_tilemap_part( UINT16* current_scroll, UINT16* current_videoram1, int i, tilemap_t* current_tilemap, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	int flip;
 	UINT32 drawline;
 	rectangle clip;
 
-	clip.min_x = cliprect->min_x;
-	clip.max_x = cliprect->max_x;
+	clip.min_x = cliprect.min_x;
+	clip.max_x = cliprect.max_x;
 
-	for (drawline = cliprect->min_y; drawline <= cliprect->max_y; drawline++)
+	for (drawline = cliprect.min_y; drawline <= cliprect.max_y; drawline++)
 	{
 		int scrollx, scrolly;
 
@@ -192,32 +192,32 @@ static void mcatadv_draw_tilemap_part( UINT16* current_scroll, UINT16* current_v
 		if (!(current_scroll[1] & 0x8000)) scrolly -= 0x141;
 		flip = ((current_scroll[0] & 0x8000) ? 0 : TILEMAP_FLIPX) | ((current_scroll[1] & 0x8000) ? 0 : TILEMAP_FLIPY);
 
-		tilemap_set_scrollx(current_tilemap, 0, scrollx);
-		tilemap_set_scrolly(current_tilemap, 0, scrolly);
-		tilemap_set_flip(current_tilemap, flip);
+		current_tilemap->set_scrollx(0, scrollx);
+		current_tilemap->set_scrolly(0, scrolly);
+		current_tilemap->set_flip(flip);
 
-		tilemap_draw(bitmap, &clip, current_tilemap, i, i);
+		current_tilemap->draw(bitmap, clip, i, i);
 	}
 }
 
-SCREEN_UPDATE( mcatadv )
+SCREEN_UPDATE_IND16( mcatadv )
 {
-	mcatadv_state *state = screen->machine().driver_data<mcatadv_state>();
+	mcatadv_state *state = screen.machine().driver_data<mcatadv_state>();
 	int i;
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	if (state->m_scroll1[2] != state->m_palette_bank1)
 	{
 		state->m_palette_bank1 = state->m_scroll1[2];
-		tilemap_mark_all_tiles_dirty(state->m_tilemap1);
+		state->m_tilemap1->mark_all_dirty();
 	}
 
 	if (state->m_scroll2[2] != state->m_palette_bank2)
 	{
 		state->m_palette_bank2 = state->m_scroll2[2];
-		tilemap_mark_all_tiles_dirty(state->m_tilemap2);
+		state->m_tilemap2->mark_all_dirty();
 	}
 
 /*
@@ -231,21 +231,21 @@ SCREEN_UPDATE( mcatadv )
 	for (i = 0; i <= 3; i++)
 	{
 	#ifdef MAME_DEBUG
-			if (!screen->machine().input().code_pressed(KEYCODE_Q))
+			if (!screen.machine().input().code_pressed(KEYCODE_Q))
 	#endif
 			mcatadv_draw_tilemap_part(state->m_scroll1,  state->m_videoram1, i, state->m_tilemap1, bitmap, cliprect);
 
 	#ifdef MAME_DEBUG
-			if (!screen->machine().input().code_pressed(KEYCODE_W))
+			if (!screen.machine().input().code_pressed(KEYCODE_W))
 	#endif
 				mcatadv_draw_tilemap_part(state->m_scroll2, state->m_videoram2, i, state->m_tilemap2, bitmap, cliprect);
 	}
 
 	g_profiler.start(PROFILER_USER1);
 #ifdef MAME_DEBUG
-	if (!screen->machine().input().code_pressed(KEYCODE_E))
+	if (!screen.machine().input().code_pressed(KEYCODE_E))
 #endif
-		draw_sprites (screen->machine(), bitmap, cliprect);
+		draw_sprites (screen.machine(), bitmap, cliprect);
 	g_profiler.stop();
 	return 0;
 }
@@ -254,10 +254,10 @@ VIDEO_START( mcatadv )
 {
 	mcatadv_state *state = machine.driver_data<mcatadv_state>();
 	state->m_tilemap1 = tilemap_create(machine, get_mcatadv_tile_info1, tilemap_scan_rows, 16, 16, 32, 32);
-	tilemap_set_transparent_pen(state->m_tilemap1, 0);
+	state->m_tilemap1->set_transparent_pen(0);
 
 	state->m_tilemap2 = tilemap_create(machine, get_mcatadv_tile_info2, tilemap_scan_rows, 16, 16, 32, 32);
-	tilemap_set_transparent_pen(state->m_tilemap2, 0);
+	state->m_tilemap2->set_transparent_pen(0);
 
 	state->m_spriteram_old = auto_alloc_array_clear(machine, UINT16, state->m_spriteram_size / 2);
 	state->m_vidregs_old = auto_alloc_array(machine, UINT16, (0x0f + 1) / 2);
@@ -269,9 +269,13 @@ VIDEO_START( mcatadv )
 	state->save_pointer(NAME(state->m_vidregs_old), (0x0f + 1) / 2);
 }
 
-SCREEN_EOF( mcatadv )
+SCREEN_VBLANK( mcatadv )
 {
-	mcatadv_state *state = machine.driver_data<mcatadv_state>();
-	memcpy(state->m_spriteram_old, state->m_spriteram, state->m_spriteram_size);
-	memcpy(state->m_vidregs_old, state->m_vidregs, 0xf);
+	// rising edge
+	if (vblank_on)
+	{
+		mcatadv_state *state = screen.machine().driver_data<mcatadv_state>();
+		memcpy(state->m_spriteram_old, state->m_spriteram, state->m_spriteram_size);
+		memcpy(state->m_vidregs_old, state->m_vidregs, 0xf);
+	}
 }

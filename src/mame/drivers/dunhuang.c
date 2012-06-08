@@ -122,8 +122,8 @@ static VIDEO_START(dunhuang)
 	state->m_tmap = tilemap_create(machine, get_tile_info, tilemap_scan_rows, 8,8, 0x40,0x20);
 	state->m_tmap2 = tilemap_create(machine, get_tile_info2, tilemap_scan_rows, 8,32, 0x40,0x8);
 
-	tilemap_set_transparent_pen(state->m_tmap, 0);
-	tilemap_set_transparent_pen(state->m_tmap2, 0);
+	state->m_tmap->set_transparent_pen(0);
+	state->m_tmap2->set_transparent_pen(0);
 
 	state->save_item(NAME(state->m_videoram));
 	state->save_item(NAME(state->m_colorram));
@@ -132,36 +132,36 @@ static VIDEO_START(dunhuang)
 	state->save_item(NAME(state->m_paldata));
 }
 
-static SCREEN_UPDATE( dunhuang )
+static SCREEN_UPDATE_IND16( dunhuang )
 {
-	dunhuang_state *state = screen->machine().driver_data<dunhuang_state>();
+	dunhuang_state *state = screen.machine().driver_data<dunhuang_state>();
 	int layers_ctrl = -1;
 
 #if DUNHUANG_DEBUG
-if (screen->machine().input().code_pressed(KEYCODE_Z))
+if (screen.machine().input().code_pressed(KEYCODE_Z))
 {
 	int msk = 0;
-	if (screen->machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
-	if (screen->machine().input().code_pressed(KEYCODE_W))	msk |= 2;
+	if (screen.machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
+	if (screen.machine().input().code_pressed(KEYCODE_W))	msk |= 2;
 	if (msk != 0) layers_ctrl &= msk;
 }
 #endif
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	switch (state->m_layers)
 	{
 		case 0x04:	// girl select: bg over fg
-			if (layers_ctrl & 2)	tilemap_draw(bitmap,cliprect, state->m_tmap2, TILEMAP_DRAW_OPAQUE, 0);
-			if (layers_ctrl & 1)	tilemap_draw(bitmap,cliprect, state->m_tmap,  0, 0);
+			if (layers_ctrl & 2)	state->m_tmap2->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
+			if (layers_ctrl & 1)	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 			break;
 		case 0x05:	// dips: must hide fg
-			if (layers_ctrl & 1)	tilemap_draw(bitmap,cliprect, state->m_tmap,  TILEMAP_DRAW_OPAQUE, 0);
+			if (layers_ctrl & 1)	state->m_tmap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
 			break;
 		case 0x07:	// game,demo: fg over bg
 		default:
-			if (layers_ctrl & 1)	tilemap_draw(bitmap,cliprect, state->m_tmap,  TILEMAP_DRAW_OPAQUE, 0);
-			if (layers_ctrl & 2)	tilemap_draw(bitmap,cliprect, state->m_tmap2, 0, 0);
+			if (layers_ctrl & 1)	state->m_tmap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
+			if (layers_ctrl & 2)	state->m_tmap2->draw(bitmap, cliprect, 0, 0);
 			break;
 	}
 
@@ -210,7 +210,7 @@ static WRITE8_HANDLER( dunhuang_tile_w )
 		case 1:	state->m_videoram[addr] = (state->m_videoram[addr] & 0x00ff) | (data<<8);	break;
 		case 2:	state->m_colorram[addr] = data;												break;
 	}
-	tilemap_mark_tile_dirty(state->m_tmap, addr);
+	state->m_tmap->mark_tile_dirty(addr);
 }
 
 static WRITE8_HANDLER( dunhuang_tile2_w )
@@ -237,7 +237,7 @@ static WRITE8_HANDLER( dunhuang_tile2_w )
 		case 1:	state->m_videoram2[addr] = (state->m_videoram2[addr] & 0x00ff) | (data<<8);	break;
 		case 2:	state->m_colorram2[addr] = data;											break;
 	}
-	tilemap_mark_tile_dirty(state->m_tmap2, addr);
+	state->m_tmap2->mark_tile_dirty(addr);
 }
 
 // Clear a row of tiles (videoram)
@@ -258,7 +258,7 @@ static WRITE8_HANDLER( dunhuang_horiz_clear_w )
 
 		state->m_videoram[addr] = 0;
 		state->m_colorram[addr] = 0;
-		tilemap_mark_tile_dirty(state->m_tmap, addr);
+		state->m_tmap->mark_tile_dirty(addr);
 	}
 }
 
@@ -275,7 +275,7 @@ static WRITE8_HANDLER( dunhuang_vert_clear_w )
 
 		state->m_videoram2[addr] = 1;
 		state->m_colorram2[addr] = 0;
-		tilemap_mark_tile_dirty(state->m_tmap2, addr);
+		state->m_tmap2->mark_tile_dirty(addr);
 	}
 }
 
@@ -351,7 +351,7 @@ static WRITE8_HANDLER( dunhuang_block_h_w )
 
 					state->m_videoram[addr] = (tile_addr[1] << 8) | tile_addr[0];
 					state->m_colorram[addr] = state->m_block_c;
-					tilemap_mark_tile_dirty(state->m_tmap, addr);
+					state->m_tmap->mark_tile_dirty(addr);
 					tile_addr += 4;
 				}
 			}
@@ -366,7 +366,7 @@ static WRITE8_HANDLER( dunhuang_block_h_w )
 
 					state->m_videoram2[addr] = (tile_addr[1] << 8) | tile_addr[0];
 					state->m_colorram2[addr] = state->m_block_c;
-					tilemap_mark_tile_dirty(state->m_tmap2, addr);
+					state->m_tmap2->mark_tile_dirty(addr);
 					tile_addr += 4;
 				}
 			}
@@ -829,10 +829,9 @@ static MACHINE_CONFIG_START( dunhuang, dunhuang_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0+8, 512-8-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(dunhuang)
+	MCFG_SCREEN_UPDATE_STATIC(dunhuang)
 
 	MCFG_GFXDECODE(dunhuang)
 	MCFG_PALETTE_LENGTH(0x100)

@@ -246,16 +246,6 @@ BUILD_ZLIB = 1
 # (default is OPTIMIZE = 3 normally, or OPTIMIZE = 0 with symbols)
 # OPTIMIZE = 3
 
-# uncomment only if you are an OSD developer and don't want to have most of
-# MAME be rebuilt just because you have changed something in an OSD source
-# file.  If the following variable is not defined, then lots of MAME build
-# tools will have a dependency on the OSD libraries and will then be rebuilt
-# if you change anything in the OSD, which has the knock-on effect of
-# rebuilding most of the rest of the source.  But this is usually unnecessary;
-# so only define the following as you do iterative work on source files in
-# the OSD that you know should not require the rebuilding of lots of MAME
-# MAME_NO_TOOLS_DEPENDENCY_ON_OSD = 1
-
 
 ###########################################################################
 ##################   END USER-CONFIGURABLE OPTIONS   ######################
@@ -431,7 +421,7 @@ ifndef MAME_OBJ
 endif
 
 # build the targets in different object dirs, so they can co-exist
-OBJ = $(MAME_OBJ)/$(OSD)/$(FULLNAME)
+OBJ = $(MAME_OBJ)/$(PREFIX)$(OSD)$(SUFFIX)$(SUFFIX64)$(SUFFIXDEBUG)$(SUFFIXPROFILE)$(SUFFIXSTATIC)
 
 
 
@@ -479,6 +469,12 @@ ifdef USE_NETWORK
 DEFS += -DUSE_NETWORK
 endif
 
+# need to ensure FLAC functions are statically linked
+ifndef BUILD_LIBMAME
+DEFS += -DFLAC__NO_DLL
+endif
+
+
 
 #-------------------------------------------------
 # compile flags
@@ -495,6 +491,9 @@ COBJFLAGS =
 CPPONLYFLAGS =
 
 ifdef BUILD_LIBMAME
+# libmame doesn't support "mem tracking" - this is a debugging facility
+# best left to standalone developer builds
+# CCOMFLAGS = -DNO_MEM_TRACKING
 # if bulding shared libraries (the default), need -fPIC
 ifndef STATIC
 # -fPIC is not used on Microsoft Windows
@@ -573,6 +572,9 @@ CONLYFLAGS += \
 COBJFLAGS += \
 	-Wpointer-arith 
 
+# warnings only applicable to C++ compiles
+CPPONLYFLAGS += \
+	-Woverloaded-virtual
 
 
 #-------------------------------------------------
@@ -604,18 +606,6 @@ ifeq ($(TARGETOS),macosx)
 ifeq ($(COMMAND_MODE),"legacy")
 ARFLAGS = -crs
 endif
-endif
-
-
-#-------------------------------------------------
-# Special dependency/linking flags 
-#-------------------------------------------------
-ifdef MAME_NO_TOOLS_DEPENDENCY_ON_OSD
-TOOLS_LIBOCORE_DEPENDENCY =
-TOOLS_LIBOCORE_LINK = $(LIBOCORE)
-else
-TOOLS_LIBOCORE_DEPENDENCY = $(LIBOCORE)
-TOOLS_LIBOCORE_LINK =
 endif
 
 
@@ -661,8 +651,7 @@ endif
 # this variable
 #-------------------------------------------------
 
-OBJDIRS = $(OBJ)
-
+OBJDIRS = $(OBJ) $(OBJ)/$(TARGET)/$(SUBTARGET)
 
 
 #-------------------------------------------------
@@ -670,18 +659,19 @@ OBJDIRS = $(OBJ)
 #-------------------------------------------------
 
 LIBEMU = $(OBJ)/libemu.a
-LIBCPU = $(OBJ)/libcpu.a
-LIBDASM = $(OBJ)/libdasm.a
-LIBSOUND = $(OBJ)/libsound.a
+LIBCPU = $(OBJ)/$(TARGET)/$(SUBTARGET)/libcpu.a
+LIBDASM = $(OBJ)/$(TARGET)/$(SUBTARGET)/libdasm.a
+LIBSOUND = $(OBJ)/$(TARGET)/$(SUBTARGET)/libsound.a
 LIBUTIL = $(OBJ)/libutil.a
 LIBOCORE = $(OBJ)/libocore.a
 LIBOSD = $(OBJ)/libosd.a
 
 VERSIONOBJ = $(OBJ)/version.o
-DRIVLISTSRC = $(OBJ)/drivlist.c
-DRIVLISTOBJ = $(OBJ)/drivlist.o
-DEVLISTSRC = $(OBJ)/devlist.c
-DEVLISTOBJ = $(OBJ)/devlist.o
+EMUINFOOBJ = $(OBJ)/$(TARGET)/$(TARGET).o
+DRIVLISTSRC = $(OBJ)/$(TARGET)/$(SUBTARGET)/drivlist.c
+DRIVLISTOBJ = $(OBJ)/$(TARGET)/$(SUBTARGET)/drivlist.o
+DEVLISTSRC = $(OBJ)/$(TARGET)/$(SUBTARGET)/devlist.c
+DEVLISTOBJ = $(OBJ)/$(TARGET)/$(SUBTARGET)/devlist.o
 
 
 
@@ -717,10 +707,7 @@ SOFTFLOAT = $(OBJ)/libsoftfloat.a
 # add formats emulation library
 FORMATS_LIB = $(OBJ)/libformats.a
 
-# add cothread library
-COTHREAD = $(OBJ)/libco.a
-
-
+JPEG_LIB = $(OBJ)/libjpeg.a
 
 #-------------------------------------------------
 # 'default' target needs to go here, before the 
@@ -733,6 +720,8 @@ default: maketree buildtools emulator
 .PHONY: all
 all: default tools
 
+FLAC_LIB = $(OBJ)/libflac.a 
+# $(OBJ)/libflac++.a
 
 
 #-------------------------------------------------
@@ -754,6 +743,7 @@ include $(SRC)/osd/$(OSD)/$(OSD).mak
 
 # then the various core pieces
 include $(SRC)/$(TARGET)/$(SUBTARGET).mak
+-include $(SRC)/$(TARGET)/osd/$(OSD)/$(OSD).mak
 include $(SRC)/emu/emu.mak
 include $(SRC)/lib/lib.mak
 include $(SRC)/build/build.mak
@@ -834,9 +824,9 @@ $(sort $(OBJDIRS)):
 ifndef EXECUTABLE_DEFINED
 
 # always recompile the version string
-$(VERSIONOBJ): $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(ZLIB) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(RESFILE)
+$(VERSIONOBJ): $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(ZLIB) $(SOFTFLOAT) $(FORMATS_LIB) $(LIBOCORE) $(RESFILE)
 
-$(EMULATOR): $(VERSIONOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(FORMATS_LIB) $(COTHREAD) $(LIBOCORE) $(ZLIB) $(RESFILE)
+$(EMULATOR): $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ) $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU) $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT) $(JPEG_LIB) $(FLAC_LIB) $(FORMATS_LIB) $(LIBOCORE) $(ZLIB) $(RESFILE)
 	@echo Linking $@...
 	$(LD) $(LDFLAGS) $(LDFLAGSEMULATOR) $^ $(LIBS) -o $@
 ifeq ($(TARGETOS),win32)

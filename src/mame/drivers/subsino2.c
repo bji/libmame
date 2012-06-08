@@ -85,7 +85,7 @@ public:
 	UINT8 m_ss9601_byte_lo;
 	UINT8 m_ss9601_byte_lo2;
 	UINT8 *m_ss9601_reelrams[2];
-	const rectangle *m_ss9601_reelrects;
+	rectangle m_ss9601_reelrects[3];
 	UINT8 m_ss9601_scrollctrl;
 	UINT8 m_ss9601_tilesize;
 	UINT8 m_ss9601_disable;
@@ -104,7 +104,7 @@ public:
                               Tilemaps Access
 ***************************************************************************/
 
-INLINE void ss9601_get_tile_info(layer_t *l, running_machine &machine, tile_data *tileinfo, tilemap_memory_index tile_index, void *param)
+INLINE void ss9601_get_tile_info(layer_t *l, running_machine &machine, tile_data &tileinfo, tilemap_memory_index tile_index, void *param)
 {
 	int addr;
 	UINT16 offs;
@@ -153,20 +153,20 @@ INLINE void ss9601_videoram_w(layer_t *l, vram_t vram, address_space *space, off
 	{
 		default:
 		case TILE_8x8:
-			tilemap_mark_tile_dirty(l->tmap, offset);
+			l->tmap->mark_tile_dirty(offset);
 			break;
 
 		case TILE_8x32:
 			offset &= ~0x180;
 			for (int y = 0; y < 0x80*4; y += 0x80)
-				tilemap_mark_tile_dirty(l->tmap, offset + y);
+				l->tmap->mark_tile_dirty(offset + y);
 			break;
 
 		case TILE_64x32:
 			offset &= ~0x187;
 			for (int x = 0; x < 8; x++)
 				for (int y = 0; y < 0x80*4; y += 0x80)
-					tilemap_mark_tile_dirty(l->tmap, offset + y + x);
+					l->tmap->mark_tile_dirty(offset + y + x);
 			break;
 	}
 }
@@ -419,7 +419,7 @@ static WRITE8_HANDLER( ss9601_tilesize_w )
 		if (l->tilesize != sizes[i])
 		{
 			l->tilesize = sizes[i];
-			tilemap_mark_all_tiles_dirty(l->tmap);
+			l->tmap->mark_all_dirty();
 		}
 	}
 }
@@ -528,14 +528,6 @@ static WRITE8_HANDLER( ss9601_disable_w )
                                 Video Update
 ***************************************************************************/
 
-static const rectangle mtrain_reelrects[3] = {	{ 0, 0, 0x00*8, 0x09*8-1 },
-												{ 0, 0, 0x09*8, 0x10*8-1 },
-												{ 0, 0, 0x10*8, 256-16-1 }	};
-
-static const rectangle xtrain_reelrects[3] = {	{ 0, 0, 0x00*8, 0x08*8-1 },
-												{ 0, 0, 0x08*8, 0x18*8-1 },
-												{ 0, 0, 0x18*8, 256-16-1 }	};
-
 static VIDEO_START( subsino2 )
 {
 	subsino2_state *state = machine.driver_data<subsino2_state>();
@@ -555,10 +547,10 @@ static VIDEO_START( subsino2 )
 
 		l->tmap = tilemap_create(machine, i ? ss9601_get_tile_info_1 : ss9601_get_tile_info_0, tilemap_scan_rows, 8,8, 0x80,0x40);
 
-		tilemap_set_transparent_pen(l->tmap, 0);
+		l->tmap->set_transparent_pen(0);
 
 		// line scroll
-		tilemap_set_scroll_rows(l->tmap, 0x200);
+		l->tmap->set_scroll_rows(0x200);
 
 		l->videorams[VRAM_HI] = auto_alloc_array(machine, UINT8, 0x80 * 0x40);
 		l->videorams[VRAM_LO] = auto_alloc_array(machine, UINT8, 0x80 * 0x40);
@@ -575,7 +567,9 @@ static VIDEO_START( subsino2 )
 	state->m_ss9601_reelrams[VRAM_LO] = auto_alloc_array(machine, UINT8, 0x2000);
 	memset(state->m_ss9601_reelrams[VRAM_HI], 0, 0x2000);
 	memset(state->m_ss9601_reelrams[VRAM_LO], 0, 0x2000);
-	state->m_ss9601_reelrects = mtrain_reelrects;
+	state->m_ss9601_reelrects[0].set(0, 0, 0x00*8, 0x09*8-1);
+	state->m_ss9601_reelrects[1].set(0, 0, 0x09*8, 0x10*8-1);
+	state->m_ss9601_reelrects[2].set(0, 0, 0x10*8, 256-16-1);
 
 /*
     state_save_register_global_pointer(machine, state->m_ss9601_reelrams[VRAM_HI], 0x2000);
@@ -591,30 +585,30 @@ static VIDEO_START( subsino2 )
 
 static VIDEO_START( mtrain )
 {
-	subsino2_state *state = machine.driver_data<subsino2_state>();
 	VIDEO_START_CALL( subsino2 );
-	state->m_ss9601_reelrects = mtrain_reelrects;
 }
 
 static VIDEO_START( xtrain )
 {
 	subsino2_state *state = machine.driver_data<subsino2_state>();
 	VIDEO_START_CALL( subsino2 );
-	state->m_ss9601_reelrects = xtrain_reelrects;
+	state->m_ss9601_reelrects[0].set(0, 0, 0x00*8, 0x08*8-1);
+	state->m_ss9601_reelrects[1].set(0, 0, 0x08*8, 0x18*8-1);
+	state->m_ss9601_reelrects[2].set(0, 0, 0x18*8, 256-16-1);
 }
 
-static SCREEN_UPDATE( subsino2 )
+static SCREEN_UPDATE_IND16( subsino2 )
 {
-	subsino2_state *state = screen->machine().driver_data<subsino2_state>();
+	subsino2_state *state = screen.machine().driver_data<subsino2_state>();
 	int layers_ctrl = ~state->m_ss9601_disable;
 	int y;
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int msk = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	msk |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	msk |= 2;
 		if (msk != 0) layers_ctrl &= msk;
 	}
 #endif
@@ -643,9 +637,9 @@ static SCREEN_UPDATE( subsino2 )
 	{
 		layer_t *l = &state->m_layers[i];
 
-		tilemap_set_scroll_cols(l->tmap, 1);
-		tilemap_set_scroll_rows(l->tmap, 0x200);
-		tilemap_set_scrolly(l->tmap, 0, l->scroll_y + 1);
+		l->tmap->set_scroll_cols(1);
+		l->tmap->set_scroll_rows(0x200);
+		l->tmap->set_scrolly(0, l->scroll_y + 1);
 
 		// line scroll
 
@@ -655,11 +649,11 @@ static SCREEN_UPDATE( subsino2 )
 			if (mask_y[i])
 				scroll_dx = (l->scrollrams[VRAM_HI][y & mask_y[i]] << 8) + l->scrollrams[VRAM_LO][y & mask_y[i]];
 
-			tilemap_set_scrollx(l->tmap, y, l->scroll_x + scroll_dx);
+			l->tmap->set_scrollx(y, l->scroll_x + scroll_dx);
 		}
 	}
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (layers_ctrl & 1)
 	{
@@ -667,8 +661,8 @@ static SCREEN_UPDATE( subsino2 )
 
 		if (l0_reel)
 		{
-			tilemap_set_scroll_rows(l->tmap, 1);
-			tilemap_set_scroll_cols(l->tmap, 1);
+			l->tmap->set_scroll_rows(1);
+			l->tmap->set_scroll_cols(1);
 
 			for (int r = 0; r < 3; r++)
 			{
@@ -682,7 +676,7 @@ static SCREEN_UPDATE( subsino2 )
 					int reeladdr = (visible.min_y / 0x10) * 0x80 + x;
 					UINT16 reelscroll = (state->m_ss9601_reelrams[VRAM_HI][reeladdr] << 8) + state->m_ss9601_reelrams[VRAM_LO][reeladdr];
 
-					tilemap_set_scrollx(l->tmap, 0, (reelscroll >> 9) * 8 + l->scroll_x - visible.min_x);
+					l->tmap->set_scrollx(0, (reelscroll >> 9) * 8 + l->scroll_x - visible.min_x);
 
 					// wrap around at half tilemap (0x100)
 					int reelscroll_y = (reelscroll & 0x100) + ((reelscroll + l->scroll_y - visible.min_y/0x10*0x10 + 1) & 0xff);
@@ -695,8 +689,8 @@ static SCREEN_UPDATE( subsino2 )
 					{
 						if ( reelwrap_y-1 <= visible.max_y )
 							tmp.max_y = reelwrap_y-1;
-						tilemap_set_scrolly(l->tmap, 0, reelscroll_y);
-						tilemap_draw(bitmap, &tmp, l->tmap, 0, 0);
+						l->tmap->set_scrolly(0, reelscroll_y);
+						l->tmap->draw(bitmap, tmp, 0, 0);
 						tmp.max_y = visible.max_y;
 					}
 
@@ -705,8 +699,8 @@ static SCREEN_UPDATE( subsino2 )
 					{
 						if ( reelwrap_y >= visible.min_y )
 							tmp.min_y = reelwrap_y;
-						tilemap_set_scrolly(l->tmap, 0, -((reelwrap_y &0xff) | (reelscroll_y & 0x100)));
-						tilemap_draw(bitmap, &tmp, l->tmap, 0, 0);
+						l->tmap->set_scrolly(0, -((reelwrap_y &0xff) | (reelscroll_y & 0x100)));
+						l->tmap->draw(bitmap, tmp, 0, 0);
 						tmp.min_y = visible.min_y;
 					}
 				}
@@ -714,11 +708,11 @@ static SCREEN_UPDATE( subsino2 )
 		}
 		else
 		{
-			tilemap_draw(bitmap,cliprect, l->tmap, 0, 0);
+			l->tmap->draw(bitmap, cliprect, 0, 0);
 		}
 	}
 
-	if (layers_ctrl & 2)	tilemap_draw(bitmap,cliprect, state->m_layers[1].tmap, 0, 0);
+	if (layers_ctrl & 2)	state->m_layers[1].tmap->draw(bitmap, cliprect, 0, 0);
 
 //  popmessage("scrl: %03x,%03x - %03x,%03x dis: %02x siz: %02x ctrl: %02x", state->m_layers[0].scroll_x,state->m_layers[0].scroll_y, state->m_layers[1].scroll_x,state->m_layers[1].scroll_y, state->m_ss9601_disable, state->m_ss9601_tilesize, state->m_ss9601_scrollctrl);
 
@@ -1107,7 +1101,7 @@ static WRITE8_HANDLER( mtrain_tilesize_w )
 		if (l->tilesize != sizes[i])
 		{
 			l->tilesize = sizes[i];
-			tilemap_mark_all_tiles_dirty(l->tmap);
+			l->tmap->mark_all_dirty();
 		}
 	}
 }
@@ -2168,11 +2162,10 @@ static MACHINE_CONFIG_START( bishjan, subsino2_state )
 
 	// video hardware
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE( 512, 256 )
 	MCFG_SCREEN_VISIBLE_AREA( 0, 512-1, 0, 256-16-1 )
 	MCFG_SCREEN_REFRESH_RATE( 60 )
-	MCFG_SCREEN_UPDATE( subsino2 )
+	MCFG_SCREEN_UPDATE_STATIC( subsino2 )
 
 	MCFG_GFXDECODE( ss9601 )
 	MCFG_PALETTE_LENGTH( 256 )
@@ -2196,12 +2189,11 @@ static MACHINE_CONFIG_START( mtrain, subsino2_state )
 
 	// video hardware
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE( 512, 256 )
 	MCFG_SCREEN_VISIBLE_AREA( 0, 512-1, 0, 256-32-1 )
 	MCFG_SCREEN_REFRESH_RATE( 58.7270 )
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)	// game reads vblank state
-	MCFG_SCREEN_UPDATE( subsino2 )
+	MCFG_SCREEN_UPDATE_STATIC( subsino2 )
 
 	MCFG_GFXDECODE( ss9601 )
 	MCFG_PALETTE_LENGTH( 256 )
@@ -2230,12 +2222,11 @@ static MACHINE_CONFIG_START( saklove, subsino2_state )
 
 	// video hardware
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE( 512, 256 )
 	MCFG_SCREEN_VISIBLE_AREA( 0, 512-1, 0, 256-16-1 )
 	MCFG_SCREEN_REFRESH_RATE( 58.7270 )
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)	// game reads vblank state
-	MCFG_SCREEN_UPDATE( subsino2 )
+	MCFG_SCREEN_UPDATE_STATIC( subsino2 )
 
 	MCFG_GFXDECODE( ss9601 )
 	MCFG_PALETTE_LENGTH( 256 )
@@ -2268,12 +2259,11 @@ static MACHINE_CONFIG_START( xplan, subsino2_state )
 
 	// video hardware
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE( 512, 256 )
 	MCFG_SCREEN_VISIBLE_AREA( 0, 512-1, 0, 256-16-1 )
 	MCFG_SCREEN_REFRESH_RATE( 58.7270 )
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)	// game reads vblank state
-	MCFG_SCREEN_UPDATE( subsino2 )
+	MCFG_SCREEN_UPDATE_STATIC( subsino2 )
 
 	MCFG_GFXDECODE( ss9601 )
 	MCFG_PALETTE_LENGTH( 256 )

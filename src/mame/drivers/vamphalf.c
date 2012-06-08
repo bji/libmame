@@ -8,39 +8,47 @@
  Games Supported:
 
 
-    Minigame Cool Collection   (c) 1999 SemiCom
-    Jumping Break              (c) 1999 F2 System
-    Lup Lup Puzzle             (c) 1999 Omega System       (version 3.0 and 2.9)
-    Puzzle Bang Bang           (c) 1999 Omega System       (version 2.8)
-    Super Lup Lup Puzzle       (c) 1999 Omega System       (version 4.0)
-    Vamf 1/2                   (c) 1999 Danbi & F2 System  (Europe version)
-    Vamp 1/2                   (c) 1999 Danbi & F2 System  (Korea version)
-    Date Quiz Go Go Episode 2  (c) 2000 SemiCom
-    Mission Craft              (c) 2000 Sun                (version 2.4)
-    Mr. Dig                    (c) 2000 Sun
-    Final Godori               (c) 2001 SemiCom            (version 2.20.5915)
-    Wyvern Wings               (c) 2001 SemiCom
-    Mr. Kicker                 (c) 2001 SemiCom [1]
-    Age Of Heroes - Silkroad 2 (c) 2001 Unico              (v0.63 - 2001/02/07)
+    Minigame Cool Collection        (c) 1999 SemiCom
+    Jumping Break                   (c) 1999 F2 System
+    Lup Lup Puzzle                  (c) 1999 Omega System       (version 3.0 and 2.9)
+    Puzzle Bang Bang                (c) 1999 Omega System       (version 2.8)
+    Super Lup Lup Puzzle            (c) 1999 Omega System       (version 4.0)
+    Vamf 1/2                        (c) 1999 Danbi & F2 System  (Europe version)
+    Vamp 1/2                        (c) 1999 Danbi & F2 System  (Korea version)
+    Date Quiz Go Go Episode 2       (c) 2000 SemiCom
+    Mission Craft                   (c) 2000 Sun                (version 2.4)
+    Mr. Dig                         (c) 2000 Sun
+    Final Godori                    (c) 2001 SemiCom            (version 2.20.5915)
+    Wyvern Wings                    (c) 2001 SemiCom
+    Mr. Kicker                      (c) 2001 SemiCom [1]
+    Toy Land Adventure              (c) 2001 SemiCom
+    Age Of Heroes - Silkroad 2      (c) 2001 Unico              (v0.63 - 2001/02/07)
+    Boong-Ga Boong-Ga (Spank 'em)   (c) 2001 Taff System
 
  Real games bugs:
  - dquizgo2: bugged video test
 
  Notes:
- [1]    Mr. Kicker game code crashes if the eeprom values are empty, because it replaces the SP register with a bogus value at PC = $18D0 before crashing.
-        It could be an original game bug or a hyperstone core bug
+ [1]    Mr. Kicker game code crashes if the eeprom values are empty, because it replaces
+        the SP register with a bogus value at PC = $18D0 before crashing. It could be an
+        original game bug or a hyperstone core bug. Also happens with High Score update.
 
- Mr Kicker is also known to exist (not dumped) on the F-E1-16-010 PCB
- that Semicom also used for Date Quiz Go Go Episode 2 game.
+ Mr Kicker is also known to exist (not dumped) on the F-E1-16-010 PCB that
+   Semicom also used for Toy Land Adventure & SemiComDate Quiz Go Go Episode 2 game.
+
+ Boong-Ga Boong-Ga: the test mode is usable with a standard input configuration like the "common" one
 
  Undumped Semicom games on similar hardware:
    Wivern Wings - Semicom's orginal release with alt spelling of title
    Red Wyvern - A semi-sequel or update?
-   Toy Land Adventure (c) 2001 - PCB photo shows Hyperstone based hardware
  Same time era, but unknown hardware:
    Gaia The last Choice of the Earth (c) 1998 (might be Byron Future Assault type hardware)
    Diet Family (c) 2001
    Choice III: Joker's Dream (c) 2001
+
+TODO:
+- boonggab: simulate photo sensors with a "stroke strength"
+- boonggab: what are sensors bit used for? are they used in the japanese version?
 
 *********************************************************************/
 
@@ -57,7 +65,10 @@ class vamphalf_state : public driver_device
 {
 public:
 	vamphalf_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag)
+		{
+			m_has_extra_gfx = 0;
+		}
 
 	UINT16 *m_tiles;
 	UINT16 *m_wram;
@@ -71,8 +82,8 @@ public:
 	UINT16 m_semicom_prot_data[2];
 	UINT16 m_finalgdr_backupram_bank;
 	UINT8 *m_finalgdr_backupram;
+	int m_has_extra_gfx;
 };
-
 
 static READ16_DEVICE_HANDLER( eeprom_r )
 {
@@ -122,9 +133,9 @@ static WRITE32_DEVICE_HANDLER( finalgdr_eeprom_w )
 
 static WRITE16_HANDLER( flipscreen_w )
 {
-	vamphalf_state *state = space->machine().driver_data<vamphalf_state>();
 	if(offset)
 	{
+		vamphalf_state *state = space->machine().driver_data<vamphalf_state>();
 		state->m_flipscreen = data & state->m_flip_bit;
 	}
 }
@@ -239,6 +250,49 @@ static WRITE32_DEVICE_HANDLER( aoh_oki_bank_w )
 	downcast<okim6295_device *>(device)->set_bank_base(0x40000 * (data & 0x3));
 }
 
+static WRITE16_DEVICE_HANDLER( boonggab_oki_bank_w )
+{
+	if(offset)
+		downcast<okim6295_device *>(device)->set_bank_base(0x40000 * (data & 0x7));
+}
+
+static WRITE16_HANDLER( boonggab_prize_w )
+{
+	if(offset)
+	{
+		// data & 0x01 == motor 1 on
+		// data & 0x02 == motor 2 on
+		// data & 0x04 == motor 3 on
+		// data & 0x08 == prize power 1 on
+		// data & 0x10 == prize lamp 1 off
+		// data & 0x20 == prize lamp 2 off
+		// data & 0x40 == prize lamp 3 off
+	}
+}
+
+static WRITE16_HANDLER( boonggab_lamps_w )
+{
+	if(offset == 1)
+	{
+		// data & 0x0001 == lamp  7 on (why is data & 0x8000 set too?)
+		// data & 0x0002 == lamp  8 on
+		// data & 0x0004 == lamp  9 on
+		// data & 0x0008 == lamp 10 on
+		// data & 0x0010 == lamp 11 on
+		// data & 0x0020 == lamp 12 on
+		// data & 0x0040 == lamp 13 on
+	}
+	else if(offset == 3)
+	{
+		// data & 0x0100 == lamp  0 on
+		// data & 0x0200 == lamp  1 on
+		// data & 0x0400 == lamp  2 on
+		// data & 0x0800 == lamp  3 on
+		// data & 0x1000 == lamp  4 on
+		// data & 0x2000 == lamp  5 on
+		// data & 0x4000 == lamp  6 on
+	}
+}
 
 static ADDRESS_MAP_START( common_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x00000000, 0x001fffff) AM_RAM AM_BASE_MEMBER(vamphalf_state, m_wram)
@@ -282,7 +336,7 @@ static ADDRESS_MAP_START( coolmini_io, AS_IO, 16 )
 	AM_RANGE(0x4c0, 0x4c1) AM_NOP // return 0, when oki chip is read / written
 	AM_RANGE(0x4c2, 0x4c3) AM_DEVREADWRITE8_MODERN("oki", okim6295_device, read, write, 0x00ff)
 	AM_RANGE(0x540, 0x543) AM_DEVWRITE8("ymsnd", ym2151_register_port_w, 0x00ff)
-	AM_RANGE(0x546, 0x547) AM_DEVREADWRITE8("ymsnd", ym2151_status_port_r, ym2151_data_port_w, 0x00ff)
+	AM_RANGE(0x544, 0x547) AM_DEVREADWRITE8("ymsnd", ym2151_status_port_r, ym2151_data_port_w, 0x00ff)
 	AM_RANGE(0x7c0, 0x7c3) AM_DEVREAD("eeprom", eeprom_r)
 ADDRESS_MAP_END
 
@@ -338,7 +392,6 @@ static ADDRESS_MAP_START( mrkicker_io, AS_IO, 32 )
 	AM_RANGE(0x7c00, 0x7c03) AM_READ_PORT("SYSTEM")
 ADDRESS_MAP_END
 
-
 static ADDRESS_MAP_START( jmpbreak_io, AS_IO, 16 )
 	AM_RANGE(0x0c0, 0x0c3) AM_NOP // ?
 	AM_RANGE(0x100, 0x103) AM_WRITENOP // ?
@@ -380,6 +433,22 @@ static ADDRESS_MAP_START( aoh_io, AS_IO, 32 )
 	AM_RANGE(0x0680, 0x0683) AM_DEVWRITE("oki_2", aoh_oki_bank_w)
 ADDRESS_MAP_END
 
+static ADDRESS_MAP_START( boonggab_io, AS_IO, 16 )
+	AM_RANGE(0x0c0, 0x0c3) AM_DEVREAD("eeprom", eeprom_r)
+	AM_RANGE(0x200, 0x203) AM_NOP // seems unused
+	AM_RANGE(0x300, 0x303) AM_WRITE(flipscreen_w)
+	AM_RANGE(0x400, 0x403) AM_READ_PORT("SYSTEM")
+	AM_RANGE(0x404, 0x407) AM_READ_PORT("P1_P2")
+	AM_RANGE(0x408, 0x40b) AM_DEVWRITE("eeprom", eeprom_w)
+	AM_RANGE(0x410, 0x413) AM_WRITE(boonggab_prize_w)
+	AM_RANGE(0x414, 0x41b) AM_WRITE(boonggab_lamps_w)
+	AM_RANGE(0x600, 0x603) AM_DEVWRITE("oki", boonggab_oki_bank_w)
+	AM_RANGE(0x700, 0x701) AM_NOP // return 0, when oki chip is read / written
+	AM_RANGE(0x702, 0x703) AM_DEVREADWRITE8_MODERN("oki", okim6295_device, read, write, 0x00ff)
+	AM_RANGE(0x740, 0x743) AM_DEVWRITE8("ymsnd", ym2151_register_port_w, 0x00ff)
+	AM_RANGE(0x744, 0x747) AM_DEVREADWRITE8("ymsnd", ym2151_status_port_r, ym2151_data_port_w, 0x00ff)
+ADDRESS_MAP_END
+
 /*
 Sprite list:
 
@@ -400,17 +469,17 @@ or
 Offset+3
 -------x xxxxxxxx X offs
 */
-static void draw_sprites(screen_device *screen, bitmap_t *bitmap)
+static void draw_sprites(screen_device &screen, bitmap_ind16 &bitmap)
 {
-	vamphalf_state *state = screen->machine().driver_data<vamphalf_state>();
-	const gfx_element *gfx = screen->machine().gfx[0];
+	vamphalf_state *state = screen.machine().driver_data<vamphalf_state>();
+	const gfx_element *gfx = screen.machine().gfx[0];
 	UINT32 cnt;
 	int block, offs;
 	int code,color,x,y,fx,fy;
 	rectangle clip;
 
-	clip.min_x = screen->visible_area().min_x;
-	clip.max_x = screen->visible_area().max_x;
+	clip.min_x = screen.visible_area().min_x;
+	clip.max_x = screen.visible_area().max_x;
 
 	for (block=0; block<0x8000; block+=0x800)
 	{
@@ -436,6 +505,12 @@ static void draw_sprites(screen_device *screen, bitmap_t *bitmap)
 
 				code  = state->m_tiles[offs+1];
 				color = (state->m_tiles[offs+2] >> state->m_palshift) & 0x7f;
+
+				// boonggab
+				if(state->m_has_extra_gfx)
+				{
+					code  |= ((state->m_tiles[offs+2] & 0x100) << 8);
+				}
 
 				x = state->m_tiles[offs+3] & 0x01ff;
 				y = 256 - (state->m_tiles[offs] & 0x00ff);
@@ -469,22 +544,22 @@ static void draw_sprites(screen_device *screen, bitmap_t *bitmap)
 				y = 256 - y;
 			}
 
-			drawgfx_transpen(bitmap,&clip,gfx,code,color,fx,fy,x,y,0);
+			drawgfx_transpen(bitmap,clip,gfx,code,color,fx,fy,x,y,0);
 		}
 	}
 }
 
-static void draw_sprites_aoh(screen_device *screen, bitmap_t *bitmap)
+static void draw_sprites_aoh(screen_device &screen, bitmap_ind16 &bitmap)
 {
-	vamphalf_state *state = screen->machine().driver_data<vamphalf_state>();
-	const gfx_element *gfx = screen->machine().gfx[0];
+	vamphalf_state *state = screen.machine().driver_data<vamphalf_state>();
+	const gfx_element *gfx = screen.machine().gfx[0];
 	UINT32 cnt;
 	int block, offs;
 	int code,color,x,y,fx,fy;
 	rectangle clip;
 
-	clip.min_x = screen->visible_area().min_x;
-	clip.max_x = screen->visible_area().max_x;
+	clip.min_x = screen.visible_area().min_x;
+	clip.max_x = screen.visible_area().max_x;
 
 	for (block=0; block<0x8000; block+=0x800)
 	{
@@ -523,24 +598,56 @@ static void draw_sprites_aoh(screen_device *screen, bitmap_t *bitmap)
 				y = 256 - y;
 			}
 
-			drawgfx_transpen(bitmap,&clip,gfx,code,color,fx,fy,x,y,0);
+			drawgfx_transpen(bitmap,clip,gfx,code,color,fx,fy,x,y,0);
 		}
 	}
 }
 
 
-static SCREEN_UPDATE( common )
+static SCREEN_UPDATE_IND16( common )
 {
-	bitmap_fill(bitmap,cliprect,0);
+	bitmap.fill(0, cliprect);
 	draw_sprites(screen, bitmap);
 	return 0;
 }
 
-static SCREEN_UPDATE( aoh )
+static SCREEN_UPDATE_IND16( aoh )
 {
-	bitmap_fill(bitmap,cliprect,0);
+	bitmap.fill(0, cliprect);
 	draw_sprites_aoh(screen, bitmap);
 	return 0;
+}
+
+static CUSTOM_INPUT( boonggab_photo_sensors_r )
+{
+	static const UINT16 photo_sensors_table[8] = { 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00 };
+	UINT8 res = input_port_read(field.machine(), "PHOTO_SENSORS");
+
+	switch(res)
+	{
+		case 0x01:
+			return photo_sensors_table[1]; // 5 - 7 points
+
+		case 0x02:
+			return photo_sensors_table[2]; // 8 - 10 points
+
+		case 0x04:
+			return photo_sensors_table[3]; // 11 - 13 points
+
+		case 0x08:
+			return photo_sensors_table[4]; // 14 - 16 points
+
+		case 0x10:
+			return photo_sensors_table[5]; // 17 - 19 points
+
+		case 0x20:
+			return photo_sensors_table[6]; // 20 - 22 points
+
+		case 0x40:
+			return photo_sensors_table[7]; // 23 - 25 points
+	}
+
+	return photo_sensors_table[0];
 }
 
 
@@ -647,6 +754,44 @@ static INPUT_PORTS_START( aoh )
 	PORT_BIT( 0xff000000, IP_ACTIVE_LOW, IPT_UNKNOWN )
 INPUT_PORTS_END
 
+static INPUT_PORTS_START( boonggab )
+	PORT_START("P1_P2")
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_START1 )
+	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x0004, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_PLAYER(1)
+	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_PLAYER(1)
+	PORT_BIT( 0x0010, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x0100, IP_ACTIVE_LOW, IPT_SPECIAL ) // sensor 1
+	PORT_BIT( 0x0200, IP_ACTIVE_LOW, IPT_SPECIAL ) // sensor 2
+	PORT_BIT( 0x0400, IP_ACTIVE_LOW, IPT_SPECIAL ) // sensor 3
+	PORT_BIT( 0x3800, IP_ACTIVE_LOW, IPT_SPECIAL ) PORT_CUSTOM(boonggab_photo_sensors_r, NULL) // photo sensors 1, 2 and 3
+	PORT_BIT( 0x4000, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x8000, IP_ACTIVE_LOW, IPT_UNUSED )
+
+	PORT_START("SYSTEM")
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_COIN1 )
+	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_SERVICE1 )
+	PORT_BIT( 0x0004, IP_ACTIVE_LOW, IPT_COIN2 )
+	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_SERVICE )
+	PORT_SERVICE_NO_TOGGLE( 0x0010, IP_ACTIVE_LOW )
+	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_UNKNOWN )
+	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0xff00, IP_ACTIVE_LOW, IPT_UNKNOWN )
+
+	PORT_START("PHOTO_SENSORS")
+	PORT_BIT( 0x0001, IP_ACTIVE_HIGH, IPT_BUTTON1 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0002, IP_ACTIVE_HIGH, IPT_BUTTON2 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0004, IP_ACTIVE_HIGH, IPT_BUTTON3 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0008, IP_ACTIVE_HIGH, IPT_BUTTON4 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0010, IP_ACTIVE_HIGH, IPT_BUTTON5 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0020, IP_ACTIVE_HIGH, IPT_BUTTON6 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0040, IP_ACTIVE_HIGH, IPT_BUTTON7 ) PORT_PLAYER(1)
+INPUT_PORTS_END
+
 static const gfx_layout sprites_layout =
 {
 	16,16,
@@ -682,10 +827,9 @@ static MACHINE_CONFIG_START( common, vamphalf_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(31, 350, 16, 255)
-	MCFG_SCREEN_UPDATE(common)
+	MCFG_SCREEN_UPDATE_STATIC(common)
 
 	MCFG_PALETTE_LENGTH(0x8000)
 	MCFG_GFXDECODE(vamphalf)
@@ -812,10 +956,9 @@ static MACHINE_CONFIG_START( aoh, vamphalf_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.185)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(64, 511-64, 16, 255-16)
-	MCFG_SCREEN_UPDATE(aoh)
+	MCFG_SCREEN_UPDATE_STATIC(aoh)
 
 	MCFG_PALETTE_LENGTH(0x8000)
 	MCFG_GFXDECODE(vamphalf)
@@ -834,6 +977,13 @@ static MACHINE_CONFIG_START( aoh, vamphalf_state )
 	MCFG_OKIM6295_ADD("oki_2", 32000000/32, OKIM6295_PIN7_HIGH)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "lspeaker", 1.0)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "rspeaker", 1.0)
+MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( boonggab, common )
+	MCFG_CPU_MODIFY("maincpu")
+	MCFG_CPU_IO_MAP(boonggab_io)
+
+	MCFG_FRAGMENT_ADD(sound_ym_oki)
 MACHINE_CONFIG_END
 
 /*
@@ -1201,12 +1351,57 @@ ROM_START( coolmini )
 	ROM_LOAD( "cm-vrom1.020", 0x00000, 0x40000, CRC(fcc28081) SHA1(44031df0ee28ca49df12bcb73c83299fac205e21) )
 ROM_END
 
+
 /*
 
 Date Quiz Go Go Episode 2
 SemiCom, 2000
 
+PCB Layout
+----------
+
 F-E1-16-010
++-----------------------------------------------+
+|     VR1          YM3012  VROM1                |
+|                  YM2151  M6295   ROML03 ROMU03|
+|               CRAM2              ROML02 ROMU02|
+|               CRAM1              ROML01 ROMU01|
+|               MEM1L              ROML00 ROMU00|
+|J              MEM1U                           |
+|A              MEM2  +----------++----------+  |
+|M                    |          ||          |  |
+|M              MEM3  |Quicklogic||Quicklogic| 2|
+|A                    | QL2003-  || QL2003-  | 8|
+|               MEM6  | XPL84C   || XPL84C   | M|
+|                     |          ||          | H|
+|               MEM7  +----------++----------+ z|
+|                      GAL                      |
+|    93C46                       ROM1           |
+|P1 P2   50MHz E1-16T   DRAM1    ROM2           |
++-----------------------------------------------+
+
+Notes:
+CPU - Hyperstone E1-16T @ 50.000MHz
+
+DRAM1 - LG Semi GM71C18163 1M x16 EDO DRAM (SOJ44)
+CRAMx - W24M257AK-15 32K x8 SRAM (SOJ28)
+MEMx  - UM61256FK-15 32K x8 SRAM (SOJ28)
+
+Oki M6295 rebaged as AD-65
+YM3012/YM2151 rebaged as BS902/KA51
+
+ P1 - Reset push button
+ P2 - Setup push button
+VR1 - Volume adjust pot
+
+ROMs:
+    ROML00 & ROMH00 - Macronix MX29F1610MC-12 SOP44 16MBit FlashROM
+    ROML01 & ROMH01 - Macronix MX29F1610MC-12 SOP44 16MBit FlashROM
+    ROML02 & ROMH02 - Macronix MX29F1610MC-12 SOP44 16MBit FlashROM
+    ROML03 & ROMH03 - Unpopulated space for MX29F1610MC-12 SOP44 16MBit FlashROM
+    VROM1           - 27C020 2MBit DIP32 EPROM
+    ROM1            - 27C040 4MBit DIP32 EPROM
+    ROM2            - 27C040 4MBit DIP32 EPROM
 
 */
 
@@ -1227,6 +1422,82 @@ ROM_START( dquizgo2 )
 
 	ROM_REGION( 0x40000, "oki", 0 ) /* Oki Samples */
 	ROM_LOAD( "vrom1", 0x00000, 0x40000, CRC(24d5b55f) SHA1(cb4d3a22440831e37df0a7fe5433bea708d60f31) )
+ROM_END
+
+/*
+
+Toy Land Adventure
+SemiCom, 2001
+
+PCB Layout
+----------
+
+F-E1-16-010
++-----------------------------------------------+
+|     VR1          YM3012  VROM1                |
+|                  YM2151  M6295   ROML03 ROMU03|
+|               CRAM2              ROML02 ROMU02|
+|               CRAM1              ROML01 ROMU01|
+|               MEM1L              ROML00 ROMU00|
+|J              MEM1U                           |
+|A              MEM2  +----------++----------+  |
+|M                    |          ||          |  |
+|M              MEM3  |Quicklogic||Quicklogic| 2|
+|A                    | QL2003-  || QL2003-  | 8|
+|               MEM6  | XPL84C   || XPL84C   | M|
+|                     |          ||          | H|
+|               MEM7  +----------++----------+ z|
+|                      GAL                      |
+|    93C46                       ROM1*          |
+|P1 P2   50MHz E1-16T   DRAM1    ROM2           |
++-----------------------------------------------+
+
+Notes:
+CPU - Hyperstone E1-16T @ 50.000MHz
+
+DRAM1 - LG Semi GM71C18163 1M x16 EDO DRAM (SOJ44)
+CRAMx - W24M257AK-15 32K x8 SRAM (SOJ28)
+MEMx  - UM61256FK-15 32K x8 SRAM (SOJ28)
+
+Oki M6295 rebaged as AD-65
+YM3012/YM2151 rebaged as BS902/KA51
+
+ P1 - Reset push button
+ P2 - Setup push button
+VR1 - Volume adjust pot
+
+ROMs:
+    ROML00 & ROMH00 - Macronix MX29F1610MC-12 SOP44 16MBit FlashROM
+    ROML01 & ROMH01 - Macronix MX29F1610MC-12 SOP44 16MBit FlashROM
+    ROML02 & ROMH02 - Unpopulated space for MX29F1610MC-12 SOP44 16MBit FlashROM
+    ROML03 & ROMH03 - Unpopulated space for MX29F1610MC-12 SOP44 16MBit FlashROM
+    VROM1           - MX 27C2000 2MBit DIP32 EPROM
+  * ROM1            - Unpopulated space for DIP32 EPROM (up to 4MBit)
+    ROM2            - TMS 27C040 4MBit DIP32 EPROM
+
+*/
+
+ROM_START( toyland )
+	ROM_REGION16_BE( 0x100000, "user1", ROMREGION_ERASE00 ) /* Hyperstone CPU Code */
+	/* ROM1 empty */
+	ROM_LOAD( "rom2.bin",         0x80000, 0x080000, CRC(e3455002) SHA1(5ad7884f82fb125d70829accec02f238e7d9593c) )
+
+	ROM_REGION( 0xc00000, "gfx1", 0 ) /* 16x16x8 Sprites */
+	ROM_LOAD32_WORD( "roml00.bin", 0x000000, 0x200000, CRC(06f5673d) SHA1(23769015fc9a37d36b0fe4924964650aeca77573) )
+	ROM_LOAD32_WORD( "romu00.bin", 0x000002, 0x200000, CRC(8c3db0e4) SHA1(6101ec550ae165338333fb04e0762edee65ca253) )
+	ROM_LOAD32_WORD( "roml01.bin", 0x400000, 0x200000, CRC(076a84e1) SHA1(f58cb4cd874e1f3f266a5ccbf8ffb5e0111034d3) )
+	ROM_LOAD32_WORD( "romu01.bin", 0x400002, 0x200000, CRC(1bc33d01) SHA1(a2a3e6b473cefe463dbd60bda98cb5a4df2bc81b) )
+	/* roml02 empty */
+	/* romu02 empty */
+	/* roml03 empty */
+	/* romu03 empty */
+
+	ROM_REGION( 0x40000, "oki", 0 ) /* Oki Samples */
+	ROM_LOAD( "vrom1.bin", 0x00000, 0x40000, CRC(d7e6fc5d) SHA1(ab5bca4035299214d98b222320276fbcaedb0898) )
+
+	ROM_REGION16_BE( 0x80, "eeprom", 0 ) /* Default EEPROM */
+	ROM_LOAD( "epr1.ic3", 0x0000, 0x0080, CRC(812f3d87) SHA1(744919ff4b44eaa3c4dcc75a1cc2f231ccbb4a3e) )
+
 ROM_END
 
 /*
@@ -1613,6 +1884,67 @@ ROM_START( aoh )
 	ROM_COPY( "user2", 0x060000, 0x0e0000, 0x020000)
 ROM_END
 
+/*
+
+Boong-Ga Boong-Ga (Spank'em!)
+Taff System, 2001
+
+*/
+
+ROM_START( boonggab )
+	ROM_REGION16_BE( 0x100000, "user1", ROMREGION_ERASE00 ) /* Hyperstone CPU Code */
+	/* rom2 empty */
+	/* rom3 empty */
+	ROM_LOAD( "2.rom0",       0x80000, 0x80000, CRC(3395541b) SHA1(4e822a52d6070bde232285e7ad8fbe74594bbf28) )
+	ROM_LOAD( "1.rom1",       0x00000, 0x80000, CRC(50522da1) SHA1(28f92fc818513d7a4934b9f8e5d39243d720cc80) )
+
+	ROM_REGION( 0x2000000, "gfx1", ROMREGION_ERASE00 )  /* 16x16x8 Sprites */
+	ROM_LOAD32_WORD( "boong-ga.roml00", 0x0000000, 0x200000, CRC(18be5f92) SHA1(abccc578e5e9652a7829165b485776671938b9d9) )
+	ROM_LOAD32_WORD( "boong-ga.romu00", 0x0000002, 0x200000, CRC(0158ba9e) SHA1(b6cb699f0779b26d578043c42a0ce14a59fd8ac5) )
+	ROM_LOAD32_WORD( "boong-ga.roml05", 0x0400000, 0x200000, CRC(76d60553) SHA1(13a47aed2e7213be98e55a938887a3c2fb314fbe) )
+	ROM_LOAD32_WORD( "boong-ga.romu05", 0x0400002, 0x200000, CRC(35ee8fb5) SHA1(79bd1775087bfaf7624978cec4e912553ca1f027) )
+	ROM_LOAD32_WORD( "boong-ga.roml01", 0x0800000, 0x200000, CRC(636e9d5d) SHA1(d478ec905d6e56e4c46889430d8c32de98e9dc14) )
+	ROM_LOAD32_WORD( "boong-ga.romu01", 0x0800002, 0x200000, CRC(b8dcf6b7) SHA1(8ea590f92832e6b6a4c27fb1f2aa18bb000f41e0) )
+	ROM_LOAD32_WORD( "boong-ga.roml06", 0x0c00000, 0x200000, CRC(8dc521b7) SHA1(37021bb05a582b80a4883bddf677c1d41e6777d2) )
+	ROM_LOAD32_WORD( "boong-ga.romu06", 0x0c00002, 0x200000, CRC(f6b83270) SHA1(7971fdb99987ac701c76958a626b0cb75ba31451) )
+	ROM_LOAD32_WORD( "boong-ga.roml02", 0x1000000, 0x200000, CRC(d0661c69) SHA1(94f95df19b448565642db8c5aafb2532c0febc37) )
+	ROM_LOAD32_WORD( "boong-ga.romu02", 0x1000002, 0x200000, CRC(eac01eb8) SHA1(c730078d8422d566378d6a4b0deb42d2814f0dab) )
+	ROM_LOAD32_WORD( "boong-ga.roml07", 0x1400000, 0x200000, CRC(3301813a) SHA1(61997f07ca516eb77c9d9478b42950fd6fc42ac5) )
+	ROM_LOAD32_WORD( "boong-ga.romu07", 0x1400002, 0x200000, CRC(3f1c3682) SHA1(969491b0d3be054ddc199db2ced38c76c8f561ee) )
+	ROM_LOAD32_WORD( "boong-ga.roml03", 0x1800000, 0x200000, CRC(4d4260b3) SHA1(11a5d0b472b783094d44a5c931ee1cbe816b2a05) )
+	ROM_LOAD32_WORD( "boong-ga.romu03", 0x1800002, 0x200000, CRC(4ba00032) SHA1(de9e0640e80204f4906576b20eeaa17f03694b3f) )
+	/* roml08 empty */
+	/* romu08 empty */
+	/* roml04 empty */
+	/* romu04 empty */
+	/* roml09 empty */
+	/* romu09 empty */
+
+	ROM_REGION( 0x100000, "user2", 0 ) /* Oki Samples */
+	ROM_LOAD( "3.vrom1",      0x00000, 0x80000, CRC(0696bfcb) SHA1(bba61f3cae23271215bbbf8214ce3b73459d5da5) )
+	ROM_LOAD( "4.vrom2",      0x80000, 0x80000, CRC(305c2b16) SHA1(fa199c4cd4ebb952d934e3863fca8740eeba9294) )
+
+	/* $00000-$20000 stays the same in all sound banks, */
+	/* the second half of the bank is what gets switched */
+	ROM_REGION( 0x200000, "oki", 0 ) /* Samples */
+	ROM_COPY( "user2", 0x000000, 0x000000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x020000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x040000, 0x020000)
+	ROM_COPY( "user2", 0x020000, 0x060000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x080000, 0x020000)
+	ROM_COPY( "user2", 0x040000, 0x0a0000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x0c0000, 0x020000)
+	ROM_COPY( "user2", 0x060000, 0x0e0000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x100000, 0x020000)
+	ROM_COPY( "user2", 0x080000, 0x120000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x140000, 0x020000)
+	ROM_COPY( "user2", 0x0a0000, 0x160000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x180000, 0x020000)
+	ROM_COPY( "user2", 0x0c0000, 0x1a0000, 0x020000)
+	ROM_COPY( "user2", 0x000000, 0x1c0000, 0x020000)
+	ROM_COPY( "user2", 0x0e0000, 0x1e0000, 0x020000)
+ROM_END
+
 static int irq_active(address_space *space)
 {
 	UINT32 FCR = cpu_get_reg(&space->device(), 27);
@@ -1836,6 +2168,29 @@ static READ16_HANDLER( mrdig_speedup_r )
 	return state->m_wram[(0x00a99c / 2)+offset];
 }
 
+static READ16_HANDLER( toyland_speedup_r )
+{
+	vamphalf_state *state = space->machine().driver_data<vamphalf_state>();
+
+	if (cpu_get_pc(&space->device()) == 0x130c2)
+		device_spin_until_interrupt(&space->device());
+
+	return state->m_wram[0x780d8 / 2];
+
+}
+
+static READ16_HANDLER( boonggab_speedup_r )
+{
+	vamphalf_state *state = space->machine().driver_data<vamphalf_state>();
+	if(cpu_get_pc(&space->device()) == 0x13198)
+	{
+		if(irq_active(space))
+			device_spin_until_interrupt(&space->device());
+	}
+
+	return state->m_wram[(0xf1b7c / 2)+offset];
+}
+
 static DRIVER_INIT( vamphalf )
 {
 	vamphalf_state *state = machine.driver_data<vamphalf_state>();
@@ -1963,6 +2318,15 @@ static DRIVER_INIT( dquizgo2 )
 	state->m_flip_bit = 1;
 }
 
+static DRIVER_INIT( toyland )
+{
+	vamphalf_state *state = machine.driver_data<vamphalf_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x780d8, 0x780d9, FUNC(toyland_speedup_r) );
+
+	state->m_palshift = 0;
+	state->m_flip_bit = 1;
+}
+
 static DRIVER_INIT( aoh )
 {
 	vamphalf_state *state = machine.driver_data<vamphalf_state>();
@@ -1990,6 +2354,17 @@ static DRIVER_INIT( mrdig )
 	state->m_palshift = 0;
 }
 
+
+static DRIVER_INIT( boonggab )
+{
+	vamphalf_state *state = machine.driver_data<vamphalf_state>();
+	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_read_handler(0x000f1b7c, 0x000f1b7f, FUNC(boonggab_speedup_r) );
+
+	state->m_palshift = 0;
+	state->m_has_extra_gfx = 1;
+	state->m_flip_bit = 1;
+}
+
 GAME( 1999, coolmini, 0,        coolmini, common,   coolmini, ROT0,   "SemiCom",           "Cool Minigame Collection", 0 )
 GAME( 1999, jmpbreak, 0,        jmpbreak, common,   jmpbreak, ROT0,   "F2 System",         "Jumping Break" , 0 )
 GAME( 1999, suplup,   0,        suplup,   common,   suplup,   ROT0,   "Omega System",      "Super Lup Lup Puzzle / Zhuan Zhuan Puzzle (version 4.0 / 990518)" , 0 )
@@ -2002,6 +2377,8 @@ GAME( 2000, dquizgo2, 0,        coolmini, common,   dquizgo2, ROT0,   "SemiCom",
 GAME( 2000, misncrft, 0,        misncrft, common,   misncrft, ROT90,  "Sun",               "Mission Craft (version 2.4)", GAME_NO_SOUND )
 GAME( 2000, mrdig,    0,        mrdig,    common,   mrdig,    ROT0,   "Sun",               "Mr. Dig", 0 )
 GAME( 2001, finalgdr, 0,        finalgdr, finalgdr, finalgdr, ROT0,   "SemiCom",           "Final Godori (Korea, version 2.20.5915)", 0 )
-GAME( 2001, mrkicker, 0,        mrkicker, finalgdr, mrkicker, ROT0,   "SemiCom",           "Mr. Kicker", 0 )
+GAME( 2001, mrkicker, 0,        mrkicker, finalgdr, mrkicker, ROT0,   "SemiCom",           "Mr. Kicker", GAME_NOT_WORKING ) // game stops booting / working properly after you get a high score, or if you don't have a default eeprom with 'valid data.  It's never worked properly, CPU core issue?
+GAME( 2001, toyland,  0,        coolmini, common,   toyland,  ROT0,   "SemiCom",           "Toy Land Adventure", 0 )
 GAME( 2001, wyvernwg, 0,        wyvernwg, common,   wyvernwg, ROT270, "SemiCom (Game Vision license)", "Wyvern Wings", GAME_NO_SOUND )
 GAME( 2001, aoh,      0,        aoh,      aoh,      aoh,      ROT0,   "Unico",             "Age Of Heroes - Silkroad 2 (v0.63 - 2001/02/07)", 0 )
+GAME( 2001, boonggab, 0,        boonggab, boonggab, boonggab, ROT270, "Taff System",	   "Boong-Ga Boong-Ga (Spank'em!)", 0 )

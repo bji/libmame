@@ -125,21 +125,21 @@ static WRITE8_HANDLER(cshooter_txram_w)
 {
 	cshooter_state *state = space->machine().driver_data<cshooter_state>();
 	state->m_txram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_txtilemap,offset/2);
+	state->m_txtilemap->mark_tile_dirty(offset/2);
 }
 
 static VIDEO_START(cshooter)
 {
 	cshooter_state *state = machine.driver_data<cshooter_state>();
 	state->m_txtilemap = tilemap_create(machine, get_cstx_tile_info,tilemap_scan_rows, 8,8,32, 32);
-	tilemap_set_transparent_pen(state->m_txtilemap, 3);
+	state->m_txtilemap->set_transparent_pen(3);
 }
 
-static SCREEN_UPDATE(cshooter)
+static SCREEN_UPDATE_IND16(cshooter)
 {
-	cshooter_state *state = screen->machine().driver_data<cshooter_state>();
-	bitmap_fill(bitmap, cliprect, 0/*get_black_pen(screen->screen->machine())*/);
-	tilemap_mark_all_tiles_dirty(state->m_txtilemap);
+	cshooter_state *state = screen.machine().driver_data<cshooter_state>();
+	bitmap.fill(0/*get_black_pen(screen.screen.machine(, cliprect))*/);
+	state->m_txtilemap->mark_all_dirty();
 
 	//sprites
 	{
@@ -151,25 +151,25 @@ static SCREEN_UPDATE(cshooter)
 			{
 				int tile=0x30+((spriteram[i]>>2)&0x1f);
 
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],
 							tile,
 							spriteram[i+1],
 							0, 0,
 							spriteram[i+3],spriteram[i+2],3);
 
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],
 							tile,
 							spriteram[i+1],
 							0, 0,
 							spriteram[i+3]+8,spriteram[i+2],3);
 
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],
 							tile,
 							spriteram[i+1],
 							0, 0,
 							spriteram[i+3]+8,spriteram[i+2]+8,3);
 
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],
 							tile,
 							spriteram[i+1],
 							0, 0,
@@ -178,8 +178,8 @@ static SCREEN_UPDATE(cshooter)
 		}
 	}
 
-	tilemap_mark_all_tiles_dirty(state->m_txtilemap);
-	tilemap_draw(bitmap,cliprect,state->m_txtilemap,0,0);
+	state->m_txtilemap->mark_all_dirty();
+	state->m_txtilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -437,10 +437,9 @@ static MACHINE_CONFIG_START( cshooter, cshooter_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-1-16)
-	MCFG_SCREEN_UPDATE(cshooter)
+	MCFG_SCREEN_UPDATE_STATIC(cshooter)
 
 	MCFG_GFXDECODE(cshooter)
 	MCFG_PALETTE_LENGTH(0x1000)
@@ -465,10 +464,9 @@ static MACHINE_CONFIG_START( airraid, cshooter_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-1-16)
-	MCFG_SCREEN_UPDATE(cshooter)
+	MCFG_SCREEN_UPDATE_STATIC(cshooter)
 
 	MCFG_GFXDECODE(cshooter)
 	MCFG_PALETTE_LENGTH(0x1000)

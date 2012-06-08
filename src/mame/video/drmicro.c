@@ -19,9 +19,9 @@ WRITE8_HANDLER( drmicro_videoram_w )
 	state->m_videoram[offset] = data;
 
 	if (offset < 0x800)
-		tilemap_mark_tile_dirty(state->m_bg2, (offset & 0x3ff));
+		state->m_bg2->mark_tile_dirty((offset & 0x3ff));
 	else
-		tilemap_mark_tile_dirty(state->m_bg1, (offset & 0x3ff));
+		state->m_bg1->mark_tile_dirty((offset & 0x3ff));
 }
 
 
@@ -113,18 +113,18 @@ VIDEO_START( drmicro)
 	state->m_bg1 = tilemap_create(machine, get_bg1_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 	state->m_bg2 = tilemap_create(machine, get_bg2_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_bg2, 0);
+	state->m_bg2->set_transparent_pen(0);
 }
 
-SCREEN_UPDATE( drmicro )
+SCREEN_UPDATE_IND16( drmicro )
 {
-	drmicro_state *state = screen->machine().driver_data<drmicro_state>();
+	drmicro_state *state = screen.machine().driver_data<drmicro_state>();
 	int offs, adr, g;
 	int chr, col, attr;
 	int x, y, fx, fy;
 
-	tilemap_draw(bitmap, cliprect, state->m_bg1, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_bg2, 0, 0);
+	state->m_bg1->draw(bitmap, cliprect, 0, 0);
+	state->m_bg2->draw(bitmap, cliprect, 0, 0);
 
 	/* draw sprites */
 	for (g = 0; g < 2; g++)
@@ -150,7 +150,7 @@ SCREEN_UPDATE( drmicro )
 			else
 				x = (240 - x) & 0xff;
 
-			drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[3-g],
+			drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[3-g],
 					chr,
 					col,
 					fx,fy,
@@ -158,7 +158,7 @@ SCREEN_UPDATE( drmicro )
 
 			if (x > 240)
 			{
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[3-g],
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[3-g],
 						chr,
 						col,
 						fx,fy,

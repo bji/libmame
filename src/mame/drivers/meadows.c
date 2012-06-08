@@ -611,12 +611,12 @@ GFXDECODE_END
 static const char *const bowl3d_sample_names[] =
 {
 	"*bowl3d",
-	"roll.wav",     /* "roll" */
-	"rollback.wav", /* "roll back" */
-	"sweep.wav",    /* "sweep" */
-	"footstep.wav", /* "foot sweep" */
-	"crash.wav",    /* "crash" */
-	"cheering.wav", /* "cheering" */
+	"roll",     /* "roll" */
+	"rollback", /* "roll back" */
+	"sweep",    /* "sweep" */
+	"footstep", /* "foot sweep" */
+	"crash",    /* "crash" */
+	"cheering", /* "cheering" */
     0
 };
 
@@ -659,10 +659,9 @@ static MACHINE_CONFIG_START( meadows, meadows_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 30*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(meadows)
+	MCFG_SCREEN_UPDATE_STATIC(meadows)
 
 	MCFG_GFXDECODE(meadows)
 	MCFG_PALETTE_LENGTH(2)
@@ -693,10 +692,9 @@ static MACHINE_CONFIG_START( minferno, meadows_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 1*8, 24*8-1)
-	MCFG_SCREEN_UPDATE(meadows)
+	MCFG_SCREEN_UPDATE_STATIC(meadows)
 
 	MCFG_GFXDECODE(minferno)
 	MCFG_PALETTE_LENGTH(2)
@@ -723,10 +721,9 @@ static MACHINE_CONFIG_START( bowl3d, meadows_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 30*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(meadows)
+	MCFG_SCREEN_UPDATE_STATIC(meadows)
 
 	MCFG_GFXDECODE(meadows)
 	MCFG_PALETTE_LENGTH(2)

@@ -196,7 +196,7 @@ static UINT16 gpu_regs[GPU_REGS];
 static emu_timer *object_timer;
 static UINT8 cpu_irq_state;
 
-static bitmap_t *screen_bitmap;
+static bitmap_rgb32 *screen_bitmap;
 
 static pen_t *pen_table;
 static int pixel_clock;
@@ -237,8 +237,8 @@ INLINE void get_crosshair_xy(running_machine &machine, int player, int *x, int *
 {
 	const rectangle &visarea = machine.primary_screen->visible_area();
 
-	int width = visarea.max_x + 1 - visarea.min_x;
-	int height = visarea.max_y + 1 - visarea.min_y;
+	int width = visarea.width();
+	int height = visarea.height();
 	/* only 2 lightguns are connected */
 	*x = visarea.min_x + (((input_port_read(machine, player ? "FAKE2_X" : "FAKE1_X") & 0xff) * width) >> 8);
 	*y = visarea.min_y + (((input_port_read(machine, player ? "FAKE2_Y" : "FAKE1_Y") & 0xff) * height) >> 8);
@@ -751,11 +751,7 @@ WRITE16_HANDLER( jaguar_tom_regs_w )
 					/* adjust for the half-lines */
 					if (hperiod != 0 && vperiod != 0 && hbend < hbstart && vbend < vbstart && hbstart < hperiod)
 					{
-						rectangle visarea;
-						visarea.min_x = hbend / 2;
-						visarea.max_x = hbstart / 2 - 1;
-						visarea.min_y = vbend / 2;
-						visarea.max_y = vbstart / 2 - 1;
+						rectangle visarea(hbend / 2, hbstart / 2 - 1, vbend / 2, vbstart / 2 - 1);
 						space->machine().primary_screen->configure(hperiod / 2, vperiod / 2, visarea, HZ_TO_ATTOSECONDS((double)pixel_clock * 2 / hperiod / vperiod));
 					}
 				}
@@ -832,7 +828,7 @@ static TIMER_CALLBACK( cojag_scanline_update )
 	/* only run if video is enabled and we are past the "display begin" */
 	if ((gpu_regs[VMODE] & 1) && vc >= (gpu_regs[VDB] & 0x7ff))
 	{
-		UINT32 *dest = BITMAP_ADDR32(screen_bitmap, vc >> 1, 0);
+		UINT32 *dest = &screen_bitmap->pix32(vc >> 1);
 		int maxx = visarea.max_x;
 		int hde = effective_hvalue(gpu_regs[HDE]) >> 1;
 		UINT16 x,scanline[760];
@@ -895,7 +891,7 @@ VIDEO_START( cojag )
 	object_timer = machine.scheduler().timer_alloc(FUNC(cojag_scanline_update));
 	adjust_object_timer(machine, 0);
 
-	screen_bitmap = auto_bitmap_alloc(machine, 760, 512, BITMAP_FORMAT_RGB32);
+	screen_bitmap = auto_bitmap_rgb32_alloc(machine, 760, 512);
 
 	jagobj_init(machine);
 
@@ -922,17 +918,17 @@ VIDEO_START( jaguar )
  *
  *************************************/
 
-SCREEN_UPDATE( cojag )
+SCREEN_UPDATE_RGB32( cojag )
 {
 	/* if not enabled, just blank */
 	if (!(gpu_regs[VMODE] & 1))
 	{
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(0, cliprect);
 		return 0;
 	}
 
 	/* render the object list */
-	copybitmap(bitmap, screen_bitmap, 0, 0, 0, 0, cliprect);
+	copybitmap(bitmap, *screen_bitmap, 0, 0, 0, 0, cliprect);
 	return 0;
 }
 

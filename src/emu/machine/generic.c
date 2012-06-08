@@ -94,9 +94,9 @@ void generic_machine_init(running_machine &machine)
 
 	// map devices to the interrupt state
 	memset(state->interrupt_device, 0, sizeof(state->interrupt_device));
-	device_execute_interface *exec = NULL;
+	execute_interface_iterator iter(machine.root_device());
 	int index = 0;
-	for (bool gotone = machine.devicelist().first(exec); gotone && index < ARRAY_LENGTH(state->interrupt_device); gotone = exec->next(exec))
+	for (device_execute_interface *exec = iter.first(); exec != NULL && index < ARRAY_LENGTH(state->interrupt_device); exec = iter.next())
 		state->interrupt_device[index++] = &exec->device();
 
 	/* register coin save state */
@@ -316,29 +316,21 @@ void coin_lockout_global_w(running_machine &machine, int on)
     NVRAM depending of selected BIOS
 -------------------------------------------------*/
 
-static astring nvram_filename(running_machine &machine, astring &result)
-{
-	if (rom_system_bios(machine) == 0 || rom_default_bios(machine) == rom_system_bios(machine)) {
-		result.printf("%s",machine.basename());
-	} else {
-		result.printf("%s_%d",machine.basename(),rom_system_bios(machine) - 1);
-	}
-	return result;
-}
-
-/*-------------------------------------------------
-    nvram_filename - returns filename of system's
-    NVRAM depending of selected BIOS
--------------------------------------------------*/
-
-static astring nvram_filename(device_t &device, astring &result)
+static astring &nvram_filename(astring &result, device_t &device)
 {
 	running_machine &machine = device.machine();
-	astring name = astring(device.tag()).replacechr(':','_');
-	if (rom_system_bios(machine) == 0 || rom_default_bios(machine) == rom_system_bios(machine)) {
-		result.printf("%s\\%s",machine.basename(),name.cstr());
-	} else {
-		result.printf("%s_%d\\%s",machine.basename(),rom_system_bios(machine) - 1,name.cstr());
+
+	// start with either basename or basename_biosnum
+	result.cpy(machine.basename());
+	if (rom_system_bios(machine) != 0 && rom_default_bios(machine) != rom_system_bios(machine))
+		result.catprintf("_%d", rom_system_bios(machine) - 1);
+
+	// device-based NVRAM gets its own name in a subdirectory
+	if (&device != &device.machine().root_device())
+	{
+		astring tag(device.tag());
+		tag.del(0, 1).replacechr(':', '_');
+		result.cat('\\').cat(tag);
 	}
 	return result;
 }
@@ -353,7 +345,7 @@ void nvram_load(running_machine &machine)
 	{
 		astring filename;
 		emu_file file(machine.options().nvram_directory(), OPEN_FLAG_READ);
-		if (file.open(nvram_filename(machine,filename),".nv") == FILERR_NONE)
+		if (file.open(nvram_filename(filename, machine.root_device()), ".nv") == FILERR_NONE)
 		{
 			(*machine.config().m_nvram_handler)(machine, &file, FALSE);
 			file.close();
@@ -364,23 +356,18 @@ void nvram_load(running_machine &machine)
 		}
 	}
 
-	device_nvram_interface *nvram = NULL;
-	if (machine.devicelist().first(nvram))
+	nvram_interface_iterator iter(machine.root_device());
+	for (device_nvram_interface *nvram = iter.first(); nvram != NULL; nvram = iter.next())
 	{
-		for (bool gotone = (nvram != NULL); gotone; gotone = nvram->next(nvram))
+		astring filename;
+		emu_file file(machine.options().nvram_directory(), OPEN_FLAG_READ);
+		if (file.open(nvram_filename(filename, nvram->device())) == FILERR_NONE)
 		{
-			astring filename;
-			emu_file file(machine.options().nvram_directory(), OPEN_FLAG_READ);
-			if (file.open(nvram_filename(nvram->device(),filename)) == FILERR_NONE)
-			{
-				nvram->nvram_load(file);
-				file.close();
-			}
-			else
-			{
-				nvram->nvram_reset();
-			}
+			nvram->nvram_load(file);
+			file.close();
 		}
+		else
+			nvram->nvram_reset();
 	}
 }
 
@@ -395,25 +382,22 @@ void nvram_save(running_machine &machine)
 	{
 		astring filename;
 		emu_file file(machine.options().nvram_directory(), OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS);
-		if (file.open(nvram_filename(machine,filename), ".nv") == FILERR_NONE)
+		if (file.open(nvram_filename(filename, machine.root_device()), ".nv") == FILERR_NONE)
 		{
 			(*machine.config().m_nvram_handler)(machine, &file, TRUE);
 			file.close();
 		}
 	}
 
-	device_nvram_interface *nvram = NULL;
-	if (machine.devicelist().first(nvram))
+	nvram_interface_iterator iter(machine.root_device());
+	for (device_nvram_interface *nvram = iter.first(); nvram != NULL; nvram = iter.next())
 	{
-		for (bool gotone = (nvram != NULL); gotone; gotone = nvram->next(nvram))
+		astring filename;
+		emu_file file(machine.options().nvram_directory(), OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS);
+		if (file.open(nvram_filename(filename, nvram->device())) == FILERR_NONE)
 		{
-			astring filename;
-			emu_file file(machine.options().nvram_directory(), OPEN_FLAG_WRITE | OPEN_FLAG_CREATE | OPEN_FLAG_CREATE_PATHS);
-			if (file.open(nvram_filename(nvram->device(),filename)) == FILERR_NONE)
-			{
-				nvram->nvram_save(file);
-				file.close();
-			}
+			nvram->nvram_save(file);
+			file.close();
 		}
 	}
 }
@@ -586,25 +570,6 @@ static void interrupt_reset(running_machine &machine)
 
 
 /*-------------------------------------------------
-    clear_all_lines - sets the state of all input
-    lines and the NMI line to clear
--------------------------------------------------*/
-
-static TIMER_CALLBACK( clear_all_lines )
-{
-	cpu_device *cpudevice = reinterpret_cast<cpu_device *>(ptr);
-
-	// clear NMI
-	cpudevice->set_input_line(INPUT_LINE_NMI, CLEAR_LINE);
-
-	// clear all other inputs
-	int inputcount = cpudevice->input_lines();
-	for (int line = 0; line < inputcount; line++)
-		cpudevice->set_input_line(line, CLEAR_LINE);
-}
-
-
-/*-------------------------------------------------
     irq_pulse_clear - clear a "pulsed" IRQ line
 -------------------------------------------------*/
 
@@ -647,54 +612,6 @@ void generic_pulse_irq_line_and_vector(device_t *device, int irqline, int vector
 	cpu_device *cpudevice = downcast<cpu_device *>(device);
 	attotime target_time = cpudevice->local_time() + cpudevice->cycles_to_attotime(cpudevice->min_cycles());
 	device->machine().scheduler().timer_set(target_time - device->machine().time(), FUNC(irq_pulse_clear), irqline, (void *)device);
-}
-
-
-/*-------------------------------------------------
-    cpu_interrupt_enable - controls the enable/
-    disable value for global interrupts
--------------------------------------------------*/
-
-void cpu_interrupt_enable(device_t *device, int enabled)
-{
-	cpu_device *cpudevice = downcast<cpu_device *>(device);
-
-	generic_machine_private *state = device->machine().generic_machine_data;
-	int index;
-	for (index = 0; index < ARRAY_LENGTH(state->interrupt_device); index++)
-		if (state->interrupt_device[index] == device)
-			break;
-	assert_always(index < ARRAY_LENGTH(state->interrupt_enable), "cpu_interrupt_enable() called for invalid CPU!");
-
-	/* set the new state */
-	if (index < ARRAY_LENGTH(state->interrupt_enable))
-		state->interrupt_enable[index] = enabled;
-
-	/* make sure there are no queued interrupts */
-	if (enabled == 0)
-		device->machine().scheduler().synchronize(FUNC(clear_all_lines), 0, (void *)cpudevice);
-}
-
-
-/*-------------------------------------------------
-    interrupt_enable_w - set the global interrupt
-    enable
--------------------------------------------------*/
-
-WRITE8_HANDLER( interrupt_enable_w )
-{
-	cpu_interrupt_enable(&space->device(), data);
-}
-
-
-/*-------------------------------------------------
-    interrupt_enable_r - read the global interrupt
-    enable
--------------------------------------------------*/
-
-READ8_HANDLER( interrupt_enable_r )
-{
-	return interrupt_enabled(&space->device());
 }
 
 
@@ -760,6 +677,9 @@ INTERRUPT_GEN( irq7_line_assert )	{ if (interrupt_enabled(device)) device_set_in
 WRITE8_HANDLER( watchdog_reset_w ) { watchdog_reset(space->machine()); }
 READ8_HANDLER( watchdog_reset_r ) { watchdog_reset(space->machine()); return space->unmap(); }
 
+WRITE8_MEMBER( driver_device::watchdog_reset_w ) { watchdog_reset(machine()); }
+READ8_MEMBER( driver_device::watchdog_reset_r ) { watchdog_reset(machine()); return space.unmap(); }
+
 
 /*-------------------------------------------------
     16-bit reset read/write handlers
@@ -768,6 +688,9 @@ READ8_HANDLER( watchdog_reset_r ) { watchdog_reset(space->machine()); return spa
 WRITE16_HANDLER( watchdog_reset16_w ) {	watchdog_reset(space->machine()); }
 READ16_HANDLER( watchdog_reset16_r ) { watchdog_reset(space->machine()); return space->unmap(); }
 
+WRITE16_MEMBER( driver_device::watchdog_reset16_w ) { watchdog_reset(machine()); }
+READ16_MEMBER( driver_device::watchdog_reset16_r ) { watchdog_reset(machine()); return space.unmap(); }
+
 
 /*-------------------------------------------------
     32-bit reset read/write handlers
@@ -775,6 +698,9 @@ READ16_HANDLER( watchdog_reset16_r ) { watchdog_reset(space->machine()); return 
 
 WRITE32_HANDLER( watchdog_reset32_w ) {	watchdog_reset(space->machine()); }
 READ32_HANDLER( watchdog_reset32_r ) { watchdog_reset(space->machine()); return space->unmap(); }
+
+WRITE32_MEMBER( driver_device::watchdog_reset32_w ) { watchdog_reset(machine()); }
+READ32_MEMBER( driver_device::watchdog_reset32_r ) { watchdog_reset(machine()); return space.unmap(); }
 
 
 

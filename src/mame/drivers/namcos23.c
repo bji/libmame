@@ -1154,8 +1154,8 @@ static WRITE32_HANDLER( namcos23_textram_w )
 {
 	namcos23_state *state = space->machine().driver_data<namcos23_state>();
 	COMBINE_DATA( &state->m_textram[offset] );
-	tilemap_mark_tile_dirty(state->m_bgtilemap, offset*2);
-	tilemap_mark_tile_dirty(state->m_bgtilemap, (offset*2)+1);
+	state->m_bgtilemap->mark_tile_dirty(offset*2);
+	state->m_bgtilemap->mark_tile_dirty((offset*2)+1);
 }
 
 static WRITE32_HANDLER( s23_txtchar_w )
@@ -1470,11 +1470,11 @@ static WRITE16_HANDLER(s23_c361_w)
 
 	switch(offset) {
 	case 0:
-		tilemap_set_scrollx(state->m_bgtilemap, 0, data&0xfff);
+		state->m_bgtilemap->set_scrollx(0, data&0xfff);
 		break;
 
 	case 1:
-		tilemap_set_scrolly(state->m_bgtilemap, 0, data&0xfff);
+		state->m_bgtilemap->set_scrolly(0, data&0xfff);
 		break;
 
 	case 4:	// interrupt control
@@ -1654,8 +1654,8 @@ static void render_scanline(void *dest, INT32 scanline, const poly_extent *exten
 	float du = extent->param[1].dpdx;
 	float dv = extent->param[2].dpdx;
 	float dl = extent->param[3].dpdx;
-	bitmap_t *bitmap = (bitmap_t *)dest;
-	UINT32 *img = BITMAP_ADDR32(bitmap, scanline, extent->startx);
+	bitmap_rgb32 *bitmap = (bitmap_rgb32 *)dest;
+	UINT32 *img = &bitmap->pix32(scanline, extent->startx);
 
 	for(int x = extent->startx; x < extent->stopx; x++) {
 		float z = w ? 1/w : 0;
@@ -2064,7 +2064,7 @@ static int render_poly_compare(const void *i1, const void *i2)
 	return p1->zkey < p2->zkey ? 1 : p1->zkey > p2->zkey ? -1 : 0;
 }
 
-static void render_flush(running_machine &machine, bitmap_t *bitmap)
+static void render_flush(running_machine &machine, bitmap_rgb32 &bitmap)
 {
 	namcos23_state *state = machine.driver_data<namcos23_state>();
 	render_t &render = state->m_render;
@@ -2077,18 +2077,18 @@ static void render_flush(running_machine &machine, bitmap_t *bitmap)
 
 	qsort(render.poly_order, render.poly_count, sizeof(namcos23_poly_entry *), render_poly_compare);
 
-	const static rectangle scissor = { 0, 639, 0, 479 };
+	const static rectangle scissor(0, 639, 0, 479);
 
 	for(int i=0; i<render.poly_count; i++) {
 		const namcos23_poly_entry *p = render.poly_order[i];
 		namcos23_render_data *rd = (namcos23_render_data *)poly_get_extra_data(render.polymgr);
 		*rd = p->rd;
-		poly_render_triangle_fan(render.polymgr, bitmap, &scissor, render_scanline, 4, p->vertex_count, p->pv);
+		poly_render_triangle_fan(render.polymgr, &bitmap, scissor, render_scanline, 4, p->vertex_count, p->pv);
 	}
 	render.poly_count = 0;
 }
 
-static void render_run(running_machine &machine, bitmap_t *bitmap)
+static void render_run(running_machine &machine, bitmap_rgb32 &bitmap)
 {
 	namcos23_state *state = machine.driver_data<namcos23_state>();
 	render_t &render = state->m_render;
@@ -2117,33 +2117,33 @@ static VIDEO_START( ss23 )
 	namcos23_state *state = machine.driver_data<namcos23_state>();
 	gfx_element_set_source(machine.gfx[0], (UINT8 *)state->m_charram);
 	state->m_bgtilemap = tilemap_create(machine, TextTilemapGetInfo, tilemap_scan_rows, 16, 16, 64, 64);
-	tilemap_set_transparent_pen(state->m_bgtilemap, 0xf);
+	state->m_bgtilemap->set_transparent_pen(0xf);
 
 	// Gorgon's tilemap offset is 0, S23/SS23's is 860
 	if ((!strcmp(machine.system().name, "rapidrvr")) ||
 	    (!strcmp(machine.system().name, "rapidrvr2")) ||
 	    (!strcmp(machine.system().name, "finlflng")))
 	{
-		tilemap_set_scrolldx(state->m_bgtilemap, 0, 0);
+		state->m_bgtilemap->set_scrolldx(0, 0);
 	}
 	else
 	{
-		tilemap_set_scrolldx(state->m_bgtilemap, 860, 860);
+		state->m_bgtilemap->set_scrolldx(860, 860);
 	}
 	state->m_render.polymgr = poly_alloc(machine, 10000, sizeof(namcos23_render_data), POLYFLAG_NO_WORK_QUEUE);
 }
 
-static SCREEN_UPDATE( ss23 )
+static SCREEN_UPDATE_RGB32( ss23 )
 {
-	namcos23_state *state = screen->machine().driver_data<namcos23_state>();
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	namcos23_state *state = screen.machine().driver_data<namcos23_state>();
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
-	render_run( screen->machine(), bitmap );
+	render_run( screen.machine(), bitmap );
 
-	gfx_element *gfx = screen->machine().gfx[0];
+	gfx_element *gfx = screen.machine().gfx[0];
 	memset(gfx->dirty, 1, gfx->total_elements);
 
-	tilemap_draw( bitmap, cliprect, state->m_bgtilemap, 0/*flags*/, 0/*priority*/ ); /* opaque */
+	state->m_bgtilemap->draw(bitmap, cliprect, 0/*flags*/, 0/*priority*/ ); /* opaque */
 	return 0;
 }
 
@@ -2897,10 +2897,9 @@ static MACHINE_CONFIG_START( gorgon, namcos23_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(S23_VSYNC1)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500)) // Not in any way accurate
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(640, 480)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 479)
-	MCFG_SCREEN_UPDATE(ss23)
+	MCFG_SCREEN_UPDATE_STATIC(ss23)
 
 	MCFG_PALETTE_LENGTH(0x8000)
 
@@ -2943,10 +2942,9 @@ static MACHINE_CONFIG_START( s23, namcos23_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(S23_VSYNC1)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500)) // Not in any way accurate
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(640, 480)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 479)
-	MCFG_SCREEN_UPDATE(ss23)
+	MCFG_SCREEN_UPDATE_STATIC(ss23)
 
 	MCFG_PALETTE_LENGTH(0x8000)
 
@@ -2985,10 +2983,9 @@ static MACHINE_CONFIG_START( ss23, namcos23_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(S23_VSYNC1)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500)) // Not in any way accurate
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(640, 480)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 479)
-	MCFG_SCREEN_UPDATE(ss23)
+	MCFG_SCREEN_UPDATE_STATIC(ss23)
 
 	MCFG_PALETTE_LENGTH(0x8000)
 

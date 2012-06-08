@@ -93,7 +93,7 @@ VIDEO_START( skullxbo )
 
 	/* initialize the alphanumerics */
 	state->m_alpha_tilemap = tilemap_create(machine, get_alpha_tile_info, tilemap_scan_rows,  16,8, 64,32);
-	tilemap_set_transparent_pen(state->m_alpha_tilemap, 0);
+	state->m_alpha_tilemap->set_transparent_pen(0);
 }
 
 
@@ -118,7 +118,7 @@ WRITE16_HANDLER( skullxbo_xscroll_w )
 		space->machine().primary_screen->update_partial(space->machine().primary_screen->vpos());
 
 	/* adjust the actual scrolls */
-	tilemap_set_scrollx(state->m_playfield_tilemap, 0, 2 * (newscroll >> 7));
+	state->m_playfield_tilemap->set_scrollx(0, 2 * (newscroll >> 7));
 	atarimo_set_xscroll(0, 2 * (newscroll >> 7));
 
 	/* update the data */
@@ -147,7 +147,7 @@ WRITE16_HANDLER( skullxbo_yscroll_w )
 	effscroll = (newscroll >> 7) - scanline;
 
 	/* adjust the actual scrolls */
-	tilemap_set_scrolly(state->m_playfield_tilemap, 0, effscroll);
+	state->m_playfield_tilemap->set_scrolly(0, effscroll);
 	atarimo_set_yscroll(0, effscroll & 0x1ff);
 
 	/* update the data */
@@ -204,7 +204,7 @@ void skullxbo_scanline_update(running_machine &machine, int scanline)
 	if (scanline == 0)
 	{
 		int newscroll = (*state->m_yscroll >> 7) & 0x1ff;
-		tilemap_set_scrolly(state->m_playfield_tilemap, 0, newscroll);
+		state->m_playfield_tilemap->set_scrolly(0, newscroll);
 		atarimo_set_yscroll(0, newscroll);
 	}
 
@@ -225,7 +225,7 @@ void skullxbo_scanline_update(running_machine &machine, int scanline)
 				machine.primary_screen->update_partial(scanline - 1);
 
 			/* update the new scroll */
-			tilemap_set_scrolly(state->m_playfield_tilemap, 0, newscroll);
+			state->m_playfield_tilemap->set_scrolly(0, newscroll);
 			atarimo_set_yscroll(0, newscroll);
 
 			/* make sure we change this value so that writes to the scroll register */
@@ -243,23 +243,23 @@ void skullxbo_scanline_update(running_machine &machine, int scanline)
  *
  *************************************/
 
-SCREEN_UPDATE( skullxbo )
+SCREEN_UPDATE_IND16( skullxbo )
 {
-	skullxbo_state *state = screen->machine().driver_data<skullxbo_state>();
+	skullxbo_state *state = screen.machine().driver_data<skullxbo_state>();
 	atarimo_rect_list rectlist;
-	bitmap_t *mobitmap;
+	bitmap_ind16 *mobitmap;
 	int x, y, r;
 
 	/* draw the playfield */
-	tilemap_draw(bitmap, cliprect, state->m_playfield_tilemap, 0, 0);
+	state->m_playfield_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* draw and merge the MO */
 	mobitmap = atarimo_render(0, cliprect, &rectlist);
 	for (r = 0; r < rectlist.numrects; r++, rectlist.rect++)
 		for (y = rectlist.rect->min_y; y <= rectlist.rect->max_y; y++)
 		{
-			UINT16 *mo = (UINT16 *)mobitmap->base + mobitmap->rowpixels * y;
-			UINT16 *pf = (UINT16 *)bitmap->base + bitmap->rowpixels * y;
+			UINT16 *mo = &mobitmap->pix16(y);
+			UINT16 *pf = &bitmap.pix16(y);
 			for (x = rectlist.rect->min_x; x <= rectlist.rect->max_x; x++)
 				if (mo[x])
 				{
@@ -315,6 +315,6 @@ SCREEN_UPDATE( skullxbo )
 		}
 
 	/* add the alpha on top */
-	tilemap_draw(bitmap, cliprect, state->m_alpha_tilemap, 0, 0);
+	state->m_alpha_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

@@ -203,6 +203,13 @@ typedef struct LibMame_RunGame_State
      **/
     astring speed_text;
 
+    // More MAME incredible C++ lameness.  Seriously MAME's C++ is the worst
+    // C++ I have ever seen.  Totally unmaintainable.
+    void output_callback(const char *format, va_list args)
+    {
+        (*(callbacks->StatusText))(format, args, callback_data);
+    }
+
 } LibMame_RunGame_State;
 
 
@@ -798,14 +805,6 @@ static void pause_callback(running_machine &machine)
 }
 
 
-static void output_callback(void *param, const char *format, va_list args)
-{
-    (void) param;
-
-    (*(g_state.callbacks->StatusText))(format, args, g_state.callback_data);
-}
-
-
 static void set_configuration_value(LibMame_RunningGame *game,
                                     const char *tag, uint32_t mask,
                                     int value)
@@ -813,7 +812,7 @@ static void set_configuration_value(LibMame_RunningGame *game,
     (void) game;
 
     const input_field_config *config = input_field_by_tag_and_mask
-        (g_state.machine->m_portlist, tag, mask);
+        (*(g_state.machine), tag, mask);
 
     if (config != NULL) {
         input_field_user_settings settings;
@@ -1153,14 +1152,17 @@ LibMame_RunGameStatus LibMame_RunGame(int gamenum, int benchmarking,
         return LibMame_RunGameStatus_InvalidGameNum;
     }
 
+#define MAME_LAMENESS \
+    output_delegate(FUNC(LibMame_RunGame_State::output_callback), &g_state)
+
     /* Set up MAME's "output channels" so that we accumulate it all in a
        buffer rather than dumping it to stdout/stderr/wherever */
-    mame_set_output_channel(OUTPUT_CHANNEL_ERROR, output_callback, 0, 0, 0);
-    mame_set_output_channel(OUTPUT_CHANNEL_WARNING, output_callback, 0, 0, 0);
-    mame_set_output_channel(OUTPUT_CHANNEL_INFO, output_callback, 0, 0, 0);
-    mame_set_output_channel(OUTPUT_CHANNEL_DEBUG, output_callback, 0, 0, 0);
-    mame_set_output_channel(OUTPUT_CHANNEL_VERBOSE, output_callback, 0, 0, 0);
-    mame_set_output_channel(OUTPUT_CHANNEL_LOG, output_callback, 0, 0, 0);
+    mame_set_output_channel(OUTPUT_CHANNEL_ERROR, MAME_LAMENESS);
+    mame_set_output_channel(OUTPUT_CHANNEL_WARNING, MAME_LAMENESS);
+    mame_set_output_channel(OUTPUT_CHANNEL_INFO, MAME_LAMENESS);
+    mame_set_output_channel(OUTPUT_CHANNEL_DEBUG, MAME_LAMENESS);
+    mame_set_output_channel(OUTPUT_CHANNEL_VERBOSE, MAME_LAMENESS);
+    mame_set_output_channel(OUTPUT_CHANNEL_LOG, MAME_LAMENESS);
 
     /* Set the unfortunate globals.  Would greatly prefer to allocate a
        new one of these and pass it to MAME, having it pass it back in the
@@ -1233,7 +1235,7 @@ const char *LibMame_RunningGame_GetSpeedText(LibMame_RunningGame *game)
 
     g_state.machine->video().speed_text(g_state.speed_text);
 
-    return astring_c(&(g_state.speed_text));
+    return g_state.speed_text.cstr();
 }
 
 

@@ -4,10 +4,10 @@
 
 *************************************************************************/
 
-class rainbow_state : public driver_device
+class rbisland_state : public driver_device
 {
 public:
-	rainbow_state(const machine_config &mconfig, device_type type, const char *tag)
+	rbisland_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag) { }
 
 	/* memory pointers */
@@ -37,19 +37,19 @@ public:
 
 /*----------- defined in machine/rainbow.c -----------*/
 
-void rainbow_cchip_init(running_machine &machine, int version);
-READ16_HANDLER( rainbow_cchip_ctrl_r );
-READ16_HANDLER( rainbow_cchip_ram_r );
-WRITE16_HANDLER( rainbow_cchip_ctrl_w );
-WRITE16_HANDLER( rainbow_cchip_bank_w );
-WRITE16_HANDLER( rainbow_cchip_ram_w );
+void rbisland_cchip_init(running_machine &machine, int version);
+READ16_HANDLER( rbisland_cchip_ctrl_r );
+READ16_HANDLER( rbisland_cchip_ram_r );
+WRITE16_HANDLER( rbisland_cchip_ctrl_w );
+WRITE16_HANDLER( rbisland_cchip_bank_w );
+WRITE16_HANDLER( rbisland_cchip_ram_w );
 
 
 /*----------- defined in video/rainbow.c -----------*/
 
-SCREEN_UPDATE( rainbow );
+SCREEN_UPDATE_IND16( rainbow );
 VIDEO_START( jumping );
-SCREEN_UPDATE( jumping );
+SCREEN_UPDATE_IND16( jumping );
 
 WRITE16_HANDLER( jumping_spritectrl_w );
-WRITE16_HANDLER( rainbow_spritectrl_w );
+WRITE16_HANDLER( rbisland_spritectrl_w );

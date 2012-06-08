@@ -88,7 +88,6 @@ Notes:
 *************************************************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "sound/okim9810.h"
 #include "sound/ymz280b.h"
@@ -101,7 +100,9 @@ class sigmab98_state : public driver_device
 {
 public:
 	sigmab98_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT8 *m_spriteram;
 	size_t m_spriteram_size;
@@ -116,6 +117,11 @@ public:
 	UINT8 m_vblank;
 	UINT8 m_out[3];
 	UINT8 *m_nvram;
+
+	required_device<cpu_device> m_maincpu;
+	UINT8 m_vblank_vector;
+	UINT8 m_timer0_vector;
+	UINT8 m_timer1_vector;
 };
 
 
@@ -161,7 +167,7 @@ public:
 
 ***************************************************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int pri_mask)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int pri_mask)
 {
 	sigmab98_state *state = machine.driver_data<sigmab98_state>();
 	UINT8 *end		=	state->m_spriteram - 0x10;
@@ -243,29 +249,29 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-static SCREEN_UPDATE(sigmab98)
+static SCREEN_UPDATE_IND16(sigmab98)
 {
 	int layers_ctrl = -1;
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int msk = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	msk |= 2;
-		if (screen->machine().input().code_pressed(KEYCODE_E))	msk |= 4;
-		if (screen->machine().input().code_pressed(KEYCODE_R))	msk |= 8;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	msk |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_E))	msk |= 4;
+		if (screen.machine().input().code_pressed(KEYCODE_R))	msk |= 8;
 		if (msk != 0) layers_ctrl &= msk;
 	}
 #endif
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	// Draw from priority 3 (bottom, converted to a bitmask) to priority 0 (top)
-	draw_sprites(screen->machine(), bitmap, cliprect, layers_ctrl & 8);
-	draw_sprites(screen->machine(), bitmap, cliprect, layers_ctrl & 4);
-	draw_sprites(screen->machine(), bitmap, cliprect, layers_ctrl & 2);
-	draw_sprites(screen->machine(), bitmap, cliprect, layers_ctrl & 1);
+	draw_sprites(screen.machine(), bitmap, cliprect, layers_ctrl & 8);
+	draw_sprites(screen.machine(), bitmap, cliprect, layers_ctrl & 4);
+	draw_sprites(screen.machine(), bitmap, cliprect, layers_ctrl & 2);
+	draw_sprites(screen.machine(), bitmap, cliprect, layers_ctrl & 1);
 
 	return 0;
 }
@@ -632,10 +638,14 @@ static WRITE8_HANDLER( vblank_w )
 	state->m_vblank = (state->m_vblank & ~0x03) | (data & 0x03);
 }
 
-static SCREEN_EOF( sammymdl )
+static SCREEN_VBLANK( sammymdl )
 {
-	sigmab98_state *state = machine.driver_data<sigmab98_state>();
-	state->m_vblank &= ~0x01;
+	// rising edge
+	if (vblank_on)
+	{
+		sigmab98_state *state = screen.machine().driver_data<sigmab98_state>();
+		state->m_vblank &= ~0x01;
+	}
 }
 
 static void show_3_outputs(sigmab98_state *state)
@@ -1678,10 +1688,9 @@ static MACHINE_CONFIG_START( gegege, sigmab98_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)					// ?
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)	// game reads vblank state
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x200, 0x200)
 	MCFG_SCREEN_VISIBLE_AREA(0,0x140-1, 0,0xf0-1)
-	MCFG_SCREEN_UPDATE(sigmab98)
+	MCFG_SCREEN_UPDATE_STATIC(sigmab98)
 
 	MCFG_GFXDECODE(sigmab98)
 	MCFG_PALETTE_LENGTH(0x100)
@@ -1733,11 +1742,10 @@ static MACHINE_CONFIG_START( sammymdl, sigmab98_state )
 	// video hardware
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x140, 0x100)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x140-1, 0, 0xf0-1)
-	MCFG_SCREEN_UPDATE(sigmab98)
-	MCFG_SCREEN_EOF(sammymdl)
+	MCFG_SCREEN_UPDATE_STATIC(sigmab98)
+	MCFG_SCREEN_VBLANK_STATIC(sammymdl)
 
 	MCFG_GFXDECODE(sigmab98)
 	MCFG_PALETTE_LENGTH(0x100)
@@ -1755,87 +1763,48 @@ MACHINE_CONFIG_END
                                  Animal Catch
 ***************************************************************************/
 
-static INTERRUPT_GEN( animalc )
+static TIMER_DEVICE_CALLBACK( sammymd1_irq )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x00);	// increment counter
-			break;
+	sigmab98_state *state = timer.machine().driver_data<sigmab98_state>();
+	int scanline = param;
 
-		case 1:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x1c);	// read hopper state
-			break;
+	if(scanline == 240)
+		device_set_input_line_and_vector(state->m_maincpu,0,HOLD_LINE, state->m_vblank_vector);
 
-		case 2:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x1e);	// drive hopper motor
-			break;
-	}
+	if(scanline == 128)
+		device_set_input_line_and_vector(state->m_maincpu,0,HOLD_LINE, state->m_timer0_vector);
+
+	if(scanline == 32)
+		device_set_input_line_and_vector(state->m_maincpu,0,HOLD_LINE, state->m_timer1_vector);
 }
 
 static MACHINE_CONFIG_DERIVED( animalc, sammymdl )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP( animalc_map )
 	MCFG_CPU_IO_MAP( animalc_io )
-	MCFG_CPU_VBLANK_INT_HACK(animalc, 3) // IM 2 needs a vector on the data bus
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sammymd1_irq, "screen", 0, 1)
 MACHINE_CONFIG_END
 
 /***************************************************************************
                              Hae Hae Ka Ka Ka
 ***************************************************************************/
 
-static INTERRUPT_GEN( haekaka )
-{
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x04);
-			break;
-
-		case 1:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x1a);
-			break;
-
-		case 2:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x1c);
-			break;
-	}
-}
-
 static MACHINE_CONFIG_DERIVED( haekaka, sammymdl )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP( haekaka_map )
 	MCFG_CPU_IO_MAP( haekaka_io )
-	MCFG_CPU_VBLANK_INT_HACK(haekaka, 3) // IM 2 needs a vector on the data bus
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sammymd1_irq, "screen", 0, 1)
 MACHINE_CONFIG_END
 
 /***************************************************************************
                               Itazura Monkey
 ***************************************************************************/
 
-static INTERRUPT_GEN( itazuram )
-{
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x00);	// sprites
-			break;
-
-		case 1:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x02);	// copy palette
-			break;
-
-		case 2:
-			device_set_input_line_and_vector(device, 0, HOLD_LINE, 0x16);	// hopper, i/o
-			break;
-	}
-}
-
 static MACHINE_CONFIG_DERIVED( itazuram, sammymdl )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP( itazuram_map )
 	MCFG_CPU_IO_MAP( itazuram_io )
-	MCFG_CPU_VBLANK_INT_HACK(itazuram, 3) // IM 2 needs a vector on the data bus
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sammymd1_irq, "screen", 0, 1)
 MACHINE_CONFIG_END
 
 /***************************************************************************
@@ -1846,7 +1815,7 @@ static MACHINE_CONFIG_DERIVED( pyenaget, sammymdl )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP( haekaka_map )
 	MCFG_CPU_IO_MAP( pyenaget_io )
-	MCFG_CPU_VBLANK_INT_HACK(haekaka, 3) // IM 2 needs a vector on the data bus
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sammymd1_irq, "screen", 0, 1)
 MACHINE_CONFIG_END
 
 /***************************************************************************
@@ -1857,7 +1826,7 @@ static MACHINE_CONFIG_DERIVED( tdoboon, sammymdl )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP( tdoboon_map )
 	MCFG_CPU_IO_MAP( tdoboon_io )
-	MCFG_CPU_VBLANK_INT_HACK(haekaka, 3) // IM 2 needs a vector on the data bus
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sammymd1_irq, "screen", 0, 1)
 
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VISIBLE_AREA(0,0x140-1, 0+4,0xf0+4-1)
@@ -2142,6 +2111,10 @@ static DRIVER_INIT( animalc )
 	state->m_spriteram_size = 0x1000;
 	memory_configure_bank(machine, "sprbank", 0, 5, state->m_spriteram, 0x1000);
 	memory_set_bank(machine, "sprbank", 0);
+
+	state->m_vblank_vector = 0x00; // increment counter
+	state->m_timer0_vector = 0x1c; // read hopper state
+	state->m_timer1_vector = 0x1e; // drive hopper motor
 }
 
 /***************************************************************************
@@ -2186,6 +2159,10 @@ static DRIVER_INIT( itazuram )
 	state->m_spriteram_size = 0x1000;
 	memory_set_bankptr(machine, "sprbank0",  state->m_spriteram + 0x1000*4);	// scratch
 	memory_set_bankptr(machine, "sprbank1",  state->m_spriteram + 0x1000*4);	// scratch
+
+	state->m_vblank_vector = 0x00;
+	state->m_timer0_vector = 0x02;
+	state->m_timer1_vector = 0x16;
 }
 
 /***************************************************************************
@@ -2295,6 +2272,10 @@ static DRIVER_INIT( haekaka )
 
 	state->m_rombank = 0x65;
 	state->m_rambank = 0x53;
+
+	state->m_vblank_vector = 0x04;
+	state->m_timer0_vector = 0x1a;
+	state->m_timer1_vector = 0x1c;
 }
 
 

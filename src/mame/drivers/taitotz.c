@@ -98,7 +98,7 @@ public:
 	UINT32 *video_ram;
 	UINT32 video_ram_ptr;
 
-	bitmap_t *framebuffer;
+	bitmap_rgb32 framebuffer;
 };
 
 
@@ -107,10 +107,10 @@ static VIDEO_START( taitotz )
 {
 	taitotz_state *state = machine.driver_data<taitotz_state>();
 
-	state->framebuffer = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->framebuffer);
 }
 
-static SCREEN_UPDATE( taitotz )
+static SCREEN_UPDATE_RGB32( taitotz )
 {
 	/*
     {
@@ -126,7 +126,7 @@ static SCREEN_UPDATE( taitotz )
 
                 for (y=0; y < FONT_HEIGHT; y++)
                 {
-                    UINT32 *fb = BITMAP_ADDR32(bitmap, y+(u*FONT_WIDTH), 0);
+                    UINT32 *fb = &bitmap.pix32(y+(u*FONT_WIDTH));
                     for (x=0; x < FONT_WIDTH; x++)
                     {
                         UINT32 p = s[((tile*(FONT_WIDTH*FONT_HEIGHT*2)) + ((y*FONT_WIDTH)+x)) ^ 1];
@@ -145,7 +145,7 @@ static SCREEN_UPDATE( taitotz )
         int t,u;
         for (u=0; u < 256; u++)
         {
-            UINT32 *fb = BITMAP_ADDR32(bitmap, u, 0);
+            UINT32 *fb = &bitmap.pix32(u);
             for (t=0; t < 512; t++)
             {
                 UINT32 p = s[((u*512)+t) ^ 1];
@@ -156,9 +156,9 @@ static SCREEN_UPDATE( taitotz )
     }
     */
 
-	taitotz_state *state = screen->machine().driver_data<taitotz_state>();
+	taitotz_state *state = screen.machine().driver_data<taitotz_state>();
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 	copybitmap_trans(bitmap, state->framebuffer, 0, 0, 0, 0, cliprect, 0);
 
 	return 0;
@@ -182,7 +182,7 @@ static void draw_tile(running_machine &machine, UINT32 pos, UINT32 tile)
 	{
 		int u = tileu;
 
-		UINT32 *fb = BITMAP_ADDR32(state->framebuffer, j, 0);
+		UINT32 *fb = &state->framebuffer.pix32(j);
 
 		for (int i=tilex; i < (tilex+16); i++)
 		{
@@ -426,12 +426,11 @@ static MACHINE_CONFIG_START( taitotz, taitotz_state )
 	MCFG_MACHINE_RESET( taitotz )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(640, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 511)
-	MCFG_SCREEN_UPDATE(taitotz)
+	MCFG_SCREEN_UPDATE_STATIC(taitotz)
 
 	MCFG_VIDEO_START(taitotz)
 MACHINE_CONFIG_END

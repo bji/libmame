@@ -17,13 +17,6 @@
 #include <unistd.h>
 #include "osdcore.h"
 
-/**
- * Undo mame definition of malloc and free as macros.  That doesn't seem
- * kosher to me and it requires these kinds of workarounds.
- **/
-#undef malloc
-#undef free
-
 
 osd_ticks_t osd_ticks(void)
 {

@@ -76,7 +76,7 @@ WRITE16_HANDLER( yunsun16_vram_0_w )
 	yunsun16_state *state = space->machine().driver_data<yunsun16_state>();
 
 	COMBINE_DATA(&state->m_vram_0[offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap_0, offset / 2);
+	state->m_tilemap_0->mark_tile_dirty(offset / 2);
 }
 
 WRITE16_HANDLER( yunsun16_vram_1_w )
@@ -84,7 +84,7 @@ WRITE16_HANDLER( yunsun16_vram_1_w )
 	yunsun16_state *state = space->machine().driver_data<yunsun16_state>();
 
 	COMBINE_DATA(&state->m_vram_1[offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap_1, offset / 2);
+	state->m_tilemap_1->mark_tile_dirty(offset / 2);
 }
 
 
@@ -105,14 +105,14 @@ VIDEO_START( yunsun16 )
 	state->m_tilemap_1 = tilemap_create(machine, get_tile_info_1,yunsun16_tilemap_scan_pages,
 								16,16, TILES_PER_PAGE_X*PAGES_PER_TMAP_X,TILES_PER_PAGE_Y*PAGES_PER_TMAP_Y);
 
-	tilemap_set_scrolldx(state->m_tilemap_0, -0x34, 0);
-	tilemap_set_scrolldx(state->m_tilemap_1, -0x38, 0);
+	state->m_tilemap_0->set_scrolldx(-0x34, 0);
+	state->m_tilemap_1->set_scrolldx(-0x38, 0);
 
-	tilemap_set_scrolldy(state->m_tilemap_0, -0x10, 0);
-	tilemap_set_scrolldy(state->m_tilemap_1, -0x10, 0);
+	state->m_tilemap_0->set_scrolldy(-0x10, 0);
+	state->m_tilemap_1->set_scrolldy(-0x10, 0);
 
-	tilemap_set_transparent_pen(state->m_tilemap_0, 0xff);
-	tilemap_set_transparent_pen(state->m_tilemap_1, 0xff);
+	state->m_tilemap_0->set_transparent_pen(0xff);
+	state->m_tilemap_1->set_transparent_pen(0xff);
 }
 
 
@@ -136,7 +136,7 @@ VIDEO_START( yunsun16 )
 
 ***************************************************************************/
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	yunsun16_state *state = machine.driver_data<yunsun16_state>();
 	int offs;
@@ -200,35 +200,35 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 ***************************************************************************/
 
 
-SCREEN_UPDATE( yunsun16 )
+SCREEN_UPDATE_IND16( yunsun16 )
 {
-	yunsun16_state *state = screen->machine().driver_data<yunsun16_state>();
+	yunsun16_state *state = screen.machine().driver_data<yunsun16_state>();
 
-	tilemap_set_scrollx(state->m_tilemap_0, 0, state->m_scrollram_0[0]);
-	tilemap_set_scrolly(state->m_tilemap_0, 0, state->m_scrollram_0[1]);
+	state->m_tilemap_0->set_scrollx(0, state->m_scrollram_0[0]);
+	state->m_tilemap_0->set_scrolly(0, state->m_scrollram_0[1]);
 
-	tilemap_set_scrollx(state->m_tilemap_1, 0, state->m_scrollram_1[0]);
-	tilemap_set_scrolly(state->m_tilemap_1, 0, state->m_scrollram_1[1]);
+	state->m_tilemap_1->set_scrollx(0, state->m_scrollram_1[0]);
+	state->m_tilemap_1->set_scrolly(0, state->m_scrollram_1[1]);
 
 	//popmessage("%04X", *state->m_priorityram);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	if ((*state->m_priorityram & 0x0c) == 4)
 	{
 		/* The color of the this layer's transparent pen goes below everything */
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_0, TILEMAP_DRAW_OPAQUE, 0);
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_0, 0, 1);
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_1, 0, 2);
+		state->m_tilemap_0->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
+		state->m_tilemap_0->draw(bitmap, cliprect, 0, 1);
+		state->m_tilemap_1->draw(bitmap, cliprect, 0, 2);
 	}
 	else if ((*state->m_priorityram & 0x0c) == 8)
 	{
 		/* The color of the this layer's transparent pen goes below everything */
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_1, TILEMAP_DRAW_OPAQUE, 0);
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_1, 0, 1);
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_0, 0, 2);
+		state->m_tilemap_1->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
+		state->m_tilemap_1->draw(bitmap, cliprect, 0, 1);
+		state->m_tilemap_0->draw(bitmap, cliprect, 0, 2);
 	}
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

@@ -9,6 +9,8 @@ OSC  :18.43200MHz/32.00000MHz
 Other(GQ460):Konami 053252,054156,056832,054539
 Other(GE557):Konami 056832,058141,058143
 
+TODO:
+- enabling irq acks breaks both games, why?
 
 --
 driver by Eisuke Watanabe
@@ -20,7 +22,6 @@ GP1 HDD data contents:
 ***************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/idectrl.h"
 #include "sound/k054539.h"
@@ -268,22 +269,19 @@ static READ16_HANDLER( gp2_ide_std_r )
  *
  *************************************/
 
-static INTERRUPT_GEN(qdrmfgp_interrupt)
+static TIMER_DEVICE_CALLBACK(qdrmfgp_interrupt)
 {
-	qdrmfgp_state *state = device->machine().driver_data<qdrmfgp_state>();
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			if (state->m_control & 0x0001)
-				device_set_input_line(device, 1, HOLD_LINE);
-			break;
+	qdrmfgp_state *state = timer.machine().driver_data<qdrmfgp_state>();
+	int scanline = param;
 
-		case 1:
-			/* trigger V-blank interrupt */
-			if (state->m_control & 0x0004)
-				device_set_input_line(device, 3, ASSERT_LINE);
-			break;
-	}
+	if(scanline == 0)
+		if (state->m_control & 0x0001)
+			device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	/* trigger V-blank interrupt */
+	if(scanline == 240)
+		if (state->m_control & 0x0004)
+			device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
 }
 
 static void ide_interrupt(device_t *device, int state)
@@ -304,7 +302,7 @@ static TIMER_CALLBACK( gp2_timer_callback )
 {
 	qdrmfgp_state *state = machine.driver_data<qdrmfgp_state>();
 	if (state->m_control & 0x0004)
-		cputag_set_input_line(machine, "maincpu", 3, ASSERT_LINE);
+		cputag_set_input_line(machine, "maincpu", 3, HOLD_LINE);
 }
 
 static INTERRUPT_GEN(qdrmfgp2_interrupt)
@@ -312,7 +310,7 @@ static INTERRUPT_GEN(qdrmfgp2_interrupt)
 	qdrmfgp_state *state = device->machine().driver_data<qdrmfgp_state>();
 	/* trigger V-blank interrupt */
 	if (state->m_control & 0x0008)
-		device_set_input_line(device, 4, ASSERT_LINE);
+		device_set_input_line(device, 4, HOLD_LINE);
 }
 
 static void gp2_ide_interrupt(device_t *device, int state)
@@ -614,12 +612,12 @@ static const k056832_interface qdrmfgp2_k056832_intf =
 
 static WRITE_LINE_DEVICE_HANDLER( qdrmfgp_irq3_ack_w )
 {
-	cputag_set_input_line(device->machine(), "maincpu", M68K_IRQ_3, CLEAR_LINE);
+//  cputag_set_input_line(device->machine(), "maincpu", M68K_IRQ_3, CLEAR_LINE);
 }
 
 static WRITE_LINE_DEVICE_HANDLER( qdrmfgp_irq4_ack_w )
 {
-	cputag_set_input_line(device->machine(), "maincpu", M68K_IRQ_4, CLEAR_LINE);
+//  cputag_set_input_line(device->machine(), "maincpu", M68K_IRQ_4, CLEAR_LINE);
 }
 
 static const k053252_interface qdrmfgp_k053252_intf =
@@ -680,7 +678,7 @@ static MACHINE_CONFIG_START( qdrmfgp, qdrmfgp_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 32000000/2)	/*  16.000 MHz */
 	MCFG_CPU_PROGRAM_MAP(qdrmfgp_map)
-	MCFG_CPU_VBLANK_INT_HACK(qdrmfgp_interrupt, 2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", qdrmfgp_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_START(qdrmfgp)
 	MCFG_MACHINE_RESET(qdrmfgp)
@@ -692,10 +690,9 @@ static MACHINE_CONFIG_START( qdrmfgp, qdrmfgp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(40, 40+384-1, 16, 16+224-1)
-	MCFG_SCREEN_UPDATE(qdrmfgp)
+	MCFG_SCREEN_UPDATE_STATIC(qdrmfgp)
 
 	MCFG_PALETTE_LENGTH(2048)
 
@@ -730,10 +727,9 @@ static MACHINE_CONFIG_START( qdrmfgp2, qdrmfgp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(40, 40+384-1, 16, 16+224-1)
-	MCFG_SCREEN_UPDATE(qdrmfgp)
+	MCFG_SCREEN_UPDATE_STATIC(qdrmfgp)
 
 	MCFG_PALETTE_LENGTH(2048)
 

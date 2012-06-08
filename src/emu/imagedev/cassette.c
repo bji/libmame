@@ -270,7 +270,18 @@ bool cassette_image_device::call_load()
 		{
 			is_writable = !is_readonly();
 			cassette_flags = is_writable ? (CASSETTE_FLAG_READWRITE|CASSETTE_FLAG_SAVEONEXIT) : CASSETTE_FLAG_READONLY;
-			extension = filetype();
+			astring fname;
+			if (software_entry()==NULL) {
+				extension = filetype();
+			} else {
+				fname = m_mame_file->filename();
+				int loc = fname.rchr(0,'.');
+				if (loc!=-1) {
+					extension = fname.substr(loc + 1,fname.len()-loc).cstr();
+				} else {
+					extension = "";
+				}
+			}
 			err = cassette_open_choices((void *)image, &image_ioprocs, extension, m_formats, cassette_flags, &m_cassette);
 
 			/* this is kind of a hack */
@@ -325,7 +336,7 @@ void cassette_image_device::call_display()
 	int n;
 	double position, length;
 	cassette_state uistate;
-	device_t *dev;
+	cassette_image_device *dev;
 	static const UINT8 shapes[8] = { 0x2d, 0x5c, 0x7c, 0x2f, 0x2d, 0x20, 0x20, 0x20 };
 
 	/* abort if we should not be showing the image */
@@ -343,13 +354,9 @@ void cassette_image_device::call_display()
 	x = 0.2f;
 	y = 0.5f;
 
-	dev = device().machine().devicelist().first(CASSETTE );
-
-	while ( dev && strcmp( dev->tag(), device().tag() ) )
-	{
+	cassette_device_iterator iter(device().machine().root_device());
+	for (dev = iter.first(); dev != NULL && strcmp( dev->tag(), device().tag() ); dev = iter.next())
 		y += 1;
-		dev = dev->typenext();
-	}
 
 	y *= ui_get_line_height(device().machine()) + 2.0f * UI_BOX_TB_BORDER;
 	/* choose which frame of the animation we are at */

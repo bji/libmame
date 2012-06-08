@@ -41,21 +41,21 @@ static WRITE16_HANDLER( pkscramble_fgtilemap_w )
 {
 	pkscram_state *state = space->machine().driver_data<pkscram_state>();
 	COMBINE_DATA(&state->m_pkscramble_fgtilemap_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset >> 1);
+	state->m_fg_tilemap->mark_tile_dirty(offset >> 1);
 }
 
 static WRITE16_HANDLER( pkscramble_mdtilemap_w )
 {
 	pkscram_state *state = space->machine().driver_data<pkscram_state>();
 	COMBINE_DATA(&state->m_pkscramble_mdtilemap_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_md_tilemap, offset >> 1);
+	state->m_md_tilemap->mark_tile_dirty(offset >> 1);
 }
 
 static WRITE16_HANDLER( pkscramble_bgtilemap_w )
 {
 	pkscram_state *state = space->machine().driver_data<pkscram_state>();
 	COMBINE_DATA(&state->m_pkscramble_bgtilemap_ram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset >> 1);
+	state->m_bg_tilemap->mark_tile_dirty(offset >> 1);
 }
 
 // input bit 0x20 in port1 should stay low until bit 0x20 is written here, then
@@ -234,16 +234,16 @@ static VIDEO_START( pkscramble )
 	state->m_md_tilemap = tilemap_create(machine, get_md_tile_info, tilemap_scan_rows, 8, 8,32,32);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8,32,32);
 
-	tilemap_set_transparent_pen(state->m_md_tilemap,15);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,15);
+	state->m_md_tilemap->set_transparent_pen(15);
+	state->m_fg_tilemap->set_transparent_pen(15);
 }
 
-static SCREEN_UPDATE( pkscramble )
+static SCREEN_UPDATE_IND16( pkscramble )
 {
-	pkscram_state *state = screen->machine().driver_data<pkscram_state>();
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_md_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
+	pkscram_state *state = screen.machine().driver_data<pkscram_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_md_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -313,10 +313,9 @@ static MACHINE_CONFIG_START( pkscramble, pkscram_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 24*8-1)
-	MCFG_SCREEN_UPDATE(pkscramble)
+	MCFG_SCREEN_UPDATE_STATIC(pkscramble)
 
 	MCFG_PALETTE_LENGTH(0x800)
 	MCFG_GFXDECODE(pkscram)

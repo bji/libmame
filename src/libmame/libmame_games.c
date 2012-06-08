@@ -277,8 +277,14 @@ static void convert_screen_info(const machine_config *machineconfig,
 static void convert_sound_channels(const machine_config *machineconfig,
                                    GameInfo *gameinfo)
 {
-    gameinfo->sound_channel_count = 
-        machineconfig->devicelist().count(SPEAKER);
+	speaker_device_iterator spkiter(machineconfig->root_device());
+	gameinfo->sound_channel_count = spkiter.count();
+
+	// if we have no sound, zero m_output the speaker count
+	sound_interface_iterator snditer(machineconfig->root_device());
+	if (snditer.first() == NULL) {
+		gameinfo->sound_channel_count = 0;
+    }
 }
 
 
@@ -287,13 +293,15 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
 {
     const char **destsample = gameinfo->sound_samples;
 
-    for (const device_t *device = machineconfig->devicelist().first(SAMPLES);
-         device; device = device->typenext()) {
-
-        const char * const *samplenames = 
+	// iterate over sample devices
+	samples_device_iterator iter(machineconfig->root_device());
+	for (samples_device *device = iter.first(); device != NULL;
+         device = iter.next())
+	{
+		const char *const *samplenames = 
             ((const samples_interface *) device->static_config())->samplenames;
 
-        if (!samplenames) {
+		if (samplenames == NULL) {
             continue;
         }
         
@@ -400,15 +408,15 @@ static void convert_sound_samples(const machine_config *machineconfig,
 static void convert_chips(const machine_config *machineconfig,
                           GameInfo *gameinfo)
 {
-	const device_execute_interface *execi;
-	for (bool is_valid = machineconfig->devicelist().first(execi); is_valid;
-         is_valid = execi->next(execi)) {
+	execute_interface_iterator execiter(machineconfig->root_device());
+	for (device_execute_interface *execi = execiter.first(); execi != NULL;
+         execi = execiter.next()) {
         gameinfo->chip_count++;
     }
 
-	const device_sound_interface *soundi;
-	for (bool is_valid = machineconfig->devicelist().first(soundi); is_valid;
-         is_valid = soundi->next(soundi)) {
+	sound_interface_iterator sounditer(machineconfig->root_device());
+	for (device_sound_interface *soundi = sounditer.first(); soundi != NULL;
+         soundi = sounditer.next()) {
         gameinfo->chip_count++;
     }
 
@@ -421,8 +429,8 @@ static void convert_chips(const machine_config *machineconfig,
     
     LibMame_Chip *descriptor = gameinfo->chips;
 
-	for (bool is_valid = machineconfig->devicelist().first(execi); is_valid;
-         is_valid = execi->next(execi)) {
+	for (device_execute_interface *execi = execiter.first(); execi != NULL;
+         execi = execiter.next()) {
         descriptor->is_sound = false;
         descriptor->tag = copy_string(execi->device().tag());
         descriptor->name = copy_string(execi->device().name());
@@ -430,8 +438,8 @@ static void convert_chips(const machine_config *machineconfig,
         descriptor++;
     }        
     
-	for (bool is_valid = machineconfig->devicelist().first(soundi); is_valid;
-         is_valid = soundi->next(soundi)) {
+	for (device_sound_interface *soundi = sounditer.first(); soundi != NULL;
+         soundi = sounditer.next()) {
         descriptor->is_sound = true;
         descriptor->tag = copy_string(soundi->device().tag());
         descriptor->name = copy_string(soundi->device().name());
@@ -1088,8 +1096,9 @@ static void convert_game_info(GameInfo *gameinfo)
         (gameinfo->driver_index);
     ioport_list ioportlist;
     astring errors;
-	for (device_t *device = machineconfig.devicelist().first(); device;
-         device = device->next()) {
+	device_iterator iter(machineconfig.root_device());
+	for (device_t *device = iter.first(); device != NULL; 
+         device = iter.next()) {
 		input_port_list_init(*device, ioportlist, errors);
     }
     /* Mame's code assumes the above succeeds, we will too */

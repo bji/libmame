@@ -67,7 +67,7 @@ static WRITE8_HANDLER( skyarmy_videoram_w )
 	skyarmy_state *state = space->machine().driver_data<skyarmy_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap,offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( skyarmy_colorram_w )
@@ -75,7 +75,7 @@ static WRITE8_HANDLER( skyarmy_colorram_w )
 	skyarmy_state *state = space->machine().driver_data<skyarmy_state>();
 
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap,offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 static PALETTE_INIT( skyarmy )
@@ -111,21 +111,21 @@ static VIDEO_START( skyarmy )
 	skyarmy_state *state = machine.driver_data<skyarmy_state>();
 
 	state->m_tilemap = tilemap_create(machine, get_skyarmy_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	tilemap_set_scroll_cols(state->m_tilemap,32);
+	state->m_tilemap->set_scroll_cols(32);
 }
 
 
-static SCREEN_UPDATE( skyarmy )
+static SCREEN_UPDATE_IND16( skyarmy )
 {
-	skyarmy_state *state = screen->machine().driver_data<skyarmy_state>();
+	skyarmy_state *state = screen.machine().driver_data<skyarmy_state>();
 	UINT8 *spriteram = state->m_spriteram;
 	int sx, sy, flipx, flipy, offs,pal;
 	int i;
 
 	for(i=0;i<0x20;i++)
-		tilemap_set_scrolly( state->m_tilemap,i,state->m_scrollram[i]);
+		state->m_tilemap->set_scrolly(i,state->m_scrollram[i]);
 
-	tilemap_draw(bitmap,cliprect,state->m_tilemap,0,0);
+	state->m_tilemap->draw(bitmap, cliprect, 0,0);
 
 	for (offs = 0 ; offs < 0x40; offs+=4)
 	{
@@ -136,7 +136,7 @@ static SCREEN_UPDATE( skyarmy )
 		flipy = (spriteram[offs+1]&0x80)>>7;
 		flipx = (spriteram[offs+1]&0x40)>>6;
 
-		drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[1],
+		drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[1],
 			spriteram[offs+1]&0x3f,
 			pal,
 			flipx,flipy,
@@ -283,10 +283,9 @@ static MACHINE_CONFIG_START( skyarmy, skyarmy_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8,32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8,32*8-1,1*8,31*8-1)
-	MCFG_SCREEN_UPDATE(skyarmy)
+	MCFG_SCREEN_UPDATE_STATIC(skyarmy)
 
 	MCFG_GFXDECODE(skyarmy)
 	MCFG_PALETTE_LENGTH(32)

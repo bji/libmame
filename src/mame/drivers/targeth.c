@@ -9,7 +9,6 @@ The DS5002FP has 32KB undumped gameplay code making the game unplayable :_(
 ***************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m68000/m68000.h"
 #include "sound/okim6295.h"
 #include "includes/targeth.h"
@@ -30,18 +29,23 @@ static GFXDECODE_START( 0x080000 )
 GFXDECODE_END
 
 
-static INTERRUPT_GEN(targeth_interrupt )
+static TIMER_DEVICE_CALLBACK(targeth_interrupt )
 {
-	switch(cpu_getiloops(device)){
-		case 0: /* IRQ 2: drives the game */
-			device_set_input_line(device, 2, HOLD_LINE);
-			break;
-		case 1: /* IRQ 4: Read 1P Gun */
-			device_set_input_line(device, 4, HOLD_LINE);
-			break;
-		case 2:	/* IRQ 6: Read 2P Gun */
-			device_set_input_line(device, 6, HOLD_LINE);
-			break;
+	targeth_state *state = timer.machine().driver_data<targeth_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+	{
+		/* IRQ 2: drives the game */
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
+	}
+
+	if(scanline == 0)
+	{
+		/* IRQ 4: Read 1P Gun */
+		device_set_input_line(state->m_maincpu, 4, HOLD_LINE);
+		/* IRQ 6: Read 2P Gun */
+		device_set_input_line(state->m_maincpu, 6, HOLD_LINE);
 	}
 }
 
@@ -172,16 +176,15 @@ static MACHINE_CONFIG_START( targeth, targeth_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000,24000000/2)			/* 12 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
-	MCFG_CPU_VBLANK_INT_HACK(targeth_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", targeth_interrupt, "screen", 0, 1)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*16, 32*16)				/* 1024x512 */
 	MCFG_SCREEN_VISIBLE_AREA(0, 24*16-1, 16, 16*16-1)	/* 400x240 */
-	MCFG_SCREEN_UPDATE(targeth)
+	MCFG_SCREEN_UPDATE_STATIC(targeth)
 
 	MCFG_GFXDECODE(0x080000)
 	MCFG_PALETTE_LENGTH(1024)

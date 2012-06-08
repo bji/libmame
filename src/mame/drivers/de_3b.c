@@ -1,6 +1,9 @@
 /*
     DataEast/Sega Version 3b
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 #include "audio/decobsmt.h"
@@ -10,24 +13,30 @@ class de_3b_state : public driver_device
 {
 public:
 	de_3b_state(const machine_config &mconfig, device_type type, const char *tag)
-    : driver_device(mconfig, type, tag),
-    m_maincpu(*this, "maincpu"),
-    m_decobsmt(*this, "decobsmt")
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu"),
+		  m_decobsmt(*this, "decobsmt")
     { }
 
+	// devices
 	required_device<cpu_device> m_maincpu;
 	required_device<decobsmt_device> m_decobsmt;
+
+protected:
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( de_3b_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( de_3b_map, AS_PROGRAM, 8, de_3b_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( de_3b )
 INPUT_PORTS_END
 
-static MACHINE_RESET( de_3b )
+void de_3b_state::machine_reset()
 {
 }
 
@@ -39,8 +48,6 @@ static MACHINE_CONFIG_START( de_3b, de_3b_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(de_3b_map)
-
-	MCFG_MACHINE_RESET( de_3b )
 
 	/* sound hardware */
 	MCFG_DECOBSMT_ADD(DECOBSMT_TAG)
@@ -391,28 +398,29 @@ ROM_START(detest)
 	ROM_REGION(0x1000000, "bsmt", ROMREGION_ERASE00)
 ROM_END
 
-GAME(1995,	batmanf,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (4.0)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	batmanf3,	batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (3.0)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_uk,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (English)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_cn,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Canadian)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_no,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Norwegian)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_sv,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Swedish)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_at,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Austrian)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_ch,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Swiss)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_de,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (German)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_be,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Belgian)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_fr,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (French)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_nl,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Dutch)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_it,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Italian)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_sp,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Spanish)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_jp,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Japanese)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	bmf_time,	batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Timed Play)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	baywatch,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Baywatch",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1994,	frankst,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Mary Shelley's Frankenstein",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1995,	frankstg,	frankst,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Mary Shelley's Frankenstein (Germany)",GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1994,	mav_402,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (Display Rev. 4.02)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1994,	mav_401,	mav_402,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (Display Rev. 4.01)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1994,	mav_400,	mav_402,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (Display Rev. 4.00)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1994,	mav_100,	mav_402,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (1.00)",						GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1998,	detest,		0,				de_3b,	de_3b,	de_3b,	ROT0,	"Data East",		"Data East Test Chip",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1996,	ctcheese,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Cut The Cheese (Redemption)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+
+GAME(1995,	batmanf,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (4.0)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	batmanf3,	batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (3.0)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_uk,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (English)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_cn,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Canadian)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_no,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Norwegian)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_sv,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Swedish)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_at,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Austrian)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_ch,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Swiss)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_de,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (German)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_be,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Belgian)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_fr,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (French)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_nl,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Dutch)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_it,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Italian)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_sp,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Spanish)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_jp,		batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Japanese)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	bmf_time,	batmanf,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Batman Forever (Timed Play)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	baywatch,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Baywatch",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1994,	frankst,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Mary Shelley's Frankenstein",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1995,	frankstg,	frankst,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Mary Shelley's Frankenstein (Germany)",GAME_IS_SKELETON_MECHANICAL)
+GAME(1994,	mav_402,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (Display Rev. 4.02)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1994,	mav_401,	mav_402,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (Display Rev. 4.01)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1994,	mav_400,	mav_402,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (Display Rev. 4.00)",			GAME_IS_SKELETON_MECHANICAL)
+GAME(1994,	mav_100,	mav_402,		de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Maverick (1.00)",						GAME_IS_SKELETON_MECHANICAL)
+GAME(1998,	detest,		0,				de_3b,	de_3b,	de_3b,	ROT0,	"Data East",		"Data East Test Chip",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1996,	ctcheese,	0,				de_3b,	de_3b,	de_3b,	ROT0,	"Sega",				"Cut The Cheese (Redemption)",			GAME_IS_SKELETON_MECHANICAL)

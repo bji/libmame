@@ -29,7 +29,7 @@ WRITE16_HANDLER( welltris_spriteram_w )
 
 
 /* Sprite Drawing is pretty much the same as fromance.c */
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	static const UINT8 zoomtable[16] = { 0,7,14,20,25,30,34,38,42,46,49,52,54,57,59,61 };
 	welltris_state *state = machine.driver_data<welltris_state>();
@@ -148,7 +148,7 @@ static void setbank(welltris_state *state, int num, int bank)
 	if (state->m_gfxbank[num] != bank)
 	{
 		state->m_gfxbank[num] = bank;
-		tilemap_mark_all_tiles_dirty(state->m_char_tilemap);
+		state->m_char_tilemap->mark_all_dirty();
 	}
 }
 
@@ -164,7 +164,7 @@ WRITE16_HANDLER( welltris_palette_bank_w )
 		if (state->m_charpalettebank != (data & 0x03))
 		{
 			state->m_charpalettebank = (data & 0x03);
-			tilemap_mark_all_tiles_dirty(state->m_char_tilemap);
+			state->m_char_tilemap->mark_all_dirty();
 		}
 
 		flip_screen_set(space->machine(), data & 0x80);
@@ -213,7 +213,7 @@ WRITE16_HANDLER( welltris_charvideoram_w )
 	welltris_state *state = space->machine().driver_data<welltris_state>();
 
 	COMBINE_DATA(&state->m_charvideoram[offset]);
-	tilemap_mark_tile_dirty(state->m_char_tilemap, offset);
+	state->m_char_tilemap->mark_tile_dirty(offset);
 }
 
 VIDEO_START( welltris )
@@ -221,10 +221,10 @@ VIDEO_START( welltris )
 	welltris_state *state = machine.driver_data<welltris_state>();
 	state->m_char_tilemap = tilemap_create(machine, get_welltris_tile_info, tilemap_scan_rows,  8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_char_tilemap, 15);
+	state->m_char_tilemap->set_transparent_pen(15);
 }
 
-static void draw_background(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_background(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	welltris_state *state = machine.driver_data<welltris_state>();
 	int x, y;
@@ -234,20 +234,20 @@ static void draw_background(running_machine &machine, bitmap_t *bitmap, const re
 		for (x = 0; x < 512 / 2; x++) {
 			pixdata = state->m_pixelram[(x & 0xff) + (y & 0xff) * 256];
 
-			*BITMAP_ADDR16(bitmap, y, (x * 2) + 0) = (pixdata >> 8) + (0x100 * state->m_pixelpalettebank) + 0x400;
-			*BITMAP_ADDR16(bitmap, y, (x * 2) + 1) = (pixdata & 0xff) + (0x100 * state->m_pixelpalettebank) + 0x400;
+			bitmap.pix16(y, (x * 2) + 0) = (pixdata >> 8) + (0x100 * state->m_pixelpalettebank) + 0x400;
+			bitmap.pix16(y, (x * 2) + 1) = (pixdata & 0xff) + (0x100 * state->m_pixelpalettebank) + 0x400;
 		}
 	}
 }
 
-SCREEN_UPDATE( welltris )
+SCREEN_UPDATE_IND16( welltris )
 {
-	welltris_state *state = screen->machine().driver_data<welltris_state>();
-	tilemap_set_scrollx(state->m_char_tilemap, 0, state->m_scrollx);
-	tilemap_set_scrolly(state->m_char_tilemap, 0, state->m_scrolly);
+	welltris_state *state = screen.machine().driver_data<welltris_state>();
+	state->m_char_tilemap->set_scrollx(0, state->m_scrollx);
+	state->m_char_tilemap->set_scrolly(0, state->m_scrolly);
 
-	draw_background(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_char_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_background(screen.machine(), bitmap, cliprect);
+	state->m_char_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

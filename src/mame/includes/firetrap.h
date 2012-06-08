@@ -27,14 +27,13 @@ public:
 	UINT8         m_scroll2_y[2];
 
 	/* misc */
-	int           m_irq_enable;
+	int           m_sound_irq_enable;
 	int           m_nmi_enable;
 	int           m_i8751_return;
 	int           m_i8751_current_command;
 	int           m_i8751_init_ptr;
 	int           m_msm5205next;
 	int           m_adpcm_toggle;
-	int           m_int_latch;
 	int           m_coin_command_pending;
 
 	/* devices */
@@ -56,4 +55,4 @@ WRITE8_HANDLER( firetrap_bg2_scrolly_w );
 
 PALETTE_INIT( firetrap );
 VIDEO_START( firetrap );
-SCREEN_UPDATE( firetrap );
+SCREEN_UPDATE_IND16( firetrap );

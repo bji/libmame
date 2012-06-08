@@ -69,7 +69,7 @@ public:
 };
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect )
 {
 	egghunt_state *state = machine.driver_data<egghunt_state>();
 	int flipscreen = 0;
@@ -150,7 +150,7 @@ static WRITE8_HANDLER( egghunt_bgram_w )
 	else
 	{
 		state->m_bgram[offset] = data;
-		tilemap_mark_tile_dirty(state->m_bg_tilemap, offset / 2);
+		state->m_bg_tilemap->mark_tile_dirty(offset / 2);
 	}
 }
 
@@ -158,7 +158,7 @@ static WRITE8_HANDLER( egghunt_atram_w )
 {
 	egghunt_state *state = space->machine().driver_data<egghunt_state>();
 	state->m_atram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -172,11 +172,11 @@ static VIDEO_START(egghunt)
 	state->save_item(NAME(state->m_spram));
 }
 
-static SCREEN_UPDATE(egghunt)
+static SCREEN_UPDATE_IND16(egghunt)
 {
-	egghunt_state *state = screen->machine().driver_data<egghunt_state>();
-	tilemap_draw(bitmap,cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	egghunt_state *state = screen.machine().driver_data<egghunt_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }
 
@@ -187,7 +187,7 @@ static WRITE8_HANDLER( egghunt_gfx_banking_w )
 	// data & 0x30 is used for sprites banking
 	state->m_gfx_banking = data & 0x33;
 
-	tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+	state->m_bg_tilemap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER( egghunt_vidram_bank_w )
@@ -423,10 +423,9 @@ static MACHINE_CONFIG_START( egghunt, egghunt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, 56*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(egghunt)
+	MCFG_SCREEN_UPDATE_STATIC(egghunt)
 
 	MCFG_GFXDECODE(egghunt)
 	MCFG_PALETTE_LENGTH(0x400)

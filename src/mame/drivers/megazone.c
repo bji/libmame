@@ -76,12 +76,18 @@ static WRITE8_HANDLER( megazone_coin_counter_w )
 	coin_counter_w(space->machine(), 1 - offset, data);		/* 1-offset, because coin counters are in reversed order */
 }
 
+static WRITE8_HANDLER( irq_mask_w )
+{
+	megazone_state *state = space->machine().driver_data<megazone_state>();
+
+	state->m_irq_mask = data & 1;
+}
 
 
 static ADDRESS_MAP_START( megazone_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x0001) AM_WRITE(megazone_coin_counter_w) /* coin counter 2, coin counter 1 */
 	AM_RANGE(0x0005, 0x0005) AM_WRITE(megazone_flipscreen_w)
-	AM_RANGE(0x0007, 0x0007) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x0007, 0x0007) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x0800, 0x0800) AM_WRITE(watchdog_reset_w)
 	AM_RANGE(0x1000, 0x1000) AM_WRITEONLY AM_BASE_MEMBER(megazone_state, m_scrolly)
 	AM_RANGE(0x1800, 0x1800) AM_WRITEONLY AM_BASE_MEMBER(megazone_state, m_scrollx)
@@ -101,8 +107,8 @@ static ADDRESS_MAP_START( megazone_sound_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x6000, 0x6000) AM_READ_PORT("IN0")			/* IO Coin */
 	AM_RANGE(0x6001, 0x6001) AM_READ_PORT("IN1")			/* P1 IO */
 	AM_RANGE(0x6002, 0x6002) AM_READ_PORT("IN2")			/* P2 IO */
-	AM_RANGE(0x8000, 0x8000) AM_READ_PORT("DSW1")
-	AM_RANGE(0x8001, 0x8001) AM_READ_PORT("DSW2")
+	AM_RANGE(0x8000, 0x8000) AM_READ_PORT("DSW2")
+	AM_RANGE(0x8001, 0x8001) AM_READ_PORT("DSW1")
 	AM_RANGE(0xa000, 0xa000) AM_WRITENOP					/* INTMAIN - Interrupts main CPU (unused) */
 	AM_RANGE(0xc000, 0xc000) AM_WRITENOP					/* INT (Actually is NMI) enable/disable (unused)*/
 	AM_RANGE(0xc001, 0xc001) AM_WRITE(watchdog_reset_w)
@@ -139,41 +145,41 @@ static INPUT_PORTS_START( megazone )
 	PORT_START("IN2")
 	KONAMI8_COCKTAIL_B1_UNK
 
-	/* 0x8000 -> 0xe020 (CPU1) = 0x3820 (CPU0) */
+	/* 0x8001 -> 0xe021 (CPU1) = 0x3821 (CPU0) */
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )
+	KONAMI_COINAGE_LOC(DEF_STR( Free_Play ), "No Coin B", SW1)
+	/* "No Coin B" = coins produce sound, but no effect on coin counter */
+
+	/* 0x8000 -> 0xe020 (CPU1) = 0x3820 (CPU0) */
+	PORT_START("DSW2")
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "3" )
 	PORT_DIPSETTING(    0x02, "4" )
 	PORT_DIPSETTING(    0x01, "5" )
 	PORT_DIPSETTING(    0x00, "7" )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )		PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(    0x18, "20k 70k 70k+" )
 	PORT_DIPSETTING(    0x10, "20k 80k 80k+" )
 	PORT_DIPSETTING(    0x08, "30k 90k 90k+" )
 	PORT_DIPSETTING(    0x00, "30k 100k 100k+" )
-	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x60, DEF_STR( Easy ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-
-	/* 0x8001 -> 0xe021 (CPU1) = 0x3821 (CPU0) */
-	PORT_START("DSW2")
-	KONAMI_COINAGE(DEF_STR( Free_Play ), "No Coin B")
-	/* "No Coin B" = coins produce sound, but no effect on coin counter */
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( megazona )
 	PORT_INCLUDE( megazone )
 
-	PORT_MODIFY("DSW1")
-	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )
+	PORT_MODIFY("DSW2")
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "2" )
 	PORT_DIPSETTING(    0x02, "3" )
 	PORT_DIPSETTING(    0x01, "4" )
@@ -244,12 +250,21 @@ static MACHINE_RESET( megazone )
 	state->m_i8039_status = 0;
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	megazone_state *state = device->machine().driver_data<megazone_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
+
 static MACHINE_CONFIG_START( megazone, megazone_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, 18432000/9)        /* 2 MHz */
 	MCFG_CPU_PROGRAM_MAP(megazone_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80,18432000/6)     /* Z80 Clock is derived from the H1 signal */
 	MCFG_CPU_PROGRAM_MAP(megazone_sound_map)
@@ -268,10 +283,9 @@ static MACHINE_CONFIG_START( megazone, megazone_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(36*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 36*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(megazone)
+	MCFG_SCREEN_UPDATE_STATIC(megazone)
 
 	MCFG_GFXDECODE(megazone)
 	MCFG_PALETTE_LENGTH(16*16+16*16)

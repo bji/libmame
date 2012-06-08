@@ -104,7 +104,7 @@ static WRITE8_HANDLER( mole_videoram_w )
 	mole_state *state = space->machine().driver_data<mole_state>();
 
 	state->m_tileram[offset] = data | (state->m_tile_bank << 8);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( mole_tilebank_w )
@@ -112,7 +112,7 @@ static WRITE8_HANDLER( mole_tilebank_w )
 	mole_state *state = space->machine().driver_data<mole_state>();
 
 	state->m_tile_bank = data;
-	tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+	state->m_bg_tilemap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER( mole_flipscreen_w )
@@ -120,11 +120,11 @@ static WRITE8_HANDLER( mole_flipscreen_w )
 	flip_screen_set(space->machine(), data & 0x01);
 }
 
-static SCREEN_UPDATE( mole )
+static SCREEN_UPDATE_IND16( mole )
 {
-	mole_state *state = screen->machine().driver_data<mole_state>();
+	mole_state *state = screen.machine().driver_data<mole_state>();
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -328,10 +328,9 @@ static MACHINE_CONFIG_START( mole, mole_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 25*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 25*8-1)
-	MCFG_SCREEN_UPDATE(mole)
+	MCFG_SCREEN_UPDATE_STATIC(mole)
 
 	MCFG_GFXDECODE(mole)
 	MCFG_PALETTE_LENGTH(8)

@@ -141,21 +141,21 @@ static VIDEO_START(pturn)
 {
 	pturn_state *state = machine.driver_data<pturn_state>();
 	state->m_fgmap = tilemap_create(machine, get_pturn_tile_info,tilemap_scan_rows,8, 8,32,32);
-	tilemap_set_transparent_pen(state->m_fgmap,0);
+	state->m_fgmap->set_transparent_pen(0);
 	state->m_bgmap = tilemap_create(machine, get_pturn_bg_tile_info,tilemap_scan_rows,8, 8,32,32*8);
-	tilemap_set_transparent_pen(state->m_bgmap,0);
+	state->m_bgmap->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE(pturn)
+static SCREEN_UPDATE_IND16(pturn)
 {
-	pturn_state *state = screen->machine().driver_data<pturn_state>();
+	pturn_state *state = screen.machine().driver_data<pturn_state>();
 	UINT8 *spriteram = state->m_spriteram;
 	int offs;
 	int sx, sy;
 	int flipx, flipy;
 
-	bitmap_fill(bitmap, cliprect, state->m_bgcolor);
-	tilemap_draw(bitmap,cliprect,state->m_bgmap,0,0);
+	bitmap.fill(state->m_bgcolor, cliprect);
+	state->m_bgmap->draw(bitmap, cliprect, 0,0);
 	for ( offs = 0x80-4 ; offs >=0 ; offs -= 4)
 	{
 		sy=256-spriteram[offs]-16 ;
@@ -165,13 +165,13 @@ static SCREEN_UPDATE(pturn)
 		flipy=spriteram[offs+1]&0x80;
 
 
-		if (flip_screen_x_get(screen->machine()))
+		if (flip_screen_x_get(screen.machine()))
 		{
 			sx = 224 - sx;
 			flipx ^= 0x40;
 		}
 
-		if (flip_screen_y_get(screen->machine()))
+		if (flip_screen_y_get(screen.machine()))
 		{
 			flipy ^= 0x80;
 			sy = 224 - sy;
@@ -179,14 +179,14 @@ static SCREEN_UPDATE(pturn)
 
 		if(sx|sy)
 		{
-			drawgfx_transpen(bitmap, cliprect,screen->machine().gfx[2],
+			drawgfx_transpen(bitmap, cliprect,screen.machine().gfx[2],
 			spriteram[offs+1] & 0x3f ,
 			(spriteram[offs+2] & 0x1f),
 			flipx, flipy,
 			sx,sy,0);
 		}
 	}
-	tilemap_draw(bitmap,cliprect,state->m_fgmap,0,0);
+	state->m_fgmap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -207,7 +207,7 @@ static WRITE8_HANDLER( pturn_videoram_w )
 	pturn_state *state = space->machine().driver_data<pturn_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset]=data;
-	tilemap_mark_tile_dirty(state->m_fgmap,offset);
+	state->m_fgmap->mark_tile_dirty(offset);
 }
 
 
@@ -238,36 +238,36 @@ static WRITE8_HANDLER(bgcolor_w)
 static WRITE8_HANDLER(bg_scrollx_w)
 {
 	pturn_state *state = space->machine().driver_data<pturn_state>();
-	tilemap_set_scrolly(state->m_bgmap, 0, (data>>5)*32*8);
+	state->m_bgmap->set_scrolly(0, (data>>5)*32*8);
 	state->m_bgpalette=data&0x1f;
-	tilemap_mark_all_tiles_dirty(state->m_bgmap);
+	state->m_bgmap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER(fgpalette_w)
 {
 	pturn_state *state = space->machine().driver_data<pturn_state>();
 	state->m_fgpalette=data&0x1f;
-	tilemap_mark_all_tiles_dirty(state->m_fgmap);
+	state->m_fgmap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER(bg_scrolly_w)
 {
 	pturn_state *state = space->machine().driver_data<pturn_state>();
-	tilemap_set_scrollx(state->m_bgmap, 0, data);
+	state->m_bgmap->set_scrollx(0, data);
 }
 
 static WRITE8_HANDLER(fgbank_w)
 {
 	pturn_state *state = space->machine().driver_data<pturn_state>();
 	state->m_fgbank=data&1;
-	tilemap_mark_all_tiles_dirty(state->m_fgmap);
+	state->m_fgmap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER(bgbank_w)
 {
 	pturn_state *state = space->machine().driver_data<pturn_state>();
 	state->m_bgbank=data&1;
-	tilemap_mark_all_tiles_dirty(state->m_bgmap);
+	state->m_bgmap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER(flip_w)
@@ -489,10 +489,9 @@ static MACHINE_CONFIG_START( pturn, pturn_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(pturn)
+	MCFG_SCREEN_UPDATE_STATIC(pturn)
 
 	MCFG_PALETTE_LENGTH(0x100)
 	MCFG_PALETTE_INIT(RRRR_GGGG_BBBB)

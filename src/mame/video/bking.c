@@ -133,7 +133,7 @@ WRITE8_HANDLER( bking_cont1_w )
 
 	flip_screen_set_no_update(space->machine(), data & 0x04);
 
-	tilemap_set_flip_all(space->machine(), flip_screen_get(space->machine()) ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
+	space->machine().tilemap().set_flip_all(flip_screen_get(space->machine()) ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
 
 	state->m_controller = data & 0x02;
 
@@ -167,7 +167,7 @@ WRITE8_HANDLER( bking_cont3_w )
 
 	if (state->m_palette_bank != ((data >> 1) & 0x03))
 	{
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 	}
 
 	state->m_palette_bank = (data >> 1) & 0x03;
@@ -199,7 +199,7 @@ WRITE8_HANDLER( bking_playfield_w )
 {
 	bking_state *state = space->machine().driver_data<bking_state>();
 	state->m_playfield_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset / 2);
+	state->m_bg_tilemap->mark_tile_dirty(offset / 2);
 }
 
 
@@ -241,35 +241,35 @@ VIDEO_START( bking )
 {
 	bking_state *state = machine.driver_data<bking_state>();
 	state->m_bg_tilemap = tilemap_create(machine, get_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	state->m_tmp_bitmap1 = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_tmp_bitmap2 = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmp_bitmap1);
+	machine.primary_screen->register_screen_bitmap(state->m_tmp_bitmap2);
 
-	state->save_item(NAME(*state->m_tmp_bitmap1));
-	state->save_item(NAME(*state->m_tmp_bitmap2));
+	state->save_item(NAME(state->m_tmp_bitmap1));
+	state->save_item(NAME(state->m_tmp_bitmap2));
 }
 
 
-SCREEN_UPDATE( bking )
+SCREEN_UPDATE_IND16( bking )
 {
-	bking_state *state = screen->machine().driver_data<bking_state>();
+	bking_state *state = screen.machine().driver_data<bking_state>();
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* draw the balls */
-	drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[2],
+	drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[2],
 		state->m_ball1_pic,
 		state->m_palette_bank,
 		0, 0,
 		state->m_xld1, state->m_yld1, 0);
 
-	drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[3],
+	drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[3],
 		state->m_ball2_pic,
 		state->m_palette_bank,
 		0, 0,
 		state->m_xld2, state->m_yld2, 0);
 
 	/* draw the crow */
-	drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1],
+	drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1],
 		state->m_crow_pic,
 		state->m_palette_bank,
 		state->m_crow_flip, state->m_crow_flip,
@@ -278,80 +278,84 @@ SCREEN_UPDATE( bking )
 }
 
 
-SCREEN_EOF( bking )
+SCREEN_VBLANK( bking )
 {
-	bking_state *state = machine.driver_data<bking_state>();
-	static const rectangle rect = { 0, 7, 0, 15 };
-
-	int xld = 0;
-	int yld = 0;
-
-	UINT32 latch = 0;
-
-	if (state->m_pc3259_mask == 6)	/* player 1 */
+	// rising edge
+	if (vblank_on)
 	{
-		xld = state->m_xld1;
-		yld = state->m_yld1;
+		bking_state *state = screen.machine().driver_data<bking_state>();
+		const rectangle rect(0, 7, 0, 15);
 
-		drawgfx_opaque(state->m_tmp_bitmap2, &rect, machine.gfx[2],
-			state->m_ball1_pic,
-			0,
-			0, 0,
-			0, 0);
+		int xld = 0;
+		int yld = 0;
 
-		latch = 0x0c00;
-	}
+		UINT32 latch = 0;
 
-	if (state->m_pc3259_mask == 3)	/* player 2 */
-	{
-		xld = state->m_xld2;
-		yld = state->m_yld2;
-
-		drawgfx_opaque(state->m_tmp_bitmap2, &rect, machine.gfx[3],
-			state->m_ball2_pic,
-			0,
-			0, 0,
-			0, 0);
-
-		latch = 0x0400;
-	}
-
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, flip_screen_get(machine) ? -xld : xld);
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, flip_screen_get(machine) ? -yld : yld);
-
-	tilemap_draw(state->m_tmp_bitmap1, &rect, state->m_bg_tilemap, 0, 0);
-
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, 0);
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, 0);
-
-	if (latch != 0)
-	{
-		const UINT8* MASK = machine.region("user1")->base() + 8 * state->m_hit;
-
-		int x;
-		int y;
-
-		for (y = rect.min_y; y <= rect.max_y; y++)
+		if (state->m_pc3259_mask == 6)	/* player 1 */
 		{
-			const UINT16* p0 = BITMAP_ADDR16(state->m_tmp_bitmap1, y, 0);
-			const UINT16* p1 = BITMAP_ADDR16(state->m_tmp_bitmap2, y, 0);
+			xld = state->m_xld1;
+			yld = state->m_yld1;
 
-			for (x = rect.min_x; x <= rect.max_x; x++)
+			drawgfx_opaque(state->m_tmp_bitmap2, rect, screen.machine().gfx[2],
+				state->m_ball1_pic,
+				0,
+				0, 0,
+				0, 0);
+
+			latch = 0x0c00;
+		}
+
+		if (state->m_pc3259_mask == 3)	/* player 2 */
+		{
+			xld = state->m_xld2;
+			yld = state->m_yld2;
+
+			drawgfx_opaque(state->m_tmp_bitmap2, rect, screen.machine().gfx[3],
+				state->m_ball2_pic,
+				0,
+				0, 0,
+				0, 0);
+
+			latch = 0x0400;
+		}
+
+		state->m_bg_tilemap->set_scrollx(0, flip_screen_get(screen.machine()) ? -xld : xld);
+		state->m_bg_tilemap->set_scrolly(0, flip_screen_get(screen.machine()) ? -yld : yld);
+
+		state->m_bg_tilemap->draw(state->m_tmp_bitmap1, rect, 0, 0);
+
+		state->m_bg_tilemap->set_scrollx(0, 0);
+		state->m_bg_tilemap->set_scrolly(0, 0);
+
+		if (latch != 0)
+		{
+			const UINT8* MASK = screen.machine().region("user1")->base() + 8 * state->m_hit;
+
+			int x;
+			int y;
+
+			for (y = rect.min_y; y <= rect.max_y; y++)
 			{
-				if (MASK[p0[x] & 7] && p1[x])
+				const UINT16* p0 = &state->m_tmp_bitmap1.pix16(y);
+				const UINT16* p1 = &state->m_tmp_bitmap2.pix16(y);
+
+				for (x = rect.min_x; x <= rect.max_x; x++)
 				{
-					int col = (xld + x) / 8 + 1;
-					int row = (yld + y) / 8 + 0;
+					if (MASK[p0[x] & 7] && p1[x])
+					{
+						int col = (xld + x) / 8 + 1;
+						int row = (yld + y) / 8 + 0;
 
-					latch |= (flip_screen_get(machine) ? 31 - col : col) << 0;
-					latch |= (flip_screen_get(machine) ? 31 - row : row) << 5;
+						latch |= (flip_screen_get(screen.machine()) ? 31 - col : col) << 0;
+						latch |= (flip_screen_get(screen.machine()) ? 31 - row : row) << 5;
 
-					state->m_pc3259_output[0] = (latch >> 0x0) & 0xf;
-					state->m_pc3259_output[1] = (latch >> 0x4) & 0xf;
-					state->m_pc3259_output[2] = (latch >> 0x8) & 0xf;
-					state->m_pc3259_output[3] = (latch >> 0xc) & 0xf;
+						state->m_pc3259_output[0] = (latch >> 0x0) & 0xf;
+						state->m_pc3259_output[1] = (latch >> 0x4) & 0xf;
+						state->m_pc3259_output[2] = (latch >> 0x8) & 0xf;
+						state->m_pc3259_output[3] = (latch >> 0xc) & 0xf;
 
-					return;
+						return;
+					}
 				}
 			}
 		}

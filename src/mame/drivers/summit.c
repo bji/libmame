@@ -34,10 +34,10 @@ static VIDEO_START(summit)
 {
 }
 
-static SCREEN_UPDATE(summit)
+static SCREEN_UPDATE_IND16(summit)
 {
-	summit_state *state = screen->machine().driver_data<summit_state>();
-	const gfx_element *gfx = screen->machine().gfx[0];
+	summit_state *state = screen.machine().driver_data<summit_state>();
+	const gfx_element *gfx = screen.machine().gfx[0];
 	int count = 0x0000;
 
 	int y,x;
@@ -61,6 +61,7 @@ static WRITE8_HANDLER( out_w )
 
 }
 
+
 static ADDRESS_MAP_START( mainmap, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x17ff) AM_ROM
 
@@ -68,10 +69,10 @@ static ADDRESS_MAP_START( mainmap, AS_PROGRAM, 8 )
 	AM_RANGE(0x2800, 0x2bff) AM_RAM AM_BASE_MEMBER(summit_state, m_vram)
 
 	AM_RANGE(0x3800, 0x3800) AM_READ_PORT("IN0")
-	AM_RANGE(0x3880, 0x3880) AM_WRITE(out_w)
-	AM_RANGE(0x3900, 0x3900) AM_READ_PORT("IN1") AM_WRITE(out_w)
-	AM_RANGE(0x3980, 0x3980) AM_WRITE(out_w)
-	AM_RANGE(0x3a00, 0x3a00) AM_READ_PORT("IN2") AM_WRITE(out_w)
+//  AM_RANGE(0x3880, 0x3880) AM_WRITE(out_w)
+	AM_RANGE(0x3900, 0x3900) AM_READ_PORT("IN1") AM_WRITE(out_w) // lamps
+//  AM_RANGE(0x3980, 0x3980) AM_WRITE(out_w)
+	AM_RANGE(0x3a00, 0x3a00) AM_READ_PORT("IN2") //AM_WRITE(out_w)
 	AM_RANGE(0x3b00, 0x3b00) AM_READ_PORT("IN3")
 
 	AM_RANGE(0x7000, 0x71ff) AM_RAM
@@ -301,10 +302,9 @@ static MACHINE_CONFIG_START( summit, summit_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(summit)
+	MCFG_SCREEN_UPDATE_STATIC(summit)
 
 	MCFG_GFXDECODE(summit)
 
@@ -335,4 +335,4 @@ ROM_START( pushover )
 ROM_END
 
 
-GAME( 1981, pushover,  0,    summit, summit,  0, ROT270, "Summit Coin", "Push Over (Summit Coin)", GAME_NOT_WORKING|GAME_NO_SOUND )
+GAME( 1981, pushover,  0,    summit, summit,  0, ROT270, "Summit Coin", "Push Over (Summit Coin)", GAME_NOT_WORKING|GAME_NO_SOUND|GAME_WRONG_COLORS )

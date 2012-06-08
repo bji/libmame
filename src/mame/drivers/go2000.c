@@ -169,9 +169,9 @@ static VIDEO_START(go2000)
 {
 }
 
-static SCREEN_UPDATE(go2000)
+static SCREEN_UPDATE_IND16(go2000)
 {
-	go2000_state *state = screen->machine().driver_data<go2000_state>();
+	go2000_state *state = screen.machine().driver_data<go2000_state>();
 	int x,y;
 	int count = 0;
 
@@ -182,7 +182,7 @@ static SCREEN_UPDATE(go2000)
 		{
 			int tile = state->m_videoram[count];
 			int attr = state->m_videoram2[count];
-			drawgfx_opaque(bitmap, cliprect, screen->machine().gfx[0], tile, attr, 0, 0, x * 8, y * 8);
+			drawgfx_opaque(bitmap, cliprect, screen.machine().gfx[0], tile, attr, 0, 0, x * 8, y * 8);
 			count++;
 		}
 	}
@@ -194,7 +194,7 @@ static SCREEN_UPDATE(go2000)
 		{
 			int tile = state->m_videoram[count];
 			int attr = state->m_videoram2[count];
-			drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[0], tile, attr, 0, 0, x * 8, y * 8, 0xf);
+			drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[0], tile, attr, 0, 0, x * 8, y * 8, 0xf);
 			count++;
 		}
 	}
@@ -203,8 +203,8 @@ static SCREEN_UPDATE(go2000)
 	{
 	int offs;
 
-	int max_x = screen->machine().primary_screen->width() - 8;
-	int max_y = screen->machine().primary_screen->height() - 8;
+	int max_x = screen.machine().primary_screen->width() - 8;
+	int max_y = screen.machine().primary_screen->height() - 8;
 
 	for (offs = 0xf800 / 2; offs < 0x10000 / 2 ; offs += 4/2)
 	{
@@ -277,7 +277,7 @@ static SCREEN_UPDATE(go2000)
 				if (flipx)
 					tile_flipx = !tile_flipx;
 
-				if (flip_screen_get(screen->machine()))
+				if (flip_screen_get(screen.machine()))
 				{
 					sx = max_x - sx;
 					sy = max_y - sy;
@@ -285,7 +285,7 @@ static SCREEN_UPDATE(go2000)
 					tile_flipy = !tile_flipy;
 				}
 
-				drawgfx_transpen(	bitmap, cliprect,screen->machine().gfx[0],
+				drawgfx_transpen(	bitmap, cliprect,screen.machine().gfx[0],
 							(tile & 0x1fff) + bank*0x4000,
 							attr,
 							tile_flipx, tile_flipy,
@@ -335,10 +335,9 @@ static MACHINE_CONFIG_START( go2000, go2000_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 48*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(go2000)
+	MCFG_SCREEN_UPDATE_STATIC(go2000)
 
 	MCFG_PALETTE_LENGTH(0x800)
 

@@ -75,9 +75,9 @@ VIDEO_START( gijoe )
 	state->save_item(NAME(state->m_layer_pri));
 }
 
-SCREEN_UPDATE( gijoe )
+SCREEN_UPDATE_IND16( gijoe )
 {
-	gijoe_state *state = screen->machine().driver_data<gijoe_state>();
+	gijoe_state *state = screen.machine().driver_data<gijoe_state>();
 	static const int K053251_CI[4] = { K053251_CI1, K053251_CI2, K053251_CI3, K053251_CI4 };
 	int layer[4];
 	int vrc_mode, vrc_new, colorbase_new, /*primode,*/ dirty, i;
@@ -158,8 +158,8 @@ SCREEN_UPDATE( gijoe )
 
 	konami_sortlayers4(layer, state->m_layer_pri);
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, layer[0], 0, 1);
 	k056832_tilemap_draw(state->m_k056832, bitmap, cliprect, layer[1], 0, 2);

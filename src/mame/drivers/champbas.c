@@ -95,13 +95,17 @@ TODO:
  *
  *************************************/
 
-static SCREEN_EOF( champbas )
+static SCREEN_VBLANK( champbas )
 {
-	champbas_state *state = machine.driver_data<champbas_state>();
-	state->m_watchdog_count++;
+	// rising edge
+	if (vblank_on)
+	{
+		champbas_state *state = screen.machine().driver_data<champbas_state>();
+		state->m_watchdog_count++;
 
-	if (state->m_watchdog_count == 0x10)
-		machine.schedule_soft_reset();
+		if (state->m_watchdog_count == 0x10)
+			screen.machine().schedule_soft_reset();
+	}
 }
 
 
@@ -127,10 +131,10 @@ static CUSTOM_INPUT( champbas_watchdog_bit2 )
 static WRITE8_HANDLER( irq_enable_w )
 {
 	champbas_state *state = space->machine().driver_data<champbas_state>();
-	int bit = data & 1;
 
-	cpu_interrupt_enable(state->m_maincpu, bit);
-	if (!bit)
+	state->m_irq_mask = data & 1;
+
+	if (!state->m_irq_mask)
 		device_set_input_line(state->m_maincpu, 0, CLEAR_LINE);
 }
 
@@ -596,13 +600,21 @@ static MACHINE_RESET( champbas )
 	state->m_gfx_bank = 0;	// talbot has only 1 bank
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	champbas_state *state = device->machine().driver_data<champbas_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, ASSERT_LINE);
+}
+
 
 static MACHINE_CONFIG_START( talbot, champbas_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_18_432MHz/6)
 	MCFG_CPU_PROGRAM_MAP(talbot_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	/* MCU */
 	MCFG_CPU_ADD(CPUTAG_MCU, ALPHA8201, XTAL_18_432MHz/6/8)
@@ -614,11 +626,10 @@ static MACHINE_CONFIG_START( talbot, champbas_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(champbas)
-	MCFG_SCREEN_EOF(champbas)
+	MCFG_SCREEN_UPDATE_STATIC(champbas)
+	MCFG_SCREEN_VBLANK_STATIC(champbas)
 
 	MCFG_GFXDECODE(talbot)
 	MCFG_PALETTE_LENGTH(0x200)
@@ -639,7 +650,7 @@ static MACHINE_CONFIG_START( champbas, champbas_state )
 	/* main cpu */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_18_432MHz/6)
 	MCFG_CPU_PROGRAM_MAP(champbas_main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80, XTAL_18_432MHz/6)
 	MCFG_CPU_PROGRAM_MAP(champbas_sub_map)
@@ -650,11 +661,10 @@ static MACHINE_CONFIG_START( champbas, champbas_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(champbas)
-	MCFG_SCREEN_EOF(champbas)
+	MCFG_SCREEN_UPDATE_STATIC(champbas)
+	MCFG_SCREEN_VBLANK_STATIC(champbas)
 
 	MCFG_GFXDECODE(champbas)
 	MCFG_PALETTE_LENGTH(0x200)
@@ -691,7 +701,7 @@ static MACHINE_CONFIG_START( exctsccr, champbas_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_18_432MHz/6 )
 	MCFG_CPU_PROGRAM_MAP(exctsccr_main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_14_31818MHz/4 )
 	MCFG_CPU_PROGRAM_MAP(exctsccr_sub_map)
@@ -708,11 +718,10 @@ static MACHINE_CONFIG_START( exctsccr, champbas_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60.54)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(exctsccr)
-	MCFG_SCREEN_EOF(champbas)
+	MCFG_SCREEN_UPDATE_STATIC(exctsccr)
+	MCFG_SCREEN_VBLANK_STATIC(champbas)
 
 	MCFG_GFXDECODE(exctsccr)
 	MCFG_PALETTE_LENGTH(0x200)
@@ -749,7 +758,7 @@ static MACHINE_CONFIG_START( exctsccrb, champbas_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_18_432MHz/6)
 	MCFG_CPU_PROGRAM_MAP(exctsccrb_main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("sub", Z80, XTAL_18_432MHz/6)
 	MCFG_CPU_PROGRAM_MAP(champbas_sub_map)
@@ -760,11 +769,10 @@ static MACHINE_CONFIG_START( exctsccrb, champbas_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(exctsccr)
-	MCFG_SCREEN_EOF(champbas)
+	MCFG_SCREEN_UPDATE_STATIC(exctsccr)
+	MCFG_SCREEN_VBLANK_STATIC(champbas)
 
 	MCFG_GFXDECODE(exctsccr)
 	MCFG_PALETTE_LENGTH(0x200)

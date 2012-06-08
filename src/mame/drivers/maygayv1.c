@@ -280,9 +280,9 @@ static VIDEO_START( maygayv1 )
 }
 
 
-static SCREEN_UPDATE( maygayv1 )
+static SCREEN_UPDATE_IND16( maygayv1 )
 {
-	maygayv1_state *state = screen->machine().driver_data<maygayv1_state>();
+	maygayv1_state *state = screen.machine().driver_data<maygayv1_state>();
 	i82716_t &i82716 = state->m_i82716;
 	UINT16 *atable = &i82716.dram[VREG(ATBA)];
 	UINT16 *otable = &i82716.dram[VREG(ODTBA) & 0xfc00];  // both must be bank 0
@@ -297,18 +297,18 @@ static SCREEN_UPDATE( maygayv1 )
 	/* If screen output is disabled, fill with black */
 	if (!(VREG(VCR0) & VCR0_DEN))
 	{
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 		return 0;
 	}
 
 	/* For every scanline... */
-	for (sl = cliprect->min_x; sl <= cliprect->max_y; ++sl)
+	for (sl = cliprect.min_x; sl <= cliprect.max_y; ++sl)
 	{
 		int obj;
 		UINT16 aflags = atable[sl];
 		UINT16 slmask_old = slmask;
 
-		UINT16 *bmp_ptr = BITMAP_ADDR16(bitmap, sl, 0);
+		UINT16 *bmp_ptr = &bitmap.pix16(sl);
 
 		slmask = 0xffff ^ (slmask ^ aflags);
 
@@ -399,7 +399,7 @@ static SCREEN_UPDATE( maygayv1 )
 		}
 
 		// Write it out
-		for (sx = cliprect->min_x; sx < cliprect->max_x; sx += 2)
+		for (sx = cliprect.min_x; sx < cliprect.max_x; sx += 2)
 		{
 			UINT8 pix = i82716.line_buf[sx / 2];
 
@@ -411,33 +411,37 @@ static SCREEN_UPDATE( maygayv1 )
 	return 0;
 }
 
-static SCREEN_EOF( maygayv1 )
+static SCREEN_VBLANK( maygayv1 )
 {
-	maygayv1_state *state = machine.driver_data<maygayv1_state>();
-	i82716_t &i82716 = state->m_i82716;
-	// UCF
-	if (VREG(VCR0) & VCR0_UCF)
+	// rising edge
+	if (vblank_on)
 	{
-		int i;
-
-		for (i = 0; i < 16; ++i)
-			VREG(i) = i82716.dram[i];
-	}
-	else
-	{
-		VREG(VCR0) = i82716.dram[VCR0];
-		VREG(ATBA) = i82716.dram[ATBA];
-	}
-
-	if (!(VREG(VCR0) & VCR0_DEI))
-	{
-		int i;
-		UINT16 *palbase = &i82716.dram[VREG(CTBA)];
-
-		for (i = 0; i < 16; ++i)
+		maygayv1_state *state = screen.machine().driver_data<maygayv1_state>();
+		i82716_t &i82716 = state->m_i82716;
+		// UCF
+		if (VREG(VCR0) & VCR0_UCF)
 		{
-			UINT16 entry = *palbase++;
-			palette_set_color_rgb(machine, entry & 0xf, pal4bit(entry >> 12), pal4bit(entry >> 8), pal4bit(entry >> 4));
+			int i;
+
+			for (i = 0; i < 16; ++i)
+				VREG(i) = i82716.dram[i];
+		}
+		else
+		{
+			VREG(VCR0) = i82716.dram[VCR0];
+			VREG(ATBA) = i82716.dram[ATBA];
+		}
+
+		if (!(VREG(VCR0) & VCR0_DEI))
+		{
+			int i;
+			UINT16 *palbase = &i82716.dram[VREG(CTBA)];
+
+			for (i = 0; i < 16; ++i)
+			{
+				UINT16 entry = *palbase++;
+				palette_set_color_rgb(screen.machine(), entry & 0xf, pal4bit(entry >> 12), pal4bit(entry >> 8), pal4bit(entry >> 4));
+			}
 		}
 	}
 }
@@ -1044,11 +1048,10 @@ static MACHINE_CONFIG_START( maygayv1, maygayv1_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(640, 300)
 	MCFG_SCREEN_VISIBLE_AREA(0, 640 - 1, 0, 300 - 1)
-	MCFG_SCREEN_UPDATE(maygayv1)
-	MCFG_SCREEN_EOF(maygayv1)
+	MCFG_SCREEN_UPDATE_STATIC(maygayv1)
+	MCFG_SCREEN_VBLANK_STATIC(maygayv1)
 
 	MCFG_PALETTE_LENGTH(16)
 
@@ -1392,24 +1395,26 @@ static DRIVER_INIT( screenpl )
 	state->m_p1 = state->m_p3 = 0xff;
 }
 
-GAME( 1991, screenpl, 0,        maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 4.0)",               GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp1, screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, set 1)",               GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp1a,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, set 2)",               GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp2, screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, Isle of Man, set 1)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp2a,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, Isle of Man, set 2)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp3, screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, SA5-082)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp3a,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, SA5-083)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 1991, screenp4 ,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. ?.?)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
+#define GAME_FLAGS GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK
+
+GAME( 1991, screenpl, 0,        maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 4.0)",               GAME_FLAGS )
+GAME( 1991, screenp1, screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, set 1)",               GAME_FLAGS )
+GAME( 1991, screenp1a,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, set 2)",               GAME_FLAGS )
+GAME( 1991, screenp2, screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, Isle of Man, set 1)",  GAME_FLAGS )
+GAME( 1991, screenp2a,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. 1.9, Isle of Man, set 2)",  GAME_FLAGS )
+GAME( 1991, screenp3, screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, SA5-082)",  GAME_FLAGS )
+GAME( 1991, screenp3a,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, SA5-083)",  GAME_FLAGS )
+GAME( 1991, screenp4 ,screenpl, maygayv1, screenpl, screenpl, ROT0, "Maygay", "Screen Play (Maygay, MV1 Video, ver. ?.?)",  GAME_FLAGS )
 
 // incomplete sets
-GAME( 199?, mv1bon	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Believe It Or Not (Maygay, MV1 Video)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1cpc	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Caesar's Palace Club (Maygay, MV1 Video, set 1)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1cpca	, mv1cpc	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Caesar's Palace Club (Maygay, MV1 Video, set 2)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1cpcb	, mv1cpc	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Caesar's Palace Club (Maygay, MV1 Video, set 3)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1cwq	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Crossword Quiz (Maygay, MV1 Video, set 1)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1cwqa	, mv1cwq	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Crossword Quiz (Maygay, MV1 Video, set 2)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1guac	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Give Us A Clue (Maygay, MV1 Video, set 1)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1guaca, mv1guac	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Give Us A Clue (Maygay, MV1 Video, set 2)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1sfx	, 0			,maygayv1, screenpl, screenpl, ROT90, "Maygay", "Special Effects (Maygay, MV1 Video, set 1)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1sfxa	, mv1sfx	,maygayv1, screenpl, screenpl, ROT90, "Maygay", "Special Effects (Maygay, MV1 Video, set 2)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
-GAME( 199?, mv1wc	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "World Cup (Maygay, MV1 Video)",  GAME_NOT_WORKING | GAME_IMPERFECT_SOUND | GAME_REQUIRES_ARTWORK )
+GAME( 199?, mv1bon	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Believe It Or Not (Maygay, MV1 Video)",  GAME_FLAGS )
+GAME( 199?, mv1cpc	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Caesar's Palace Club (Maygay, MV1 Video, set 1)",  GAME_FLAGS )
+GAME( 199?, mv1cpca	, mv1cpc	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Caesar's Palace Club (Maygay, MV1 Video, set 2)",  GAME_FLAGS )
+GAME( 199?, mv1cpcb	, mv1cpc	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Caesar's Palace Club (Maygay, MV1 Video, set 3)",  GAME_FLAGS )
+GAME( 199?, mv1cwq	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Crossword Quiz (Maygay, MV1 Video, set 1)",  GAME_FLAGS )
+GAME( 199?, mv1cwqa	, mv1cwq	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Crossword Quiz (Maygay, MV1 Video, set 2)",  GAME_FLAGS )
+GAME( 199?, mv1guac	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Give Us A Clue (Maygay, MV1 Video, set 1)",  GAME_FLAGS )
+GAME( 199?, mv1guaca, mv1guac	,maygayv1, screenpl, screenpl, ROT0, "Maygay", "Give Us A Clue (Maygay, MV1 Video, set 2)",  GAME_FLAGS )
+GAME( 199?, mv1sfx	, 0			,maygayv1, screenpl, screenpl, ROT90, "Maygay", "Special Effects (Maygay, MV1 Video, set 1)",  GAME_FLAGS )
+GAME( 199?, mv1sfxa	, mv1sfx	,maygayv1, screenpl, screenpl, ROT90, "Maygay", "Special Effects (Maygay, MV1 Video, set 2)",  GAME_FLAGS )
+GAME( 199?, mv1wc	, 0			,maygayv1, screenpl, screenpl, ROT0, "Maygay", "World Cup (Maygay, MV1 Video)",  GAME_FLAGS )

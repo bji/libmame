@@ -20,6 +20,8 @@ public:
 	tilemap_t *m_bg2_tilemap;
 
 	UINT8 *m_sharedram;
+
+	UINT8 m_nmi_mask;
 };
 
 
@@ -32,4 +34,4 @@ READ8_HANDLER( vastar_bg1videoram_r );
 READ8_HANDLER( vastar_bg2videoram_r );
 
 VIDEO_START( vastar );
-SCREEN_UPDATE( vastar );
+SCREEN_UPDATE_IND16( vastar );

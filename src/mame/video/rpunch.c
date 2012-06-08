@@ -77,7 +77,7 @@ VIDEO_START( rpunch )
 	state->m_background[1] = tilemap_create(machine, get_bg1_tile_info,tilemap_scan_cols,8,8,64,64);
 
 	/* configure the tilemaps */
-	tilemap_set_transparent_pen(state->m_background[1],15);
+	state->m_background[1]->set_transparent_pen(15);
 
 	if (state->m_bitmapram)
 		memset(state->m_bitmapram, 0xff, state->m_bitmapram_size);
@@ -101,7 +101,7 @@ WRITE16_HANDLER( rpunch_videoram_w )
 	int tmap = offset >> 12;
 	int tile_index = offset & 0xfff;
 	COMBINE_DATA(&videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_background[tmap],tile_index);
+	state->m_background[tmap]->mark_tile_dirty(tile_index);
 }
 
 
@@ -115,9 +115,9 @@ WRITE16_HANDLER( rpunch_videoreg_w )
 	{
 		/* invalidate tilemaps */
 		if ((oldword ^ state->m_videoflags) & 0x0410)
-			tilemap_mark_all_tiles_dirty(state->m_background[0]);
+			state->m_background[0]->mark_all_dirty();
 		if ((oldword ^ state->m_videoflags) & 0x0820)
-			tilemap_mark_all_tiles_dirty(state->m_background[1]);
+			state->m_background[1]->mark_all_dirty();
 	}
 }
 
@@ -129,19 +129,19 @@ WRITE16_HANDLER( rpunch_scrollreg_w )
 		switch (offset)
 		{
 			case 0:
-				tilemap_set_scrolly(state->m_background[0], 0, data & 0x1ff);
+				state->m_background[0]->set_scrolly(0, data & 0x1ff);
 				break;
 
 			case 1:
-				tilemap_set_scrollx(state->m_background[0], 0, data & 0x1ff);
+				state->m_background[0]->set_scrollx(0, data & 0x1ff);
 				break;
 
 			case 2:
-				tilemap_set_scrolly(state->m_background[1], 0, data & 0x1ff);
+				state->m_background[1]->set_scrolly(0, data & 0x1ff);
 				break;
 
 			case 3:
-				tilemap_set_scrollx(state->m_background[1], 0, data & 0x1ff);
+				state->m_background[1]->set_scrollx(0, data & 0x1ff);
 				break;
 		}
 }
@@ -201,7 +201,7 @@ WRITE16_HANDLER( rpunch_ins_w )
  *
  *************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int start, int stop)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int start, int stop)
 {
 	rpunch_state *state = machine.driver_data<rpunch_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -239,7 +239,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
  *
  *************************************/
 
-static void draw_bitmap(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_bitmap(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	rpunch_state *state = machine.driver_data<rpunch_state>();
 	int colourbase;
@@ -256,10 +256,10 @@ static void draw_bitmap(running_machine &machine, bitmap_t *bitmap, const rectan
 		for(x=0;x<xxx;x++)
 		{
 			int coldat;
-			coldat = (state->m_bitmapram[count]>>12)&0xf; if (coldat!=15) *BITMAP_ADDR16(bitmap, y, ((x*4+0)-4)&0x1ff) = coldat+colourbase;
-			coldat = (state->m_bitmapram[count]>>8 )&0xf; if (coldat!=15) *BITMAP_ADDR16(bitmap, y, ((x*4+1)-4)&0x1ff) = coldat+colourbase;
-			coldat = (state->m_bitmapram[count]>>4 )&0xf; if (coldat!=15) *BITMAP_ADDR16(bitmap, y, ((x*4+2)-4)&0x1ff) = coldat+colourbase;
-			coldat = (state->m_bitmapram[count]>>0 )&0xf; if (coldat!=15) *BITMAP_ADDR16(bitmap, y, ((x*4+3)-4)&0x1ff) = coldat+colourbase;
+			coldat = (state->m_bitmapram[count]>>12)&0xf; if (coldat!=15) bitmap.pix16(y, ((x*4+0)-4)&0x1ff) = coldat+colourbase;
+			coldat = (state->m_bitmapram[count]>>8 )&0xf; if (coldat!=15) bitmap.pix16(y, ((x*4+1)-4)&0x1ff) = coldat+colourbase;
+			coldat = (state->m_bitmapram[count]>>4 )&0xf; if (coldat!=15) bitmap.pix16(y, ((x*4+2)-4)&0x1ff) = coldat+colourbase;
+			coldat = (state->m_bitmapram[count]>>0 )&0xf; if (coldat!=15) bitmap.pix16(y, ((x*4+3)-4)&0x1ff) = coldat+colourbase;
 			count++;
 		}
 	}
@@ -272,19 +272,19 @@ static void draw_bitmap(running_machine &machine, bitmap_t *bitmap, const rectan
  *
  *************************************/
 
-SCREEN_UPDATE( rpunch )
+SCREEN_UPDATE_IND16( rpunch )
 {
-	rpunch_state *state = screen->machine().driver_data<rpunch_state>();
+	rpunch_state *state = screen.machine().driver_data<rpunch_state>();
 	int effbins;
 
 	/* this seems like the most plausible explanation */
 	effbins = (state->m_bins > state->m_gins) ? state->m_gins : state->m_bins;
 
-	tilemap_draw(bitmap, cliprect, state->m_background[0], 0,0);
-	draw_sprites(screen->machine(), bitmap, cliprect, 0, effbins);
-	tilemap_draw(bitmap, cliprect, state->m_background[1], 0,0);
-	draw_sprites(screen->machine(), bitmap, cliprect, effbins, state->m_gins);
+	state->m_background[0]->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 0, effbins);
+	state->m_background[1]->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap, cliprect, effbins, state->m_gins);
 	if (state->m_bitmapram)
-		draw_bitmap(screen->machine(), bitmap, cliprect);
+		draw_bitmap(screen.machine(), bitmap, cliprect);
 	return 0;
 }

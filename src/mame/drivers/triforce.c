@@ -418,7 +418,7 @@ static VIDEO_START(triforce)
 
 }
 
-static SCREEN_UPDATE(triforce)
+static SCREEN_UPDATE_RGB32(triforce)
 {
 	return 0;
 }
@@ -437,10 +437,9 @@ static MACHINE_CONFIG_START( triforce_base, driver_device )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(640, 480)
 	MCFG_SCREEN_VISIBLE_AREA(0, 639, 0, 479)
-	MCFG_SCREEN_UPDATE(triforce)
+	MCFG_SCREEN_UPDATE_STATIC(triforce)
 
 	MCFG_PALETTE_LENGTH(65536)
 
@@ -448,7 +447,7 @@ static MACHINE_CONFIG_START( triforce_base, driver_device )
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( triforcegd, triforce_base )
-	MCFG_NAOMI_GDROM_BOARD_ADD("rom_board", "gdrom", "picreturn", NULL, "maincpu", NULL)
+	MCFG_NAOMI_GDROM_BOARD_ADD("rom_board", ":gdrom", "picreturn", NULL, "maincpu", NULL)
 MACHINE_CONFIG_END
 
 #define ROM_LOAD16_WORD_SWAP_BIOS(bios,name,offset,length,hash) \
@@ -671,14 +670,14 @@ ROM_END
 
 
 
-GAME( 2002, triforce, 0,        triforcegd,    triforce,    0, ROT0, "Sega",           "Triforce Bios", GAME_NO_SOUND|GAME_NOT_WORKING|GAME_IS_BIOS_ROOT )
-GAME( 2002, vs2002j,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 2002 (GDT-0001)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2002, vs2002ex, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 2002 (GDT-0002)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2003, avalons,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon - The Wizard Master - Server (GDT-0005C) (V4.001)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2003, gekpurya, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Gekitou Pro Yakyuu Mizushima Shinji All Stars vs. Pro Yakyuu (Rev C) (GDT-0008C)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2004, avalon13, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon 1.3 - Chaotic Sabbat - Client (GDT-0010C) (V4.000)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2004, tfupdate, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Triforce DIMM Updater (GDT-0011)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2004, vs4j,     triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 (Japan) (GDT-0013E)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2004, vs4,      triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 (Export) (GDT-0015)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2004, avalon20, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon 2.0 - Eutaxy and Commandment - Client (GDT-0017B) (V3.001)", GAME_NO_SOUND|GAME_NOT_WORKING )
-GAME( 2006, vs42006,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 Ver.2006 (Japan) (Rev D) (GDT-0020D)", GAME_NO_SOUND|GAME_NOT_WORKING )
+GAME( 2002, triforce, 0,        triforcegd,    triforce,    0, ROT0, "Sega",           "Triforce Bios", GAME_IS_SKELETON|GAME_IS_BIOS_ROOT )
+GAME( 2002, vs2002j,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 2002 (GDT-0001)", GAME_IS_SKELETON )
+GAME( 2002, vs2002ex, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 2002 (GDT-0002)", GAME_IS_SKELETON )
+GAME( 2003, avalons,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon - The Wizard Master - Server (GDT-0005C) (V4.001)", GAME_IS_SKELETON )
+GAME( 2003, gekpurya, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Gekitou Pro Yakyuu Mizushima Shinji All Stars vs. Pro Yakyuu (Rev C) (GDT-0008C)", GAME_IS_SKELETON )
+GAME( 2004, avalon13, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon 1.3 - Chaotic Sabbat - Client (GDT-0010C) (V4.000)", GAME_IS_SKELETON )
+GAME( 2004, tfupdate, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Triforce DIMM Updater (GDT-0011)", GAME_IS_SKELETON )
+GAME( 2004, vs4j,     triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 (Japan) (GDT-0013E)", GAME_IS_SKELETON )
+GAME( 2004, vs4,      triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 (Export) (GDT-0015)", GAME_IS_SKELETON )
+GAME( 2004, avalon20, triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "The Key Of Avalon 2.0 - Eutaxy and Commandment - Client (GDT-0017B) (V3.001)", GAME_IS_SKELETON )
+GAME( 2006, vs42006,  triforce, triforcegd,    triforce,    0, ROT0, "Sega",           "Virtua Striker 4 Ver.2006 (Japan) (Rev D) (GDT-0020D)", GAME_IS_SKELETON )

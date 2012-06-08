@@ -236,9 +236,9 @@ static void PS7500_startTimer0(running_machine &machine);
 static void PS7500_startTimer1(running_machine &machine);
 
 
-static SCREEN_UPDATE(ssfindo)
+static SCREEN_UPDATE_IND16(ssfindo)
 {
-	ssfindo_state *state = screen->machine().driver_data<ssfindo_state>();
+	ssfindo_state *state = screen.machine().driver_data<ssfindo_state>();
 	int s,x,y;
 
 	if( state->m_PS7500_IO[VIDCR]&0x20) //video DMA enabled
@@ -250,10 +250,10 @@ static SCREEN_UPDATE(ssfindo)
 			for(y=0;y<256;y++)
 				for(x=0;x<320;x+=4)
 				{
-					*BITMAP_ADDR16(bitmap, y, x+0) = state->m_vram[s]&0xff;
-					*BITMAP_ADDR16(bitmap, y, x+1) = (state->m_vram[s]>>8)&0xff;
-					*BITMAP_ADDR16(bitmap, y, x+2) = (state->m_vram[s]>>16)&0xff;
-					*BITMAP_ADDR16(bitmap, y, x+3) = (state->m_vram[s]>>24)&0xff;
+					bitmap.pix16(y, x+0) = state->m_vram[s]&0xff;
+					bitmap.pix16(y, x+1) = (state->m_vram[s]>>8)&0xff;
+					bitmap.pix16(y, x+2) = (state->m_vram[s]>>16)&0xff;
+					bitmap.pix16(y, x+3) = (state->m_vram[s]>>24)&0xff;
 					s++;
 				}
 		}
@@ -752,10 +752,9 @@ static MACHINE_CONFIG_START( ssfindo, ssfindo_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 319, 0, 239)
-	MCFG_SCREEN_UPDATE(ssfindo)
+	MCFG_SCREEN_UPDATE_STATIC(ssfindo)
 
 	MCFG_PALETTE_LENGTH(256)
 MACHINE_CONFIG_END

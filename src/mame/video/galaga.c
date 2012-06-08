@@ -419,7 +419,7 @@ static TILE_GET_INFO( get_tile_info )
 			(state->m_videoram[tile_index] & 0x7f) | (flip_screen_get(machine) ? 0x80 : 0) | (state->m_galaga_gfxbank << 8),
 			color,
 			flip_screen_get(machine) ? TILE_FLIPX : 0);
-	tileinfo->group = color;
+	tileinfo.group = color;
 }
 
 
@@ -457,7 +457,7 @@ WRITE8_HANDLER( galaga_videoram_w )
 	galaga_state *state =  space->machine().driver_data<galaga_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset & 0x3ff);
+	state->m_fg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 WRITE8_HANDLER ( gatsbee_bank_w )
@@ -465,7 +465,7 @@ WRITE8_HANDLER ( gatsbee_bank_w )
 	galaga_state *state =  space->machine().driver_data<galaga_state>();
 
 	state->m_galaga_gfxbank = data & 0x1;
-	tilemap_mark_all_tiles_dirty(state->m_fg_tilemap);
+	state->m_fg_tilemap->mark_all_dirty();
 }
 
 
@@ -476,7 +476,7 @@ WRITE8_HANDLER ( gatsbee_bank_w )
 
 ***************************************************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	galaga_state *state =  machine.driver_data<galaga_state>();
 
@@ -510,7 +510,8 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 		{
 			flipx ^= 1;
 			flipy ^= 1;
-			sy += 48;
+			sy += 40;
+			sx += 96;
 		}
 
 		for (y = 0;y <= sizey;y++)
@@ -529,69 +530,70 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 }
 
 
-static void draw_stars(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_stars(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	galaga_state *state =  machine.driver_data<galaga_state>();
 	/* draw the stars */
 
 	/* $a005 controls the stars ON/OFF */
-
-
 	if ( (state->m_galaga_starcontrol[5] & 1) == 1 )
 	{
+		int y_align = 112; /* 112 is a tweak to get alignment about perfect */
+		int x_align = flip_screen_get(machine) ? 112 : 16;
+
 		int star_cntr;
 		int set_a, set_b;
 
 		/* two sets of stars controlled by these bits */
-
 		set_a = (state->m_galaga_starcontrol[3] & 1);
-		set_b = (state->m_galaga_starcontrol[4] & 1) | 0x2;
-
+		set_b = (state->m_galaga_starcontrol[4] & 1) | 2;
 
 		for (star_cntr = 0;star_cntr < MAX_STARS ;star_cntr++)
 		{
 			int x,y;
 
-			if   ( (set_a == star_seed_tab[star_cntr].set) ||  ( set_b == star_seed_tab[star_cntr].set) )
+			if ( (set_a == star_seed_tab[star_cntr].set) || ( set_b == star_seed_tab[star_cntr].set) )
 			{
-				x = (star_seed_tab[star_cntr].x + state->m_stars_scrollx) % 256 + 16;
-				y = (112 + star_seed_tab[star_cntr].y + state->m_stars_scrolly) % 256;
-			   /* 112 is a tweak to get alignment about perfect */
+				x = (star_seed_tab[star_cntr].x + state->m_stars_scrollx) % 256 + x_align;
+				y = (y_align + star_seed_tab[star_cntr].y + state->m_stars_scrolly) % 256;
 
-				if (y >= cliprect->min_y && y <= cliprect->max_y)
-					*BITMAP_ADDR16(bitmap, y, x) = STARS_COLOR_BASE + star_seed_tab[ star_cntr ].col;
+				if (cliprect.contains(x, y))
+					bitmap.pix16(y, x) = STARS_COLOR_BASE + star_seed_tab[ star_cntr ].col;
 			}
 
 		}
 	}
 }
 
-SCREEN_UPDATE( galaga )
+SCREEN_UPDATE_IND16( galaga )
 {
-	galaga_state *state =  screen->machine().driver_data<galaga_state>();
+	galaga_state *state =  screen.machine().driver_data<galaga_state>();
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
-	draw_stars(screen->machine(),bitmap,cliprect);
-	draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	draw_stars(screen.machine(),bitmap,cliprect);
+	draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
 
 
-SCREEN_EOF( galaga )
+SCREEN_VBLANK( galaga )
 {
-	galaga_state *state =  machine.driver_data<galaga_state>();
-	/* this function is called by galaga_interrupt_1() */
-	int s0,s1,s2;
-	static const int speeds[8] = { -1, -2, -3, 0, 3, 2, 1, 0 };
+	// falling edge
+	if (!vblank_on)
+	{
+		galaga_state *state =  screen.machine().driver_data<galaga_state>();
+		/* this function is called by galaga_interrupt_1() */
+		int s0,s1,s2;
+		static const int speeds[8] = { -1, -2, -3, 0, 3, 2, 1, 0 };
 
+		s0 = (state->m_galaga_starcontrol[0] & 1);
+		s1 = (state->m_galaga_starcontrol[1] & 1);
+		s2 = (state->m_galaga_starcontrol[2] & 1);
 
-	s0 = (state->m_galaga_starcontrol[0] & 1);
-	s1 = (state->m_galaga_starcontrol[1] & 1);
-	s2 = (state->m_galaga_starcontrol[2] & 1);
-
-	state->m_stars_scrollx += speeds[s0 + s1*2 + s2*4];
+		state->m_stars_scrollx += speeds[s0 + s1*2 + s2*4];
+	}
 }
 
 

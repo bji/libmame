@@ -82,7 +82,7 @@ WRITE8_HANDLER( mario_videoram_w )
 	mario_state	*state = space->machine().driver_data<mario_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( mario_gfxbank_w )
@@ -92,7 +92,7 @@ WRITE8_HANDLER( mario_gfxbank_w )
 	if (state->m_gfx_bank != (data & 0x01))
 	{
 		state->m_gfx_bank = data & 0x01;
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -103,7 +103,7 @@ WRITE8_HANDLER( mario_palettebank_w )
 	if (state->m_palette_bank != (data & 0x01))
 	{
 		state->m_palette_bank = data & 0x01;
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -122,10 +122,10 @@ WRITE8_HANDLER( mario_flip_w )
 	{
 		state->m_flip = data & 0x01;
 		if (state->m_flip)
-			tilemap_set_flip_all(space->machine(), TILEMAP_FLIPX | TILEMAP_FLIPY);
+			space->machine().tilemap().set_flip_all(TILEMAP_FLIPX | TILEMAP_FLIPY);
 		else
-			tilemap_set_flip_all(space->machine(), 0);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+			space->machine().tilemap().set_flip_all(0);
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -161,7 +161,7 @@ VIDEO_START( mario )
  * confirmed on mametests.org as being present on real PCB as well.
  */
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	/* TODO: draw_sprites should adopt the scanline logic from dkong.c
      * The schematics have the same logic for sprite buffering.
@@ -208,23 +208,23 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-SCREEN_UPDATE( mario )
+SCREEN_UPDATE_IND16( mario )
 {
-	mario_state	*state = screen->machine().driver_data<mario_state>();
+	mario_state	*state = screen.machine().driver_data<mario_state>();
 	int t;
 
-	t = input_port_read(screen->machine(), "MONITOR");
+	t = input_port_read(screen.machine(), "MONITOR");
 	if (t != state->m_monitor)
 	{
 		state->m_monitor = t;
-		tilemap_mark_all_tiles_dirty_all(screen->machine());
+		screen.machine().tilemap().mark_all_dirty();
 	}
 
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_flip ? (HTOTAL-HBSTART) : 0);
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, state->m_gfx_scroll - (state->m_flip ? 8 : 0));
+	state->m_bg_tilemap->set_scrollx(0, state->m_flip ? (HTOTAL-HBSTART) : 0);
+	state->m_bg_tilemap->set_scrolly(0, state->m_gfx_scroll - (state->m_flip ? 8 : 0));
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }

@@ -139,20 +139,20 @@ VIDEO_START( helifire )
 }
 
 
-SCREEN_UPDATE( spacefev )
+SCREEN_UPDATE_IND16( spacefev )
 {
-	n8080_state *state = screen->machine().driver_data<n8080_state>();
-	UINT8 mask = flip_screen_get(screen->machine()) ? 0xff : 0x00;
+	n8080_state *state = screen.machine().driver_data<n8080_state>();
+	UINT8 mask = flip_screen_get(screen.machine()) ? 0xff : 0x00;
 
 	int x;
 	int y;
 
 	const UINT8* pRAM = state->m_videoram;
-	const UINT8* pPROM = screen->machine().region("proms")->base();
+	const UINT8* pPROM = screen.machine().region("proms")->base();
 
 	for (y = 0; y < 256; y++)
 	{
-		UINT16* pLine = BITMAP_ADDR16(bitmap, y ^ mask, 0);
+		UINT16* pLine = &bitmap.pix16(y ^ mask);
 
 		for (x = 0; x < 256; x += 8)
 		{
@@ -183,7 +183,7 @@ SCREEN_UPDATE( spacefev )
 						6, /* cyan    */
 					};
 
-					int cycle = screen->frame_number() / 32;
+					int cycle = screen.frame_number() / 32;
 
 					color = ufo_color[cycle % 6];
 				}
@@ -209,12 +209,12 @@ SCREEN_UPDATE( spacefev )
 }
 
 
-SCREEN_UPDATE( sheriff )
+SCREEN_UPDATE_IND16( sheriff )
 {
-	n8080_state *state = screen->machine().driver_data<n8080_state>();
-	UINT8 mask = flip_screen_get(screen->machine()) ? 0xff : 0x00;
+	n8080_state *state = screen.machine().driver_data<n8080_state>();
+	UINT8 mask = flip_screen_get(screen.machine()) ? 0xff : 0x00;
 
-	const UINT8* pPROM = screen->machine().region("proms")->base();
+	const UINT8* pPROM = screen.machine().region("proms")->base();
 
 	int x;
 	int y;
@@ -223,7 +223,7 @@ SCREEN_UPDATE( sheriff )
 
 	for (y = 0; y < 256; y++)
 	{
-		UINT16* pLine = BITMAP_ADDR16(bitmap, y ^ mask, 0);
+		UINT16* pLine = &bitmap.pix16(y ^ mask);
 
 		for (x = 0; x < 256; x += 8)
 		{
@@ -252,11 +252,11 @@ SCREEN_UPDATE( sheriff )
 }
 
 
-SCREEN_UPDATE( helifire )
+SCREEN_UPDATE_IND16( helifire )
 {
-	n8080_state *state = screen->machine().driver_data<n8080_state>();
-	int SUN_BRIGHTNESS = input_port_read(screen->machine(), "POT0");
-	int SEA_BRIGHTNESS = input_port_read(screen->machine(), "POT1");
+	n8080_state *state = screen.machine().driver_data<n8080_state>();
+	int SUN_BRIGHTNESS = input_port_read(screen.machine(), "POT0");
+	int SEA_BRIGHTNESS = input_port_read(screen.machine(), "POT1");
 
 	static const int wave[8] = { 0, 1, 2, 2, 2, 1, 0, 0 };
 
@@ -268,7 +268,7 @@ SCREEN_UPDATE( helifire )
 
 	for (y = 0; y < 256; y++)
 	{
-		UINT16* pLine = BITMAP_ADDR16(bitmap, y, 0);
+		UINT16* pLine = &bitmap.pix16(y);
 
 		int level = 120 + wave[state->m_helifire_mv & 7];
 
@@ -324,7 +324,7 @@ SCREEN_UPDATE( helifire )
 
 			for (n = 0; n < 8; n++)
 			{
-				if (flip_screen_get(screen->machine()))
+				if (flip_screen_get(screen.machine()))
 				{
 					if ((state->m_videoram[offset ^ 0x1fff] << n) & 0x80)
 					{
@@ -343,7 +343,7 @@ SCREEN_UPDATE( helifire )
 
 		/* next line */
 
-		helifire_next_line(screen->machine());
+		helifire_next_line(screen.machine());
 	}
 
 	state->m_helifire_mv = saved_mv;
@@ -352,40 +352,44 @@ SCREEN_UPDATE( helifire )
 }
 
 
-SCREEN_EOF( helifire )
+SCREEN_VBLANK( helifire )
 {
-	n8080_state *state = machine.driver_data<n8080_state>();
-	int n = (machine.primary_screen->frame_number() >> 1) % sizeof state->m_helifire_LSFR;
-
-	int i;
-
-	for (i = 0; i < 8; i++)
+	// falling edge
+	if (!vblank_on)
 	{
-		int R = (i & 1);
-		int G = (i & 2);
-		int B = (i & 4);
+		n8080_state *state = screen.machine().driver_data<n8080_state>();
+		int n = (screen.machine().primary_screen->frame_number() >> 1) % sizeof state->m_helifire_LSFR;
 
-		if (state->m_helifire_flash)
+		int i;
+
+		for (i = 0; i < 8; i++)
 		{
-			if (state->m_helifire_LSFR[n] & 0x20)
+			int R = (i & 1);
+			int G = (i & 2);
+			int B = (i & 4);
+
+			if (state->m_helifire_flash)
 			{
-				G |= B;
+				if (state->m_helifire_LSFR[n] & 0x20)
+				{
+					G |= B;
+				}
+
+				if (screen.machine().primary_screen->frame_number() & 0x04)
+				{
+					R |= G;
+				}
 			}
 
-			if (machine.primary_screen->frame_number() & 0x04)
-			{
-				R |= G;
-			}
+			palette_set_color_rgb(screen.machine(),i,
+				R ? 255 : 0,
+				G ? 255 : 0,
+				B ? 255 : 0);
 		}
 
-		palette_set_color_rgb(machine,i,
-			R ? 255 : 0,
-			G ? 255 : 0,
-			B ? 255 : 0);
-	}
-
-	for (i = 0; i < 256; i++)
-	{
-		helifire_next_line(machine);
+		for (i = 0; i < 256; i++)
+		{
+			helifire_next_line(screen.machine());
+		}
 	}
 }

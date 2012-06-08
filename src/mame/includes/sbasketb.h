@@ -14,6 +14,8 @@ public:
 
 	/* video-related */
 	tilemap_t  *m_bg_tilemap;
+
+	UINT8    m_irq_mask;
 };
 
 /*----------- defined in video/sbasketb.c -----------*/
@@ -24,4 +26,4 @@ WRITE8_HANDLER( sbasketb_flipscreen_w );
 
 PALETTE_INIT( sbasketb );
 VIDEO_START( sbasketb );
-SCREEN_UPDATE( sbasketb );
+SCREEN_UPDATE_IND16( sbasketb );

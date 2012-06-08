@@ -16,6 +16,8 @@
 
 */
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/tms9900/tms9900.h"
 #include "sound/ay8910.h"
@@ -24,15 +26,22 @@ class jpms80_state : public driver_device
 {
 public:
 	jpms80_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
 };
 
-static ADDRESS_MAP_START( jpms80_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( jpms80_map, AS_PROGRAM, 8, jpms80_state )
 	AM_RANGE(0x0000, 0x2fff) AM_ROM
 	AM_RANGE(0x3000, 0x3fff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( jpms80_io_map, AS_IO, 8 )
+static ADDRESS_MAP_START( jpms80_io_map, AS_IO, 8, jpms80_state )
 
 ADDRESS_MAP_END
 
@@ -57,7 +66,6 @@ static const ay8910_interface ay8910_interface_jpm =
 #define SOUND_CLOCK 2000000
 
 static MACHINE_CONFIG_START( jpms80, jpms80_state )
-
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", TMS9995, MAIN_CLOCK)
 	MCFG_CPU_PROGRAM_MAP(jpms80_map)
@@ -68,16 +76,15 @@ static MACHINE_CONFIG_START( jpms80, jpms80_state )
 	MCFG_SOUND_ADD("aysnd", AY8910, 2000000)
 	MCFG_SOUND_CONFIG(ay8910_interface_jpm)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
-
 MACHINE_CONFIG_END
 
 
-static ADDRESS_MAP_START( jpms_older_e00_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( jpms_older_e00_map, AS_PROGRAM, 8, jpms80_state )
 	AM_RANGE(0x0000, 0x0bff) AM_ROM
 	AM_RANGE(0x0e00, 0x0eff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( jpms_older_e00_io, AS_IO, 8 )
+static ADDRESS_MAP_START( jpms_older_e00_io, AS_IO, 8, jpms80_state )
 ADDRESS_MAP_END
 
 
@@ -87,12 +94,12 @@ static MACHINE_CONFIG_START( jpms_older_e00, jpms80_state )
 	MCFG_CPU_IO_MAP(jpms_older_e00_io)
 MACHINE_CONFIG_END
 
-static ADDRESS_MAP_START( jpms_older_c00_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( jpms_older_c00_map, AS_PROGRAM, 8, jpms80_state )
 	AM_RANGE(0x0000, 0x0bff) AM_ROM
 	AM_RANGE(0x0c00, 0x0eff) AM_RAM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( jpms_older_c00_io, AS_IO, 8 )
+static ADDRESS_MAP_START( jpms_older_c00_io, AS_IO, 8, jpms80_state )
 ADDRESS_MAP_END
 
 
@@ -105,10 +112,7 @@ MACHINE_CONFIG_END
 
 DRIVER_INIT( jpms80 )
 {
-
 }
-
-
 
 
 
@@ -290,28 +294,28 @@ ROM_END
 
 
 
-GAME(198?, j80bac	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Bank A Coin (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80bounc	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Bouncer (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80frogh	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Frog Hop (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80fruit	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Fruit Snappa (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80golds	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Golden Steppa (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80hotln	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Hot Lines (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80myspn	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Mystery Spin (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80nudg2	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Nudge Double Up MkII (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80rr	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Road Runner (Jpm) (SYSTEM80, set 1)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80rra	,j80rr		,jpms80,jpms80,jpms80,ROT0,   "Jpm","Road Runner (Jpm) (SYSTEM80, set 2)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80r66	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Route 66 (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80supst	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Supa Steppa (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80supbk	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Superbank (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80topsp	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Top Sprint (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80topup	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Top Up (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80tumbl	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Tumble (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80wsprt	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Winsprint (Jpm) (SYSTEM80)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
+GAME(198?, j80bac	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Bank A Coin (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80bounc	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Bouncer (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80frogh	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Frog Hop (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80fruit	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Fruit Snappa (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80golds	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Golden Steppa (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80hotln	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Hot Lines (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80myspn	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Mystery Spin (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80nudg2	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Nudge Double Up MkII (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80rr	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Road Runner (Jpm) (SYSTEM80, set 1)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80rra	,j80rr		,jpms80,jpms80,jpms80,ROT0,   "Jpm","Road Runner (Jpm) (SYSTEM80, set 2)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80r66	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Route 66 (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80supst	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Supa Steppa (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80supbk	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Superbank (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80topsp	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Top Sprint (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80topup	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Top Up (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80tumbl	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Tumble (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80wsprt	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Winsprint (Jpm) (SYSTEM80)",						GAME_IS_SKELETON_MECHANICAL )
 // these look like they're probably SYSTEM80, not 100% sure tho
-GAME(198?, j80alad	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Aladdin's Cave (PCP)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80fortr	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Fortune Trail (Jpm)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80mster	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Masterspy (Pcp)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j80plsnd	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Plus Nudge (Jpm)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
+GAME(198?, j80alad	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Aladdin's Cave (PCP)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80fortr	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Fortune Trail (Jpm)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80mster	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Masterspy (Pcp)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j80plsnd	,0			,jpms80,jpms80,jpms80,ROT0,   "Jpm","Plus Nudge (Jpm)",						GAME_IS_SKELETON_MECHANICAL )
 
 
 /* Not 100% sure what the stuff below is on, the profiles don't quite match System 85 */
@@ -362,10 +366,10 @@ ROM_END
 
 
 
-GAME(198?, j_ewnud	,0			,jpms_older_e00,jpms80,jpms80,ROT0,   "Barcrest?","Each Way Nudger (Barcrest?, set 1)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j_ewnda	,j_ewnud	,jpms_older_e00,jpms80,jpms80,ROT0,   "Barcrest?","Each Way Nudger (Barcrest?, set 2)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j_luckac	,0			,jpms_older_e00,jpms80,jpms80,ROT0,   "<unknown>","Lucky Aces (Unk)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
-GAME(198?, j_super2	,0			,jpms_older_e00,jpms80,jpms80,ROT0,   "Jpm","Super 2 (Jpm)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
+GAME(198?, j_ewnud	,0			,jpms_older_e00,jpms80,jpms80,ROT0,   "Barcrest?","Each Way Nudger (Barcrest?, set 1)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j_ewnda	,j_ewnud	,jpms_older_e00,jpms80,jpms80,ROT0,   "Barcrest?","Each Way Nudger (Barcrest?, set 2)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j_luckac	,0			,jpms_older_e00,jpms80,jpms80,ROT0,   "<unknown>","Lucky Aces (Unk)",						GAME_IS_SKELETON_MECHANICAL )
+GAME(198?, j_super2	,0			,jpms_older_e00,jpms80,jpms80,ROT0,   "Jpm","Super 2 (Jpm)",						GAME_IS_SKELETON_MECHANICAL )
 
 // this one is different again?
-GAME(198?, j_plus2	,0			,jpms_older_c00,jpms80,jpms80,ROT0,   "Jpm","Plus 2 (Jpm)",						GAME_NOT_WORKING|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL|GAME_NO_SOUND )
+GAME(198?, j_plus2	,0			,jpms_older_c00,jpms80,jpms80,ROT0,   "Jpm","Plus 2 (Jpm)",						GAME_IS_SKELETON_MECHANICAL )

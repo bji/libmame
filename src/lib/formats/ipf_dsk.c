@@ -27,7 +27,7 @@ bool ipf_format::supports_save() const
 	return false;
 }
 
-int ipf_format::identify(io_generic *io)
+int ipf_format::identify(io_generic *io, UINT32 form_factor)
 {
 	static const UINT8 refh[12] = { 0x43, 0x41, 0x50, 0x53, 0x00, 0x00, 0x00, 0x0c, 0x1c, 0xd5, 0x73, 0xba };
 	UINT8 h[12];
@@ -39,7 +39,7 @@ int ipf_format::identify(io_generic *io)
 	return 0;
 }
 
-bool ipf_format::load(io_generic *io, floppy_image *image)
+bool ipf_format::load(io_generic *io, UINT32 form_factor, floppy_image *image)
 {
 	UINT32 size = io_generic_size(io);
 	UINT8 *data = global_alloc_array(UINT8, size);
@@ -80,6 +80,7 @@ UINT32 ipf_format::crc32r(const UINT8 *data, UINT32 size)
 
 bool ipf_format::parse(UINT8 *data, UINT32 size, floppy_image *image)
 {
+	image->set_variant(floppy_image::DSDD); // Not handling anything else yet
 	tcount = 84*2+1; // Usual max
 	tinfos = global_alloc_array_clear(track_info, tcount);
 	bool res = scan_all_tags(data, size);
@@ -273,15 +274,16 @@ void ipf_format::rotate(UINT32 *track, UINT32 offset, UINT32 size)
 	}
 }
 
-void ipf_format::mark_track_splice(UINT32 *t)
+void ipf_format::mark_track_splice(UINT32 *track, UINT32 offset, UINT32 size)
 {
 	for(int i=0; i<3; i++) {
-		UINT32 v = *t;
+		UINT32 pos = (offset + i) % size;
+		UINT32 v = track[pos];
 		if((v & floppy_image::MG_MASK) == MG_0)
 			v = (v & floppy_image::TIME_MASK) | MG_1;
 		else if((v & floppy_image::MG_MASK) == MG_1)
 			v = (v & floppy_image::TIME_MASK) | MG_0;
-		*t++ = v;
+		track[pos] = v;
 	}
 }
 
@@ -386,30 +388,38 @@ bool ipf_format::generate_track(track_info *t, floppy_image *image)
 		return false;
 
 	UINT32 *track = global_alloc_array(UINT32, t->size_cells);
-
-	UINT32 *data_pos = new UINT32[t->block_count+1];
-	UINT32 *gap_pos  = new UINT32[t->block_count];
-	UINT32 *splice_pos  = new UINT32[t->block_count];
+	UINT32 *data_pos = global_alloc_array(UINT32, t->block_count+1);
+	UINT32 *gap_pos  = global_alloc_array(UINT32, t->block_count);
+	UINT32 *splice_pos  = global_alloc_array(UINT32, t->block_count);
 
 	bool context = false;
 	UINT32 pos = 0;
 	for(UINT32 i = 0; i != t->block_count; i++) {
 		if(!generate_block(t, i, i == t->block_count-1 ? t->size_cells - t->index_cells : 0xffffffff, track, pos, data_pos[i], gap_pos[i], splice_pos[i], context)) {
 			global_free(track);
+			global_free(data_pos);
+			global_free(gap_pos);
+			global_free(splice_pos);
 			return false;
 		}
 	}
 	if(pos != t->size_cells) {
 		global_free(track);
+		global_free(data_pos);
+		global_free(gap_pos);
+		global_free(splice_pos);
 		return false;
 	}
 
 	data_pos[t->block_count] = pos;
 
-	mark_track_splice(track + splice_pos[t->block_count-1]);
+	mark_track_splice(track, splice_pos[t->block_count-1], t->size_cells);
 
 	if(!generate_timings(t, track, data_pos, gap_pos)) {
 		global_free(track);
+		global_free(data_pos);
+		global_free(gap_pos);
+		global_free(splice_pos);
 		return false;
 	}
 
@@ -417,7 +427,11 @@ bool ipf_format::generate_track(track_info *t, floppy_image *image)
 		rotate(track, t->size_cells - t->index_cells, t->size_cells);
 
 	generate_track_from_levels(t->cylinder, t->head, track, t->size_cells, splice_pos[t->block_count-1] + t->index_cells, image);
+
 	global_free(track);
+	global_free(data_pos);
+	global_free(gap_pos);
+	global_free(splice_pos);
 
 	return true;
 }
@@ -600,15 +614,21 @@ bool ipf_format::generate_gap_from_description(const UINT8 *&data, const UINT8 *
 }
 
 
-bool ipf_format::generate_block_gap_1(UINT32 gap_cells, UINT32 &spos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context)
+bool ipf_format::generate_block_gap_1(UINT32 gap_cells, UINT32 &spos, UINT32 ipos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context)
 {
-	spos = 0;
+	if(ipos >= 16 && ipos < gap_cells-16)
+		spos = ipos;
+	else
+		spos = 0;
 	return generate_gap_from_description(data, dlimit, track, gap_cells, true, context);
 }
 
-bool ipf_format::generate_block_gap_2(UINT32 gap_cells, UINT32 &spos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context)
+bool ipf_format::generate_block_gap_2(UINT32 gap_cells, UINT32 &spos, UINT32 ipos, const UINT8 *data, const UINT8 *dlimit, UINT32 *track, bool &context)
 {
-	spos = gap_cells;
+	if(ipos >= 16 && ipos < gap_cells-16)
+		spos = ipos;
+	else
+		spos = gap_cells;
 	return generate_gap_from_description(data, dlimit, track, gap_cells, false, context);
 }
 
@@ -645,9 +665,9 @@ bool ipf_format::generate_block_gap(UINT32 gap_type, UINT32 gap_cells, UINT8 pat
 	case 0:
 		return generate_block_gap_0(gap_cells, pattern, spos, ipos, track, context);
 	case 1:
-		return generate_block_gap_1(gap_cells, spos, data, dlimit, track, context);
+		return generate_block_gap_1(gap_cells, spos, ipos, data, dlimit, track, context);
 	case 2:
-		return generate_block_gap_2(gap_cells, spos, data, dlimit, track, context);
+		return generate_block_gap_2(gap_cells, spos, ipos, data, dlimit, track, context);
 	case 3:
 		return generate_block_gap_3(gap_cells, spos, ipos, data, dlimit, track, context);
 	default:

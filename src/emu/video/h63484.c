@@ -4,7 +4,6 @@
 
     TODO:
     - 8-bit support for FIFO, parameters and command values
-    - convert to C++
     - execution cycles;
 
 ***************************************************************************/
@@ -1160,7 +1159,7 @@ void h63484_device::device_reset()
 //  draw_graphics_line -
 //-------------------------------------------------
 
-void h63484_device::draw_graphics_line(bitmap_t *bitmap, const rectangle *cliprect, int y, int layer_n)
+void h63484_device::draw_graphics_line(bitmap_ind16 &bitmap, const rectangle &cliprect, int y, int layer_n)
 {
 	int x;
 	int pitch;
@@ -1189,16 +1188,17 @@ void h63484_device::draw_graphics_line(bitmap_t *bitmap, const rectangle *clipre
 //  update_screen -
 //-------------------------------------------------
 
-void h63484_device::update_screen(bitmap_t *bitmap, const rectangle *cliprect)
+UINT32 h63484_device::update_screen(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	if(m_dcr & 0x8000) // correct?
 	{
 		int y;
 
-		for(y=cliprect->min_y;y<cliprect->max_y;y++)
+		for(y=cliprect.min_y;y<cliprect.max_y;y++)
 		{
 			if (m_display_cb)
 				draw_graphics_line(bitmap,cliprect, y, 1);
 		}
 	}
+	return 0;
 }

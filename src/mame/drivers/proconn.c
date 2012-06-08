@@ -5,6 +5,8 @@
   some sets might be misidentified.
 */
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/z80/z80.h"
 
@@ -12,18 +14,25 @@ class proconn_state : public driver_device
 {
 public:
 	proconn_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
 };
 
 
 
-static ADDRESS_MAP_START( proconn_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( proconn_map, AS_PROGRAM, 8, proconn_state )
 	AM_RANGE(0x0000, 0xefff) AM_ROM
 	AM_RANGE(0xf000, 0xffff) AM_RAM
 ADDRESS_MAP_END
 
 
-static ADDRESS_MAP_START( proconn_portmap, AS_IO, 8 )
+static ADDRESS_MAP_START( proconn_portmap, AS_IO, 8, proconn_state )
 ADDRESS_MAP_END
 
 
@@ -32,13 +41,10 @@ INPUT_PORTS_END
 
 
 static MACHINE_CONFIG_START( proconn, proconn_state )
-
 	MCFG_CPU_ADD("maincpu", Z80, 4000000) /* ?? Mhz */
 	MCFG_CPU_PROGRAM_MAP(proconn_map)
 	MCFG_CPU_IO_MAP(proconn_portmap)
-
 MACHINE_CONFIG_END
-
 
 
 
@@ -649,72 +655,69 @@ ROM_END
 
 
 
-
-
 DRIVER_INIT( proconn )
 {
-
 }
 
-GAME( 199?, pr_lday			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "'L' Of A Day (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_5xcsh		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "5x Cash (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_7hvn			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "777 Heaven (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_alwy9		,0			,proconn	,proconn	,proconn	,ROT0	,"PCP"    , "Always Nine (Pcp) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_barbl		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bars & Bells (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_batls		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Battleships (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_btwar		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Beat The Warden (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_bigdp		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Big Dipper (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_bulls		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bullseye (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_bulbn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bully's Big Night (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_buljp		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bully's Jackpot (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_cashb		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Cash Back (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_cas7			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Casino Jackpot 7s (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_chico		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Chico the Bandit (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_coolm		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Cool Million (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_crz77		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Crazy 777s (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_crzbr		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Crazy Bars / Super Bars (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_coyot		,0			,proconn	,proconn	,proconn	,ROT0	,"PCP"    , "Crazy Coyote (Pcp) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_crzpy		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Crazy Pays (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_dblup		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Double Up (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_fire			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Fircecracker (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_flshc		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Flash The Cash (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_ftwhl		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Fortune Wheel (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_funrn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Fun On The Run (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_gogld		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Go For Gold (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_gldnl		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Golden Nile (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_gldng		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Golden Nugget (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_gdft			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Good Fortune (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_happy		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Happy Days (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_heato		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "The Heat Is On (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_hiclm		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hi Climber (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_hit6			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hit The Six (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_hotcs		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hot Cash (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_hotsp		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hot Spots (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_jkpt7		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Jackpot 7's (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_jkrwd		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Jokers Wild (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_jumpj		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Jumping Jacks (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_medl			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Medalist (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_megmn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Mega Money (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_nudxs		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Nudge XS (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_rags			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Rags To Riches (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_reflx		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Reflex (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_roadr		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Road Riot (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_roll			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "The Roll (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_sevab		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Seven's Above (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_sevml		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Sevens & Melons (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_theme		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Theme Park (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_ttrai		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Treasure Trail (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_trpx			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Triple X (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_walls		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Wall Street (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_whlft		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Wheel Of Fortune (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_wldkn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Wild Kings (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_nifty		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Nifty Fifty (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_upnun		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Up & Under (Project) (PROCONN)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, pr_lday			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "'L' Of A Day (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_5xcsh		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "5x Cash (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_7hvn			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "777 Heaven (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_alwy9		,0			,proconn	,proconn	,proconn	,ROT0	,"PCP"    , "Always Nine (Pcp) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_barbl		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bars & Bells (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_batls		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Battleships (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_btwar		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Beat The Warden (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_bigdp		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Big Dipper (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_bulls		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bullseye (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_bulbn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bully's Big Night (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_buljp		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Bully's Jackpot (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_cashb		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Cash Back (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_cas7			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Casino Jackpot 7s (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_chico		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Chico the Bandit (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_coolm		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Cool Million (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_crz77		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Crazy 777s (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_crzbr		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Crazy Bars / Super Bars (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_coyot		,0			,proconn	,proconn	,proconn	,ROT0	,"PCP"    , "Crazy Coyote (Pcp) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_crzpy		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Crazy Pays (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_dblup		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Double Up (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_fire			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Fircecracker (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_flshc		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Flash The Cash (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_ftwhl		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Fortune Wheel (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_funrn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Fun On The Run (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_gogld		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Go For Gold (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_gldnl		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Golden Nile (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_gldng		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Golden Nugget (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_gdft			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Good Fortune (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_happy		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Happy Days (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_heato		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "The Heat Is On (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_hiclm		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hi Climber (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_hit6			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hit The Six (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_hotcs		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hot Cash (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_hotsp		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Hot Spots (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_jkpt7		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Jackpot 7's (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_jkrwd		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Jokers Wild (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_jumpj		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Jumping Jacks (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_medl			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Medalist (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_megmn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Mega Money (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_nudxs		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Nudge XS (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_rags			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Rags To Riches (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_reflx		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Reflex (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_roadr		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Road Riot (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_roll			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "The Roll (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_sevab		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Seven's Above (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_sevml		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Sevens & Melons (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_theme		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Theme Park (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_ttrai		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Treasure Trail (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_trpx			,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Triple X (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_walls		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Wall Street (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_whlft		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Wheel Of Fortune (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_wldkn		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Wild Kings (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_nifty		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Nifty Fifty (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_upnun		,0			,proconn	,proconn	,proconn	,ROT0	,"Project", "Up & Under (Project) (PROCONN)",GAME_IS_SKELETON_MECHANICAL )
 
 // Some of these are PC98 hardware.. I don't know how / if that differs
-GAME( 199?, pr_bears		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Bear Streak (Coinworld)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_bearx		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Bear X (Coinworld)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_fspot		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Fun Spot (Coinworld)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_gnuc			,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Golden Nugget (Coinworld)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_magln		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Magic Lines (Coinworld)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
-GAME( 199?, pr_swop			,0			,proconn	,proconn	,proconn	,ROT0	,"Ace", "Swop It (Ace)",GAME_NOT_WORKING|GAME_NO_SOUND|GAME_REQUIRES_ARTWORK|GAME_MECHANICAL )
+GAME( 199?, pr_bears		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Bear Streak (Coinworld)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_bearx		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Bear X (Coinworld)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_fspot		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Fun Spot (Coinworld)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_gnuc			,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Golden Nugget (Coinworld)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_magln		,0			,proconn	,proconn	,proconn	,ROT0	,"Coinworld", "Magic Lines (Coinworld)",GAME_IS_SKELETON_MECHANICAL )
+GAME( 199?, pr_swop			,0			,proconn	,proconn	,proconn	,ROT0	,"Ace", "Swop It (Ace)",GAME_IS_SKELETON_MECHANICAL )

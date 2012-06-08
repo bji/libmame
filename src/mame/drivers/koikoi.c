@@ -132,10 +132,10 @@ static VIDEO_START(koikoi)
 	state->m_tmap = tilemap_create(machine, get_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE(koikoi)
+static SCREEN_UPDATE_IND16(koikoi)
 {
-	koikoi_state *state = screen->machine().driver_data<koikoi_state>();
-	tilemap_draw(bitmap, cliprect, state->m_tmap, 0, 0);
+	koikoi_state *state = screen.machine().driver_data<koikoi_state>();
+	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -149,7 +149,7 @@ static WRITE8_HANDLER( vram_w )
 {
 	koikoi_state *state = space->machine().driver_data<koikoi_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tmap, offset & 0x3ff);
+	state->m_tmap->mark_tile_dirty(offset & 0x3ff);
 }
 
 static READ8_DEVICE_HANDLER( input_r )
@@ -370,10 +370,9 @@ static MACHINE_CONFIG_START( koikoi, koikoi_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(koikoi)
+	MCFG_SCREEN_UPDATE_STATIC(koikoi)
 
 	MCFG_GFXDECODE(koikoi)
 	MCFG_PALETTE_LENGTH(8*32)

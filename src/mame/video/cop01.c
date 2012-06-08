@@ -81,7 +81,7 @@ static TILE_GET_INFO( get_bg_tile_info )
 		pri = 0;
 
 	SET_TILE_INFO(1, tile + ((attr & 0x03) << 8), (attr & 0x1c) >> 2, 0);
-	tileinfo->group = pri;
+	tileinfo.group = pri;
 }
 
 static TILE_GET_INFO( get_fg_tile_info )
@@ -105,11 +105,11 @@ VIDEO_START( cop01 )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info,tilemap_scan_rows, 8, 8, 64, 32);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info,tilemap_scan_rows, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 15);
+	state->m_fg_tilemap->set_transparent_pen(15);
 
 	/* priority doesn't exactly work this way, see above */
-	tilemap_set_transmask(state->m_bg_tilemap, 0, 0xffff, 0x0000); /* split type 0 is totally transparent in front half */
-	tilemap_set_transmask(state->m_bg_tilemap, 1, 0x0fff, 0xf000); /* split type 1 has pens 0-11 transparent in front half */
+	state->m_bg_tilemap->set_transmask(0, 0xffff, 0x0000); /* split type 0 is totally transparent in front half */
+	state->m_bg_tilemap->set_transmask(1, 0x0fff, 0xf000); /* split type 1 has pens 0-11 transparent in front half */
 }
 
 
@@ -124,14 +124,14 @@ WRITE8_HANDLER( cop01_background_w )
 {
 	cop01_state *state = space->machine().driver_data<cop01_state>();
 	state->m_bgvideoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset & 0x7ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset & 0x7ff);
 }
 
 WRITE8_HANDLER( cop01_foreground_w )
 {
 	cop01_state *state = space->machine().driver_data<cop01_state>();
 	state->m_fgvideoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( cop01_vreg_w )
@@ -166,7 +166,7 @@ WRITE8_HANDLER( cop01_vreg_w )
 
 ***************************************************************************/
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	cop01_state *state = machine.driver_data<cop01_state>();
 	int offs, code, attr, sx, sy, flipx, flipy, color;
@@ -206,15 +206,15 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 }
 
 
-SCREEN_UPDATE( cop01 )
+SCREEN_UPDATE_IND16( cop01 )
 {
-	cop01_state *state = screen->machine().driver_data<cop01_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_vreg[1] + 256 * (state->m_vreg[2] & 1));
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, state->m_vreg[3]);
+	cop01_state *state = screen.machine().driver_data<cop01_state>();
+	state->m_bg_tilemap->set_scrollx(0, state->m_vreg[1] + 256 * (state->m_vreg[2] & 1));
+	state->m_bg_tilemap->set_scrolly(0, state->m_vreg[3]);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, TILEMAP_DRAW_LAYER1, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, TILEMAP_DRAW_LAYER0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0 );
+	state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_LAYER1, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_LAYER0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0 );
 	return 0;
 }

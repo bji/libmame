@@ -384,8 +384,8 @@ INPUT_PORTS_END
 static const char *const sharkatt_sample_names[] =
 {
 	"*sharkatt",
-	"talk.wav",
-	"crash.wav",
+	"talk",
+	"crash",
 	0	/* end of array */
 };
 
@@ -400,8 +400,8 @@ static const samples_interface sharkatt_samples_interface =
 static const char *const thief_sample_names[] =
 {
 	"*thief",
-	"talk.wav",
-	"crash.wav",
+	"talk",
+	"crash",
 	0	/* end of array */
 };
 
@@ -416,8 +416,8 @@ static const samples_interface thief_samples_interface =
 static const char *const natodef_sample_names[] =
 {
 	"*natodef",
-	"talk.wav",
-	"crash.wav",
+	"talk",
+	"crash",
 	0	/* end of array */
 };
 
@@ -444,12 +444,11 @@ static MACHINE_CONFIG_START( sharkatt, thief_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 24*8-1)
-	MCFG_SCREEN_UPDATE(thief)
+	MCFG_SCREEN_UPDATE_STATIC(thief)
 
 	MCFG_TMS9927_ADD("tms", MASTER_CLOCK/4, tms9927_intf)
 
@@ -484,10 +483,9 @@ static MACHINE_CONFIG_START( thief, thief_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(thief)
+	MCFG_SCREEN_UPDATE_STATIC(thief)
 
 	MCFG_TMS9927_ADD("tms", MASTER_CLOCK/4, tms9927_intf)
 
@@ -522,10 +520,9 @@ static MACHINE_CONFIG_START( natodef, thief_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(thief)
+	MCFG_SCREEN_UPDATE_STATIC(thief)
 
 	MCFG_TMS9927_ADD("tms", MASTER_CLOCK/4, tms9927_intf)
 

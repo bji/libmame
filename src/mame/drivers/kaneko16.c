@@ -79,6 +79,7 @@ Dip locations verified from manual for:
 - shogwarr
 
 [general]
+- interrupt timing/behaviour
 - replace sample bank copying with new ADDRESS MAP system for OKI and do banking like CPUs
 
 ***************************************************************************/
@@ -86,7 +87,6 @@ Dip locations verified from manual for:
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "machine/eeprom.h"
 #include "includes/kaneko16.h"
 #include "sound/2203intf.h"
@@ -1753,15 +1753,22 @@ GFXDECODE_END
 
 ***************************************************************************/
 
-#define KANEKO16_INTERRUPTS_NUM	3
-static INTERRUPT_GEN( kaneko16_interrupt )
+static TIMER_DEVICE_CALLBACK( kaneko16_interrupt )
 {
-	switch ( cpu_getiloops(device) )
-	{
-		case 2:  device_set_input_line(device, 3, HOLD_LINE); break;
-		case 1:  device_set_input_line(device, 4, HOLD_LINE); break;
-		case 0:  device_set_input_line(device, 5, HOLD_LINE); break;
-	}
+	kaneko16_state *state = timer.machine().driver_data<kaneko16_state>();
+	int scanline = param;
+
+	// main vblank interrupt
+	if(scanline == 224)
+		device_set_input_line(state->m_maincpu, 5, HOLD_LINE);
+
+	// each of these 2 int are responsible of translating a part of sprite buffer
+	// from work ram to sprite ram. How these are scheduled is unknown.
+	if(scanline == 64)
+		device_set_input_line(state->m_maincpu, 4, HOLD_LINE);
+
+	if(scanline == 144)
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
 }
 
 static const ay8910_interface ay8910_intf_dsw =
@@ -1812,7 +1819,7 @@ static MACHINE_CONFIG_START( berlwall, kaneko16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 12000000)	/* MC68000P12 */
 	MCFG_CPU_PROGRAM_MAP(berlwall)
-	MCFG_CPU_VBLANK_INT_HACK(kaneko16_interrupt,KANEKO16_INTERRUPTS_NUM)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", kaneko16_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(berlwall)
 
@@ -1822,10 +1829,9 @@ static MACHINE_CONFIG_START( berlwall, kaneko16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 240-1)
-	MCFG_SCREEN_UPDATE(berlwall)
+	MCFG_SCREEN_UPDATE_STATIC(berlwall)
 
 	MCFG_GFXDECODE(1x4bit_1x4bit)
 	MCFG_PALETTE_LENGTH(2048 + 32768)	/* 32768 static colors for the bg */
@@ -1858,7 +1864,7 @@ static MACHINE_CONFIG_START( bakubrkr, kaneko16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_12MHz) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(bakubrkr)
-	MCFG_CPU_VBLANK_INT_HACK(kaneko16_interrupt,KANEKO16_INTERRUPTS_NUM)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", kaneko16_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(bakubrkr)
 	MCFG_EEPROM_93C46_ADD("eeprom")
@@ -1869,10 +1875,9 @@ static MACHINE_CONFIG_START( bakubrkr, kaneko16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 240-1)
-	MCFG_SCREEN_UPDATE(kaneko16)
+	MCFG_SCREEN_UPDATE_STATIC(kaneko16)
 
 	MCFG_GFXDECODE(1x4bit_2x4bit)
 	MCFG_PALETTE_LENGTH(2048)
@@ -1913,7 +1918,7 @@ static MACHINE_CONFIG_START( blazeon, kaneko16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000,12000000)	/* TMP68HC000-12 */
 	MCFG_CPU_PROGRAM_MAP(blazeon)
-	MCFG_CPU_VBLANK_INT_HACK(kaneko16_interrupt,KANEKO16_INTERRUPTS_NUM)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", kaneko16_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80,4000000)	/* D780C-2 */
 	MCFG_CPU_PROGRAM_MAP(blazeon_soundmem)
@@ -1927,10 +1932,9 @@ static MACHINE_CONFIG_START( blazeon, kaneko16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 240)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 240-1 -8)
-	MCFG_SCREEN_UPDATE(kaneko16)
+	MCFG_SCREEN_UPDATE_STATIC(kaneko16)
 
 	MCFG_GFXDECODE(1x4bit_1x4bit)
 	MCFG_PALETTE_LENGTH(2048)
@@ -1964,9 +1968,9 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_START( gtmr, kaneko16_state )
 
 	/* basic machine hardware */
-	MCFG_CPU_ADD("gtmr", M68000, XTAL_16MHz)	/* verified on pcb */
+	MCFG_CPU_ADD("maincpu", M68000, XTAL_16MHz)	/* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(gtmr_map)
-	MCFG_CPU_VBLANK_INT_HACK(kaneko16_interrupt,KANEKO16_INTERRUPTS_NUM)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", kaneko16_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(gtmr)
 	MCFG_NVRAM_ADD_0FILL("nvram")
@@ -1977,10 +1981,9 @@ static MACHINE_CONFIG_START( gtmr, kaneko16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 240)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 240-1)
-	MCFG_SCREEN_UPDATE(kaneko16)
+	MCFG_SCREEN_UPDATE_STATIC(kaneko16)
 
 	MCFG_GFXDECODE(1x8bit_2x4bit)
 	MCFG_PALETTE_LENGTH(32768)
@@ -2004,7 +2007,7 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( bloodwar, gtmr )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("gtmr")
+	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(bloodwar)
 
 	MCFG_MACHINE_RESET( bloodwar )
@@ -2017,7 +2020,7 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( gtmr2, gtmr )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("gtmr")
+	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(gtmr2_map)
 MACHINE_CONFIG_END
 
@@ -2025,22 +2028,11 @@ MACHINE_CONFIG_END
                             Bonk's Adventure
 ***************************************************************************/
 
-/*
-    Even though 3 interrupts are triggered, I set an int_num of 4. (notice '+1')
-    I agree that it is kind of a misuse of the function, but I haven't found
-    clues in code on how interrupts are scheduled...
-    IT5 is the main int, and needs more time to execute than IT 3 and 4.
-    Between other things, each of these 2 int are responsible of translating
-    a part of sprite buffer from work ram to sprite ram.
-    So now test mode is fully working and visible.
-    SebV
-*/
 static MACHINE_CONFIG_DERIVED( bonkadv, gtmr )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("gtmr")
+	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(bonkadv)
-	MCFG_CPU_VBLANK_INT_HACK(kaneko16_interrupt,KANEKO16_INTERRUPTS_NUM + 1 ) // comment above
 
 	MCFG_MACHINE_RESET( bonkadv )
 MACHINE_CONFIG_END
@@ -2054,7 +2046,7 @@ static MACHINE_CONFIG_START( mgcrystl, kaneko16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_12MHz) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(mgcrystl)
-	MCFG_CPU_VBLANK_INT_HACK(kaneko16_interrupt,KANEKO16_INTERRUPTS_NUM)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", kaneko16_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(mgcrystl)
 	MCFG_EEPROM_93C46_ADD("eeprom")
@@ -2065,10 +2057,9 @@ static MACHINE_CONFIG_START( mgcrystl, kaneko16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(kaneko16)
+	MCFG_SCREEN_UPDATE_STATIC(kaneko16)
 
 	MCFG_GFXDECODE(1x4bit_2x4bit)
 	MCFG_PALETTE_LENGTH(2048)
@@ -2108,31 +2099,29 @@ MACHINE_CONFIG_END
     other: busy loop
 */
 
-#define SHOGWARR_INTERRUPTS_NUM	3
-static INTERRUPT_GEN( shogwarr_interrupt )
+static TIMER_DEVICE_CALLBACK( shogwarr_interrupt )
 {
-	//kaneko16_state *state = device->machine().driver_data<kaneko16_state>();
-	switch ( cpu_getiloops(device) )
+	kaneko16_state *state = timer.machine().driver_data<kaneko16_state>();
+	int scanline = param;
+
+	if(scanline == 224)
 	{
-		case 2:  device_set_input_line(device, 2, HOLD_LINE); break;
-		case 1:  device_set_input_line(device, 3, HOLD_LINE); break;
-
 		// the code for this interrupt is provided by the MCU..
-		case 0:  device_set_input_line(device, 4, HOLD_LINE);
+		device_set_input_line(state->m_maincpu, 4, HOLD_LINE);
+		calc3_mcu_run(timer.machine());
 
-				calc3_mcu_run(device->machine());
-		break;
 #if 0
-		case 0:
-		{
-			// hack, clear this ram address to get into test mode (interrupt would clear it)
-			if (state->mainram[0x2dfe/2]==0xff00)
-			{
-				state->mainram[0x2dfe/2]=0x0000;
-			}
-	        }
+		// hack, clear this ram address to get into test mode (interrupt would clear it)
+		if (state->mainram[0x2dfe/2]==0xff00)
+			state->mainram[0x2dfe/2]=0x0000;
 #endif
 	}
+
+	if(scanline == 64)
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
+
+	if(scanline == 144)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
 }
 
 /*
@@ -2174,7 +2163,7 @@ static MACHINE_CONFIG_START( shogwarr, kaneko16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, XTAL_12MHz)
 	MCFG_CPU_PROGRAM_MAP(shogwarr)
-	MCFG_CPU_VBLANK_INT_HACK(shogwarr_interrupt,SHOGWARR_INTERRUPTS_NUM)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", shogwarr_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(shogwarr)
 	MCFG_EEPROM_93C46_ADD("eeprom")
@@ -2184,10 +2173,9 @@ static MACHINE_CONFIG_START( shogwarr, kaneko16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.1854)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 240)
 	MCFG_SCREEN_VISIBLE_AREA(40, 296-1, 16, 240-1)
-	MCFG_SCREEN_UPDATE(kaneko16)
+	MCFG_SCREEN_UPDATE_STATIC(kaneko16)
 
 	MCFG_GFXDECODE(1x4bit_1x4bit)
 	MCFG_PALETTE_LENGTH(2048)
@@ -2698,7 +2686,7 @@ of214e0220.u26 - 27C080
 ***************************************************************************/
 
 ROM_START( bloodwar )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "ofp0f3.514", 0x000000, 0x080000, CRC(0c93da15) SHA1(65b6b1b4acfc32c551ae4fbe6a13f7f2b8554dbf) )
 	ROM_LOAD16_BYTE( "ofp1f3.513", 0x000001, 0x080000, CRC(894ecbe5) SHA1(bf403d19e6315266114ac742a08cac903e7b54b5) )
 
@@ -2743,7 +2731,7 @@ ROM_START( bloodwar )
 ROM_END
 
 ROM_START( oedfight )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "ofp0j3.514", 0x000000, 0x080000, CRC(0c93da15) SHA1(65b6b1b4acfc32c551ae4fbe6a13f7f2b8554dbf) )
 	ROM_LOAD16_BYTE( "ofp1j3.513", 0x000001, 0x080000, CRC(cc59de49) SHA1(48ff4ed40ad22768054a59bdf5ce0e00891d8f0e) )
 
@@ -2898,7 +2886,7 @@ f1: 10F6
     master up= 94/07/18 15:12:35            */
 
 ROM_START( gtmr )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "u2.bin", 0x000000, 0x080000, CRC(031799f7) SHA1(a59a9635002d139247828e3b74f6cf2fbdd5e569) )
 	ROM_LOAD16_BYTE( "u1.bin", 0x000001, 0x080000, CRC(6238790a) SHA1(a137fd581138804534f3193068f117611a982004) )
 
@@ -2927,7 +2915,7 @@ ROM_START( gtmr )
 ROM_END
 
 ROM_START( gtmra )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "mmp0x2.u514.bin", 0x000000, 0x080000, CRC(ba4a77c8) SHA1(efb6ae0e7aa71ab0c5f486f799bf31edcec24e2b) )
 	ROM_LOAD16_BYTE( "mmp1x2.u513.bin", 0x000001, 0x080000, CRC(a2b9034e) SHA1(466bcb1bf7124eb15d23b25c4e1307b9706474ec) )
 
@@ -2963,7 +2951,7 @@ ROM_END
     master up= 94/09/06 14:49:19            */
 
 ROM_START( gtmre )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "gmmu2.bin", 0x000000, 0x080000, CRC(36dc4aa9) SHA1(0aea4dc169d7aad2ea957a1de698d1fa12c71556) )
 	ROM_LOAD16_BYTE( "gmmu1.bin", 0x000001, 0x080000, CRC(8653c144) SHA1(a253a01327a9443337a55a13c063ea5096444c4c) )
 
@@ -3002,7 +2990,7 @@ ROM_END
     master up= 94/09/06 20:30:39            */
 
 ROM_START( gtmrusa )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "gtmrusa.u2", 0x000000, 0x080000, CRC(5be615c4) SHA1(c14d11a5bf6e025a65b932039165302ff407c4e1) )
 	ROM_LOAD16_BYTE( "gtmrusa.u1", 0x000001, 0x080000, CRC(ae853e4e) SHA1(31eaa73b0c5ddab1292f521ceec43b202653efe9) )
 
@@ -3191,7 +3179,7 @@ Notes:
 ***************************************************************************/
 
 ROM_START( gtmr2 )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "m2p0x1a.u8",  0x000000, 0x080000, CRC(c29039fb) SHA1(a16e8863608353c2931e9d45359fbcec8f11ef9d) )
 	ROM_LOAD16_BYTE( "m2p1x1a.u7",  0x000001, 0x080000, CRC(8ef392c4) SHA1(06bd720d931911e32264183dd215ab70ad6d2961) )
 
@@ -3222,7 +3210,7 @@ ROM_START( gtmr2 )
 ROM_END
 
 ROM_START( gtmr2a )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "m2p0x1.u8",  0x000000, 0x080000, CRC(525f6618) SHA1(da8008cc7768b4e8c0091aa3ea21752d0ca33691) )
 	ROM_LOAD16_BYTE( "m2p1x1.u7",  0x000001, 0x080000, CRC(914683e5) SHA1(dbb2140f7de86073647abc6e73ba739ea201dd30) )
 
@@ -3253,7 +3241,7 @@ ROM_START( gtmr2a )
 ROM_END
 
 ROM_START( gtmr2u )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "m2p0a1.u8",  0x000000, 0x080000, CRC(813e1d5e) SHA1(602df02933dc7b77be311113af1d1edad2751cc9) )
 	ROM_LOAD16_BYTE( "m2p1a1.u7",  0x000001, 0x080000, CRC(bee63666) SHA1(07585a63f901f50f2a2314eb4dc4307e7028ded7) )
 
@@ -3726,13 +3714,13 @@ Game can be ROM Swapped onto a Shogun Warriors board and works
 ***************************************************************************/
 
 
-ROM_START( brapboys ) /* Single PCB, fully populated, no rom sub board */
+ROM_START( brapboys ) /* World 'normal version', no rom sub board, serial RB92E000?x; suffix codes -00 and -01 */
 	ROM_REGION( 0x040000, "maincpu", 0 )			/* 68000 Code */
-	ROM_LOAD16_BYTE( "rb-030.u61", 0x000000, 0x020000, CRC(ccbe9a53) SHA1(b96baf0ecbf6550bfaf8e512d9275c53a3928bee) ) /* eprom labeled RB-030/U61-01 */
-	ROM_LOAD16_BYTE( "rb-031.u62", 0x000001, 0x020000, CRC(c72b8dda) SHA1(450e1fb8acb140fa0ab23630daad82924f7ce72b) ) /* eprom labeled RB-031/U62-01 */
+	ROM_LOAD16_BYTE( "rb-030.01.u61", 0x000000, 0x020000, CRC(ccbe9a53) SHA1(b96baf0ecbf6550bfaf8e512d9275c53a3928bee) ) /* eprom labeled RB-030/U61-01 (green label) */
+	ROM_LOAD16_BYTE( "rb-031.01.u62", 0x000001, 0x020000, CRC(c72b8dda) SHA1(450e1fb8acb140fa0ab23630daad82924f7ce72b) ) /* eprom labeled RB-031/U62-01 (green label) */
 
 	ROM_REGION( 0x020000, "cpu1", 0 )			/* MCU Code */
-	ROM_LOAD( "rb-040.u33",  0x000000, 0x020000, CRC(757c6e19) SHA1(0f1c37b1b1eb6b230c593e4648c4302f413a61f5) ) /* eprom labeled RB-040/U33-00 */
+	ROM_LOAD( "rb-040.00.u33",  0x000000, 0x020000, CRC(757c6e19) SHA1(0f1c37b1b1eb6b230c593e4648c4302f413a61f5) ) /* eprom labeled RB-040/U33-00 (green label) */
 
 	ROM_REGION( 0x800000, "gfx1", 0 )	/* Sprites */
 	ROM_LOAD( "rb-020.u100", 0x000000, 0x100000, CRC(ce220d38) SHA1(b88d7c89a3e1a826bf19a1fa692ec77c944596d9) )
@@ -3740,7 +3728,8 @@ ROM_START( brapboys ) /* Single PCB, fully populated, no rom sub board */
 	ROM_LOAD( "rb-022.u77",  0x200000, 0x100000, CRC(cb3f42dc) SHA1(5415f15621924dd263b8fe7daaf3dc25d470b814) )
 	ROM_LOAD( "rb-023.u78",  0x300000, 0x100000, CRC(0e6530c5) SHA1(72bff46f0672927e540f4f3546ae533dd0a231e0) )
 	ROM_LOAD( "rb-024.u79",  0x400000, 0x080000, CRC(65fa6447) SHA1(551e540d7bf412753b4a7098e25e6f9d8774bcf4) ) // correct, both halves identical when dumped as larger
-	ROM_LOAD( "rb-025.u80",  0x500000, 0x040000, CRC(36cd6b90) SHA1(45c50f2652726ded67c9c24185a71a6367e09270) ) // eprom labeled RB-025/U80-01, contains title logo for this version
+	ROM_LOAD( "rb-024.u79",  0x480000, 0x080000, CRC(65fa6447) SHA1(551e540d7bf412753b4a7098e25e6f9d8774bcf4) ) // is it correct to mirror like this?
+	ROM_LOAD( "rb-025.01.u80",  0x500000, 0x040000, CRC(36cd6b90) SHA1(45c50f2652726ded67c9c24185a71a6367e09270) ) // eprom labeled RB-025/U80-01 (green label), contains title logo for this version
 
 	ROM_REGION( 0x400000, "gfx2", 0 )	/* Tiles (scrambled) */
 	ROM_LOAD( "rb-010.u65",  0x000000, 0x100000, CRC(ffd73f87) SHA1(1a661f71976be61c22d9b962850e738ba17f1d45) )
@@ -3750,30 +3739,32 @@ ROM_START( brapboys ) /* Single PCB, fully populated, no rom sub board */
 
 	ROM_REGION( 0x100000, "oki1", 0 )
 	ROM_LOAD( "rb-000.u43",  0x000000, 0x080000, CRC(58ad1a62) SHA1(1d2643b5f6eac22682972a88d284e00de3e3b223) )
-	ROM_LOAD( "rb-003.u101", 0x080000, 0x080000, CRC(2cac25d7) SHA1(0412c317bf650a93051b9304d23035efde0c026a) ) /* eprom labeled RB-003/U43-00 however actual IC location is u101 */
+	ROM_LOAD( "rb-003.00.u101", 0x080000, 0x080000, CRC(2cac25d7) SHA1(0412c317bf650a93051b9304d23035efde0c026a) ) /* eprom labeled RB-003/U43-00 (green label) however actual IC location is u101 */
 
 	ROM_REGION( 0x200000, "oki2", 0 )
 	ROM_LOAD( "rb-001.u44",  0x000000, 0x100000, CRC(7cf774b3) SHA1(3fb0a5096ce9480f97e311439042eb8cbc26efb4) )
 	ROM_LOAD( "rb-002.u45",  0x100000, 0x100000, CRC(e4b30444) SHA1(be6756dce3721226e0b7f5d4d168008c31aeea8e) )
 ROM_END
 
-
-ROM_START( brapboysj ) /* The Japanese version has an extra rom??? and used a rom sub board */
+// TODO: the eproms for brapboysj are missing the region-specific numeric suffix;
+// it should be something like -00 or -01 or -10 or -11 or etc
+ROM_START( brapboysj ) /* Japanese 'special version' with EXROM sub board; serial unknown; suffix codes unknown */
 	ROM_REGION( 0x040000, "maincpu", 0 )			/* 68000 Code */
-	ROM_LOAD16_BYTE( "rb-004.u61", 0x000000, 0x020000, CRC(5432442c) SHA1(f0f7328ece96ef25e6d4fd1958d734f64a9ef371) )
-	ROM_LOAD16_BYTE( "rb-005.u62", 0x000001, 0x020000, CRC(118b3cfb) SHA1(1690ecf5c629879bd97131ff77029e152919e45d) )
+	ROM_LOAD16_BYTE( "rb-004.u61", 0x000000, 0x020000, CRC(5432442c) SHA1(f0f7328ece96ef25e6d4fd1958d734f64a9ef371) ) // fill in suffix!
+	ROM_LOAD16_BYTE( "rb-005.u62", 0x000001, 0x020000, CRC(118b3cfb) SHA1(1690ecf5c629879bd97131ff77029e152919e45d) ) // fill in suffix!
 
 	ROM_REGION( 0x020000, "cpu1", 0 )			/* MCU Code */
-	ROM_LOAD( "rb-006.u33",  0x000000, 0x020000, CRC(f1d76b20) SHA1(c571b5f28e529589ee2d7697ef5d4b60ccb66e7a) )
+	ROM_LOAD( "rb-006.u33",  0x000000, 0x020000, CRC(f1d76b20) SHA1(c571b5f28e529589ee2d7697ef5d4b60ccb66e7a) ) // fill in suffix!
 
 	ROM_REGION( 0x1000000, "gfx1", 0 )	/* Sprites */
-	ROM_LOAD( "rb-020.u100", 0x000000, 0x100000, CRC(ce220d38) SHA1(b88d7c89a3e1a826bf19a1fa692ec77c944596d9) )
+	ROM_LOAD( "rb-020.u100", 0x000000, 0x100000, CRC(ce220d38) SHA1(b88d7c89a3e1a826bf19a1fa692ec77c944596d9) ) // really at location next to capacitor C2 on Z01DK-EXROM daughterboard
 	ROM_LOAD( "rb-021.u76",  0x100000, 0x100000, CRC(74001407) SHA1(90002056ceb4e0401246950b8c3f996af0a2463c) )
 	ROM_LOAD( "rb-022.u77",  0x200000, 0x100000, CRC(cb3f42dc) SHA1(5415f15621924dd263b8fe7daaf3dc25d470b814) )
 	ROM_LOAD( "rb-023.u78",  0x300000, 0x100000, CRC(0e6530c5) SHA1(72bff46f0672927e540f4f3546ae533dd0a231e0) )
 	ROM_LOAD( "rb-024.u79",  0x400000, 0x080000, CRC(65fa6447) SHA1(551e540d7bf412753b4a7098e25e6f9d8774bcf4) ) // correct, both halves identical when dumped as larger
-	ROM_LOAD( "rb-025.u4",   0x500000, 0x080000, CRC(aa795ba5) SHA1(c5256dcceded2e76f548b60c18e51d0dd0209d81) ) // eprom, special title screen
-	ROM_LOAD( "rb-026.u5",   0x580000, 0x080000, CRC(bb7604d4) SHA1(57d51ce4ea2000f9a50bae326cfcb66ec494249f) ) // eprom, logs that bounce past
+	ROM_LOAD( "rb-024.u79",  0x480000, 0x080000, CRC(65fa6447) SHA1(551e540d7bf412753b4a7098e25e6f9d8774bcf4) ) // is it correct to mirror like this?
+	ROM_LOAD( "rb-025.u80a",   0x500000, 0x080000, CRC(aa795ba5) SHA1(c5256dcceded2e76f548b60c18e51d0dd0209d81) ) // eprom, special title screen, really at location next to capacitor C4 on Z01DK-EXROM daughterboard; // fill in suffix!
+	ROM_LOAD( "rb-026.u80b",   0x580000, 0x080000, CRC(bb7604d4) SHA1(57d51ce4ea2000f9a50bae326cfcb66ec494249f) ) // eprom, logs that bounce past, really at location next to capacitor C5 on Z01DK-EXROM daughterboard; // fill in suffix!
 
 	ROM_REGION( 0x400000, "gfx2", 0 )	/* Tiles (scrambled) */
 	ROM_LOAD( "rb-010.u65",  0x000000, 0x100000, CRC(ffd73f87) SHA1(1a661f71976be61c22d9b962850e738ba17f1d45) )
@@ -3783,11 +3774,44 @@ ROM_START( brapboysj ) /* The Japanese version has an extra rom??? and used a ro
 
 	ROM_REGION( 0x100000, "oki1", 0 )
 	ROM_LOAD( "rb-000.u43",  0x000000, 0x080000, CRC(58ad1a62) SHA1(1d2643b5f6eac22682972a88d284e00de3e3b223) )
-	ROM_LOAD( "rb-003.u101", 0x080000, 0x080000, CRC(2cac25d7) SHA1(0412c317bf650a93051b9304d23035efde0c026a) ) /* eprom labeled RB-003/U43-00 however actual IC location is u101 */
+	ROM_LOAD( "rb-003.00.u101", 0x080000, 0x080000, CRC(2cac25d7) SHA1(0412c317bf650a93051b9304d23035efde0c026a) ) /* eprom labeled RB-003/U43-00 however actual IC location is u101 */
 
 	ROM_REGION( 0x200000, "oki2", 0 )
 	ROM_LOAD( "rb-001.u44",  0x000000, 0x100000, CRC(7cf774b3) SHA1(3fb0a5096ce9480f97e311439042eb8cbc26efb4) )
 	ROM_LOAD( "rb-002.u45",  0x100000, 0x100000, CRC(e4b30444) SHA1(be6756dce3721226e0b7f5d4d168008c31aeea8e) )
+ROM_END
+
+ROM_START( brapboysu ) /* US 'special version' with EXROM sub board; Serial RB92A0008x/9x; suffix code -10 */
+	ROM_REGION( 0x040000, "maincpu", 0 )			/* 68000 Code */
+	ROM_LOAD16_BYTE( "rb-030.10.u61", 0x000000, 0x020000, CRC(527EB92A) SHA1(64727675E58A4A71BEA1D88D7F76F60929196505) ) /* eprom labeled RB-030/U61-10 (red label) */
+	ROM_LOAD16_BYTE( "rb-031.10.u62", 0x000001, 0x020000, CRC(D5962BDD) SHA1(9BADAB4CC2A9064BD29C582D82EC0B003B9FB091) ) /* eprom labeled RB-031/U62-10 (red label) */
+
+	ROM_REGION( 0x020000, "cpu1", 0 )			/* MCU Code */
+	ROM_LOAD( "rb-040.10.u33",  0x000000, 0x020000, CRC(0C90D758) SHA1(9B1A9856AB00F80F15BFFC01276F636F92F0BD12) ) /* eprom labeled RB-040/U33-10 (red label)*/
+
+	ROM_REGION( 0x1000000, "gfx1", 0 )	/* Sprites */
+	ROM_LOAD( "rb-020.u100", 0x000000, 0x100000, CRC(ce220d38) SHA1(b88d7c89a3e1a826bf19a1fa692ec77c944596d9) ) // rb-020 0013 mask rom; really at location next to capacitor C2 on Z01DK-EXROM daughterboard
+	ROM_LOAD( "rb-021.u76",  0x100000, 0x100000, CRC(74001407) SHA1(90002056ceb4e0401246950b8c3f996af0a2463c) ) // rb-021 0014 mask rom
+	ROM_LOAD( "rb-022.u77",  0x200000, 0x100000, CRC(cb3f42dc) SHA1(5415f15621924dd263b8fe7daaf3dc25d470b814) ) // rb-022 0015 mask rom
+	ROM_LOAD( "rb-023.u78",  0x300000, 0x100000, CRC(0e6530c5) SHA1(72bff46f0672927e540f4f3546ae533dd0a231e0) ) // rb-023 0016 mask rom
+	ROM_LOAD( "rb-024.u79",  0x400000, 0x080000, CRC(65fa6447) SHA1(551e540d7bf412753b4a7098e25e6f9d8774bcf4) ) // rb-023 0017 w29 mask rom, both halves identical when dumped as larger
+	ROM_LOAD( "rb-024.u79",  0x480000, 0x080000, CRC(65fa6447) SHA1(551e540d7bf412753b4a7098e25e6f9d8774bcf4) ) // is it correct to mirror like this?
+	ROM_LOAD( "rb-025.10.u80a",   0x500000, 0x080000, CRC(140FE400) SHA1(A764767AACEC2F895F93256AB82125962C272951) ) // eprom labeled RB-025/U80a10 (red label), really at location next to capacitor C4 on Z01DK-EXROM daughterboard
+	ROM_LOAD( "rb-026.10.u80b",   0x580000, 0x080000, CRC(bb7604d4) SHA1(57d51ce4ea2000f9a50bae326cfcb66ec494249f) ) // eprom labeled RB-026/U80b10 (red label), matches japan version of rb-026, really at location next to capacitor C5 on Z01DK-EXROM daughterboard
+
+	ROM_REGION( 0x400000, "gfx2", 0 )	/* Tiles (scrambled) */
+	ROM_LOAD( "rb-010.u65",  0x000000, 0x100000, CRC(ffd73f87) SHA1(1a661f71976be61c22d9b962850e738ba17f1d45) ) // rb-010 0009 w17 mask rom
+	ROM_LOAD( "rb-011.u66",  0x100000, 0x100000, CRC(d9325f78) SHA1(346832608664aa8f3ac9260a549903386b4125a8) ) // rb-011 0010 w18 mask rom
+	ROM_LOAD( "rb-012.u67",  0x200000, 0x100000, CRC(bfdbe0d1) SHA1(3abc5398ee8ee1871b4d081f9b748539d69bcdba) ) // rb-012 0011 w21 mask rom
+	ROM_LOAD( "rb-013.u68",  0x300000, 0x100000, CRC(28c37fe8) SHA1(e10dd1a810983077328b44e6e33ce2e899c506d2) ) // rb-013 0012 w22 mask rom
+
+	ROM_REGION( 0x100000, "oki1", 0 )
+	ROM_LOAD( "rb-000.u43",  0x000000, 0x080000, CRC(58ad1a62) SHA1(1d2643b5f6eac22682972a88d284e00de3e3b223) ) // rb-000 0006 w28 mask rom
+	ROM_LOAD( "rb-003.00.u101", 0x080000, 0x080000, CRC(2cac25d7) SHA1(0412c317bf650a93051b9304d23035efde0c026a) ) /* eprom labeled RB-003/U43-00 (green label) however actual IC location is u101 */
+
+	ROM_REGION( 0x200000, "oki2", 0 )
+	ROM_LOAD( "rb-001.u44",  0x000000, 0x100000, CRC(7cf774b3) SHA1(3fb0a5096ce9480f97e311439042eb8cbc26efb4) ) // rb-001 0007 mask rom
+	ROM_LOAD( "rb-002.u45",  0x100000, 0x100000, CRC(e4b30444) SHA1(be6756dce3721226e0b7f5d4d168008c31aeea8e) ) // rb-002 0008 w11 mask rom
 ROM_END
 
 /**********************************************************************
@@ -3841,7 +3865,7 @@ Notes:
 **********************************************************************/
 
 ROM_START( bonkadv )
-	ROM_REGION( 0x100000, "gtmr", 0 )			/* 68000 Code */
+	ROM_REGION( 0x100000, "maincpu", 0 )			/* 68000 Code */
 	ROM_LOAD16_BYTE( "prg.8",        0x000000, 0x080000, CRC(af2e60f8) SHA1(406f79e155d1244b84f8c89c25b37188e1b4f4a6) )
 	ROM_LOAD16_BYTE( "prg.7",        0x000001, 0x080000, CRC(a1cc6a78) SHA1(a9cea21a6a0dfd3b0952664681c057190aa27f8c) )
 
@@ -3948,6 +3972,7 @@ GAME( 1995, gtmr2u,   gtmr2,    gtmr2,    gtmr2,    gtmr2, ROT0,  "Kaneko", "Gre
 // some functionality of the protection chip still needs investigating on these, but they seem to be playable
 GAME( 1992, brapboys, 0,        brapboys, brapboys, brapboys,   ROT0,  "Kaneko", "B.Rap Boys (World)", 0 )
 GAME( 1992, brapboysj,brapboys, brapboys, brapboys, brapboys,   ROT0,  "Kaneko", "B.Rap Boys Special (Japan)", 0 )
+GAME( 1992, brapboysu,brapboys, brapboys, brapboys, brapboys,   ROT0,  "Kaneko", "B.Rap Boys Special (US)", 0 )
 GAME( 1992, shogwarr, 0,        shogwarr, shogwarr, shogwarr,   ROT0,  "Kaneko", "Shogun Warriors (World)", 0 )
 GAME( 1992, shogwarru,shogwarr, shogwarr, shogwarr, shogwarr,   ROT0,  "Kaneko", "Shogun Warriors (US)",    0 )
 GAME( 1992, fjbuster, shogwarr, shogwarr, shogwarr, shogwarr,   ROT0,  "Kaneko", "Fujiyama Buster (Japan)", 0 )

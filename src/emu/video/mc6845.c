@@ -324,10 +324,7 @@ void mc6845_device::recompute_parameters(bool postload)
 
 			attoseconds_t refresh = HZ_TO_ATTOSECONDS(m_clock) * (m_horiz_char_total + 1) * vert_pix_total;
 
-			visarea.min_x = 0;
-			visarea.min_y = 0;
-			visarea.max_x = max_visible_x;
-			visarea.max_y = max_visible_y;
+			visarea.set(0, max_visible_x, 0, max_visible_y);
 
 			if (LOG) logerror("M6845 config screen: HTOTAL: 0x%x  VTOTAL: 0x%x  MAX_X: 0x%x  MAX_Y: 0x%x  HSYNC: 0x%x-0x%x  VSYNC: 0x%x-0x%x  Freq: %ffps\n",
 							  horiz_pix_total, vert_pix_total, max_visible_x, max_visible_y, hsync_on_pos, hsync_off_pos - 1, vsync_on_pos, vsync_off_pos - 1, 1 / ATTOSECONDS_TO_DOUBLE(refresh));
@@ -688,10 +685,9 @@ void mc6845_device::update_cursor_state()
 }
 
 
-void mc6845_device::update(bitmap_t *bitmap, const rectangle *cliprect)
+UINT32 mc6845_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
-	assert(bitmap != NULL);
-	assert(cliprect != NULL);
+	assert(bitmap.valid());
 
 	if (m_has_valid_parameters)
 	{
@@ -705,14 +701,14 @@ void mc6845_device::update(bitmap_t *bitmap, const rectangle *cliprect)
 		if (m_begin_update != NULL)
 			param = m_begin_update(this, bitmap, cliprect);
 
-		if (cliprect->min_y == 0)
+		if (cliprect.min_y == 0)
 		{
 			/* read the start address at the beginning of the frame */
 			m_current_disp_addr = m_disp_start_addr;
 		}
 
 		/* for each row in the visible region */
-		for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+		for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 		{
 			/* compute the current raster line */
 			UINT8 ra = y % (m_max_ras_addr + 1);
@@ -752,6 +748,7 @@ void mc6845_device::update(bitmap_t *bitmap, const rectangle *cliprect)
 	}
 	else
 		popmessage("Invalid MC6845 screen parameters - display disabled!!!");
+	return 0;
 }
 
 
@@ -769,11 +766,8 @@ void mc6845_device::device_start()
 	/* get the screen device */
 	if ( m_screen_tag != NULL )
 	{
-		m_screen = downcast<screen_device *>(machine().device(m_screen_tag));
-		if (m_screen == NULL) {
-			astring tempstring;
-			m_screen = downcast<screen_device *>(machine().device(owner()->subtag(tempstring,m_screen_tag)));
-		}
+		astring tempstring;
+		m_screen = downcast<screen_device *>(machine().device(siblingtag(tempstring,m_screen_tag)));
 		assert(m_screen != NULL);
 	}
 	else

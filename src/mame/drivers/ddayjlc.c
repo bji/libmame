@@ -151,10 +151,10 @@ static WRITE8_HANDLER( ddayjlc_bgram_w )
 	ddayjlc_state *state = space->machine().driver_data<ddayjlc_state>();
 
 	if (!offset)
-		tilemap_set_scrollx(state->m_bg_tilemap, 0, data + 8);
+		state->m_bg_tilemap->set_scrollx(0, data + 8);
 
 	state->m_bgram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset & 0x3ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset & 0x3ff);
 }
 
 static WRITE8_HANDLER( ddayjlc_videoram_w )
@@ -380,11 +380,11 @@ static VIDEO_START( ddayjlc )
 	state->m_bg_tilemap = tilemap_create(machine, get_tile_info_bg, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( ddayjlc )
+static SCREEN_UPDATE_IND16( ddayjlc )
 {
-	ddayjlc_state *state = screen->machine().driver_data<ddayjlc_state>();
+	ddayjlc_state *state = screen.machine().driver_data<ddayjlc_state>();
 	UINT32 i;
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	for (i = 0; i < 0x400; i += 4)
 	{
@@ -398,7 +398,7 @@ static SCREEN_UPDATE( ddayjlc )
 
 		code = (code & 0x7f) | ((flags & 0x30) << 3);
 
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[0], code, color, xflip, yflip, x, y, 0);
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[0], code, color, xflip, yflip, x, y, 0);
 	}
 
 	{
@@ -409,9 +409,9 @@ static SCREEN_UPDATE( ddayjlc )
 			{
 				c = state->m_videoram[y * 32 + x];
 				if (x > 1 && x < 30)
-					drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1], c + state->m_char_bank * 0x100, 2, 0, 0, x*8, y*8, 0);
+					drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1], c + state->m_char_bank * 0x100, 2, 0, 0, x*8, y*8, 0);
 				else
-					drawgfx_opaque(bitmap, cliprect, screen->machine().gfx[1], c + state->m_char_bank * 0x100, 2, 0, 0, x*8, y*8);
+					drawgfx_opaque(bitmap, cliprect, screen.machine().gfx[1], c + state->m_char_bank * 0x100, 2, 0, 0, x*8, y*8);
 			}
 	}
 	return 0;
@@ -526,10 +526,9 @@ static MACHINE_CONFIG_START( ddayjlc, ddayjlc_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(ddayjlc)
+	MCFG_SCREEN_UPDATE_STATIC(ddayjlc)
 
 	MCFG_GFXDECODE(ddayjlc)
 	MCFG_PALETTE_LENGTH(0x200)

@@ -24,7 +24,6 @@ Year + Game                 By      Board      Hardware
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "sound/dac.h"
 #include "sound/2151intf.h"
 #include "sound/ay8910.h"
@@ -740,13 +739,16 @@ GFXDECODE_END
                             Back Street Soccer
 ***************************************************************************/
 
-static INTERRUPT_GEN( bssoccer_interrupt )
+static TIMER_DEVICE_CALLBACK( bssoccer_interrupt )
 {
-	switch (cpu_getiloops(device))
-	{
-		case 0: 	device_set_input_line(device, 1, HOLD_LINE);	break;
-		case 1: 	device_set_input_line(device, 2, HOLD_LINE);	break;
-	}
+	suna16_state *state = timer.machine().driver_data<suna16_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 1, HOLD_LINE);
+
+	if(scanline == 0)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE); // does RAM to sprite buffer copy here
 }
 
 static MACHINE_CONFIG_START( bssoccer, suna16_state )
@@ -754,7 +756,7 @@ static MACHINE_CONFIG_START( bssoccer, suna16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 8000000)	/* ? */
 	MCFG_CPU_PROGRAM_MAP(bssoccer_map)
-	MCFG_CPU_VBLANK_INT_HACK(bssoccer_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", bssoccer_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80, 3579545)		/* Z80B */
 	MCFG_CPU_PROGRAM_MAP(bssoccer_sound_map)
@@ -773,10 +775,9 @@ static MACHINE_CONFIG_START( bssoccer, suna16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna16)
+	MCFG_SCREEN_UPDATE_STATIC(suna16)
 
 	MCFG_GFXDECODE(suna16)
 	MCFG_PALETTE_LENGTH(512)
@@ -833,10 +834,9 @@ static MACHINE_CONFIG_START( uballoon, suna16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna16)
+	MCFG_SCREEN_UPDATE_STATIC(suna16)
 
 	MCFG_GFXDECODE(suna16)
 	MCFG_PALETTE_LENGTH(512)
@@ -883,10 +883,9 @@ static MACHINE_CONFIG_START( sunaq, suna16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(suna16)
+	MCFG_SCREEN_UPDATE_STATIC(suna16)
 
 	MCFG_GFXDECODE(suna16)
 	MCFG_PALETTE_LENGTH(512)
@@ -939,7 +938,7 @@ static MACHINE_CONFIG_START( bestbest, suna16_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M68000, 24000000/4)
 	MCFG_CPU_PROGRAM_MAP(bestbest_map)
-	MCFG_CPU_VBLANK_INT_HACK(bssoccer_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", bssoccer_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80, 24000000/4)
 	MCFG_CPU_PROGRAM_MAP(bestbest_sound_map)
@@ -956,10 +955,9 @@ static MACHINE_CONFIG_START( bestbest, suna16_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.1734)    // measured on pcb (15.6218kHz HSync)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 0+16, 256-16-1)
-	MCFG_SCREEN_UPDATE(bestbest)
+	MCFG_SCREEN_UPDATE_STATIC(bestbest)
 
 	MCFG_GFXDECODE(bestbest)
 	MCFG_PALETTE_LENGTH(256*8)

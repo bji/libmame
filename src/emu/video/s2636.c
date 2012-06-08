@@ -104,8 +104,8 @@ struct _s2636_state
 	int       y_offset;
 	int       x_offset;
 
-	bitmap_t *bitmap;
-	bitmap_t *collision_bitmap;
+	bitmap_ind16 *bitmap;
+	bitmap_ind16 *collision_bitmap;
 };
 
 /*************************************
@@ -136,7 +136,7 @@ INLINE const s2636_interface *get_interface( device_t *device )
  *
  *************************************/
 
-static void draw_sprite( UINT8 *gfx, int color, int y, int x, int expand, int or_mode, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprite( UINT8 *gfx, int color, int y, int x, int expand, int or_mode, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	int sy;
 
@@ -162,10 +162,7 @@ static void draw_sprite( UINT8 *gfx, int color, int y, int x, int expand, int or
 					int tx = x + sx * (expand + 1) + ex;
 
 					/* get out if outside the drawing region */
-					if ((tx < cliprect->min_x) ||
-						(tx > cliprect->max_x) ||
-						(ty < cliprect->min_y) ||
-						(ty > cliprect->max_y))
+					if (!cliprect.contains(tx, ty))
 						continue;
 
 					/* get out if current image bit is transparent */
@@ -173,9 +170,9 @@ static void draw_sprite( UINT8 *gfx, int color, int y, int x, int expand, int or
 						continue;
 
 					if (or_mode)
-						*BITMAP_ADDR16(bitmap, ty, tx) = 0x08 | *BITMAP_ADDR16(bitmap, ty, tx) | color;
+						bitmap.pix16(ty, tx) = 0x08 | bitmap.pix16(ty, tx) | color;
 					else
-						*BITMAP_ADDR16(bitmap, ty, tx) = 0x08 | color;
+						bitmap.pix16(ty, tx) = 0x08 | color;
 				}
 			}
 		}
@@ -190,7 +187,7 @@ static void draw_sprite( UINT8 *gfx, int color, int y, int x, int expand, int or
  *
  *************************************/
 
-static int check_collision( device_t *device, int spriteno1, int spriteno2, const rectangle *cliprect )
+static int check_collision( device_t *device, int spriteno1, int spriteno2, const rectangle &cliprect )
 {
 	s2636_state *s2636 = get_safe_token(device);
 	int checksum = 0;
@@ -200,7 +197,7 @@ static int check_collision( device_t *device, int spriteno1, int spriteno2, cons
 
 	/* TODO: does not check shadow sprites yet */
 
-	bitmap_fill(s2636->collision_bitmap, cliprect, 0);
+	s2636->collision_bitmap->fill(0, cliprect);
 
 	if ((attr1[0x0a] != 0xff) && (attr2[0x0a] != 0xff))
 	{
@@ -215,31 +212,29 @@ static int check_collision( device_t *device, int spriteno1, int spriteno2, cons
 		int expand2 = (s2636->work_ram[0xc0] >> (spriteno2 << 1)) & 0x03;
 
 		/* draw first sprite */
-		draw_sprite(attr1, 1, y1, x1, expand1, FALSE, s2636->collision_bitmap, cliprect);
+		draw_sprite(attr1, 1, y1, x1, expand1, FALSE, *s2636->collision_bitmap, cliprect);
 
 		/* get fingerprint */
 		for (x = x1; x < x1 + SPRITE_WIDTH; x++)
 			for (y = y1; y < y1 + SPRITE_HEIGHT; y++)
 			{
-				if ((x < cliprect->min_x) || (x > cliprect->max_x) ||
-					(y < cliprect->min_y) || (y > cliprect->max_y))
+				if (!cliprect.contains(x, y))
 					continue;
 
-				checksum = checksum + *BITMAP_ADDR16(s2636->collision_bitmap, y, x);
+				checksum = checksum + s2636->collision_bitmap->pix16(y, x);
 			}
 
 		/* black out second sprite */
-		draw_sprite(attr2, 0, y2, x2, expand2, FALSE, s2636->collision_bitmap, cliprect);
+		draw_sprite(attr2, 0, y2, x2, expand2, FALSE, *s2636->collision_bitmap, cliprect);
 
 		/* remove fingerprint */
 		for (x = x1; x < x1 + SPRITE_WIDTH; x++)
 			for (y = y1; y < y1 + SPRITE_HEIGHT; y++)
 			{
-				if ((x < cliprect->min_x) || (x > cliprect->max_x) ||
-					(y < cliprect->min_y) || (y > cliprect->max_y))
+				if (!cliprect.contains(x, y))
 					continue;
 
-				checksum = checksum - *BITMAP_ADDR16(s2636->collision_bitmap, y, x);
+				checksum = checksum - s2636->collision_bitmap->pix16(y, x);
 			}
 	}
 
@@ -254,13 +249,13 @@ static int check_collision( device_t *device, int spriteno1, int spriteno2, cons
  *
  *************************************/
 
-bitmap_t *s2636_update( device_t *device, const rectangle *cliprect )
+bitmap_ind16 &s2636_update( device_t *device, const rectangle &cliprect )
 {
 	s2636_state *s2636 = get_safe_token(device);
 	UINT8 collision = 0;
 	int spriteno;
 
-	bitmap_fill(s2636->bitmap, cliprect, 0);
+	s2636->bitmap->fill(0, cliprect);
 
 	for (spriteno = 0; spriteno < 4; spriteno++)
 	{
@@ -277,7 +272,7 @@ bitmap_t *s2636_update( device_t *device, const rectangle *cliprect )
 		color = (s2636->work_ram[0xc1 + (spriteno >> 1)] >> ((spriteno & 1) ? 0 : 3)) & 0x07;
 		expand = (s2636->work_ram[0xc0] >> (spriteno << 1)) & 0x03;
 
-		draw_sprite(attr, color, y, x, expand, TRUE, s2636->bitmap, cliprect);
+		draw_sprite(attr, color, y, x, expand, TRUE, *s2636->bitmap, cliprect);
 
 		/* bail if no shadow sprites */
 		if ((attr[0x0b] == 0xff) || (attr[0x0d] == 0xfe))
@@ -289,7 +284,7 @@ bitmap_t *s2636_update( device_t *device, const rectangle *cliprect )
 		{
 			y = y + SPRITE_HEIGHT + attr[0x0d];
 
-			draw_sprite(attr, color, y, x, expand, TRUE, s2636->bitmap, cliprect);
+			draw_sprite(attr, color, y, x, expand, TRUE, *s2636->bitmap, cliprect);
 		}
 	}
 
@@ -303,7 +298,7 @@ bitmap_t *s2636_update( device_t *device, const rectangle *cliprect )
 
 	s2636->work_ram[0xcb] = collision;
 
-	return s2636->bitmap;
+	return *s2636->bitmap;
 }
 
 
@@ -360,8 +355,8 @@ static DEVICE_START( s2636 )
 	s2636->y_offset = intf->y_offset;
 
 	s2636->work_ram = auto_alloc_array_clear(device->machine(), UINT8, intf->work_ram_size);
-	s2636->bitmap = auto_bitmap_alloc(device->machine(), width, height, BITMAP_FORMAT_INDEXED16);
-	s2636->collision_bitmap = auto_bitmap_alloc(device->machine(), width, height, BITMAP_FORMAT_INDEXED16);
+	s2636->bitmap = auto_bitmap_ind16_alloc(device->machine(), width, height);
+	s2636->collision_bitmap = auto_bitmap_ind16_alloc(device->machine(), width, height);
 
 	device->save_item(NAME(s2636->x_offset));
 	device->save_item(NAME(s2636->y_offset));

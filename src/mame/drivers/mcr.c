@@ -284,7 +284,6 @@
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "machine/z80ctc.h"
 #include "machine/z80pio.h"
 #include "machine/z80sio.h"
@@ -422,6 +421,32 @@ static WRITE8_HANDLER( journey_op4_w )
 
 	/* bit 0 turns cassette on/off */
 	sample_set_pause(samples, 0, ~data & 1);
+}
+
+
+
+/*************************************
+ *
+ *  Two Tigers I/O ports
+ *
+ *************************************/
+
+static WRITE8_HANDLER( twotiger_op4_w )
+{
+	device_t *samples = space->machine().device("samples");
+
+	for (int i = 0; i < 2; i++)
+	{
+		/* play tape, and loop it */
+		if (!sample_playing(samples, i))
+			sample_start(samples, i, i, 1);
+
+		/* bit 1 turns cassette on/off */
+		sample_set_pause(samples, i, ~data & 2);
+	}
+
+	// bit 2: lamp control?
+	// if (data & 0xfc) printf("%x ",data);
 }
 
 
@@ -1548,7 +1573,7 @@ GFXDECODE_END
 static const char *const journey_sample_names[] =
 {
 	"*journey",
-	"sepways.wav",
+	"sepways",
 	0
 };
 
@@ -1556,6 +1581,21 @@ static const samples_interface journey_samples_interface =
 {
 	1,
 	journey_sample_names
+};
+
+
+static const char *const twotiger_sample_names[] =
+{
+	"*twotiger",
+	"left",
+	"right",
+	0
+};
+
+static const samples_interface twotiger_samples_interface =
+{
+	2,
+	twotiger_sample_names
 };
 
 
@@ -1574,7 +1614,7 @@ static MACHINE_CONFIG_START( mcr_90009, mcr_state )
 	MCFG_CPU_CONFIG(mcr_daisy_chain)
 	MCFG_CPU_PROGRAM_MAP(cpu_90009_map)
 	MCFG_CPU_IO_MAP(cpu_90009_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(mcr_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mcr_interrupt, "screen", 0, 1)
 
 	MCFG_Z80CTC_ADD("ctc", MAIN_OSC_MCR_I/8 /* same as "maincpu" */, mcr_ctc_intf)
 
@@ -1589,10 +1629,9 @@ static MACHINE_CONFIG_START( mcr_90009, mcr_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(30)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*16, 30*16)
 	MCFG_SCREEN_VISIBLE_AREA(0*16, 32*16-1, 0*16, 30*16-1)
-	MCFG_SCREEN_UPDATE(mcr)
+	MCFG_SCREEN_UPDATE_STATIC(mcr)
 
 	MCFG_GFXDECODE(mcr)
 	MCFG_PALETTE_LENGTH(32)
@@ -1614,6 +1653,17 @@ static MACHINE_CONFIG_DERIVED( mcr_90010, mcr_90009 )
 
 	/* video hardware */
 	MCFG_PALETTE_LENGTH(64)
+MACHINE_CONFIG_END
+
+
+/* as above, plus 8-track tape */
+static MACHINE_CONFIG_DERIVED( mcr_90010_tt, mcr_90010 )
+
+	/* sound hardware */
+	MCFG_SOUND_ADD("samples", SAMPLES, 0)
+	MCFG_SOUND_CONFIG(twotiger_samples_interface)
+	MCFG_SOUND_ROUTE(0, "lspeaker", 0.25)
+	MCFG_SOUND_ROUTE(1, "rspeaker", 0.25)
 MACHINE_CONFIG_END
 
 
@@ -1663,7 +1713,8 @@ static MACHINE_CONFIG_DERIVED( mcr_91490_ipu, mcr_91490_snt )
 	MCFG_CPU_CONFIG(mcr_ipu_daisy_chain)
 	MCFG_CPU_PROGRAM_MAP(ipu_91695_map)
 	MCFG_CPU_IO_MAP(ipu_91695_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(mcr_ipu_interrupt,2)
+	MCFG_TIMER_MODIFY("scantimer")
+	MCFG_TIMER_CALLBACK(mcr_ipu_interrupt)
 
 	MCFG_Z80CTC_ADD("ipu_ctc", 7372800/2 /* same as "ipu" */, nflfoot_ctc_intf)
 	MCFG_Z80PIO_ADD("ipu_pio0", 7372800/2, nflfoot_pio_intf)
@@ -2580,6 +2631,8 @@ static DRIVER_INIT( twotiger )
 	mcr_init(machine, 90010, 91399, 90913);
 	mcr_sound_init(machine, MCR_SSIO);
 
+	ssio_set_custom_output(4, 0xff, twotiger_op4_w);
+
 	machine.device("maincpu")->memory().space(AS_PROGRAM)->install_legacy_readwrite_handler(0xe800, 0xefff, 0, 0x1000, FUNC(twotiger_videoram_r), FUNC(twotiger_videoram_w));
 }
 
@@ -2678,7 +2731,7 @@ GAME( 1982, wacko,    0,        mcr_90010,     wacko,    wacko,     ROT0,  "Ball
 GAME( 1984, twotigerc,twotiger, mcr_90010,     twotigrc, mcr_90010, ROT0,  "Bally Midway", "Two Tigers (Tron conversion)", GAME_SUPPORTS_SAVE )
 
 /* hacked 90010 CPU board + 91399 video gen + 90913 sound I/O + 8-track interface */
-GAME( 1984, twotiger, 0,        mcr_90010,     twotiger, twotiger,  ROT0,  "Bally Midway", "Two Tigers (dedicated)", GAME_IMPERFECT_SOUND | GAME_SUPPORTS_SAVE )
+GAME( 1984, twotiger, 0,        mcr_90010_tt,  twotiger, twotiger,  ROT0,  "Bally Midway", "Two Tigers (dedicated)", GAME_IMPERFECT_SOUND | GAME_SUPPORTS_SAVE )
 
 /* 90010 CPU board + 91399 video gen + 91483 sound I/O */
 GAME( 1982, kroozr,   0,        mcr_90010,     kroozr,   kroozr,    ROT0,  "Bally Midway", "Kozmik Kroozr", GAME_SUPPORTS_SAVE )

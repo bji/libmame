@@ -13,6 +13,8 @@ public:
 
 	tilemap_t *m_bg_tilemap;
 	tilemap_t *m_fg_tilemap;
+
+	UINT8 m_nmi_mask;
 };
 
 
@@ -25,4 +27,4 @@ WRITE8_HANDLER( solomon_colorram2_w );
 WRITE8_HANDLER( solomon_flipscreen_w );
 
 VIDEO_START( solomon );
-SCREEN_UPDATE( solomon );
+SCREEN_UPDATE_IND16( solomon );

@@ -38,28 +38,28 @@ WRITE8_HANDLER( airbustr_videoram_w )
 {
 	airbustr_state *state = space->machine().driver_data<airbustr_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( airbustr_colorram_w )
 {
 	airbustr_state *state = space->machine().driver_data<airbustr_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( airbustr_videoram2_w )
 {
 	airbustr_state *state = space->machine().driver_data<airbustr_state>();
 	state->m_videoram2[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( airbustr_colorram2_w )
 {
 	airbustr_state *state = space->machine().driver_data<airbustr_state>();
 	state->m_colorram2[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 /*  Scroll Registers
@@ -88,10 +88,10 @@ WRITE8_HANDLER( airbustr_scrollregs_w )
 		default:	logerror("CPU #2 - port %02X written with %02X - PC = %04X\n", offset, data, cpu_get_pc(&space->device()));
 	}
 
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, ((state->m_highbits << 5) & 0x100) + state->m_bg_scrolly);
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, ((state->m_highbits << 6) & 0x100) + state->m_bg_scrollx);
-	tilemap_set_scrolly(state->m_fg_tilemap, 0, ((state->m_highbits << 7) & 0x100) + state->m_fg_scrolly);
-	tilemap_set_scrollx(state->m_fg_tilemap, 0, ((state->m_highbits << 8) & 0x100) + state->m_fg_scrollx);
+	state->m_bg_tilemap->set_scrolly(0, ((state->m_highbits << 5) & 0x100) + state->m_bg_scrolly);
+	state->m_bg_tilemap->set_scrollx(0, ((state->m_highbits << 6) & 0x100) + state->m_bg_scrollx);
+	state->m_fg_tilemap->set_scrolly(0, ((state->m_highbits << 7) & 0x100) + state->m_fg_scrolly);
+	state->m_fg_tilemap->set_scrollx(0, ((state->m_highbits << 8) & 0x100) + state->m_fg_scrollx);
 }
 
 static TILE_GET_INFO( get_fg_tile_info )
@@ -121,24 +121,24 @@ VIDEO_START( airbustr )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 16, 16, 32, 32);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 16, 16, 32, 32);
 
-	state->m_sprites_bitmap = machine.primary_screen->alloc_compatible_bitmap();
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	machine.primary_screen->register_screen_bitmap(state->m_sprites_bitmap);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
-	tilemap_set_scrolldx(state->m_bg_tilemap, 0x094, 0x06a);
-	tilemap_set_scrolldy(state->m_bg_tilemap, 0x100, 0x1ff);
-	tilemap_set_scrolldx(state->m_fg_tilemap, 0x094, 0x06a);
-	tilemap_set_scrolldy(state->m_fg_tilemap, 0x100, 0x1ff);
+	state->m_bg_tilemap->set_scrolldx(0x094, 0x06a);
+	state->m_bg_tilemap->set_scrolldy(0x100, 0x1ff);
+	state->m_fg_tilemap->set_scrolldx(0x094, 0x06a);
+	state->m_fg_tilemap->set_scrolldy(0x100, 0x1ff);
 
-	state->save_item(NAME(*state->m_sprites_bitmap));
+	state->save_item(NAME(state->m_sprites_bitmap));
 }
 
 
-SCREEN_UPDATE( airbustr )
+SCREEN_UPDATE_IND16( airbustr )
 {
-	airbustr_state *state = screen->machine().driver_data<airbustr_state>();
+	airbustr_state *state = screen.machine().driver_data<airbustr_state>();
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	// copy the sprite bitmap to the screen
 	pandora_update(state->m_pandora, bitmap, cliprect);
@@ -146,11 +146,15 @@ SCREEN_UPDATE( airbustr )
 	return 0;
 }
 
-SCREEN_EOF( airbustr )
+SCREEN_VBLANK( airbustr )
 {
-	airbustr_state *state = machine.driver_data<airbustr_state>();
+	// rising edge
+	if (vblank_on)
+	{
+		airbustr_state *state = screen.machine().driver_data<airbustr_state>();
 
-	// update the sprite bitmap
-	pandora_eof(state->m_pandora);
+		// update the sprite bitmap
+		pandora_eof(state->m_pandora);
+	}
 }
 

@@ -18,11 +18,13 @@ public:
 
 	/* video-related */
 	tilemap_t        *m_cm_tilemap;
-	bitmap_t       *m_bitmap_buffer;
+	bitmap_ind16       *m_bitmap_buffer;
 
 	/* devices */
 	device_t *m_maincpu;
 	device_t *m_dac;
+
+	UINT8          m_irq_mask;
 };
 
 
@@ -30,6 +32,6 @@ public:
 
 PALETTE_INIT( cheekyms );
 VIDEO_START( cheekyms );
-SCREEN_UPDATE( cheekyms );
+SCREEN_UPDATE_IND16( cheekyms );
 WRITE8_HANDLER( cheekyms_port_40_w );
 WRITE8_HANDLER( cheekyms_port_80_w );

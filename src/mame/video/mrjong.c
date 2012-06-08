@@ -72,14 +72,14 @@ WRITE8_HANDLER( mrjong_videoram_w )
 {
 	mrjong_state *state = space->machine().driver_data<mrjong_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( mrjong_colorram_w )
 {
 	mrjong_state *state = space->machine().driver_data<mrjong_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( mrjong_flipscreen_w )
@@ -87,7 +87,7 @@ WRITE8_HANDLER( mrjong_flipscreen_w )
 	if (flip_screen_get(space->machine()) != BIT(data, 2))
 	{
 		flip_screen_set(space->machine(), BIT(data, 2));
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -110,7 +110,7 @@ VIDEO_START( mrjong )
 /*
 Note: First 0x40 entries in the videoram are actually spriteram
 */
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	mrjong_state *state = machine.driver_data<mrjong_state>();
 	int offs;
@@ -145,10 +145,10 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-SCREEN_UPDATE( mrjong )
+SCREEN_UPDATE_IND16( mrjong )
 {
-	mrjong_state *state = screen->machine().driver_data<mrjong_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	mrjong_state *state = screen.machine().driver_data<mrjong_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

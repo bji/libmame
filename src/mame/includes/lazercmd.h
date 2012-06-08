@@ -21,7 +21,9 @@ class lazercmd_state : public driver_device
 {
 public:
 	lazercmd_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	/* memory pointers */
 	UINT8 *  m_videoram;
@@ -37,10 +39,11 @@ public:
 	int      m_dac_data;
 
 	/* device */
+	required_device<cpu_device> m_maincpu;
 	device_t *m_dac;
 };
 
 
 /*----------- defined in video/lazercmd.c -----------*/
 
-SCREEN_UPDATE( lazercmd );
+SCREEN_UPDATE_IND16( lazercmd );

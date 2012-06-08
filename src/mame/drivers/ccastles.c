@@ -210,10 +210,7 @@ static MACHINE_START( ccastles )
 	assert(state->m_vblank_end < state->m_vblank_start);
 
 	/* reconfigure the visible area to match */
-	visarea.min_x = 0;
-	visarea.max_x = 255;
-	visarea.min_y = state->m_vblank_end;
-	visarea.max_y = state->m_vblank_start - 1;
+	visarea.set(0, 255, state->m_vblank_end, state->m_vblank_start - 1);
 	machine.primary_screen->configure(320, 256, visarea, HZ_TO_ATTOSECONDS(PIXEL_CLOCK) * VTOTAL * HTOTAL);
 
 	/* configure the ROM banking */
@@ -496,9 +493,8 @@ static MACHINE_CONFIG_START( ccastles, ccastles_state )
 	MCFG_PALETTE_LENGTH(32)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, HTOTAL, 0, HTOTAL - 1, VTOTAL, 0, VTOTAL - 1)	/* will be adjusted later */
-	MCFG_SCREEN_UPDATE(ccastles)
+	MCFG_SCREEN_UPDATE_STATIC(ccastles)
 
 	MCFG_VIDEO_START(ccastles)
 

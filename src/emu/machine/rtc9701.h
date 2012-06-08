@@ -17,8 +17,8 @@
 //  INTERFACE CONFIGURATION MACROS
 //**************************************************************************
 
-#define MCFG_RTC9701_ADD(_tag, _clock ) \
-	MCFG_DEVICE_ADD(_tag, rtc9701, _clock) \
+#define MCFG_RTC9701_ADD(_tag) \
+	MCFG_DEVICE_ADD(_tag, rtc9701, XTAL_32_768kHz) \
 
 
 //**************************************************************************
@@ -62,7 +62,7 @@ public:
 
 protected:
 	// device-level overrides
-	virtual bool device_validity_check(emu_options &options, const game_driver &driver) const;
+	virtual void device_validity_check(validity_checker &valid) const;
 	virtual void device_start();
 	virtual void device_reset();
 

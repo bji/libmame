@@ -71,11 +71,11 @@ VIDEO_START( chqflag )
 
 ***************************************************************************/
 
-SCREEN_UPDATE( chqflag )
+SCREEN_UPDATE_IND16( chqflag )
 {
-	chqflag_state *state = screen->machine().driver_data<chqflag_state>();
+	chqflag_state *state = screen.machine().driver_data<chqflag_state>();
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	k051316_zoom_draw(state->m_k051316_2, bitmap, cliprect, TILEMAP_DRAW_LAYER1, 0);
 	k051960_sprites_draw(state->m_k051960, bitmap, cliprect, 0, 0);

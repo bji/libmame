@@ -80,9 +80,9 @@ static WRITE8_HANDLER( ramtek_videoram_w )
 	state->m_videoram[offset] = data & ~*state->m_mask;
 }
 
-static SCREEN_UPDATE( ramtek )
+static SCREEN_UPDATE_RGB32( ramtek )
 {
-	m79amb_state *state = screen->machine().driver_data<m79amb_state>();
+	m79amb_state *state = screen.machine().driver_data<m79amb_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < 0x2000; offs++)
@@ -96,7 +96,7 @@ static SCREEN_UPDATE( ramtek )
 		for (i = 0; i < 8; i++)
 		{
 			pen_t pen = (data & 0x80) ? RGB_WHITE : RGB_BLACK;
-			*BITMAP_ADDR32(bitmap, y, x) = pen;
+			bitmap.pix32(y, x) = pen;
 
 			x++;
 			data <<= 1;
@@ -214,10 +214,9 @@ static MACHINE_CONFIG_START( m79amb, m79amb_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 4*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(ramtek)
+	MCFG_SCREEN_UPDATE_STATIC(ramtek)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

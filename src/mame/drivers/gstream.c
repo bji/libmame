@@ -216,15 +216,15 @@ static WRITE32_HANDLER( gstream_vram_w )
 	{
 		if (offset >= 0x000 / 4 && offset < 0x400 / 4)
 		{
-			tilemap_mark_tile_dirty(state->m_tilemap1, offset - (0x000 / 4));
+			state->m_tilemap1->mark_tile_dirty(offset - (0x000 / 4));
 		}
 		else if (offset >= 0x400 / 4 && offset < 0x800 / 4)
 		{
-			tilemap_mark_tile_dirty(state->m_tilemap2, offset - (0x400 / 4));
+			state->m_tilemap2->mark_tile_dirty(offset - (0x400 / 4));
 		}
 		else if (offset >= 0x800 / 4 && offset < 0xc00 / 4)
 		{
-			tilemap_mark_tile_dirty(state->m_tilemap3, offset - (0x800 / 4));
+			state->m_tilemap3->mark_tile_dirty(offset - (0x800 / 4));
 		}
 	}
 }
@@ -469,11 +469,11 @@ static VIDEO_START(gstream)
 	state->m_tilemap2 = tilemap_create(machine, get_gs2_tile_info, tilemap_scan_rows, 32, 32, 16, 16);
 	state->m_tilemap3 = tilemap_create(machine, get_gs3_tile_info, tilemap_scan_rows, 32, 32, 16, 16);
 
-	tilemap_set_transparent_pen(state->m_tilemap1, 0);
-	tilemap_set_transparent_pen(state->m_tilemap2, 0);
+	state->m_tilemap1->set_transparent_pen(0);
+	state->m_tilemap2->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE(gstream)
+static SCREEN_UPDATE_IND16(gstream)
 {
 	/* The tilemaps and sprite are interleaved together.
        Even Words are tilemap tiles
@@ -489,23 +489,23 @@ static SCREEN_UPDATE(gstream)
        are being set ?!
    */
 
-	gstream_state *state = screen->machine().driver_data<gstream_state>();
+	gstream_state *state = screen.machine().driver_data<gstream_state>();
 	int i;
 
 	//popmessage("(1) %08x %08x (2) %08x %08x (3) %08x %08x", state->m_tmap1_scrollx, state->m_tmap1_scrolly, state->m_tmap2_scrollx, state->m_tmap2_scrolly, state->m_tmap3_scrollx, state->m_tmap3_scrolly );
 
-	tilemap_set_scrollx(state->m_tilemap3, 0, state->m_tmap3_scrollx >> 16);
-	tilemap_set_scrolly(state->m_tilemap3, 0, state->m_tmap3_scrolly >> 16);
+	state->m_tilemap3->set_scrollx(0, state->m_tmap3_scrollx >> 16);
+	state->m_tilemap3->set_scrolly(0, state->m_tmap3_scrolly >> 16);
 
-	tilemap_set_scrollx(state->m_tilemap1, 0, state->m_tmap1_scrollx >> 16);
-	tilemap_set_scrolly(state->m_tilemap1, 0, state->m_tmap1_scrolly >> 16);
+	state->m_tilemap1->set_scrollx(0, state->m_tmap1_scrollx >> 16);
+	state->m_tilemap1->set_scrolly(0, state->m_tmap1_scrolly >> 16);
 
-	tilemap_set_scrollx(state->m_tilemap2, 0, state->m_tmap2_scrollx >> 16);
-	tilemap_set_scrolly(state->m_tilemap2, 0, state->m_tmap2_scrolly >> 16);
+	state->m_tilemap2->set_scrollx(0, state->m_tmap2_scrollx >> 16);
+	state->m_tilemap2->set_scrolly(0, state->m_tmap2_scrolly >> 16);
 
-	tilemap_draw(bitmap, cliprect, state->m_tilemap3, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_tilemap2, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_tilemap1, 0, 0);
+	state->m_tilemap3->draw(bitmap, cliprect, 0, 0);
+	state->m_tilemap2->draw(bitmap, cliprect, 0, 0);
+	state->m_tilemap1->draw(bitmap, cliprect, 0, 0);
 
 	for (i = 0x0000 / 4; i < 0x4000 / 4; i += 4)
 	{
@@ -519,7 +519,7 @@ static SCREEN_UPDATE(gstream)
 		if (x & 0x8000) x -= 0x10000;
 		if (y & 0x8000) y -= 0x10000;
 
-		drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[1],code,col,0,0,x-2,y,0);
+		drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[1],code,col,0,0,x-2,y,0);
 	}
 
 	return 0;
@@ -571,10 +571,9 @@ static MACHINE_CONFIG_START( gstream, gstream_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 240)
 	MCFG_SCREEN_VISIBLE_AREA(0, 319, 0, 239)
-	MCFG_SCREEN_UPDATE(gstream)
+	MCFG_SCREEN_UPDATE_STATIC(gstream)
 
 	MCFG_PALETTE_LENGTH(0x1000 + 0x400 + 0x400 + 0x400) // sprites + 3 bg layers
 	MCFG_GFXDECODE(gstream)

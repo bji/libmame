@@ -109,7 +109,7 @@ static PALETTE_INIT( boxer )
 	palette_set_color(machine,3, MAKE_RGB(0x00,0x00,0x00));
 }
 
-static void draw_boxer( running_machine &machine, bitmap_t* bitmap, const rectangle* cliprect )
+static void draw_boxer( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	boxer_state *state = machine.driver_data<boxer_state>();
 	int n;
@@ -157,12 +157,12 @@ static void draw_boxer( running_machine &machine, bitmap_t* bitmap, const rectan
 }
 
 
-static SCREEN_UPDATE( boxer )
+static SCREEN_UPDATE_IND16( boxer )
 {
-	boxer_state *state = screen->machine().driver_data<boxer_state>();
+	boxer_state *state = screen.machine().driver_data<boxer_state>();
 	int i, j;
 
-	bitmap_fill(bitmap, cliprect, 1);
+	bitmap.fill(1, cliprect);
 
 	for (i = 0; i < 16; i++)
 	{
@@ -171,7 +171,7 @@ static SCREEN_UPDATE( boxer )
 			UINT8 code = state->m_tile_ram[32 * i + j];
 
 			drawgfx_transpen(bitmap, cliprect,
-				screen->machine().gfx[2],
+				screen.machine().gfx[2],
 				code,
 				0,
 				code & 0x40, code & 0x40,
@@ -180,7 +180,7 @@ static SCREEN_UPDATE( boxer )
 		}
 	}
 
-	draw_boxer(screen->machine(), bitmap, cliprect);
+	draw_boxer(screen.machine(), bitmap, cliprect);
 	return 0;
 }
 
@@ -447,10 +447,9 @@ static MACHINE_CONFIG_START( boxer, boxer_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 262)
 	MCFG_SCREEN_VISIBLE_AREA(8, 247, 0, 239)
-	MCFG_SCREEN_UPDATE(boxer)
+	MCFG_SCREEN_UPDATE_STATIC(boxer)
 
 	MCFG_GFXDECODE(boxer)
 	MCFG_PALETTE_LENGTH(4)

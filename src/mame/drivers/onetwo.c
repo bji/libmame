@@ -90,10 +90,10 @@ static VIDEO_START( onetwo )
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 64, 32);
 }
 
-static SCREEN_UPDATE( onetwo )
+static SCREEN_UPDATE_IND16( onetwo )
 {
-	onetwo_state *state = screen->machine().driver_data<onetwo_state>();
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	onetwo_state *state = screen.machine().driver_data<onetwo_state>();
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -107,7 +107,7 @@ static WRITE8_HANDLER( onetwo_fgram_w )
 {
 	onetwo_state *state = space->machine().driver_data<onetwo_state>();
 	state->m_fgram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset / 2);
+	state->m_fg_tilemap->mark_tile_dirty(offset / 2);
 }
 
 static WRITE8_HANDLER( onetwo_cpubank_w )
@@ -369,10 +369,9 @@ static MACHINE_CONFIG_START( onetwo, onetwo_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(16))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 512-1, 0, 256-1)
-	MCFG_SCREEN_UPDATE(onetwo)
+	MCFG_SCREEN_UPDATE_STATIC(onetwo)
 
 	MCFG_GFXDECODE(onetwo)
 	MCFG_PALETTE_LENGTH(0x80)

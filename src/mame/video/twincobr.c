@@ -97,8 +97,8 @@ static void twincobr_create_tilemaps(running_machine &machine)
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info,tilemap_scan_rows,8,8,64,64);
 	state->m_tx_tilemap = tilemap_create(machine, get_tx_tile_info,tilemap_scan_rows,8,8,64,32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
-	tilemap_set_transparent_pen(state->m_tx_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
+	state->m_tx_tilemap->set_transparent_pen(0);
 }
 
 VIDEO_START( toaplan0 )
@@ -159,16 +159,16 @@ void twincobr_display(running_machine &machine, int enable)
 	twincobr_state *state = machine.driver_data<twincobr_state>();
 
 	state->m_display_on = enable;
-	tilemap_set_enable(state->m_bg_tilemap, enable);
-	tilemap_set_enable(state->m_fg_tilemap, enable);
-	tilemap_set_enable(state->m_tx_tilemap, enable);
+	state->m_bg_tilemap->enable(enable);
+	state->m_fg_tilemap->enable(enable);
+	state->m_tx_tilemap->enable(enable);
 }
 
 void twincobr_flipscreen(running_machine &machine, int flip)
 {
 	twincobr_state *state = machine.driver_data<twincobr_state>();
 
-	tilemap_set_flip_all(machine, (flip ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0));
+	machine.tilemap().set_flip_all((flip ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0));
 	state->m_flip_screen = flip;
 	if (flip) {
 		state->m_scroll_x = 0x008;
@@ -199,7 +199,7 @@ WRITE16_HANDLER( twincobr_txram_w )
 	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
 	COMBINE_DATA(&state->m_txvideoram16[state->m_txoffs]);
-	tilemap_mark_tile_dirty(state->m_tx_tilemap,state->m_txoffs);
+	state->m_tx_tilemap->mark_tile_dirty(state->m_txoffs);
 }
 
 WRITE16_HANDLER( twincobr_bgoffs_w )
@@ -220,7 +220,7 @@ WRITE16_HANDLER( twincobr_bgram_w )
 	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
 	COMBINE_DATA(&state->m_bgvideoram16[state->m_bgoffs+state->m_bg_ram_bank]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,(state->m_bgoffs+state->m_bg_ram_bank));
+	state->m_bg_tilemap->mark_tile_dirty((state->m_bgoffs+state->m_bg_ram_bank));
 }
 
 WRITE16_HANDLER( twincobr_fgoffs_w )
@@ -241,7 +241,7 @@ WRITE16_HANDLER( twincobr_fgram_w )
 	twincobr_state *state = space->machine().driver_data<twincobr_state>();
 
 	COMBINE_DATA(&state->m_fgvideoram16[state->m_fgoffs]);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,state->m_fgoffs);
+	state->m_fg_tilemap->mark_tile_dirty(state->m_fgoffs);
 }
 
 
@@ -251,11 +251,11 @@ WRITE16_HANDLER( twincobr_txscroll_w )
 
 	if (offset == 0) {
 		COMBINE_DATA(&state->m_txscrollx);
-		tilemap_set_scrollx(state->m_tx_tilemap,0,(state->m_txscrollx+state->m_scroll_x) & 0x1ff);
+		state->m_tx_tilemap->set_scrollx(0,(state->m_txscrollx+state->m_scroll_x) & 0x1ff);
 	}
 	else {
 		COMBINE_DATA(&state->m_txscrolly);
-		tilemap_set_scrolly(state->m_tx_tilemap,0,(state->m_txscrolly+state->m_scroll_y) & 0x1ff);
+		state->m_tx_tilemap->set_scrolly(0,(state->m_txscrolly+state->m_scroll_y) & 0x1ff);
 	}
 }
 
@@ -265,11 +265,11 @@ WRITE16_HANDLER( twincobr_bgscroll_w )
 
 	if (offset == 0) {
 		COMBINE_DATA(&state->m_bgscrollx);
-		tilemap_set_scrollx(state->m_bg_tilemap,0,(state->m_bgscrollx+state->m_scroll_x) & 0x1ff);
+		state->m_bg_tilemap->set_scrollx(0,(state->m_bgscrollx+state->m_scroll_x) & 0x1ff);
 	}
 	else {
 		COMBINE_DATA(&state->m_bgscrolly);
-		tilemap_set_scrolly(state->m_bg_tilemap,0,(state->m_bgscrolly+state->m_scroll_y) & 0x1ff);
+		state->m_bg_tilemap->set_scrolly(0,(state->m_bgscrolly+state->m_scroll_y) & 0x1ff);
 	}
 }
 
@@ -279,11 +279,11 @@ WRITE16_HANDLER( twincobr_fgscroll_w )
 
 	if (offset == 0) {
 		COMBINE_DATA(&state->m_fgscrollx);
-		tilemap_set_scrollx(state->m_fg_tilemap,0,(state->m_fgscrollx+state->m_scroll_x) & 0x1ff);
+		state->m_fg_tilemap->set_scrollx(0,(state->m_fgscrollx+state->m_scroll_x) & 0x1ff);
 	}
 	else {
 		COMBINE_DATA(&state->m_fgscrolly);
-		tilemap_set_scrolly(state->m_fg_tilemap,0,(state->m_fgscrolly+state->m_scroll_y) & 0x1ff);
+		state->m_fg_tilemap->set_scrolly(0,(state->m_fgscrolly+state->m_scroll_y) & 0x1ff);
 	}
 }
 
@@ -458,7 +458,7 @@ static void twincobr_log_vram(running_machine &machine)
     Sprite Handlers
 ***************************************************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int priority )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int priority )
 {
 	twincobr_state *state = machine.driver_data<twincobr_state>();
 	int offs;
@@ -494,34 +494,38 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 
 
 /***************************************************************************
-    Draw the game screen in the given bitmap_t.
+    Draw the game screen in the given bitmap_ind16.
 ***************************************************************************/
 
-SCREEN_UPDATE( toaplan0 )
+SCREEN_UPDATE_IND16( toaplan0 )
 {
-	twincobr_state *state = screen->machine().driver_data<twincobr_state>();
-	twincobr_log_vram(screen->machine());
+	twincobr_state *state = screen.machine().driver_data<twincobr_state>();
+	twincobr_log_vram(screen.machine());
 
-	if (state->m_wardner_sprite_hack) wardner_sprite_priority_hack(screen->machine());
+	if (state->m_wardner_sprite_hack) wardner_sprite_priority_hack(screen.machine());
 
-	bitmap_fill(bitmap,cliprect,0);
+	bitmap.fill(0, cliprect);
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,TILEMAP_DRAW_OPAQUE,0);
-	draw_sprites(screen->machine(), bitmap,cliprect,0x0400);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
-	draw_sprites(screen->machine(), bitmap,cliprect,0x0800);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
-	draw_sprites(screen->machine(), bitmap,cliprect,0x0c00);
+	state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE,0);
+	draw_sprites(screen.machine(), bitmap,cliprect,0x0400);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap,cliprect,0x0800);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(), bitmap,cliprect,0x0c00);
 	return 0;
 }
 
 
-SCREEN_EOF( toaplan0 )
+SCREEN_VBLANK( toaplan0 )
 {
-	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
+	// rising edge
+	if (vblank_on)
+	{
+		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
 
-	/* Spriteram is always 1 frame ahead, suggesting spriteram buffering.
-        There are no CPU output registers that control this so we
-        assume it happens automatically every frame, at the end of vblank */
-	buffer_spriteram16_w(space,0,0,0xffff);
+		/* Spriteram is always 1 frame ahead, suggesting spriteram buffering.
+            There are no CPU output registers that control this so we
+            assume it happens automatically every frame, at the end of vblank */
+		buffer_spriteram16_w(space,0,0,0xffff);
+	}
 }

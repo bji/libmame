@@ -10,20 +10,6 @@
 #include "includes/thepit.h"
 
 
-static const rectangle spritevisiblearea =
-{
-	2*8+1, 32*8-1,
-	2*8, 30*8-1
-};
-
-static const rectangle spritevisibleareaflipx =
-{
-	0*8, 30*8-2,
-	2*8, 30*8-1
-};
-
-
-
 /***************************************************************************
 
   Convert the color PROMs into a more useable format.
@@ -112,9 +98,9 @@ static TILE_GET_INFO( solid_get_tile_info )
 	thepit_state *state = machine.driver_data<thepit_state>();
 	UINT8 back_color = (state->m_colorram[tile_index] & 0x70) >> 4;
 	int priority = (back_color != 0) && ((state->m_colorram[tile_index] & 0x80) == 0);
-	tileinfo->pen_data = state->m_dummy_tile;
-	tileinfo->palette_base = back_color + 32;
-	tileinfo->category = priority;
+	tileinfo.pen_data = state->m_dummy_tile;
+	tileinfo.palette_base = back_color + 32;
+	tileinfo.category = priority;
 }
 
 
@@ -140,10 +126,10 @@ VIDEO_START( thepit )
 	state->m_solid_tilemap = tilemap_create(machine, solid_get_tile_info,tilemap_scan_rows,8,8,32,32);
 
 	state->m_tilemap = tilemap_create(machine, get_tile_info,tilemap_scan_rows,8,8,32,32);
-	tilemap_set_transparent_pen(state->m_tilemap, 0);
+	state->m_tilemap->set_transparent_pen(0);
 
-	tilemap_set_scroll_cols(state->m_solid_tilemap, 32);
-	tilemap_set_scroll_cols(state->m_tilemap, 32);
+	state->m_solid_tilemap->set_scroll_cols(32);
+	state->m_tilemap->set_scroll_cols(32);
 
 	state->m_dummy_tile = auto_alloc_array_clear(machine, UINT8, 8*8);
 
@@ -162,7 +148,7 @@ WRITE8_HANDLER( thepit_videoram_w )
 {
 	thepit_state *state = space->machine().driver_data<thepit_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap, offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -170,8 +156,8 @@ WRITE8_HANDLER( thepit_colorram_w )
 {
 	thepit_state *state = space->machine().driver_data<thepit_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap, offset);
-	tilemap_mark_tile_dirty(state->m_solid_tilemap, offset);
+	state->m_tilemap->mark_tile_dirty(offset);
+	state->m_solid_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -186,8 +172,8 @@ WRITE8_HANDLER( thepit_flip_screen_x_w )
 	if (state->m_flip_screen_y)
 		flip |= TILEMAP_FLIPY ;
 
-	tilemap_set_flip(state->m_tilemap, flip);
-	tilemap_set_flip(state->m_solid_tilemap, flip);
+	state->m_tilemap->set_flip(flip);
+	state->m_solid_tilemap->set_flip(flip);
 
 }
 
@@ -203,8 +189,8 @@ WRITE8_HANDLER( thepit_flip_screen_y_w )
 	if (state->m_flip_screen_y)
 		flip |= TILEMAP_FLIPY ;
 
-	tilemap_set_flip(state->m_tilemap, flip);
-	tilemap_set_flip(state->m_solid_tilemap, flip);
+	state->m_tilemap->set_flip(flip);
+	state->m_solid_tilemap->set_flip(flip);
 
 }
 
@@ -216,7 +202,7 @@ WRITE8_HANDLER( intrepid_graphics_bank_w )
 	{
 		state->m_graphics_bank = data & 0x01;
 
-		tilemap_mark_all_tiles_dirty(state->m_tilemap);
+		state->m_tilemap->mark_all_dirty();
 	}
 }
 
@@ -245,10 +231,13 @@ READ8_HANDLER( thepit_input_port_0_r )
  *************************************/
 
 static void draw_sprites(running_machine &machine,
-						 bitmap_t *bitmap,
-						 const rectangle *cliprect,
+						 bitmap_ind16 &bitmap,
+						 const rectangle &cliprect,
 						 int priority_to_draw)
 {
+	const rectangle spritevisiblearea(2*8+1, 32*8-1, 2*8, 30*8-1);
+	const rectangle spritevisibleareaflipx(0*8, 30*8-2, 2*8, 30*8-1);
+
 	thepit_state *state = machine.driver_data<thepit_state>();
 	int offs;
 
@@ -284,7 +273,7 @@ static void draw_sprites(running_machine &machine,
 			/* sprites 0-3 are drawn one pixel down */
 			if (offs < 16) y++;
 
-			drawgfx_transpen(bitmap, state->m_flip_screen_x ? &spritevisibleareaflipx : &spritevisiblearea,
+			drawgfx_transpen(bitmap, state->m_flip_screen_x ? spritevisibleareaflipx : spritevisiblearea,
 					machine.gfx[2 * state->m_graphics_bank + 1],
 					state->m_spriteram[offs + 1] & 0x3f,
 					state->m_spriteram[offs + 2],
@@ -294,9 +283,9 @@ static void draw_sprites(running_machine &machine,
 }
 
 
-SCREEN_UPDATE( thepit )
+SCREEN_UPDATE_IND16( thepit )
 {
-	thepit_state *state = screen->machine().driver_data<thepit_state>();
+	thepit_state *state = screen.machine().driver_data<thepit_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < 32; offs++)
@@ -304,25 +293,25 @@ SCREEN_UPDATE( thepit )
 		int xshift = state->m_flip_screen_x ? 128 : 0;
 		int yshift = state->m_flip_screen_y ? -8 : 0;
 
-		tilemap_set_scrollx(state->m_tilemap, offs, xshift);
-		tilemap_set_scrollx(state->m_solid_tilemap, offs, xshift);
+		state->m_tilemap->set_scrollx(offs, xshift);
+		state->m_solid_tilemap->set_scrollx(offs, xshift);
 
-		tilemap_set_scrolly(state->m_tilemap, offs, yshift + state->m_attributesram[offs << 1]);
-		tilemap_set_scrolly(state->m_solid_tilemap, offs, yshift + state->m_attributesram[offs << 1]);
+		state->m_tilemap->set_scrolly(offs, yshift + state->m_attributesram[offs << 1]);
+		state->m_solid_tilemap->set_scrolly(offs, yshift + state->m_attributesram[offs << 1]);
 	}
 
 	/* low priority tiles */
-	tilemap_draw(bitmap, cliprect, state->m_solid_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_tilemap, 0, 0);
+	state->m_solid_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* low priority sprites */
-	draw_sprites(screen->machine(), bitmap, cliprect, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 0);
 
 	/* high priority tiles */
-	tilemap_draw(bitmap, cliprect, state->m_solid_tilemap, 1, 1);
+	state->m_solid_tilemap->draw(bitmap, cliprect, 1, 1);
 
 	/* high priority sprites */
-	draw_sprites(screen->machine(), bitmap, cliprect, 1);
+	draw_sprites(screen.machine(), bitmap, cliprect, 1);
 
 	return 0;
 }

@@ -83,6 +83,13 @@ static WRITE8_HANDLER( mikie_coin_counter_w )
 	coin_counter_w(space->machine(), offset, data);
 }
 
+static WRITE8_HANDLER( irq_mask_w )
+{
+	mikie_state *state = space->machine().driver_data<mikie_state>();
+
+	state->m_irq_mask = data & 1;
+}
+
 /*************************************
  *
  *  Address maps
@@ -94,7 +101,7 @@ static ADDRESS_MAP_START( mikie_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x2000, 0x2001) AM_WRITE(mikie_coin_counter_w)
 	AM_RANGE(0x2002, 0x2002) AM_WRITE(mikie_sh_irqtrigger_w)
 	AM_RANGE(0x2006, 0x2006) AM_WRITE(mikie_flipscreen_w)
-	AM_RANGE(0x2007, 0x2007) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x2007, 0x2007) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x2100, 0x2100) AM_WRITE(watchdog_reset_w)
 	AM_RANGE(0x2200, 0x2200) AM_WRITE(mikie_palettebank_w)
 	AM_RANGE(0x2300, 0x2300) AM_WRITENOP	// ???
@@ -143,32 +150,33 @@ static INPUT_PORTS_START( mikie )
 	KONAMI8_COCKTAIL_4WAY_B12_UNK
 
 	PORT_START("DSW1")
-	KONAMI_COINAGE(DEF_STR( Free_Play ), "No Coin B")
+	KONAMI_COINAGE_LOC(DEF_STR( Free_Play ), "No Coin B", SW1)
 	/* "No Coin B" = coins produce sound, but no effect on coin counter */
 
 	PORT_START("DSW2")
-	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Lives ) )			PORT_DIPLOCATION("SW2:1,2")
 	PORT_DIPSETTING(    0x03, "3" )
 	PORT_DIPSETTING(    0x02, "4" )
 	PORT_DIPSETTING(    0x01, "5" )
 	PORT_DIPSETTING(    0x00, "7" )
-	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )
+	PORT_DIPNAME( 0x04, 0x00, DEF_STR( Cabinet ) )			PORT_DIPLOCATION("SW2:3")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Bonus_Life ) )		PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(    0x18, "20k 70k 50k+" )
 	PORT_DIPSETTING(    0x10, "30K 90k 60k+" )
 	PORT_DIPSETTING(    0x08, "30k only" )
 	PORT_DIPSETTING(    0x00, "40K only" )
-	PORT_DIPNAME( 0x60, 0x60, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x60, 0x60, DEF_STR( Difficulty ) )		PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(	0x60, DEF_STR( Easy ) )             /* 1 */
 	PORT_DIPSETTING(	0x40, DEF_STR( Medium ) )           /* 2 */
 	PORT_DIPSETTING(	0x20, DEF_STR( Hard ) )             /* 3 */
 	PORT_DIPSETTING(	0x00, DEF_STR( Hardest ) )          /* 4 */
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Demo_Sounds ) )		PORT_DIPLOCATION("SW2:8")
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 
+	/* DSW3 is not mounted on PCB nor listed in manual */
 	PORT_START("DSW3")
 	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Flip_Screen ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
@@ -244,12 +252,20 @@ static MACHINE_RESET( mikie )
 	state->m_last_irq = 0;
 }
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	mikie_state *state = device->machine().driver_data<mikie_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
 static MACHINE_CONFIG_START( mikie, mikie_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, OSC/12)
 	MCFG_CPU_PROGRAM_MAP(mikie_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, CLK)
 	MCFG_CPU_PROGRAM_MAP(sound_map)
@@ -261,10 +277,9 @@ static MACHINE_CONFIG_START( mikie, mikie_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60.59)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(mikie)
+	MCFG_SCREEN_UPDATE_STATIC(mikie)
 
 	MCFG_GFXDECODE(mikie)
 	MCFG_PALETTE_LENGTH(16*8*16+16*8*16)

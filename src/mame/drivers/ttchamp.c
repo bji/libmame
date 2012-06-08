@@ -60,14 +60,14 @@ static VIDEO_START(ttchamp)
 {
 }
 
-static SCREEN_UPDATE(ttchamp)
+static SCREEN_UPDATE_IND16(ttchamp)
 {
-	ttchamp_state *state = screen->machine().driver_data<ttchamp_state>();
+	ttchamp_state *state = screen.machine().driver_data<ttchamp_state>();
 	int y,x,count;
 //  int i;
 	static const int xxx=320,yyy=204;
 
-	bitmap_fill(bitmap, 0, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()));
 
 //  for (i=0;i<256;i++)
 //  {
@@ -85,7 +85,7 @@ static SCREEN_UPDATE(ttchamp)
 	{
 		for(x=0;x<xxx;x++)
 		{
-			/*if(hotblock_port0&0x40)*/*BITMAP_ADDR16(bitmap, y, x) = ((UINT8 *)state->m_peno_vram)[BYTE_XOR_LE(count)]+0x300;
+			/*if(hotblock_port0&0x40)*/bitmap.pix16(y, x) = ((UINT8 *)state->m_peno_vram)[BYTE_XOR_LE(count)]+0x300;
             count++;
         }
     }
@@ -244,10 +244,9 @@ static MACHINE_CONFIG_START( ttchamp, ttchamp_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(1024,1024)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 200-1)
-	MCFG_SCREEN_UPDATE(ttchamp)
+	MCFG_SCREEN_UPDATE_STATIC(ttchamp)
 
 	MCFG_PALETTE_LENGTH(0x8000)
 

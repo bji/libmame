@@ -104,7 +104,7 @@ WRITE8_HANDLER( redclash_videoram_w )
 	ladybug_state *state = space->machine().driver_data<ladybug_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( redclash_gfxbank_w )
@@ -114,7 +114,7 @@ WRITE8_HANDLER( redclash_gfxbank_w )
 	if (state->m_gfxbank != (data & 0x01))
 	{
 		state->m_gfxbank = data & 0x01;
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -180,10 +180,10 @@ VIDEO_START( redclash )
 	ladybug_state *state = machine.driver_data<ladybug_state>();
 
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	ladybug_state *state = machine.driver_data<ladybug_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -267,7 +267,7 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-static void draw_bullets( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_bullets( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	ladybug_state *state = machine.driver_data<ladybug_state>();
 	int offs;
@@ -283,9 +283,8 @@ static void draw_bullets( running_machine &machine, bitmap_t *bitmap, const rect
 			sx = 240 - sx;
 		}
 
-		if (sx >= cliprect->min_x && sx <= cliprect->max_x &&
-			sy >= cliprect->min_y && sy <= cliprect->max_y)
-			*BITMAP_ADDR16(bitmap, sy, sx) = 0x19;
+		if (cliprect.contains(sx, sy))
+			bitmap.pix16(sy, sx) = 0x19;
 	}
 }
 
@@ -315,7 +314,7 @@ void redclash_set_stars_enable( running_machine &machine, UINT8 on )
 }
 
 /* This sets up which starfield to draw and the offset, */
-/* To be called from SCREEN_EOF() */
+/* To be called from SCREEN_VBLANK() */
 
 void redclash_update_stars_state( running_machine &machine )
 {
@@ -360,7 +359,7 @@ void redclash_set_stars_speed( running_machine &machine, UINT8 speed )
 /* Space Raider doesn't use the Va bit, and it is also set up to */
 /* window the stars to a certain x range */
 
-void redclash_draw_stars( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, UINT8 palette_offset, UINT8 sraider, UINT8 firstx, UINT8 lastx )
+void redclash_draw_stars( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, UINT8 palette_offset, UINT8 sraider, UINT8 firstx, UINT8 lastx )
 {
 	ladybug_state *redclash = machine.driver_data<ladybug_state>();
 	int i;
@@ -396,7 +395,7 @@ void redclash_draw_stars( running_machine &machine, bitmap_t *bitmap, const rect
 		else
 			vcond = yloc & 0x01;
 
-		if (xloc >= cliprect->min_x && xloc <= cliprect->max_x && yloc >= cliprect->min_y && yloc <= cliprect->max_y)
+		if (cliprect.contains(xloc, yloc))
 		{
 			if ((hcond ^ vcond) == 0)
 			{
@@ -407,7 +406,7 @@ void redclash_draw_stars( running_machine &machine, bitmap_t *bitmap, const rect
 					if ((xloc >= firstx) && (xloc <= lastx))
 					{
 						star_color = (state >> 9) & 0x1f;
-						*BITMAP_ADDR16(bitmap, yloc, xloc) = palette_offset + star_color;
+						bitmap.pix16(yloc, xloc) = palette_offset + star_color;
 					}
 				}
 			}
@@ -418,19 +417,21 @@ void redclash_draw_stars( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-SCREEN_EOF( redclash )
+SCREEN_VBLANK( redclash )
 {
-	redclash_update_stars_state(machine);
+	// falling edge
+	if (!vblank_on)
+		redclash_update_stars_state(screen.machine());
 }
 
-SCREEN_UPDATE( redclash )
+SCREEN_UPDATE_IND16( redclash )
 {
-	ladybug_state *state = screen->machine().driver_data<ladybug_state>();
+	ladybug_state *state = screen.machine().driver_data<ladybug_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	redclash_draw_stars(screen->machine(), bitmap, cliprect, 0x60, 0, 0x00, 0xff);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	draw_bullets(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	redclash_draw_stars(screen.machine(), bitmap, cliprect, 0x60, 0, 0x00, 0xff);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	draw_bullets(screen.machine(), bitmap, cliprect);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

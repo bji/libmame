@@ -19,6 +19,7 @@ public:
 
 	/* misc */
 	int        m_nmi_enable;
+	UINT8      m_sound_irq_mask;
 
 	/* devices */
 	device_t *m_maincpu;
@@ -39,5 +40,5 @@ extern void dv_sprite_callback(running_machine &machine, int *code,int *color,in
 VIDEO_START( mainevt );
 VIDEO_START( dv );
 
-SCREEN_UPDATE( mainevt );
-SCREEN_UPDATE( dv );
+SCREEN_UPDATE_IND16( mainevt );
+SCREEN_UPDATE_IND16( dv );

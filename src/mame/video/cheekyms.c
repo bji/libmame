@@ -59,7 +59,7 @@ WRITE8_HANDLER( cheekyms_port_80_w )
 	*state->m_port_80 = data;
 
 	/* d2 - interrupt enable */
-	interrupt_enable_w(space, offset, data & 0x04);
+	state->m_irq_mask = data & 4;
 }
 
 
@@ -101,14 +101,14 @@ VIDEO_START( cheekyms )
 
 	width = machine.primary_screen->width();
 	height = machine.primary_screen->height();
-	state->m_bitmap_buffer = auto_bitmap_alloc(machine, width, height, BITMAP_FORMAT_INDEXED16);
+	state->m_bitmap_buffer = auto_bitmap_ind16_alloc(machine, width, height);
 
 	state->m_cm_tilemap = tilemap_create(machine, cheekyms_get_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_cm_tilemap, 0);
+	state->m_cm_tilemap->set_transparent_pen(0);
 }
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, const gfx_element *gfx, int flip )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, const gfx_element *gfx, int flip )
 {
 	cheekyms_state *state = machine.driver_data<cheekyms_state>();
 	offs_t offs;
@@ -148,29 +148,29 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 }
 
 
-SCREEN_UPDATE( cheekyms )
+SCREEN_UPDATE_IND16( cheekyms )
 {
-	cheekyms_state *state = screen->machine().driver_data<cheekyms_state>();
+	cheekyms_state *state = screen.machine().driver_data<cheekyms_state>();
 	int y, x;
 	int scrolly = ((*state->m_port_80 >> 3) & 0x07);
 	int flip = *state->m_port_80 & 0x80;
 
-	tilemap_mark_all_tiles_dirty_all(screen->machine());
-	tilemap_set_flip_all(screen->machine(), flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
+	screen.machine().tilemap().mark_all_dirty();
+	screen.machine().tilemap().set_flip_all(flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
 
-	bitmap_fill(bitmap, cliprect, 0);
-	bitmap_fill(state->m_bitmap_buffer, cliprect, 0);
+	bitmap.fill(0, cliprect);
+	state->m_bitmap_buffer->fill(0, cliprect);
 
 	/* sprites go under the playfield */
-	draw_sprites(screen->machine(), bitmap, cliprect, screen->machine().gfx[1], flip);
+	draw_sprites(screen.machine(), bitmap, cliprect, screen.machine().gfx[1], flip);
 
 	/* draw the tilemap to a temp bitmap */
-	tilemap_draw(state->m_bitmap_buffer, cliprect, state->m_cm_tilemap, 0, 0);
+	state->m_cm_tilemap->draw(*state->m_bitmap_buffer, cliprect, 0, 0);
 
 	/* draw the tilemap to the final bitmap applying the scroll to the man character */
-	for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+	for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
-		for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			int in_man_area;
 
@@ -185,13 +185,13 @@ SCREEN_UPDATE( cheekyms )
 
 			if (in_man_area)
 			{
-				if ((y + scrolly) < 27 * 8 && *BITMAP_ADDR16(state->m_bitmap_buffer, y + scrolly, x) != 0)
-					*BITMAP_ADDR16(bitmap, y, x) = *BITMAP_ADDR16(state->m_bitmap_buffer, y + scrolly, x);
+				if ((y + scrolly) < 27 * 8 && state->m_bitmap_buffer->pix16(y + scrolly, x) != 0)
+					bitmap.pix16(y, x) = state->m_bitmap_buffer->pix16(y + scrolly, x);
 			}
 			else
 			{
-				if(*BITMAP_ADDR16(state->m_bitmap_buffer, y, x) != 0)
-					*BITMAP_ADDR16(bitmap, y, x) = *BITMAP_ADDR16(state->m_bitmap_buffer, y, x);
+				if(state->m_bitmap_buffer->pix16(y, x) != 0)
+					bitmap.pix16(y, x) = state->m_bitmap_buffer->pix16(y, x);
 			}
 		}
 	}

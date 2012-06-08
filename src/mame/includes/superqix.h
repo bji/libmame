@@ -2,7 +2,9 @@ class superqix_state : public driver_device
 {
 public:
 	superqix_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	INT16 *m_samplebuf;
 	UINT8 m_port1;
@@ -25,11 +27,14 @@ public:
 	UINT8 *m_bitmapram;
 	UINT8 *m_bitmapram2;
 	int m_gfxbank;
-	bitmap_t *m_fg_bitmap[2];
+	bitmap_ind16 *m_fg_bitmap[2];
 	int m_show_bitmap;
 	tilemap_t *m_bg_tilemap;
 	UINT8 *m_spriteram;
 	size_t m_spriteram_size;
+	UINT8 m_nmi_mask;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -42,6 +47,6 @@ WRITE8_HANDLER( pbillian_0410_w );
 WRITE8_HANDLER( superqix_0410_w );
 
 VIDEO_START( pbillian );
-SCREEN_UPDATE( pbillian );
+SCREEN_UPDATE_IND16( pbillian );
 VIDEO_START( superqix );
-SCREEN_UPDATE( superqix );
+SCREEN_UPDATE_IND16( superqix );

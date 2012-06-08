@@ -37,7 +37,7 @@ WRITE8_HANDLER( djboy_videoram_w )
 	djboy_state *state = space->machine().driver_data<djboy_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_background, offset & 0x7ff);
+	state->m_background->mark_tile_dirty(offset & 0x7ff);
 }
 
 VIDEO_START( djboy )
@@ -58,7 +58,7 @@ WRITE8_HANDLER( djboy_paletteram_w )
 	palette_set_color_rgb(space->machine(), offset / 2, pal4bit(val >> 8), pal4bit(val >> 4), pal4bit(val >> 0));
 }
 
-SCREEN_UPDATE( djboy )
+SCREEN_UPDATE_IND16( djboy )
 {
 	/**
      * xx------ msb x
@@ -66,23 +66,27 @@ SCREEN_UPDATE( djboy )
      * ---x---- flipscreen?
      * ----xxxx ROM bank
      */
-	djboy_state *state = screen->machine().driver_data<djboy_state>();
+	djboy_state *state = screen.machine().driver_data<djboy_state>();
 	int scroll;
 
 	scroll = state->m_scrollx | ((state->m_videoreg & 0xc0) << 2);
-	tilemap_set_scrollx(state->m_background, 0, scroll - 0x391);
+	state->m_background->set_scrollx(0, scroll - 0x391);
 
 	scroll = state->m_scrolly | ((state->m_videoreg & 0x20) << 3);
-	tilemap_set_scrolly(state->m_background, 0, scroll);
+	state->m_background->set_scrolly(0, scroll);
 
-	tilemap_draw(bitmap, cliprect, state->m_background, 0, 0);
+	state->m_background->draw(bitmap, cliprect, 0, 0);
 	pandora_update(state->m_pandora, bitmap, cliprect);
 
 	return 0;
 }
 
-SCREEN_EOF( djboy )
+SCREEN_VBLANK( djboy )
 {
-	djboy_state *state = machine.driver_data<djboy_state>();
-	pandora_eof(state->m_pandora);
+	// rising edge
+	if (vblank_on)
+	{
+		djboy_state *state = screen.machine().driver_data<djboy_state>();
+		pandora_eof(state->m_pandora);
+	}
 }

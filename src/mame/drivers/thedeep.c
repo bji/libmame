@@ -27,7 +27,7 @@ Notes:
 #include "emu.h"
 #include "cpu/z80/z80.h"
 #include "cpu/m6502/m6502.h"
-#include "deprecat.h"
+#include "cpu/mcs51/mcs51.h"
 #include "includes/thedeep.h"
 #include "sound/2203intf.h"
 
@@ -118,7 +118,7 @@ static WRITE8_HANDLER( thedeep_protection_w )
 // d166-d174:   hl = (hl + 2*a)
 // d175-d181:   hl *= e (e must be non zero)
 // d182-d19a:   hl /= de
-				state->m_protection_data = space->machine().region("cpu3")->base()[0x185+state->m_protection_index++];
+				state->m_protection_data = space->machine().region("mcu")->base()[0x185+state->m_protection_index++];
 			else
 				state->m_protection_data = 0xc9;
 
@@ -155,18 +155,18 @@ static ADDRESS_MAP_START( main_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x8000, 0xbfff) AM_ROMBANK("bank1")	// ROM (banked)
 	AM_RANGE(0xc000, 0xcfff) AM_RAM
 	AM_RANGE(0xd000, 0xdfff) AM_RAM				            	// RAM (MCU data copied here)
-	AM_RANGE(0xe000, 0xe000) AM_READWRITE(thedeep_protection_r, thedeep_protection_w	)	// To MCU
-	AM_RANGE(0xe004, 0xe004) AM_READWRITE(thedeep_e004_r, thedeep_nmi_w			)	//
+	AM_RANGE(0xe000, 0xe000) AM_READWRITE(thedeep_protection_r, thedeep_protection_w)	// To MCU
+	AM_RANGE(0xe004, 0xe004) AM_READWRITE(thedeep_e004_r, thedeep_nmi_w)	//
 	AM_RANGE(0xe008, 0xe008) AM_READ_PORT("e008")			// P1 (Inputs)
 	AM_RANGE(0xe009, 0xe009) AM_READ_PORT("e009")			// P2
 	AM_RANGE(0xe00a, 0xe00a) AM_READ_PORT("e00a")			// DSW1
 	AM_RANGE(0xe00b, 0xe00b) AM_READ_PORT("e00b")			// DSW2
-	AM_RANGE(0xe00c, 0xe00c) AM_WRITE(thedeep_sound_w		)	// To Sound CPU
-	AM_RANGE(0xe100, 0xe100) AM_WRITE(thedeep_e100_w		)	// ?
-	AM_RANGE(0xe210, 0xe213) AM_WRITEONLY AM_BASE_MEMBER(thedeep_state, m_scroll				)	// Scroll
+	AM_RANGE(0xe00c, 0xe00c) AM_WRITE(thedeep_sound_w)	// To Sound CPU
+	AM_RANGE(0xe100, 0xe100) AM_WRITE(thedeep_e100_w)	// ?
+	AM_RANGE(0xe210, 0xe213) AM_WRITEONLY AM_BASE_MEMBER(thedeep_state, m_scroll)	// Scroll
 	AM_RANGE(0xe400, 0xe7ff) AM_RAM AM_BASE_SIZE_MEMBER(thedeep_state, m_spriteram, m_spriteram_size)	// Sprites
-	AM_RANGE(0xe800, 0xefff) AM_RAM_WRITE(thedeep_vram_1_w) AM_BASE_MEMBER(thedeep_state, m_vram_1		)	// Text Layer
-	AM_RANGE(0xf000, 0xf7ff) AM_RAM_WRITE(thedeep_vram_0_w) AM_BASE_MEMBER(thedeep_state, m_vram_0		)	// Background Layer
+	AM_RANGE(0xe800, 0xefff) AM_RAM_WRITE(thedeep_vram_1_w) AM_BASE_MEMBER(thedeep_state, m_vram_1)	// Text Layer
+	AM_RANGE(0xf000, 0xf7ff) AM_RAM_WRITE(thedeep_vram_0_w) AM_BASE_MEMBER(thedeep_state, m_vram_0)	// Background Layer
 	AM_RANGE(0xf800, 0xf83f) AM_RAM AM_BASE_MEMBER(thedeep_state, m_scroll2				)	// Column Scroll
 	AM_RANGE(0xf840, 0xffff) AM_RAM
 ADDRESS_MAP_END
@@ -180,9 +180,92 @@ ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( audio_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0x07ff) AM_RAM
-	AM_RANGE(0x0800, 0x0801) AM_DEVWRITE("ymsnd", ym2203_w	)	//
-	AM_RANGE(0x3000, 0x3000) AM_READ(soundlatch_r				)	// From Main CPU
+	AM_RANGE(0x0800, 0x0801) AM_DEVWRITE("ymsnd", ym2203_w)	//
+	AM_RANGE(0x3000, 0x3000) AM_READ(soundlatch_r)	// From Main CPU
 	AM_RANGE(0x8000, 0xffff) AM_ROM
+ADDRESS_MAP_END
+
+
+/***************************************************************************
+
+                                    MCU
+
+***************************************************************************/
+
+static void thedeep_maincpu_bankswitch(running_machine &machine,UINT8 bank_trig)
+{
+	thedeep_state *state = machine.driver_data<thedeep_state>();
+	UINT8 *rom;
+	int new_rombank = bank_trig & 3;
+
+	if (state->m_rombank == new_rombank)
+		return;
+	state->m_rombank = new_rombank;
+	rom = machine.region("maincpu")->base();
+	memory_set_bankptr(machine, "bank1", rom + 0x10000 + state->m_rombank * 0x4000);
+	/* there's code which falls through from the fixed ROM to bank #1, I have to */
+	/* copy it there otherwise the CPU bank switching support will not catch it. */
+	memcpy(rom + 0x08000, rom + 0x10000 + state->m_rombank * 0x4000, 0x4000);
+
+}
+
+static WRITE8_HANDLER( thedeep_p1_w )
+{
+	flip_screen_set(space->machine(), (data & 1) ^ 1);
+	thedeep_maincpu_bankswitch(space->machine(),(data & 6) >> 1);
+	logerror("P1 %02x\n",data);
+}
+
+static READ8_HANDLER( thedeep_from_main_r )
+{
+	static UINT8 res;
+
+	res = 0x11;
+
+	logerror("From Main read = %02x\n",res);
+	return 0x20;
+}
+
+static WRITE8_HANDLER( thedeep_to_main_w )
+{
+	// ...
+}
+
+static WRITE8_HANDLER( thedeep_p3_w )
+{
+	thedeep_state *state = space->machine().driver_data<thedeep_state>();
+
+	/* bit 0 0->1 transition IRQ0 to main */
+	if((!(state->m_mcu_p3_reg & 0x01)) && data & 0x01)
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+
+	/* bit 6 0->1 transition INT1 IRQ ACK */
+	if((!(state->m_mcu_p3_reg & 0x40)) && data & 0x40)
+		device_set_input_line(state->m_mcu, MCS51_INT1_LINE, CLEAR_LINE);
+
+	/* bit 7 0->1 transition INT0 IRQ ACK */
+	if((!(state->m_mcu_p3_reg & 0x80)) && data & 0x80)
+		device_set_input_line(state->m_mcu, MCS51_INT0_LINE, CLEAR_LINE);
+
+	state->m_mcu_p3_reg = data;
+	logerror("P3 %02x\n",data);
+}
+
+static READ8_HANDLER( thedeep_p0_r )
+{
+	UINT8 coin_mux;
+
+	coin_mux = ((input_port_read(space->machine(),"COINS") & 0x0e) == 0x0e); // bit 0 is hard-wired to ALL three coin latches
+
+	return (input_port_read(space->machine(),"COINS") & 0xfe) | (coin_mux & 1);
+}
+
+static ADDRESS_MAP_START( mcu_io_map, AS_IO, 8 )
+	ADDRESS_MAP_UNMAP_HIGH
+	AM_RANGE(MCS51_PORT_P0,MCS51_PORT_P0) AM_READ(thedeep_p0_r)
+	AM_RANGE(MCS51_PORT_P1,MCS51_PORT_P1) AM_WRITE(thedeep_p1_w)
+	AM_RANGE(MCS51_PORT_P2,MCS51_PORT_P2) AM_READWRITE(thedeep_from_main_r,thedeep_to_main_w)
+	AM_RANGE(MCS51_PORT_P3,MCS51_PORT_P3) AM_WRITE(thedeep_p3_w)
 ADDRESS_MAP_END
 
 
@@ -262,6 +345,13 @@ static INPUT_PORTS_START( thedeep )
 	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_COIN1 ) PORT_IMPULSE(1)
 	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_COIN2 ) PORT_IMPULSE(1)
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_SERVICE1 ) PORT_IMPULSE(1)
+
+	PORT_START("COINS")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_SPECIAL ) // mux of bits 1-2-3
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_SERVICE1 )
+	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_COIN1 )
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_COIN2 )
+	PORT_BIT( 0xf0, IP_ACTIVE_LOW, IPT_UNUSED )
 INPUT_PORTS_END
 
 
@@ -322,14 +412,16 @@ static const ym2203_interface thedeep_ym2203_intf =
 	irqhandler
 };
 
-static INTERRUPT_GEN( thedeep_interrupt )
+static TIMER_DEVICE_CALLBACK( thedeep_interrupt )
 {
-	thedeep_state *state = device->machine().driver_data<thedeep_state>();
-	if (cpu_getiloops(device))
+	thedeep_state *state = timer.machine().driver_data<thedeep_state>();
+	int scanline = param;
+
+	if (scanline == 124) // TODO: clean this
 	{
 		if (state->m_protection_command != 0x59)
 		{
-			int coins = input_port_read(device->machine(), "MCU");
+			int coins = input_port_read(timer.machine(), "MCU");
 			if		(coins & 1)	state->m_protection_data = 1;
 			else if	(coins & 2)	state->m_protection_data = 2;
 			else if	(coins & 4)	state->m_protection_data = 3;
@@ -339,16 +431,23 @@ static INTERRUPT_GEN( thedeep_interrupt )
 				state->m_protection_irq = 1;
 		}
 		if (state->m_protection_irq)
-			device_set_input_line(device, 0, HOLD_LINE);
+			device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
 	}
-	else
+	else if(scanline == 0)
 	{
 		if (state->m_nmi_enable)
 		{
-			device_set_input_line(device, INPUT_LINE_NMI, ASSERT_LINE);
-			device_set_input_line(device, INPUT_LINE_NMI, CLEAR_LINE);
+			device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, ASSERT_LINE);
+			device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, CLEAR_LINE);
 		}
 	}
+}
+
+static INTERRUPT_GEN( thedeep_mcu_irq )
+{
+	thedeep_state *state = device->machine().driver_data<thedeep_state>();
+
+	device_set_input_line(state->m_mcu, MCS51_INT1_LINE, ASSERT_LINE);
 }
 
 static MACHINE_CONFIG_START( thedeep, thedeep_state )
@@ -356,13 +455,17 @@ static MACHINE_CONFIG_START( thedeep, thedeep_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_12MHz/2)		/* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(main_map)
-	MCFG_CPU_VBLANK_INT_HACK(thedeep_interrupt,2)	/* IRQ by MCU, NMI by vblank (maskable) */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", thedeep_interrupt, "screen", 0, 1) /* IRQ by MCU, NMI by vblank (maskable) */
 
 	MCFG_CPU_ADD("audiocpu", M65C02, XTAL_12MHz/8)		/* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(audio_map)
 	/* IRQ by YM2203, NMI by when sound latch written by main cpu */
 
-	/* CPU3 is a i8751 running at 8Mhz (8mhz xtal)*/
+	/* MCU is a i8751 running at 8Mhz (8mhz xtal)*/
+	MCFG_CPU_ADD("mcu", I8751, XTAL_8MHz)
+	MCFG_CPU_IO_MAP(mcu_io_map)
+	MCFG_CPU_VBLANK_INT("screen",thedeep_mcu_irq ) // unknown source, but presumably vblank
+	MCFG_DEVICE_DISABLE()
 
 	MCFG_MACHINE_RESET(thedeep)
 
@@ -370,10 +473,9 @@ static MACHINE_CONFIG_START( thedeep, thedeep_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(0x100, 0xf8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 0x100-1, 0, 0xf8-1)
-	MCFG_SCREEN_UPDATE(thedeep)
+	MCFG_SCREEN_UPDATE_STATIC(thedeep)
 
 	MCFG_GFXDECODE(thedeep)
 	MCFG_PALETTE_LENGTH(512)
@@ -424,7 +526,7 @@ ROM_START( thedeep )
 	ROM_REGION( 0x10000, "audiocpu", 0 )		/* 65C02 Code */
 	ROM_LOAD( "dp-12.rom", 0x8000, 0x8000, CRC(c4e848c4) SHA1(d2dec5c8d7d59703f5485cab9124bf4f835fe728) )
 
-	ROM_REGION( 0x1000, "cpu3", 0 )		/* i8751 Code */
+	ROM_REGION( 0x1000, "mcu", 0 )		/* i8751 Code */
 	ROM_LOAD( "dp-14", 0x0000, 0x1000, CRC(0b886dad) SHA1(487192764342f8b0a320d20a378bf94f84592da9) )	// 1xxxxxxxxxxx = 0xFF
 
 	ROM_REGION( 0x40000, "sprites", 0 )	/* Sprites */
@@ -456,7 +558,7 @@ ROM_START( rundeep )
 	ROM_REGION( 0x10000, "audiocpu", 0 )		/* 65C02 Code */
 	ROM_LOAD( "dp-12.rom", 0x8000, 0x8000, CRC(c4e848c4) SHA1(d2dec5c8d7d59703f5485cab9124bf4f835fe728) )
 
-	ROM_REGION( 0x1000, "cpu3", 0 )		/* i8751 Code */
+	ROM_REGION( 0x1000, "mcu", 0 )		/* i8751 Code */
 	ROM_LOAD( "dp-14", 0x0000, 0x1000, CRC(0b886dad) SHA1(487192764342f8b0a320d20a378bf94f84592da9) )	// 1xxxxxxxxxxx = 0xFF
 
 	ROM_REGION( 0x40000, "sprites", 0 )	/* Sprites */

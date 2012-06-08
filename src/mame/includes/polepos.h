@@ -32,6 +32,8 @@ public:
 	tilemap_t *m_tx_tilemap;
 	int m_chacl;
 	UINT16 m_scroll;
+	UINT8 m_main_irq_mask;
+	UINT8 m_sub_irq_mask;
 };
 
 
@@ -49,7 +51,7 @@ DISCRETE_SOUND_EXTERN( polepos );
 
 VIDEO_START( polepos );
 PALETTE_INIT( polepos );
-SCREEN_UPDATE( polepos );
+SCREEN_UPDATE_IND16( polepos );
 
 WRITE16_HANDLER( polepos_view16_w );
 WRITE16_HANDLER( polepos_road16_w );

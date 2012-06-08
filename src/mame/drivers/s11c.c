@@ -1,6 +1,9 @@
 /*
     Williams System 11c
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
@@ -8,18 +11,28 @@ class williams_s11c_state : public driver_device
 {
 public:
 	williams_s11c_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( williams_s11c_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( williams_s11c_map, AS_PROGRAM, 8, williams_s11c_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( williams_s11c )
 INPUT_PORTS_END
 
-static MACHINE_RESET( williams_s11c )
+void williams_s11c_state::machine_reset()
 {
 }
 
@@ -31,8 +44,6 @@ static MACHINE_CONFIG_START( williams_s11c, williams_s11c_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(williams_s11c_map)
-
-	MCFG_MACHINE_RESET( williams_s11c )
 MACHINE_CONFIG_END
 
 /*--------------------
@@ -333,27 +344,28 @@ ROM_START(strax_p7)
 	ROM_RELOAD(0x10000+0x8000, 0x8000)
 ROM_END
 
-GAME(1990,	bbnny_l2,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Bugs Bunny Birthday Ball (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	bbnny_lu,	bbnny_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Bugs Bunny Birthday Ball (LU-2) European",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	diner_l4,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Diner (L-4)",									GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	diner_l3,	diner_l4,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Diner (L-3)",									GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	diner_l1,	diner_l4,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Diner (L-1) Europe",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	dd_l2,		0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Dr. Dude (LA-2)",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	dd_p6,		dd_l2,		williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Dr. Dude (PA-6)",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	pool_l7,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (LA-7)",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	pool_l6,	pool_l7,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (LA-6)",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	pool_le2,	pool_l7,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (LE-2)",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1989,	pool_p7,	pool_l7,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (PA-7)",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	radcl_l1,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Radical (L-1)",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	radcl_g1,	radcl_l1,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Radical (G-1)",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	radcl_p3,	radcl_l1,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Radical (P-3)",								GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	rvrbt_l3,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Riverboat Gambler (L-3)",						GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	rollr_l2,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (L-2)",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	rollr_ex,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (EXPERIMENTAL)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	rollr_e1,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (PU-1)",							GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1991,	rollr_p2,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (PA-2 / PA-1 Sound)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	rollr_l3,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (LU-3) Europe",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	rollr_g3,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (LG-3) Germany",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	gs_l3,		gs_l4,		williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"The Bally Game Show (L-3)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	gs_l4,		0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"The Bally Game Show (L-4)",					GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1990,	strax_p7,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Star Trax (domestic prototype)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+
+GAME(1990,	bbnny_l2,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Bugs Bunny Birthday Ball (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	bbnny_lu,	bbnny_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Bugs Bunny Birthday Ball (LU-2) European",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	diner_l4,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Diner (L-4)",									GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	diner_l3,	diner_l4,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Diner (L-3)",									GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	diner_l1,	diner_l4,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Diner (L-1) Europe",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	dd_l2,		0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Dr. Dude (LA-2)",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	dd_p6,		dd_l2,		williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Dr. Dude (PA-6)",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	pool_l7,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (LA-7)",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	pool_l6,	pool_l7,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (LA-6)",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	pool_le2,	pool_l7,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (LE-2)",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1989,	pool_p7,	pool_l7,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Pool Sharks (PA-7)",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	radcl_l1,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Radical! (L-1)",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	radcl_g1,	radcl_l1,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Radical! (G-1)",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	radcl_p3,	radcl_l1,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"Radical! (P-3)",								GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	rvrbt_l3,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Riverboat Gambler (L-3)",						GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	rollr_l2,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (L-2)",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1991,	rollr_ex,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (EXPERIMENTAL)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1991,	rollr_e1,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (PU-1)",							GAME_IS_SKELETON_MECHANICAL)
+GAME(1991,	rollr_p2,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (PA-2 / PA-1 Sound)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	rollr_l3,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (LU-3) Europe",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	rollr_g3,	rollr_l2,	williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Rollergames (LG-3) Germany",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	gs_l3,		gs_l4,		williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"The Bally Game Show (L-3)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	gs_l4,		0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Bally",				"The Bally Game Show (L-4)",					GAME_IS_SKELETON_MECHANICAL)
+GAME(1990,	strax_p7,	0,			williams_s11c,	williams_s11c,	williams_s11c,	ROT0,	"Williams",				"Star Trax (domestic prototype)",				GAME_IS_SKELETON_MECHANICAL)

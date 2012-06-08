@@ -98,12 +98,12 @@ WRITE8_HANDLER( yunsung8_videoram_w )
 		if (bank)
 		{
 			state->m_videoram_0[offset] = data;
-			tilemap_mark_tile_dirty(state->m_tilemap_0, tile);
+			state->m_tilemap_0->mark_tile_dirty(tile);
 		}
 		else
 		{
 			state->m_videoram_1[offset] = data;
-			tilemap_mark_tile_dirty(state->m_tilemap_1, tile);
+			state->m_tilemap_1->mark_tile_dirty(tile);
 		}
 	}
 }
@@ -111,7 +111,7 @@ WRITE8_HANDLER( yunsung8_videoram_w )
 
 WRITE8_HANDLER( yunsung8_flipscreen_w )
 {
-	tilemap_set_flip_all(space->machine(), (data & 1) ? (TILEMAP_FLIPX | TILEMAP_FLIPY) : 0);
+	space->machine().tilemap().set_flip_all((data & 1) ? (TILEMAP_FLIPX | TILEMAP_FLIPY) : 0);
 }
 
 
@@ -181,7 +181,7 @@ VIDEO_START( yunsung8 )
 	state->m_tilemap_0 = tilemap_create(machine, get_tile_info_0, tilemap_scan_rows, 8, 8, DIM_NX_0, DIM_NY_0 );
 	state->m_tilemap_1 = tilemap_create(machine, get_tile_info_1, tilemap_scan_rows, 8, 8, DIM_NX_1, DIM_NY_1 );
 
-	tilemap_set_transparent_pen(state->m_tilemap_1, 0);
+	state->m_tilemap_1->set_transparent_pen(0);
 }
 
 
@@ -194,28 +194,28 @@ VIDEO_START( yunsung8 )
 
 ***************************************************************************/
 
-SCREEN_UPDATE( yunsung8 )
+SCREEN_UPDATE_IND16( yunsung8 )
 {
-	yunsung8_state *state = screen->machine().driver_data<yunsung8_state>();
+	yunsung8_state *state = screen.machine().driver_data<yunsung8_state>();
 	int layers_ctrl = (~state->m_layers_ctrl) >> 4;
 
 #ifdef MAME_DEBUG
-if (screen->machine().input().code_pressed(KEYCODE_Z))
+if (screen.machine().input().code_pressed(KEYCODE_Z))
 {
 	int msk = 0;
-	if (screen->machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
-	if (screen->machine().input().code_pressed(KEYCODE_W))	msk |= 2;
+	if (screen.machine().input().code_pressed(KEYCODE_Q))	msk |= 1;
+	if (screen.machine().input().code_pressed(KEYCODE_W))	msk |= 2;
 	if (msk != 0) layers_ctrl &= msk;
 }
 #endif
 
 	if (layers_ctrl & 1)
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_0, 0, 0);
+		state->m_tilemap_0->draw(bitmap, cliprect, 0, 0);
 	else
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(0, cliprect);
 
 	if (layers_ctrl & 2)
-		tilemap_draw(bitmap, cliprect, state->m_tilemap_1, 0, 0);
+		state->m_tilemap_1->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }

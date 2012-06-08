@@ -83,10 +83,10 @@ static VIDEO_START( yumefuda )
 	state->m_bg_tilemap = tilemap_create(machine, y_get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( yumefuda )
+static SCREEN_UPDATE_IND16( yumefuda )
 {
-	albazg_state *state = screen->machine().driver_data<albazg_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	albazg_state *state = screen.machine().driver_data<albazg_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -112,14 +112,14 @@ static WRITE8_HANDLER( yumefuda_vram_w )
 {
 	albazg_state *state = space->machine().driver_data<albazg_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( yumefuda_cram_w )
 {
 	albazg_state *state = space->machine().driver_data<albazg_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 /*Custom RAM (Thrash Protection)*/
@@ -391,10 +391,9 @@ static MACHINE_CONFIG_START( yumefuda, albazg_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 32*8-1, 0, 32*8-1)
-	MCFG_SCREEN_UPDATE( yumefuda )
+	MCFG_SCREEN_UPDATE_STATIC( yumefuda )
 
 	MCFG_MC6845_ADD("crtc", H46505, MASTER_CLOCK/16, mc6845_intf)	/* hand tuned to get ~60 fps */
 

@@ -8,7 +8,9 @@ class labyrunr_state : public driver_device
 {
 public:
 	labyrunr_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	/* memory pointers */
 	UINT8 *    m_videoram1;
@@ -25,6 +27,8 @@ public:
 
 	/* devices */
 	device_t *m_k007121;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -36,4 +40,4 @@ WRITE8_HANDLER( labyrunr_vram2_w );
 
 PALETTE_INIT( labyrunr );
 VIDEO_START( labyrunr );
-SCREEN_UPDATE( labyrunr );
+SCREEN_UPDATE_IND16( labyrunr );

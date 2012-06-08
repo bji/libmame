@@ -15,13 +15,15 @@ public:
 	size_t m_nvram_size;
 	int m_display_enable;
 	tilemap_t *m_bg_tilemap;
+
+	UINT8 m_nmi_mask;
 };
 
 
 /*----------- defined in video/mjkjidai.c -----------*/
 
 VIDEO_START( mjkjidai );
-SCREEN_UPDATE( mjkjidai );
+SCREEN_UPDATE_IND16( mjkjidai );
 WRITE8_HANDLER( mjkjidai_videoram_w );
 WRITE8_HANDLER( mjkjidai_ctrl_w );
 

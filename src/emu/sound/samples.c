@@ -1,7 +1,22 @@
+/* samples.c
+
+ Playback of pre-recorded samples. Used for high-level simulation of discrete sound circuits
+ where proper low-level simulation isn't available.  Also used for tape loops and similar.
+
+ Current limitations
+  - Only supports single channel samples!
+
+ Considerations
+  - Maybe this should be part of the presentation layer (artwork etc.) with samples specified
+    in .lay files instead of in drivers?
+
+*/
+
+
 #include "emu.h"
 #include "emuopts.h"
 #include "samples.h"
-
+#include "../../lib/libflac/include/flac/all.h"
 
 typedef struct _sample_channel sample_channel;
 struct _sample_channel
@@ -43,132 +58,316 @@ INLINE samples_info *get_safe_token(device_t *device)
 #define FRAC_MASK		(FRAC_ONE - 1)
 #define MAX_CHANNELS    100
 
+struct flac_reader
+{
+	UINT8* rawdata;
+	INT16* write_data;
+	int position;
+	int length;
+	int decoded_size;
+	int sample_rate;
+	int channels;
+	int bits_per_sample;
+	int total_samples;
+	int write_position;
+} flacread;
+
+static flac_reader* flacreadptr;
+
+void my_error_callback(const FLAC__StreamDecoder * decoder, FLAC__StreamDecoderErrorStatus status, void * client_data)
+{
+	fatalerror("FLAC error Callback\n");
+}
+
+void my_metadata_callback(const FLAC__StreamDecoder *decoder, const FLAC__StreamMetadata *metadata, void *client_data)
+{
+
+	flac_reader* flacrd =  ((flac_reader*)client_data);
+
+	if (metadata->type==0)
+	{
+		const FLAC__StreamMetadata_StreamInfo *streaminfo = &(metadata->data.stream_info);
+
+		flacrd->sample_rate = streaminfo->sample_rate;
+		flacrd->channels = streaminfo->channels;
+		flacrd->bits_per_sample = streaminfo->bits_per_sample;
+		flacrd->total_samples = streaminfo->total_samples;
+	}
+}
+
+
+
+
+FLAC__StreamDecoderReadStatus my_read_callback(const FLAC__StreamDecoder *decoder, FLAC__byte buffer[], size_t *bytes, void *client_data)
+{
+	flac_reader* flacrd =  ((flac_reader*)client_data);
+
+	if(*bytes > 0)
+	{
+		if (*bytes <=  flacrd->length)
+		{
+			memcpy(buffer, flacrd->rawdata+flacrd->position, *bytes);
+			flacrd->position+=*bytes;
+			flacrd->length-=*bytes;
+			return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
+		}
+		else
+		{
+			memcpy(buffer, flacrd->rawdata+flacrd->position,  flacrd->length);
+		    flacrd->position+= flacrd->length;
+			flacrd->length = 0;
+
+			return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
+		}
+	}
+	else
+	{
+		return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
+	}
+
+	if ( flacrd->length==0)
+	{
+		return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
+	}
+
+	return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
+
+}
+
+FLAC__StreamDecoderWriteStatus my_write_callback(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[], void *client_data)
+{
+	flac_reader* flacrd =  ((flac_reader*)client_data);
+
+	flacrd->decoded_size += frame->header.blocksize;
+
+	for (int i=0;i<frame->header.blocksize;i++)
+	{
+		flacrd->write_data[i+flacrd->write_position] = buffer[0][i];
+	}
+
+	flacrd->write_position +=  frame->header.blocksize;
+
+	return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
+}
+
+
+
+
+
 
 /*-------------------------------------------------
     read_wav_sample - read a WAV file as a sample
 -------------------------------------------------*/
 
-static int read_wav_sample(running_machine &machine, emu_file &file, loaded_sample *sample)
+static int read_wav_sample(running_machine &machine, emu_file &file, loaded_sample *sample, char* filename)
 {
 	unsigned long offset = 0;
 	UINT32 length, rate, filesize;
 	UINT16 bits, temp16;
 	char buf[32];
 	UINT32 sindex;
+	int type = 0;
 
 	/* read the core header and make sure it's a WAVE file */
 	offset += file.read(buf, 4);
 	if (offset < 4)
-		return 0;
-	if (memcmp(&buf[0], "RIFF", 4) != 0)
-		return 0;
-
-	/* get the total size */
-	offset += file.read(&filesize, 4);
-	if (offset < 8)
-		return 0;
-	filesize = LITTLE_ENDIANIZE_INT32(filesize);
-
-	/* read the RIFF file type and make sure it's a WAVE file */
-	offset += file.read(buf, 4);
-	if (offset < 12)
-		return 0;
-	if (memcmp(&buf[0], "WAVE", 4) != 0)
-		return 0;
-
-	/* seek until we find a format tag */
-	while (1)
 	{
-		offset += file.read(buf, 4);
-		offset += file.read(&length, 4);
-		length = LITTLE_ENDIANIZE_INT32(length);
-		if (memcmp(&buf[0], "fmt ", 4) == 0)
-			break;
-
-		/* seek to the next block */
-		file.seek(length, SEEK_CUR);
-		offset += length;
-		if (offset >= filesize)
-			return 0;
+		mame_printf_warning("unable to read %s, 0-byte file?\n", filename);
+		return 0;
+	}
+	if (memcmp(&buf[0], "RIFF", 4) == 0)
+		type = 1;
+	else if (memcmp(&buf[0], "fLaC", 4) == 0)
+		type = 2;
+	else
+	{
+		mame_printf_warning("unable to read %s, corrupt file?\n", filename);
+		return 0;
 	}
 
-	/* read the format -- make sure it is PCM */
-	offset += file.read(&temp16, 2);
-	temp16 = LITTLE_ENDIANIZE_INT16(temp16);
-	if (temp16 != 1)
-		return 0;
-
-	/* number of channels -- only mono is supported */
-	offset += file.read(&temp16, 2);
-	temp16 = LITTLE_ENDIANIZE_INT16(temp16);
-	if (temp16 != 1)
-		return 0;
-
-	/* sample rate */
-	offset += file.read(&rate, 4);
-	rate = LITTLE_ENDIANIZE_INT32(rate);
-
-	/* bytes/second and block alignment are ignored */
-	offset += file.read(buf, 6);
-
-	/* bits/sample */
-	offset += file.read(&bits, 2);
-	bits = LITTLE_ENDIANIZE_INT16(bits);
-	if (bits != 8 && bits != 16)
-		return 0;
-
-	/* seek past any extra data */
-	file.seek(length - 16, SEEK_CUR);
-	offset += length - 16;
-
-	/* seek until we find a data tag */
-	while (1)
+	if (type==1)
 	{
-		offset += file.read(buf, 4);
-		offset += file.read(&length, 4);
-		length = LITTLE_ENDIANIZE_INT32(length);
-		if (memcmp(&buf[0], "data", 4) == 0)
-			break;
-
-		/* seek to the next block */
-		file.seek(length, SEEK_CUR);
-		offset += length;
-		if (offset >= filesize)
+		/* get the total size */
+		offset += file.read(&filesize, 4);
+		if (offset < 8)
 			return 0;
-	}
+		filesize = LITTLE_ENDIANIZE_INT32(filesize);
 
-	/* if there was a 0 length data block, we're done */
-	if (length == 0)
-		return 0;
+		/* read the RIFF file type and make sure it's a WAVE file */
+		offset += file.read(buf, 4);
+		if (offset < 12)
+			return 0;
+		if (memcmp(&buf[0], "WAVE", 4) != 0)
+			return 0;
 
-	/* fill in the sample data */
-	sample->length = length;
-	sample->frequency = rate;
+		/* seek until we find a format tag */
+		while (1)
+		{
+			offset += file.read(buf, 4);
+			offset += file.read(&length, 4);
+			length = LITTLE_ENDIANIZE_INT32(length);
+			if (memcmp(&buf[0], "fmt ", 4) == 0)
+				break;
 
-	/* read the data in */
-	if (bits == 8)
-	{
-		unsigned char *tempptr;
-		int sindex;
+			/* seek to the next block */
+			file.seek(length, SEEK_CUR);
+			offset += length;
+			if (offset >= filesize)
+				return 0;
+		}
 
-		sample->data = auto_alloc_array(machine, INT16, length);
-		file.read(sample->data, length);
+		/* read the format -- make sure it is PCM */
+		offset += file.read(&temp16, 2);
+		temp16 = LITTLE_ENDIANIZE_INT16(temp16);
+		if (temp16 != 1)
+			return 0;
 
-		/* convert 8-bit data to signed samples */
-		tempptr = (unsigned char *)sample->data;
-		for (sindex = length - 1; sindex >= 0; sindex--)
-			sample->data[sindex] = (INT8)(tempptr[sindex] ^ 0x80) * 256;
+		/* number of channels -- only mono is supported */
+		offset += file.read(&temp16, 2);
+		temp16 = LITTLE_ENDIANIZE_INT16(temp16);
+		if (temp16 != 1)
+			return 0;
+
+		/* sample rate */
+		offset += file.read(&rate, 4);
+		rate = LITTLE_ENDIANIZE_INT32(rate);
+
+		/* bytes/second and block alignment are ignored */
+		offset += file.read(buf, 6);
+
+		/* bits/sample */
+		offset += file.read(&bits, 2);
+		bits = LITTLE_ENDIANIZE_INT16(bits);
+		if (bits != 8 && bits != 16)
+			return 0;
+
+		/* seek past any extra data */
+		file.seek(length - 16, SEEK_CUR);
+		offset += length - 16;
+
+		/* seek until we find a data tag */
+		while (1)
+		{
+			offset += file.read(buf, 4);
+			offset += file.read(&length, 4);
+			length = LITTLE_ENDIANIZE_INT32(length);
+			if (memcmp(&buf[0], "data", 4) == 0)
+				break;
+
+			/* seek to the next block */
+			file.seek(length, SEEK_CUR);
+			offset += length;
+			if (offset >= filesize)
+				return 0;
+		}
+
+		/* if there was a 0 length data block, we're done */
+		if (length == 0)
+			return 0;
+
+		/* fill in the sample data */
+		sample->length = length;
+		sample->frequency = rate;
+
+		/* read the data in */
+		if (bits == 8)
+		{
+			unsigned char *tempptr;
+			int sindex;
+
+			sample->data = auto_alloc_array(machine, INT16, length);
+			file.read(sample->data, length);
+
+			/* convert 8-bit data to signed samples */
+			tempptr = (unsigned char *)sample->data;
+			for (sindex = length - 1; sindex >= 0; sindex--)
+				sample->data[sindex] = (INT8)(tempptr[sindex] ^ 0x80) * 256;
+
+		}
+		else
+		{
+			/* 16-bit data is fine as-is */
+			sample->data = auto_alloc_array(machine, INT16, length/2);
+			file.read(sample->data, length);
+
+				sample->length /= 2;
+			if (ENDIANNESS_NATIVE != ENDIANNESS_LITTLE)
+				for (sindex = 0; sindex < sample->length; sindex++)
+					sample->data[sindex] = LITTLE_ENDIANIZE_INT16(sample->data[sindex]);
+		}
 	}
 	else
 	{
-		/* 16-bit data is fine as-is */
-		sample->data = auto_alloc_array(machine, INT16, length/2);
-		file.read(sample->data, length);
-		sample->length /= 2;
-		if (ENDIANNESS_NATIVE != ENDIANNESS_LITTLE)
-			for (sindex = 0; sindex < sample->length; sindex++)
-				sample->data[sindex] = LITTLE_ENDIANIZE_INT16(sample->data[sindex]);
+		int length;
+
+		file.seek(0, SEEK_END);
+		length = file.tell();
+		file.seek(0, 0);
+
+		flacread.rawdata = auto_alloc_array(machine, UINT8, length);
+		flacread.length = length;
+		flacread.position = 0;
+		flacread.decoded_size = 0;
+
+		flacreadptr = &flacread;
+
+		file.read(flacread.rawdata, length);
+
+		FLAC__StreamDecoder *decoder = FLAC__stream_decoder_new();
+
+		if (!decoder)
+			fatalerror("Fail FLAC__stream_decoder_new\n");
+
+		if(FLAC__stream_decoder_init_stream(
+			decoder,
+			my_read_callback,
+			NULL, //my_seek_callback,      // or NULL
+			NULL, //my_tell_callback,      // or NULL
+			NULL, //my_length_callback,    // or NULL
+			NULL, //my_eof_callback,       // or NULL
+			my_write_callback,
+			my_metadata_callback, //my_metadata_callback,  // or NULL
+			my_error_callback,
+			(void*)flacreadptr /*my_client_data*/ ) != FLAC__STREAM_DECODER_INIT_STATUS_OK)
+			fatalerror("Fail FLAC__stream_decoder_init_stream\n");
+
+		if (FLAC__stream_decoder_process_until_end_of_metadata(decoder) != FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM)
+			fatalerror("Fail FLAC__stream_decoder_process_until_end_of_metadata\n");
+
+		if (flacread.channels != 1) // only Mono supported
+			fatalerror("Only MONO samples are supported\n");
+
+
+		sample->data = auto_alloc_array(machine, INT16, flacread.total_samples*2);
+		flacread.write_position = 0;
+		flacread.write_data = sample->data;
+
+		if (FLAC__stream_decoder_process_until_end_of_stream (decoder) != FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM)
+		{
+			fatalerror("Fail FLAC__stream_decoder_process_until_end_of_stream\n");
+		}
+
+		if (FLAC__stream_decoder_finish (decoder) != true)
+			fatalerror("Fail FLAC__stream_decoder_finish\n");
+
+		FLAC__stream_decoder_delete(decoder);
+
+		/* fill in the sample data */
+
+		sample->frequency = flacread.sample_rate;
+		sample->length = flacread.total_samples * (flacread.bits_per_sample/8);
+
+		if (flacread.bits_per_sample == 8)
+		{
+			for (sindex = 0; sindex <= sample->length; sindex++)
+				sample->data[sindex] = ((sample->data[sindex])&0xff)*256;
+		}
+		else // don't need to process 16-bit samples?
+		{
+			sample->length = sample->length /2; //??
+		}
 	}
+
 	return 1;
 }
 
@@ -207,13 +406,39 @@ loaded_samples *readsamples(running_machine &machine, const char *const *samplen
 		if (samplenames[i+skipfirst][0])
 		{
 			emu_file file(machine.options().sample_path(), OPEN_FLAG_READ);
+			file_error filerr = FILERR_NOT_FOUND;
 
-			file_error filerr = file.open(basename, PATH_SEPARATOR, samplenames[i+skipfirst]);
-			if (filerr != FILERR_NONE && skipfirst)
-				filerr = file.open(samplenames[0] + 1, PATH_SEPARATOR, samplenames[i+skipfirst]);
+			char filename[512];
+
+			if (filerr != FILERR_NONE)
+			{
+				// first try opening samples as .flac
+				sprintf(filename, "%s.flac", samplenames[i+skipfirst]);
+
+				filerr = file.open(basename, PATH_SEPARATOR, filename);
+				// try parent sample set
+				if (filerr != FILERR_NONE && skipfirst)
+					filerr = file.open(samplenames[0] + 1, PATH_SEPARATOR, filename);
+			}
+
+			if (filerr != FILERR_NONE)
+			{
+				// .wav fallback
+				sprintf(filename, "%s.wav", samplenames[i+skipfirst]);
+
+				filerr = file.open(basename, PATH_SEPARATOR, filename);
+				// try parent sample set
+				if (filerr != FILERR_NONE && skipfirst)
+					filerr = file.open(samplenames[0] + 1, PATH_SEPARATOR, filename);
+			}
+
 
 			if (filerr == FILERR_NONE)
-				read_wav_sample(machine, file, &samples->sample[i]);
+				read_wav_sample(machine, file, &samples->sample[i], filename);
+
+			if (filerr == FILERR_NOT_FOUND)
+				mame_printf_warning("sample '%s' NOT FOUND\n", samplenames[i+skipfirst]);
+
 		}
 
 	return samples;

@@ -807,16 +807,16 @@ GFXDECODE_END
 static const char *const m10_sample_names[] =
 {
 	"*ipminvad",
-	"1.wav",		/* shot/missle */
-	"2.wav",		/* base hit/explosion */
-	"3.wav",		/* invader hit */
-	"4.wav",		/* fleet move 1 */
-	"5.wav",		/* fleet move 2 */
-	"6.wav",		/* fleet move 3 */
-	"7.wav",		/* fleet move 4 */
-	"8.wav",		/* UFO/saucer hit */
-	"9.wav",		/* bonus base */
-	"0.wav",		/* UFO sound */
+	"1",		/* shot/missle */
+	"2",		/* base hit/explosion */
+	"3",		/* invader hit */
+	"4",		/* fleet move 1 */
+	"5",		/* fleet move 2 */
+	"6",		/* fleet move 3 */
+	"7",		/* fleet move 4 */
+	"8",		/* UFO/saucer hit */
+	"9",		/* bonus base */
+	"0",		/* UFO sound */
 	0
 };
 
@@ -846,9 +846,8 @@ static MACHINE_CONFIG_START( m10, m10_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(IREMM10_PIXEL_CLOCK, IREMM10_HTOTAL, IREMM10_HBEND, IREMM10_HBSTART, IREMM10_VTOTAL, IREMM10_VBEND, IREMM10_VBSTART)
-	MCFG_SCREEN_UPDATE(m10)
+	MCFG_SCREEN_UPDATE_STATIC(m10)
 
 	MCFG_GFXDECODE(m10)
 	MCFG_PALETTE_LENGTH(2*8)
@@ -893,9 +892,8 @@ static MACHINE_CONFIG_START( m15, m10_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(IREMM15_PIXEL_CLOCK, IREMM15_HTOTAL, IREMM15_HBEND, IREMM15_HBSTART, IREMM15_VTOTAL, IREMM15_VBEND, IREMM15_VBSTART)
-	MCFG_SCREEN_UPDATE(m15)
+	MCFG_SCREEN_UPDATE_STATIC(m15)
 
 	MCFG_PALETTE_LENGTH(2*8)
 

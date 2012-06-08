@@ -38,4 +38,6 @@ WRITE8_HANDLER( tbowl_bgyscroll_lo );
 WRITE8_HANDLER( tbowl_bgyscroll_hi );
 
 VIDEO_START( tbowl );
-SCREEN_UPDATE( tbowl );
+SCREEN_UPDATE_IND16( tbowl_left );
+SCREEN_UPDATE_IND16( tbowl_right );
+

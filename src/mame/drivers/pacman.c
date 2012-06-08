@@ -399,7 +399,7 @@ static WRITE8_HANDLER( pacman_interrupt_vector_w )
 
 
 /*
-   The piranha board has a sync bus controler card similar to Midway's pacman. It
+   The piranha board has a sync bus controller card similar to Midway's pacman. It
    stores the LSB of the interrupt vector using port 00 but it alters the byte to prevent
    it from running on normal pacman hardware and vice versa. I wrote a program to print
    out the even numbers and the vectors they convert to.  Thanks to Dave France for
@@ -875,6 +875,13 @@ static WRITE8_HANDLER( mspacman_enable_decode_w )         { mspacman_enable_deco
  *
  *************************************/
 
+static WRITE8_HANDLER( irq_mask_w )
+{
+	pacman_state *state = space->machine().driver_data<pacman_state>();
+
+	state->m_irq_mask = data & 1;
+}
+
 static ADDRESS_MAP_START( pacman_map, AS_PROGRAM, 8 )
 	//A lot of games don't have an a15 at the cpu.  Generally only games with a cpu daughter board can access the full 32k of romspace.
 	AM_RANGE(0x0000, 0x3fff) AM_MIRROR(0x8000) AM_ROM
@@ -883,7 +890,7 @@ static ADDRESS_MAP_START( pacman_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
 	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -903,6 +910,30 @@ ADDRESS_MAP_END
 // The Pacman code uses $5004 and $5005 for LED's and $5007 for coin lockout.  This hardware does not
 // exist on any Pacman or Puckman board I have seen.  DW
 
+static ADDRESS_MAP_START( birdiy_map, AS_PROGRAM, 8 )
+	AM_RANGE(0x0000, 0x3fff) AM_MIRROR(0x8000) AM_ROM
+	AM_RANGE(0x4000, 0x43ff) AM_MIRROR(0xa000) AM_RAM_WRITE(pacman_videoram_w) AM_BASE_MEMBER(pacman_state, m_videoram)
+	AM_RANGE(0x4400, 0x47ff) AM_MIRROR(0xa000) AM_RAM_WRITE(pacman_colorram_w) AM_BASE_MEMBER(pacman_state, m_colorram)
+//  AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
+	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
+	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
+	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
+//  AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
+//  AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
+	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
+//  AM_RANGE(0x5004, 0x5005) AM_MIRROR(0xaf38) AM_WRITENOP // AM_WRITE(pacman_leds_w)
+//  AM_RANGE(0x5006, 0x5006) AM_MIRROR(0xaf38) AM_WRITENOP // AM_WRITE(pacman_coin_lockout_global_w)
+	AM_RANGE(0x5007, 0x5007) AM_MIRROR(0xaf38) AM_WRITE(pacman_coin_counter_w)
+	AM_RANGE(0x5080, 0x509f) AM_MIRROR(0xaf00) AM_DEVWRITE("namco", pacman_sound_w)
+	AM_RANGE(0x50a0, 0x50af) AM_MIRROR(0xaf00) AM_WRITEONLY AM_BASE_GENERIC(spriteram2)
+//  AM_RANGE(0x5070, 0x507f) AM_MIRROR(0xaf00) AM_WRITENOP
+//  AM_RANGE(0x5080, 0x5080) AM_MIRROR(0xaf3f) AM_WRITENOP
+	AM_RANGE(0x50c0, 0x50c0) AM_MIRROR(0xaf3f) AM_WRITE(watchdog_reset_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf3f) AM_READ_PORT("IN0")		/* IN0 */
+	AM_RANGE(0x5040, 0x5040) AM_MIRROR(0xaf3f) AM_READ_PORT("IN1")		/* IN1 */
+	AM_RANGE(0x5080, 0x5080) AM_MIRROR(0xaf3f) AM_READ_PORT("DSW1")		/* DSW1 */
+	AM_RANGE(0x50c0, 0x50c0) AM_MIRROR(0xaf3f) AM_READ_PORT("DSW2")		/* DSW2 */
+ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( mspacman_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4000, 0x43ff) AM_MIRROR(0xa000) AM_RAM_WRITE(pacman_videoram_w) AM_BASE_MEMBER(pacman_state, m_videoram)
@@ -910,7 +941,7 @@ static ADDRESS_MAP_START( mspacman_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
 	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -950,7 +981,7 @@ static ADDRESS_MAP_START( woodpek_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
 	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -988,7 +1019,7 @@ static ADDRESS_MAP_START( alibaba_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x5080, 0x5080) AM_MIRROR(0xaf3f) AM_WRITENOP
 	AM_RANGE(0x50c0, 0x50c0) AM_MIRROR(0xaf00) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x50c1, 0x50c1) AM_MIRROR(0xaf00) AM_WRITE(pacman_flipscreen_w)
-	AM_RANGE(0x50c2, 0x50c2) AM_MIRROR(0xaf00) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x50c2, 0x50c2) AM_MIRROR(0xaf00) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x50c3, 0x50ff) AM_MIRROR(0xaf00) AM_WRITENOP
 	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf3f) AM_READ_PORT("IN0")		/* IN0 */
 	AM_RANGE(0x5040, 0x5040) AM_MIRROR(0xaf3f) AM_READ_PORT("IN1")		/* IN1 */
@@ -1008,7 +1039,7 @@ static ADDRESS_MAP_START( dremshpr_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4400, 0x47ff) AM_MIRROR(0xa000) AM_RAM_WRITE(pacman_colorram_w) AM_BASE_MEMBER(pacman_state, m_colorram)
 	AM_RANGE(0x4800, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 //  AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP /* unknown */
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -1039,7 +1070,7 @@ static ADDRESS_MAP_START( epos_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
 	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -1093,7 +1124,7 @@ static ADDRESS_MAP_START( rocktrv2_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4000, 0x43ff) AM_RAM_WRITE(pacman_videoram_w) AM_BASE_MEMBER(pacman_state, m_videoram)
 	AM_RANGE(0x4400, 0x47ff) AM_RAM_WRITE(pacman_colorram_w) AM_BASE_MEMBER(pacman_state, m_colorram)
 	AM_RANGE(0x4c00, 0x4fff) AM_RAM
-	AM_RANGE(0x5000, 0x5000) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5003, 0x5003) AM_WRITE(pacman_flipscreen_w)
 	AM_RANGE(0x5007, 0x5007) AM_WRITE(pacman_coin_counter_w)
@@ -1120,7 +1151,7 @@ static ADDRESS_MAP_START( bigbucks_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4000, 0x43ff) AM_RAM_WRITE(pacman_videoram_w) AM_BASE_MEMBER(pacman_state, m_videoram)
 	AM_RANGE(0x4400, 0x47ff) AM_RAM_WRITE(pacman_colorram_w) AM_BASE_MEMBER(pacman_state, m_colorram)
 	AM_RANGE(0x4c00, 0x4fff) AM_RAM
-	AM_RANGE(0x5000, 0x5000) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5003, 0x5003) AM_WRITE(pacman_flipscreen_w)
 	AM_RANGE(0x5007, 0x5007) AM_WRITENOP /*?*/
@@ -1143,7 +1174,7 @@ static ADDRESS_MAP_START( mschamp_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
 	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -1170,7 +1201,7 @@ static ADDRESS_MAP_START( crushs_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x4800, 0x4bff) AM_MIRROR(0xa000) AM_READ(pacman_read_nop) AM_WRITENOP
 	AM_RANGE(0x4c00, 0x4fef) AM_MIRROR(0xa000) AM_RAM
 	AM_RANGE(0x4ff0, 0x4fff) AM_MIRROR(0xa000) AM_RAM AM_BASE_SIZE_GENERIC(spriteram)
-	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0x5000, 0x5000) AM_MIRROR(0xaf38) AM_WRITE(irq_mask_w)
 	AM_RANGE(0x5001, 0x5001) AM_MIRROR(0xaf38) AM_DEVWRITE("namco", pacman_sound_enable_w)
 	AM_RANGE(0x5002, 0x5002) AM_MIRROR(0xaf38) AM_WRITENOP
 	AM_RANGE(0x5003, 0x5003) AM_MIRROR(0xaf38) AM_WRITE(pacman_flipscreen_w)
@@ -1305,27 +1336,27 @@ static INPUT_PORTS_START( pacman )
 	PORT_DIPSETTING(   0x00, DEF_STR( Cocktail ) )
 
 	PORT_START("DSW1")
-	PORT_DIPNAME( 0x03, 0x01, DEF_STR( Coinage ) )
+	PORT_DIPNAME( 0x03, 0x01, DEF_STR( Coinage ) )		PORT_DIPLOCATION("SW:1,2")
 	PORT_DIPSETTING(    0x03, DEF_STR( 2C_1C ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( 1C_1C ) )
 	PORT_DIPSETTING(    0x02, DEF_STR( 1C_2C ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Free_Play ) )
-	PORT_DIPNAME( 0x0c, 0x08, DEF_STR( Lives ) )
+	PORT_DIPNAME( 0x0c, 0x08, DEF_STR( Lives ) )		PORT_DIPLOCATION("SW:3,4")
 	PORT_DIPSETTING(    0x00, "1" )
 	PORT_DIPSETTING(    0x04, "2" )
 	PORT_DIPSETTING(    0x08, "3" )
 	PORT_DIPSETTING(    0x0c, "5" )
-	PORT_DIPNAME( 0x30, 0x00, DEF_STR( Bonus_Life ) )
+	PORT_DIPNAME( 0x30, 0x00, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SW:5,6")
 	PORT_DIPSETTING(    0x00, "10000" )
 	PORT_DIPSETTING(    0x10, "15000" )
 	PORT_DIPSETTING(    0x20, "20000" )
 	PORT_DIPSETTING(    0x30, DEF_STR( None ) )
-	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Difficulty ) )
+	PORT_DIPNAME( 0x40, 0x40, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SW:7")
 	PORT_DIPSETTING(    0x40, DEF_STR( Normal ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hard ) )
 	PORT_DIPNAME( 0x80, 0x80, "Ghost Names" )
 	PORT_DIPSETTING(    0x80, DEF_STR( Normal ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( Alternate ) )
+	PORT_DIPSETTING(    0x00, DEF_STR( Alternate ) )	PORT_DIPLOCATION("SW:8")
 
 	PORT_START("DSW2")
 	PORT_BIT( 0xff, IP_ACTIVE_HIGH, IPT_UNUSED )
@@ -3106,13 +3137,29 @@ static const namco_interface namco_config =
  *
  *************************************/
 
+static INTERRUPT_GEN( vblank_irq )
+{
+	pacman_state *state = device->machine().driver_data<pacman_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
+static INTERRUPT_GEN( vblank_nmi )
+{
+	pacman_state *state = device->machine().driver_data<pacman_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 static MACHINE_CONFIG_START( pacman, pacman_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/6)
 	MCFG_CPU_PROGRAM_MAP(pacman_map)
 	MCFG_CPU_IO_MAP(writeport)
-	MCFG_CPU_VBLANK_INT("screen",irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen",vblank_irq)
 	MCFG_WATCHDOG_VBLANK_INIT(16)
 
 	/* video hardware */
@@ -3120,9 +3167,8 @@ static MACHINE_CONFIG_START( pacman, pacman_state )
 	MCFG_PALETTE_LENGTH(128*4)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, HTOTAL, HBEND, HBSTART, VTOTAL, VBEND, VBSTART)
-	MCFG_SCREEN_UPDATE(pacman)
+	MCFG_SCREEN_UPDATE_STATIC(pacman)
 
 	MCFG_PALETTE_INIT(pacman)
 	MCFG_VIDEO_START(pacman)
@@ -3134,6 +3180,18 @@ static MACHINE_CONFIG_START( pacman, pacman_state )
 	MCFG_SOUND_CONFIG(namco_config)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
 MACHINE_CONFIG_END
+
+static MACHINE_CONFIG_DERIVED( birdiy, pacman )
+
+	/* basic machine hardware */
+	MCFG_CPU_MODIFY("maincpu")
+	MCFG_CPU_PROGRAM_MAP(birdiy_map)
+	MCFG_CPU_IO_MAP(0)
+
+	MCFG_VIDEO_START(birdiy)
+MACHINE_CONFIG_END
+
+
 
 
 static MACHINE_CONFIG_DERIVED( piranha, pacman )
@@ -3173,7 +3231,6 @@ static MACHINE_CONFIG_DERIVED( alibaba, pacman )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(alibaba_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
 MACHINE_CONFIG_END
 
 
@@ -3183,7 +3240,7 @@ static MACHINE_CONFIG_DERIVED( dremshpr, pacman )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(dremshpr_map)
 	MCFG_CPU_IO_MAP(dremshpr_portmap)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_nmi)
 
 	/* sound hardware */
 	MCFG_SOUND_REPLACE("namco", AY8910, 14318000/8)
@@ -3221,7 +3278,7 @@ static MACHINE_CONFIG_DERIVED( vanvan, pacman )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(dremshpr_map)
 	MCFG_CPU_IO_MAP(vanvan_portmap)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_nmi)
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
@@ -3241,7 +3298,7 @@ static MACHINE_CONFIG_DERIVED( bigbucks, pacman )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(bigbucks_map)
 	MCFG_CPU_IO_MAP(bigbucks_portmap)
-	MCFG_CPU_PERIODIC_INT(irq0_line_hold,20*60)
+	MCFG_CPU_PERIODIC_INT(vblank_irq,20*60)
 
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 36*8-1, 0*8, 28*8-1)
@@ -3262,7 +3319,7 @@ static MACHINE_CONFIG_DERIVED( s2650games, pacman )
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_UPDATE(s2650games)
+	MCFG_SCREEN_UPDATE_STATIC(s2650games)
 
 	MCFG_VIDEO_START(s2650games)
 
@@ -3314,7 +3371,7 @@ static MACHINE_CONFIG_DERIVED( mschamp, pacman )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(mschamp_map)
 	MCFG_CPU_IO_MAP(mschamp_portmap)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_MACHINE_RESET(mschamp)
 MACHINE_CONFIG_END
@@ -3592,6 +3649,32 @@ ROM_START( popeyeman )
 	ROM_LOAD( "11.5h",  0x0800, 0x0800, CRC(3591b89d) SHA1(79bb456be6c39c1ccd7d077fbe181523131fb300) )
 	ROM_LOAD( "10.5f",	0x1000, 0x0800, CRC(014fb5a4) SHA1(7779f0f0d11027adf3b9175af26d53f1e3a54f29) )
 	ROM_LOAD( "12.5j",	0x1800, 0x0800, CRC(21b91c64) SHA1(4818194ecc18b5df159f3799ea93c911fd4b9556) )
+
+	ROM_REGION( 0x0120, "proms", 0 )
+	ROM_LOAD( "82s123.7f",    0x0000, 0x0020, CRC(2fc650bd) SHA1(8d0268dee78e47c712202b0ec4f1f51109b1f2a5) )
+	ROM_LOAD( "82s126.4a",    0x0020, 0x0100, CRC(3eb3a8e4) SHA1(19097b5f60d1030f8b82d9f1d3a241f93e5c75d6) )
+
+	ROM_REGION( 0x0200, "namco", 0 )	/* sound PROMs */
+	ROM_LOAD( "82s126.1m",    0x0000, 0x0100, CRC(a9cc86bf) SHA1(bbcec0570aeceb582ff8238a4bc8546a23430081) )
+	ROM_LOAD( "82s126.3m",    0x0100, 0x0100, CRC(77245b66) SHA1(0c4d0bee858b97632411c440bea6948a74759746) )	/* timing - not used */
+ROM_END
+
+ROM_START( crockman )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "p1.6e",        0x0000, 0x0800, CRC(2c0fa0ab) SHA1(37680e4502771ae69d51d07ce43f65b9b2dd2a49) )
+	ROM_LOAD( "p5.6k",        0x0800, 0x0800, CRC(afeca2f1) SHA1(1e6d6c75eeb3a354ce2dc88da62caf9e7d53d0cb) )
+	ROM_LOAD( "p2.6f",        0x1000, 0x0800, CRC(7d177853) SHA1(9b5ddaaa8b564654f97af193dbcc29f81f230a25) )
+	ROM_LOAD( "p6.6m",        0x1800, 0x0800, CRC(d3e8914c) SHA1(c2f00e1773c6864435f29c8b7f44f2ef85d227d3) )
+	ROM_LOAD( "p3.6h",        0x2000, 0x0800, CRC(9045a44c) SHA1(a97d7016effbd2ace9a7d92ceb04a6ce18fb42f9) )
+	ROM_LOAD( "p7.6n",        0x2800, 0x0800, CRC(93f344c5) SHA1(987c7fa18a774a47c045fa1dc7dff37457cb8983) )
+	ROM_LOAD( "p4.6j",        0x3000, 0x0800, CRC(bed4a077) SHA1(39ac1d4d2acf4752ff7f9839f8f0d1974e023fab) )
+	ROM_LOAD( "p8.6p",        0x3800, 0x0800, CRC(800be41e) SHA1(6f40e741d95c2cfe1b217f1061da3497b4c2a153) )
+
+	ROM_REGION( 0x2000, "gfx1", 0 )
+	ROM_LOAD( "p9.5e",        0x0000, 0x0800, CRC(a10218c4) SHA1(fa48f780ddbef37d0ef58f301c8783668843eab6) )
+	ROM_LOAD( "p11.5h",       0x0800, 0x0800, CRC(3591b89d) SHA1(79bb456be6c39c1ccd7d077fbe181523131fb300) )
+	ROM_LOAD( "p10.5f",       0x1000, 0x0800, CRC(9e39323a) SHA1(be933e691df4dbe7d12123913c3b7b7b585b7a35) )
+	ROM_LOAD( "p12.5j",       0x1800, 0x0800, CRC(1b1d9096) SHA1(53771c573051db43e7185b1d188533056290a620) )
 
 	ROM_REGION( 0x0120, "proms", 0 )
 	ROM_LOAD( "82s123.7f",    0x0000, 0x0020, CRC(2fc650bd) SHA1(8d0268dee78e47c712202b0ec4f1f51109b1f2a5) )
@@ -4452,7 +4535,7 @@ ROM_START( eyes2 )
 
 	ROM_REGION( 0x2000, "gfx1", 0 )
 	ROM_LOAD( "g38205.5d",    0x0000, 0x1000, CRC(03b1b4c7) SHA1(a90b2fbaee2888ee4f0bcdf80a069c8594ef5ea1) )  /* this one has a (c) sign */
-	ROM_LOAD( "e5",           0x1000, 0x1000, CRC(a42b5201) SHA1(2e5cede3b6039c7bd5230de27d02aaa3f35a7b64) )
+	ROM_LOAD( "g38206.5e",    0x1000, 0x1000, CRC(a42b5201) SHA1(2e5cede3b6039c7bd5230de27d02aaa3f35a7b64) )
 
 	ROM_REGION( 0x0120, "proms", 0 )
 	ROM_LOAD( "82s123.7f",    0x0000, 0x0020, CRC(2fc650bd) SHA1(8d0268dee78e47c712202b0ec4f1f51109b1f2a5) )
@@ -4463,12 +4546,30 @@ ROM_START( eyes2 )
 	ROM_LOAD( "82s126.3m",    0x0100, 0x0100, CRC(77245b66) SHA1(0c4d0bee858b97632411c440bea6948a74759746) )	/* timing - not used */
 ROM_END
 
-/* It's just a decrypted version of Eyes with the copyright changes...
- roms marked with a comment were in the set but we're not using them
 
- This is only supported because it's by Zaccaria, a known manufacturer of original games
- */
 ROM_START( eyeszac )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "1.7d",         0x0000, 0x1000, BAD_DUMP CRC(568851aa) SHA1(a97963556a6d77400afaafd73bcc32cb7f3a54d2) ) // 2532 vs 2732 problem, (near)identical halves
+	ROM_LOAD( "2.7f",         0x1000, 0x1000, BAD_DUMP CRC(9a0dba3b) SHA1(9f66f814bc2d483488df8918d872c7d6ce1bea3d) ) // 2532 vs 2732 problem, 1st half empty
+	ROM_LOAD( "3.7h",         0x2000, 0x1000, BAD_DUMP CRC(5a12aa81) SHA1(1adb1b033066cabbd62a5d33012ed1c66b955943) ) // 2532 vs 2732 problem, (near)identical halves
+	ROM_LOAD( "4.7j",         0x3000, 0x1000, BAD_DUMP CRC(b11958a1) SHA1(fa66fec80594f313f605e2b904dfe34693a1aa7d) ) // 2532 vs 2732 problem, (near)identical halves
+
+	ROM_REGION( 0x2000, "gfx1", 0 )
+	ROM_LOAD( "5.5d",         0x0000, 0x1000, BAD_DUMP CRC(7b2c4d53) SHA1(82e1a70c5cb76519dca252cfcea2a69c3601e36f) ) // 2532 vs 2732 problem, (near)identical halves
+	ROM_LOAD( "6.5f",         0x1000, 0x1000, BAD_DUMP CRC(bccb4f1a) SHA1(0abf73b78a95b7e911480d41e0136dbc635b4a34) ) // 2532 vs 2732 problem, (near)identical halves
+
+	ROM_REGION( 0x0120, "proms", 0 )
+	ROM_LOAD( "82s123.7f",    0x0000, 0x0020, CRC(2fc650bd) SHA1(8d0268dee78e47c712202b0ec4f1f51109b1f2a5) ) // taken from parent
+	ROM_LOAD( "82s129.4a",    0x0020, 0x0100, CRC(d8d78829) SHA1(19820d1651423210083a087fb70ebea73ad34951) ) // taken from parent
+
+	ROM_REGION( 0x0200, "namco", 0 )	/* sound PROMs */
+	ROM_LOAD( "82s126.1m",    0x0000, 0x0100, CRC(a9cc86bf) SHA1(bbcec0570aeceb582ff8238a4bc8546a23430081) ) // taken from parent
+	ROM_LOAD( "82s126.3m",    0x0100, 0x0100, CRC(77245b66) SHA1(0c4d0bee858b97632411c440bea6948a74759746) ) // taken from parent
+ROM_END
+
+/* It's just a decrypted version of Eyes with the copyright changes...
+ roms marked with a comment were in the set but we're not using them */
+ROM_START( eyeszacb )
 	ROM_REGION( 0x10000, "maincpu", 0 )
 /**/ROM_LOAD( "11.bin",          0x0000, 0x0800, CRC(69c1602a) SHA1(47b0935406b7ee2f414de58da1d4e81c6277a0c2) ) // "no diagnostics, bad custom??" (unused)
 	ROM_LOAD( "1.bin",           0x0000, 0x0800, CRC(a4a9d7a0) SHA1(f0b807d2fa347e50df52971aa7539a88f342bad6) )
@@ -4495,6 +4596,52 @@ ROM_START( eyeszac )
 	ROM_LOAD( "82s126.1m",    0x0000, 0x0100, CRC(a9cc86bf) SHA1(bbcec0570aeceb582ff8238a4bc8546a23430081) )
 	ROM_LOAD( "82s126.3m",    0x0100, 0x0100, CRC(77245b66) SHA1(0c4d0bee858b97632411c440bea6948a74759746) )	/* timing - not used */
 ROM_END
+
+
+
+/*
+Birdyi by Mama Top
+
+Pcb marked Mama.Top MDK-13V-0  FCC  Made in japan
+
+1x 18.432mhz OSC
+1x Z80 LH0080 by Sharp running at 3.069mhz (18.432mhz/6)
+6x dynamic rams HN472114P-3 near the CPU
+1x dipswitch
+6x HN462732 eproms
+4x 82s129N proms
+1x DIL 18 pin chip with markings scratched out in position 7M
+1x HA1386 amplifier
+No sound chip, probably made of discrete logic?
+
+Note: the marking MDK-xxV-x is sometimes found on Nanao manufactured pcbs for Irem, so it very
+likely that the board was manufactured by Nanao
+(example: Major Title and Gussun Oyoyo are marked MDK-311V-0, M92 and M107 pcbs are marked MDK-321-V0)
+
+Board supplied by Alberto Grego
+Dumped by Corrado Tomaselli
+*/
+
+ROM_START( birdiy )
+	ROM_REGION( 0x10000, "maincpu", 0 )
+	ROM_LOAD( "a6.6a",      0x0000, 0x001000, CRC(3a58f8ad) SHA1(39e990ad4ee1fdec248665149bdb1072c8c01a9a) )
+	ROM_LOAD( "c6.6c",      0x1000, 0x001000, CRC(fec61ea2) SHA1(f7ff528d2bcede2434d0a33ee0193b50113ef720) )
+	ROM_LOAD( "a4.4a",      0x2000, 0x001000, CRC(3392783b) SHA1(e477f4284fd5b6c9f3619bd35cee6dbe8a2456b8) )
+	ROM_LOAD( "c4.4c",      0x3000, 0x001000, CRC(2391d83d) SHA1(6933f1e11a7a84c26a3a45b240e55157a2400e9c) )
+
+	ROM_REGION( 0x2000, "gfx1", 0 )
+	ROM_LOAD( "c1.1c",      0x0000, 0x001000, CRC(8f6bf54f) SHA1(6e09a9c2b143908766837529b174f97dd5058b53) )
+	ROM_LOAD( "c3.3c",      0x1000, 0x001000, CRC(10b55440) SHA1(4f3cf5d8954725cf791146abf8918c43138602e1) )
+
+	ROM_REGION( 0x0120, "proms", 0 )
+	ROM_LOAD( "n82s123n.10n", 0x0000, 0x0020, CRC(ff344446) SHA1(45eb37533da8912645a089b014f3b3384702114a) )
+	ROM_LOAD( "n82s129n.9m",  0x0020, 0x0100, CRC(63efb927) SHA1(5c144a613fc4960a1dfd7ead89e7fee258a63171) )
+
+	ROM_REGION( 0x0200, "namco", 0 )	/* sound PROMs */
+	ROM_LOAD( "n82s129n.4k",  0x0000, 0x0100, CRC(a9cc86bf) SHA1(bbcec0570aeceb582ff8238a4bc8546a23430081) )
+	ROM_LOAD( "n82s129n.6l",  0x0100, 0x0100, CRC(77245b66) SHA1(0c4d0bee858b97632411c440bea6948a74759746) )	/* timing - not used */
+ROM_END
+
 
 ROM_START( mrtnt )
 	ROM_REGION( 0x10000, "maincpu", 0 )
@@ -5732,6 +5879,7 @@ GAME( 1981, hangly,   puckman,  pacman,   pacman,   0,        ROT90,  "hack", "H
 GAME( 1981, hangly2,  puckman,  pacman,   pacman,   0,        ROT90,  "hack", "Hangly-Man (set 2)", GAME_SUPPORTS_SAVE )
 GAME( 1981, hangly3,  puckman,  pacman,   pacman,   0,        ROT90,  "hack", "Hangly-Man (set 3)", GAME_SUPPORTS_SAVE )
 GAME( 1981, popeyeman,puckman,  pacman,   pacman,   0,        ROT90,  "hack", "Popeye-Man", GAME_SUPPORTS_SAVE )
+GAME( 1980, crockman, puckman,  pacman,   pacman,   0,        ROT90,  "bootleg (Rene Pierre)", "Crock-Man", GAME_SUPPORTS_SAVE )
 GAME( 1981, piranhah, puckman,  pacman,   mspacman, 0,        ROT90,  "hack", "Piranha (hack)", GAME_SUPPORTS_SAVE )
 GAME( 1981, crush,    0,        pacman,   maketrax, maketrax, ROT90,  "Kural Samno Electric", "Crush Roller (Kural Samno)", GAME_SUPPORTS_SAVE )
 GAME( 1981, crushbl,  crush,    pacman,   maketrax, 0,        ROT90,  "bootleg", "Crush Roller (bootleg)", GAME_SUPPORTS_SAVE )
@@ -5748,9 +5896,11 @@ GAME( 19??, crushs,   crush,    crushs,   crushs,   0,        ROT90,  "bootleg (
 GAME( 1982, pacplus,  0,        pacman,   pacman,   pacplus,  ROT90,  "Namco (Midway license)", "Pac-Man Plus", GAME_SUPPORTS_SAVE )
 GAME( 1982, joyman,   puckman,  pacman,   pacman,   0,        ROT90,  "hack", "Joyman", GAME_SUPPORTS_SAVE )
 GAME( 1982, ctrpllrp, puckman,  pacman,   pacman,   0,        ROT90,  "hack", "Caterpillar Pacman Hack", GAME_SUPPORTS_SAVE )
-GAME( 1982, eyes,     0,        pacman,   eyes,     eyes,     ROT90,  "Digitrex Techstar (Rock-Ola license)", "Eyes (Digitrex Techstar)", GAME_SUPPORTS_SAVE )
-GAME( 1982, eyes2,    eyes,     pacman,   eyes,     eyes,     ROT90,  "Techstar (Rock-Ola license)", "Eyes (Techstar)", GAME_SUPPORTS_SAVE )
-GAME( 1982, eyeszac,  eyes,     pacman,   eyes,     0,        ROT90,  "bootleg (Zaccaria)", "Eyes (Zaccaria)", GAME_SUPPORTS_SAVE )
+GAME( 1982, eyes,     0,        pacman,   eyes,     eyes,     ROT90,  "Digitrex Techstar (Rock-Ola license)", "Eyes (US set 1)", GAME_SUPPORTS_SAVE )
+GAME( 1982, eyes2,    eyes,     pacman,   eyes,     eyes,     ROT90,  "Techstar (Rock-Ola license)", "Eyes (US set 2)", GAME_SUPPORTS_SAVE )
+GAME( 1982, eyeszac,  eyes,     pacman,   eyes,     eyes,     ROT90,  "Techstar (Zaccaria license)", "Eyes (Italy)", GAME_SUPPORTS_SAVE | GAME_NOT_WORKING ) // bad dump
+GAME( 1982, eyeszacb, eyes,     pacman,   eyes,     0,        ROT90,  "bootleg", "Eyes (bootleg)", GAME_SUPPORTS_SAVE ) // based on Zaccaria version
+GAME( 1983, birdiy,   0,        birdiy,   pacman,   0,        ROT270, "Mama Top", "Birdiy", GAME_SUPPORTS_SAVE )
 GAME( 1983, mrtnt,    0,        pacman,   mrtnt,    eyes,     ROT90,  "Techstar (Telko license)", "Mr. TNT", GAME_SUPPORTS_SAVE )
 GAME( 1983, gorkans,  mrtnt,    pacman,   mrtnt,    0,        ROT90,  "Techstar", "Gorkans", GAME_SUPPORTS_SAVE )
 GAME( 1983, eggor,    0,        pacman,   mrtnt,    eyes,     ROT90,  "Telko", "Eggor", GAME_WRONG_COLORS | GAME_IMPERFECT_SOUND | GAME_SUPPORTS_SAVE )

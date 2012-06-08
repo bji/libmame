@@ -30,7 +30,7 @@ public:
 
 /******************************************************************************/
 
-static ADDRESS_MAP_START( globalfr_map, AS_PROGRAM, 8, globalfr_state )
+static ADDRESS_MAP_START( globalfr_map, AS_PROGRAM, 16, globalfr_state )
     AM_RANGE(0x002000, 0x002fff) AM_RAM
 	AM_RANGE(0x008000, 0x07ffff) AM_ROM AM_REGION("maincpu", 0x8000)
     AM_RANGE(0x0a0000, 0x0a01ff) AM_RAM
@@ -112,11 +112,11 @@ ROM_END
 
 /******************************************************************************/
 
-GAME( 199?, gl_dow,  0,        globalfr, globalfr, 0, ROT0, "Global", "Deals On Wheels (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
-GAME( 199?, gl_dowcl,0,        globalfr, globalfr, 0, ROT0, "Global", "Deals On Wheels Club (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
-GAME( 199?, gl_wywh, 0,        globalfr, globalfr, 0, ROT0, "Global", "Wish You Were Here Club (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
-GAME( 199?, gl_coc,  0,        globalfr, globalfr, 0, ROT0, "Global", "Carry On Clubbin' (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
-GAME( 199?, gl_uyr,  0,        globalfr, globalfr, 0, ROT0, "Global", "Up Yer Riggin Club (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
-GAME( 199?, gl_hbh,  0,        globalfr, globalfr, 0, ROT0, "Global", "Heartbreak Hotel (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
-GAME( 199?, gl_hbhcl,0,        globalfr, globalfr, 0, ROT0, "Global", "Heartbreak Hotel Club (Global) (Stealth)", GAME_REQUIRES_ARTWORK|GAME_NOT_WORKING|GAME_MECHANICAL|GAME_NO_SOUND)
+GAME( 199?, gl_dow,  0,        globalfr, globalfr, 0, ROT0, "Global", "Deals On Wheels (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
+GAME( 199?, gl_dowcl,0,        globalfr, globalfr, 0, ROT0, "Global", "Deals On Wheels Club (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
+GAME( 199?, gl_wywh, 0,        globalfr, globalfr, 0, ROT0, "Global", "Wish You Were Here Club (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
+GAME( 199?, gl_coc,  0,        globalfr, globalfr, 0, ROT0, "Global", "Carry On Clubbin' (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
+GAME( 199?, gl_uyr,  0,        globalfr, globalfr, 0, ROT0, "Global", "Up Yer Riggin Club (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
+GAME( 199?, gl_hbh,  0,        globalfr, globalfr, 0, ROT0, "Global", "Heartbreak Hotel (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
+GAME( 199?, gl_hbhcl,0,        globalfr, globalfr, 0, ROT0, "Global", "Heartbreak Hotel Club (Global) (Stealth)", GAME_IS_SKELETON_MECHANICAL)
 

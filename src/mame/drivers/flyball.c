@@ -83,9 +83,9 @@ static VIDEO_START( flyball )
 }
 
 
-static SCREEN_UPDATE( flyball )
+static SCREEN_UPDATE_IND16( flyball )
 {
-	flyball_state *state = screen->machine().driver_data<flyball_state>();
+	flyball_state *state = screen.machine().driver_data<flyball_state>();
 	int pitcherx = state->m_pitcher_horz;
 	int pitchery = state->m_pitcher_vert - 31;
 
@@ -95,23 +95,20 @@ static SCREEN_UPDATE( flyball )
 	int x;
 	int y;
 
-	tilemap_mark_all_tiles_dirty(state->m_tmap);
+	state->m_tmap->mark_all_dirty();
 
 	/* draw playfield */
-	tilemap_draw(bitmap, cliprect, state->m_tmap, 0, 0);
+	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 
 	/* draw pitcher */
-	drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1], state->m_pitcher_pic ^ 0xf, 0, 1, 0, pitcherx, pitchery, 1);
+	drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1], state->m_pitcher_pic ^ 0xf, 0, 1, 0, pitcherx, pitchery, 1);
 
 	/* draw ball */
 
 	for (y = bally; y < bally + 2; y++)
 		for (x = ballx; x < ballx + 2; x++)
-			if (x >= cliprect->min_x &&
-			    x <= cliprect->max_x &&
-			    y >= cliprect->min_y &&
-			    y <= cliprect->max_y)
-				*BITMAP_ADDR16(bitmap, y, x) = 1;
+			if (cliprect.contains(x, y))
+				bitmap.pix16(y, x) = 1;
 	return 0;
 }
 
@@ -419,10 +416,9 @@ static MACHINE_CONFIG_START( flyball, flyball_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 262)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 0, 239)
-	MCFG_SCREEN_UPDATE(flyball)
+	MCFG_SCREEN_UPDATE_STATIC(flyball)
 
 	MCFG_GFXDECODE(flyball)
 	MCFG_PALETTE_LENGTH(4)

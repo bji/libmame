@@ -17,9 +17,13 @@ class mcr_state : public driver_device
 {
 public:
 	mcr_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT8 *m_videoram;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -48,8 +52,8 @@ MACHINE_START( mcr );
 MACHINE_RESET( mcr );
 MACHINE_START( nflfoot );
 
-INTERRUPT_GEN( mcr_interrupt );
-INTERRUPT_GEN( mcr_ipu_interrupt );
+TIMER_DEVICE_CALLBACK( mcr_interrupt );
+TIMER_DEVICE_CALLBACK( mcr_ipu_interrupt );
 
 WRITE8_HANDLER( mcr_control_port_w );
 
@@ -73,4 +77,4 @@ READ8_HANDLER( twotiger_videoram_r );
 WRITE8_HANDLER( twotiger_videoram_w );
 WRITE8_HANDLER( mcr_91490_videoram_w );
 
-SCREEN_UPDATE( mcr );
+SCREEN_UPDATE_IND16( mcr );

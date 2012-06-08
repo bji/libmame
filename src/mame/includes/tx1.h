@@ -119,7 +119,7 @@ public:
 	UINT8 *m_chr_bmp;
 	UINT8 *m_obj_bmp;
 	UINT8 *m_rod_bmp;
-	bitmap_t *m_bitmap;
+	bitmap_ind16 *m_bitmap;
 };
 
 
@@ -161,8 +161,10 @@ WRITE16_HANDLER( tx1_crtc_w );
 
 PALETTE_INIT( tx1 );
 VIDEO_START( tx1 );
-SCREEN_UPDATE( tx1 );
-SCREEN_EOF( tx1 );
+SCREEN_UPDATE_IND16( tx1_left );
+SCREEN_UPDATE_IND16( tx1_middle );
+SCREEN_UPDATE_IND16( tx1_right );
+SCREEN_VBLANK( tx1 );
 WRITE16_HANDLER( tx1_slincs_w );
 WRITE16_HANDLER( tx1_slock_w );
 WRITE16_HANDLER( tx1_scolst_w );
@@ -171,11 +173,13 @@ WRITE16_HANDLER( tx1_flgcs_w );
 
 PALETTE_INIT( buggyboy );
 VIDEO_START( buggyboy );
-SCREEN_UPDATE( buggyboy );
-SCREEN_EOF( buggyboy );
+SCREEN_UPDATE_IND16( buggyboy_left );
+SCREEN_UPDATE_IND16( buggyboy_middle );
+SCREEN_UPDATE_IND16( buggyboy_right );
+SCREEN_VBLANK( buggyboy );
 
 VIDEO_START( buggybjr );
-SCREEN_UPDATE( buggybjr );
+SCREEN_UPDATE_IND16( buggybjr );
 WRITE16_HANDLER( buggyboy_gas_w );
 WRITE16_HANDLER( buggyboy_sky_w );
 WRITE16_HANDLER( buggyboy_scolst_w );

@@ -62,8 +62,8 @@ static WRITE8_HANDLER( dynadice_videoram_w )
 {
 	dynadice_state *state = space->machine().driver_data<dynadice_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
-	tilemap_mark_all_tiles_dirty(state->m_top_tilemap);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
+	state->m_top_tilemap->mark_all_dirty();
 }
 
 static WRITE8_HANDLER( sound_data_w )
@@ -203,16 +203,16 @@ static VIDEO_START( dynadice )
 	/* pacman - style videoram layout */
 	state->m_bg_tilemap = tilemap_create(machine, get_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 	state->m_top_tilemap = tilemap_create(machine, get_tile_info, tilemap_scan_cols, 8, 8, 2, 32);
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, -16);
+	state->m_bg_tilemap->set_scrollx(0, -16);
 }
 
-static SCREEN_UPDATE( dynadice )
+static SCREEN_UPDATE_IND16( dynadice )
 {
-	dynadice_state *state = screen->machine().driver_data<dynadice_state>();
-	rectangle myclip = *cliprect;
+	dynadice_state *state = screen.machine().driver_data<dynadice_state>();
+	rectangle myclip = cliprect;
 	myclip.max_x = 15;
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, &myclip, state->m_top_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_top_tilemap->draw(bitmap, myclip, 0, 0);
 	return 0;
 }
 
@@ -255,10 +255,9 @@ static MACHINE_CONFIG_START( dynadice, dynadice_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256+16, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 34*8-1, 3*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(dynadice)
+	MCFG_SCREEN_UPDATE_STATIC(dynadice)
 
 	MCFG_GFXDECODE(dynadice)
 	MCFG_PALETTE_LENGTH(8)

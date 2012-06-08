@@ -35,9 +35,9 @@ public:
 
 /* Video Hardware */
 
-static SCREEN_UPDATE( missb2 )
+static SCREEN_UPDATE_IND16( missb2 )
 {
-	missb2_state *state = screen->machine().driver_data<missb2_state>();
+	missb2_state *state = screen.machine().driver_data<missb2_state>();
 	int offs;
 	int sx, sy, xc, yc;
 	int gfx_num, gfx_attr, gfx_offs;
@@ -49,7 +49,7 @@ static SCREEN_UPDATE( missb2 )
 	/* and sprites) are stored in the same memory region, and information on */
 	/* the background character columns is stored in the area dd00-dd3f */
 
-	bitmap_fill(bitmap, cliprect, 255);
+	bitmap.fill(255, cliprect);
 
 	if (!state->m_video_enable)
 		return 0;
@@ -58,7 +58,7 @@ static SCREEN_UPDATE( missb2 )
 	//popmessage("%02x",(*state->m_bgvram) & 0x1f);
 	for (bg_offs = ((*state->m_bgvram) << 4); bg_offs < (((*state->m_bgvram) << 4) | 0xf); bg_offs++)
 	{
-		drawgfx_opaque(bitmap,cliprect,screen->machine().gfx[1],
+		drawgfx_opaque(bitmap,cliprect,screen.machine().gfx[1],
 				bg_offs,
 				1,
 				0,0,
@@ -68,7 +68,7 @@ static SCREEN_UPDATE( missb2 )
 
 	sx = 0;
 
-	prom = screen->machine().region("proms")->base();
+	prom = screen.machine().region("proms")->base();
 	for (offs = 0; offs < state->m_objectram_size; offs += 4)
 	{
 		/* skip empty sprites */
@@ -110,7 +110,7 @@ static SCREEN_UPDATE( missb2 )
 				x = sx + xc * 8;
 				y = (sy + yc * 8) & 0xff;
 
-				if (flip_screen_get(screen->machine()))
+				if (flip_screen_get(screen.machine()))
 				{
 					x = 248 - x;
 					y = 248 - y;
@@ -118,7 +118,7 @@ static SCREEN_UPDATE( missb2 )
 					flipy = !flipy;
 				}
 
-				drawgfx_transpen(bitmap,cliprect,screen->machine().gfx[0],
+				drawgfx_transpen(bitmap,cliprect,screen.machine().gfx[0],
 						code,
 						0,
 						flipx,flipy,
@@ -476,10 +476,9 @@ static MACHINE_CONFIG_START( missb2, missb2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(missb2)
+	MCFG_SCREEN_UPDATE_STATIC(missb2)
 
 	MCFG_GFXDECODE(missb2)
 	MCFG_PALETTE_LENGTH(512)

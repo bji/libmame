@@ -257,7 +257,7 @@ public:
 	INT16 m_scanline_cnt;
 
 
-	bitmap_t *m_tmp_bitmap[2];
+	bitmap_ind16 *m_tmp_bitmap[2];
 
 	INT32 get_scale(INT32 index)
 	{
@@ -321,7 +321,7 @@ static WRITE16_HANDLER(wheelfir_blit_w)
 
 			if(x<512 && y <512)
 			{
-				*BITMAP_ADDR16(state->m_tmp_bitmap[LAYER_BG], y, x) = sixdat;
+				state->m_tmp_bitmap[LAYER_BG]->pix16(y, x) = sixdat;
 			}
 		}
 
@@ -539,7 +539,7 @@ static WRITE16_HANDLER(wheelfir_blit_w)
 						//hack for clear
 						if(screen_x >0 && screen_y >0 && screen_x < width && screen_y <height)
 						{
-					//      *BITMAP_ADDR16(state->m_tmp_bitmap[vpage], screen_y , screen_x ) =0;
+					//      state->m_tmp_bitmap[vpage]->pix16(screen_y , screen_x ) =0;
 						}
 					}
 					else
@@ -548,7 +548,7 @@ static WRITE16_HANDLER(wheelfir_blit_w)
 
 						if(pix && screen_x >0 && screen_y >0 && screen_x < width && screen_y <height)
 						{
-							*BITMAP_ADDR16(state->m_tmp_bitmap[vpage], screen_y , screen_x ) = pix;
+							state->m_tmp_bitmap[vpage]->pix16(screen_y , screen_x ) = pix;
 						}
 					}
 				}
@@ -560,20 +560,20 @@ static WRITE16_HANDLER(wheelfir_blit_w)
 static VIDEO_START(wheelfir)
 {
 	wheelfir_state *state = machine.driver_data<wheelfir_state>();
-	state->m_tmp_bitmap[0] = auto_bitmap_alloc(machine, 512, 512, BITMAP_FORMAT_INDEXED16);
-	state->m_tmp_bitmap[1] = auto_bitmap_alloc(machine, 512, 512, BITMAP_FORMAT_INDEXED16);
+	state->m_tmp_bitmap[0] = auto_bitmap_ind16_alloc(machine, 512, 512);
+	state->m_tmp_bitmap[1] = auto_bitmap_ind16_alloc(machine, 512, 512);
 }
 
-static SCREEN_UPDATE(wheelfir)
+static SCREEN_UPDATE_IND16(wheelfir)
 {
-	wheelfir_state *state = screen->machine().driver_data<wheelfir_state>();
+	wheelfir_state *state = screen.machine().driver_data<wheelfir_state>();
 
-	bitmap_fill(bitmap, cliprect,0);
+	bitmap.fill(0, cliprect);
 
 	for(int y=0;y<NUM_SCANLINES;++y)
 	{
-		UINT16 *source = BITMAP_ADDR16(state->m_tmp_bitmap[LAYER_BG],( (state->m_scanlines[y].y)&511), 0);
-		UINT16 *dest = BITMAP_ADDR16(bitmap, y, 0);
+		UINT16 *source = &state->m_tmp_bitmap[LAYER_BG]->pix16(( (state->m_scanlines[y].y)&511));
+		UINT16 *dest = &bitmap.pix16(y);
 
 		for (int x=0;x<336;x++)
 		{
@@ -583,11 +583,11 @@ static SCREEN_UPDATE(wheelfir)
 		}
 	}
 
-	copybitmap_trans(bitmap, state->m_tmp_bitmap[LAYER_FG], 0, 0, 0, 0, cliprect, 0);
+	copybitmap_trans(bitmap, *state->m_tmp_bitmap[LAYER_FG], 0, 0, 0, 0, cliprect, 0);
 
 /*
     {
-        bitmap_fill(state->m_tmp_bitmap[LAYER_BG], &screen->visible_area(),0);
+        state->m_tmp_bitmap[LAYER_BG]->fill(0, screen.visible_area());
 
     }
 */
@@ -595,10 +595,14 @@ static SCREEN_UPDATE(wheelfir)
 	return 0;
 }
 
-static SCREEN_EOF( wheelfir )
+static SCREEN_VBLANK( wheelfir )
 {
-	wheelfir_state *state = machine.driver_data<wheelfir_state>();
-	bitmap_fill(state->m_tmp_bitmap[LAYER_FG], &machine.primary_screen->visible_area(),0);
+	// rising edge
+	if (vblank_on)
+	{
+		wheelfir_state *state = screen.machine().driver_data<wheelfir_state>();
+		state->m_tmp_bitmap[LAYER_FG]->fill(0, screen.visible_area());
+	}
 }
 
 
@@ -818,11 +822,10 @@ static MACHINE_CONFIG_START( wheelfir, wheelfir_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(336, NUM_SCANLINES+NUM_VBLANK_LINES)
 	MCFG_SCREEN_VISIBLE_AREA(0,335, 0, NUM_SCANLINES-1)
-	MCFG_SCREEN_UPDATE(wheelfir)
-	MCFG_SCREEN_EOF(wheelfir)
+	MCFG_SCREEN_UPDATE_STATIC(wheelfir)
+	MCFG_SCREEN_VBLANK_STATIC(wheelfir)
 
 	MCFG_PALETTE_LENGTH(NUM_COLORS)
 

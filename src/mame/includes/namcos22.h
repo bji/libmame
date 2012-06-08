@@ -54,7 +54,6 @@ public:
 	int m_mRenderBufSize;
 	UINT16 m_mRenderBufData[MAX_RENDER_CMD_SEQ];
 	UINT32 m_mSys22PortBits;
-	int m_mFrameCount;
 	int m_irq_state;
 	int m_mDspUploadState;
 	int m_mUploadDestIdx;
@@ -105,7 +104,7 @@ public:
 	const UINT8 *m_mpPolyM;
 	const UINT8 *m_mpPolyL;
 	UINT8 *m_dirtypal;
-	bitmap_t *m_mix_bitmap;
+	bitmap_ind16 *m_mix_bitmap;
 	tilemap_t *m_bgtilemap;
 };
 
@@ -145,10 +144,10 @@ WRITE32_HANDLER( namcos22_dspram_w );
 
 
 VIDEO_START( namcos22 );
-SCREEN_UPDATE( namcos22 );
+SCREEN_UPDATE_RGB32( namcos22 );
 
 VIDEO_START( namcos22s );
-SCREEN_UPDATE( namcos22s );
+SCREEN_UPDATE_RGB32( namcos22s );
 
 void namcos22_draw_direct_poly( running_machine &machine, const UINT16 *pSource );
 UINT32 namcos22_point_rom_r( running_machine &machine, offs_t offs );

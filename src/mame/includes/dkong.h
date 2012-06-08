@@ -96,7 +96,7 @@ public:
 	/* video state */
 	tilemap_t *m_bg_tilemap;
 
-	bitmap_t *		m_bg_bits;
+	bitmap_ind16 m_bg_bits;
 	const UINT8 *	m_color_codes;
 	emu_timer *		m_scanline_timer;
 	INT8			m_vidhw;			/* Selected video hardware RS Conversion / TKG04 */
@@ -138,6 +138,7 @@ public:
 #endif
 	/* machine states */
 	UINT8	            m_hardware_type;
+	UINT8				m_nmi_mask;
 
 	/* sound state */
 	const UINT8       *m_snd_rom;
@@ -145,7 +146,7 @@ public:
 	/* video state */
 	tilemap_t           *m_bg_tilemap;
 
-	bitmap_t          *m_bg_bits;
+	bitmap_ind16  m_bg_bits;
 	const UINT8 *     m_color_codes;
 	emu_timer *       m_scanline_timer;
 	INT8              m_vidhw;			/* Selected video hardware RS Conversion / TKG04 */
@@ -217,9 +218,9 @@ PALETTE_INIT( radarscp1 );
 PALETTE_INIT( dkong3 );
 
 VIDEO_START( dkong );
-SCREEN_UPDATE( dkong );
-SCREEN_UPDATE( pestplce );
-SCREEN_UPDATE( spclforc );
+SCREEN_UPDATE_IND16( dkong );
+SCREEN_UPDATE_IND16( pestplce );
+SCREEN_UPDATE_IND16( spclforc );
 
 /*----------- defined in audio/dkong.c -----------*/
 

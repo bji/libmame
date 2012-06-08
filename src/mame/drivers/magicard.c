@@ -379,13 +379,13 @@ static VIDEO_START(magicard)
 
 }
 
-static SCREEN_UPDATE(magicard)
+static SCREEN_UPDATE_RGB32(magicard)
 {
-	magicard_state *state = screen->machine().driver_data<magicard_state>();
+	magicard_state *state = screen.machine().driver_data<magicard_state>();
 	int x,y;
 	UINT32 count;
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine())); //TODO
+	bitmap.fill(get_black_pen(screen.machine()), cliprect); //TODO
 
 	if(!(SCC_DE_VREG)) //display enable
 		return 0;
@@ -402,23 +402,23 @@ static SCREEN_UPDATE(magicard)
 
 				color = ((state->m_magicram[count]) & 0x000f)>>0;
 
-				if(((x*4)+3)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, (x*4)+3) = screen->machine().pens[color];
+				if(cliprect.contains((x*4)+3, y))
+					bitmap.pix32(y, (x*4)+3) = screen.machine().pens[color];
 
 				color = ((state->m_magicram[count]) & 0x00f0)>>4;
 
-				if(((x*4)+2)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, (x*4)+2) = screen->machine().pens[color];
+				if(cliprect.contains((x*4)+2, y))
+					bitmap.pix32(y, (x*4)+2) = screen.machine().pens[color];
 
 				color = ((state->m_magicram[count]) & 0x0f00)>>8;
 
-				if(((x*4)+1)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, (x*4)+1) = screen->machine().pens[color];
+				if(cliprect.contains((x*4)+1, y))
+					bitmap.pix32(y, (x*4)+1) = screen.machine().pens[color];
 
 				color = ((state->m_magicram[count]) & 0xf000)>>12;
 
-				if(((x*4)+0)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, (x*4)+0) = screen->machine().pens[color];
+				if(cliprect.contains((x*4)+0, y))
+					bitmap.pix32(y, (x*4)+0) = screen.machine().pens[color];
 
 				count++;
 			}
@@ -434,13 +434,13 @@ static SCREEN_UPDATE(magicard)
 
 				color = ((state->m_magicram[count]) & 0x00ff)>>0;
 
-				if(((x*2)+1)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, (x*2)+1) = screen->machine().pens[color];
+				if(cliprect.contains((x*2)+1, y))
+					bitmap.pix32(y, (x*2)+1) = screen.machine().pens[color];
 
 				color = ((state->m_magicram[count]) & 0xff00)>>8;
 
-				if(((x*2)+0)<screen->visible_area().max_x && ((y)+0)<screen->visible_area().max_y)
-					*BITMAP_ADDR32(bitmap, y, (x*2)+0) = screen->machine().pens[color];
+				if(cliprect.contains((x*2)+0, y))
+					bitmap.pix32(y, (x*2)+0) = screen.machine().pens[color];
 
 				count++;
 			}
@@ -710,10 +710,9 @@ static MACHINE_CONFIG_START( magicard, magicard_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(400, 300)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 0, 256-1) //dynamic resolution,TODO
-	MCFG_SCREEN_UPDATE(magicard)
+	MCFG_SCREEN_UPDATE_STATIC(magicard)
 
 	MCFG_PALETTE_LENGTH(0x100)
 

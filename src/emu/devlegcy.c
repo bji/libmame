@@ -200,12 +200,11 @@ void legacy_device_base::static_set_inline_float(device_t &device, UINT32 offset
 //  checks on a device configuration
 //-------------------------------------------------
 
-bool legacy_device_base::device_validity_check(emu_options &options, const game_driver &driver) const
+void legacy_device_base::device_validity_check(validity_checker &valid) const
 {
 	device_validity_check_func validity_func = reinterpret_cast<device_validity_check_func>(get_legacy_fct(DEVINFO_FCT_VALIDITY_CHECK));
 	if (validity_func != NULL)
-		return (*validity_func)(&driver, this, options);
-	return false;
+		(*validity_func)(&mconfig().gamedrv(), this, mconfig().options());
 }
 
 
@@ -239,7 +238,7 @@ void legacy_device_base::device_reset()
 
 void legacy_device_base::device_stop()
 {
-	if (m_started)
+	if (started())
 	{
 		device_stop_func stop_func = reinterpret_cast<device_stop_func>(get_legacy_fct(DEVINFO_FCT_STOP));
 		if (stop_func != NULL)
@@ -271,89 +270,4 @@ void legacy_sound_device_base::sound_stream_update(sound_stream &stream, stream_
 {
 	// should never get here
 	fatalerror("legacy_sound_device_base::sound_stream_update called; not applicable to legacy sound devices\n");
-}
-
-
-
-//**************************************************************************
-//  LEGACY MEMORY DEVICE
-//**************************************************************************
-
-//-------------------------------------------------
-//  legacy_memory_device_base - constructor
-//-------------------------------------------------
-
-legacy_memory_device_base::legacy_memory_device_base(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, UINT32 clock, device_get_config_func get_config)
-	: legacy_device_base(mconfig, type, tag, owner, clock, get_config),
-	  device_memory_interface(mconfig, *this)
-{
-	memset(&m_space_config, 0, sizeof(m_space_config));
-}
-
-
-//-------------------------------------------------
-//  device_config_complete - update configuration
-//  based on completed device setup
-//-------------------------------------------------
-
-void legacy_memory_device_base::device_config_complete()
-{
-	m_space_config.m_name = "memory";
-	m_space_config.m_endianness = static_cast<endianness_t>(get_legacy_int(DEVINFO_INT_ENDIANNESS));
-	m_space_config.m_databus_width = get_legacy_int(DEVINFO_INT_DATABUS_WIDTH);
-	m_space_config.m_addrbus_width = get_legacy_int(DEVINFO_INT_ADDRBUS_WIDTH);
-	m_space_config.m_addrbus_shift = get_legacy_int(DEVINFO_INT_ADDRBUS_SHIFT);
-	m_space_config.m_logaddr_width = m_space_config.m_addrbus_width;
-	m_space_config.m_page_shift = 0;
-	m_space_config.m_internal_map = reinterpret_cast<address_map_constructor>(get_legacy_fct(DEVINFO_PTR_INTERNAL_MEMORY_MAP));
-	m_space_config.m_default_map = reinterpret_cast<address_map_constructor>(get_legacy_fct(DEVINFO_PTR_DEFAULT_MEMORY_MAP));
-}
-
-
-
-//**************************************************************************
-//  LEGACY NVRAM DEVICE
-//**************************************************************************
-
-//-------------------------------------------------
-//  legacy_nvram_device_base - constructor
-//-------------------------------------------------
-
-legacy_nvram_device_base::legacy_nvram_device_base(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, UINT32 clock, device_get_config_func get_config)
-	: legacy_device_base(mconfig, type, tag, owner, clock, get_config),
-	  device_nvram_interface(mconfig, *this)
-{
-}
-
-
-//-------------------------------------------------
-//  nvram_default - generate the default NVRAM
-//-------------------------------------------------
-
-void legacy_nvram_device_base::nvram_default()
-{
-	device_nvram_func nvram_func = reinterpret_cast<device_nvram_func>(get_legacy_fct(DEVINFO_FCT_NVRAM));
-	(*nvram_func)(this, NULL, FALSE);
-}
-
-
-//-------------------------------------------------
-//  nvram_read - read NVRAM from the given file
-//-------------------------------------------------
-
-void legacy_nvram_device_base::nvram_read(emu_file &file)
-{
-	device_nvram_func nvram_func = reinterpret_cast<device_nvram_func>(get_legacy_fct(DEVINFO_FCT_NVRAM));
-	(*nvram_func)(this, &file, FALSE);
-}
-
-
-//-------------------------------------------------
-//  nvram_write - write NVRAM to the given file
-//-------------------------------------------------
-
-void legacy_nvram_device_base::nvram_write(emu_file &file)
-{
-	device_nvram_func nvram_func = reinterpret_cast<device_nvram_func>(get_legacy_fct(DEVINFO_FCT_NVRAM));
-	(*nvram_func)(this, &file, TRUE);
 }

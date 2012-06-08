@@ -264,7 +264,6 @@ Stephh's notes (based on the games Z80 code and some tests) :
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "deprecat.h"
 #include "cpu/m6805/m6805.h"
 #include "sound/ay8910.h"
 #include "includes/slapfght.h"
@@ -735,11 +734,24 @@ static const ay8910_interface ay8910_interface_2 =
 	DEVCB_NULL
 };
 
-static SCREEN_EOF( perfrman )
+static SCREEN_VBLANK( perfrman )
 {
-	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
-	buffer_spriteram_w(space, 0, 0);
+	// rising edge
+	if (vblank_on)
+	{
+		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
+		buffer_spriteram_w(space, 0, 0);
+	}
 }
+
+static INTERRUPT_GEN( vblank_irq )
+{
+	slapfght_state *state = device->machine().driver_data<slapfght_state>();
+
+	if(state->m_irq_mask)
+		device_set_input_line(device, 0, HOLD_LINE);
+}
+
 
 static MACHINE_CONFIG_START( perfrman, slapfght_state )
 
@@ -747,11 +759,11 @@ static MACHINE_CONFIG_START( perfrman, slapfght_state )
 	MCFG_CPU_ADD("maincpu", Z80,16000000/4)			/* 4MHz ???, 16MHz Oscillator */
 	MCFG_CPU_PROGRAM_MAP(perfrman_map)
 	MCFG_CPU_IO_MAP(slapfght_io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80,16000000/8)			/* 2MHz ???, 16MHz Oscillator */
 	MCFG_CPU_PROGRAM_MAP(perfrman_sound_map)
-	MCFG_CPU_VBLANK_INT_HACK(getstar_interrupt,4)	/* music speed, verified */
+	MCFG_CPU_PERIODIC_INT(getstar_interrupt,4*60)	/* music speed, verified */
 
 	MCFG_QUANTUM_TIME(attotime::from_hz(600))		/* 10 CPU slices per frame - enough for the sound CPU to read all commands */
 
@@ -763,11 +775,10 @@ static MACHINE_CONFIG_START( perfrman, slapfght_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 34*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(perfrman)
-	MCFG_SCREEN_EOF(perfrman)
+	MCFG_SCREEN_UPDATE_STATIC(perfrman)
+	MCFG_SCREEN_VBLANK_STATIC(perfrman)
 
 	MCFG_GFXDECODE(perfrman)
 	MCFG_PALETTE_LENGTH(256)
@@ -794,7 +805,7 @@ static MACHINE_CONFIG_START( tigerhb, slapfght_state )
 	MCFG_CPU_ADD("maincpu", Z80, 6000000)
 	MCFG_CPU_PROGRAM_MAP(tigerh_map)
 	MCFG_CPU_IO_MAP(tigerhb_io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, 6000000)
 	MCFG_CPU_PROGRAM_MAP(slapfght_sound_map)
@@ -810,11 +821,10 @@ static MACHINE_CONFIG_START( tigerhb, slapfght_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 36*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(slapfight)
-	MCFG_SCREEN_EOF(perfrman)
+	MCFG_SCREEN_UPDATE_STATIC(slapfight)
+	MCFG_SCREEN_VBLANK_STATIC(perfrman)
 
 	MCFG_GFXDECODE(slapfght)
 	MCFG_PALETTE_LENGTH(256)
@@ -840,7 +850,7 @@ static MACHINE_CONFIG_START( tigerh, slapfght_state )
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_36MHz/6) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(tigerh_map)
 	MCFG_CPU_IO_MAP(tigerh_io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_36MHz/12) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(slapfght_sound_map)
@@ -859,11 +869,10 @@ static MACHINE_CONFIG_START( tigerh, slapfght_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 36*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(slapfight)
-	MCFG_SCREEN_EOF(perfrman)
+	MCFG_SCREEN_UPDATE_STATIC(slapfight)
+	MCFG_SCREEN_VBLANK_STATIC(perfrman)
 
 	MCFG_GFXDECODE(slapfght)
 	MCFG_PALETTE_LENGTH(256)
@@ -890,11 +899,11 @@ static MACHINE_CONFIG_START( slapfigh, slapfght_state )
 	MCFG_CPU_ADD("maincpu",Z80, XTAL_36MHz/6) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(slapfght_map)
 	MCFG_CPU_IO_MAP(slapfght_io_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_36MHz/12) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(slapfght_sound_map)
-	MCFG_CPU_VBLANK_INT_HACK(getstar_interrupt, 3)
+	MCFG_CPU_PERIODIC_INT(getstar_interrupt, 3*60)
 
 	MCFG_CPU_ADD("mcu", M68705, XTAL_36MHz/12) /* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(slapfight_m68705_map)
@@ -909,11 +918,10 @@ static MACHINE_CONFIG_START( slapfigh, slapfght_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 36*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(slapfight)
-	MCFG_SCREEN_EOF(perfrman)
+	MCFG_SCREEN_UPDATE_STATIC(slapfight)
+	MCFG_SCREEN_VBLANK_STATIC(perfrman)
 
 	MCFG_GFXDECODE(slapfght)
 	MCFG_PALETTE_LENGTH(256)

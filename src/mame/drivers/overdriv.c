@@ -79,7 +79,7 @@ static TIMER_DEVICE_CALLBACK( overdriv_cpuA_scanline )
 	int scanline = param;
 
 	/* TODO: irqs routines are TOO slow right now, it ends up firing spurious irqs for whatever reason (shared ram fighting?) */
-	/*       this is a temporary solution to get rid of deprecat.h and the crashes, but also makes the game timer to be too slow */
+	/*       this is a temporary solution to get rid of deprecat lib and the crashes, but also makes the game timer to be too slow */
 	if(scanline == 256 && timer.machine().primary_screen->frame_number() & 1) // vblank-out irq
 		cputag_set_input_line(timer.machine(), "maincpu", 4, HOLD_LINE);
 	else if((scanline % 128) == 0) // timer irq
@@ -356,10 +356,9 @@ static MACHINE_CONFIG_START( overdriv, overdriv_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 40*8)
 	MCFG_SCREEN_VISIBLE_AREA(13*8, (64-13)*8-1, 0*8, 32*8-1 )
-	MCFG_SCREEN_UPDATE(overdriv)
+	MCFG_SCREEN_UPDATE_STATIC(overdriv)
 
 //  MCFG_GFXDECODE(overdriv)
 	MCFG_PALETTE_LENGTH(2048)

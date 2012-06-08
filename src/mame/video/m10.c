@@ -42,13 +42,13 @@ static const gfx_layout charlayout =
 	8*8	/* every char takes 8 consecutive bytes */
 };
 
-static UINT32 tilemap_scan( UINT32 col, UINT32 row, UINT32 num_cols, UINT32 num_rows )
+static TILEMAP_MAPPER( tilemap_scan )
 {
 	return (31 - col) * 32 + row;
 }
 
 
-static void get_tile_info( running_machine &machine, tile_data *tileinfo, tilemap_memory_index tile_index, void *param )
+static void get_tile_info( running_machine &machine, tile_data &tileinfo, tilemap_memory_index tile_index, void *param )
 {
 	m10_state *state = machine.driver_data<m10_state>();
 
@@ -62,7 +62,7 @@ WRITE8_HANDLER( m10_colorram_w )
 
 	if (state->m_colorram[offset] != data)
 	{
-		tilemap_mark_tile_dirty(state->m_tx_tilemap, offset);
+		state->m_tx_tilemap->mark_tile_dirty(offset);
 		state->m_colorram[offset] = data;
 	}
 }
@@ -92,14 +92,14 @@ WRITE8_HANDLER( m15_chargen_w )
 }
 
 
-INLINE void plot_pixel_m10( running_machine &machine, bitmap_t *bm, int x, int y, int col )
+INLINE void plot_pixel_m10( running_machine &machine, bitmap_ind16 &bm, int x, int y, int col )
 {
 	m10_state *state = machine.driver_data<m10_state>();
 
 	if (!state->m_flip)
-		*BITMAP_ADDR16(bm, y, x) = col;
+		bm.pix16(y, x) = col;
 	else
-		*BITMAP_ADDR16(bm, (IREMM10_VBSTART - 1) - (y - IREMM10_VBEND) + 6,
+		bm.pix16((IREMM10_VBSTART - 1) - (y - IREMM10_VBEND) + 6,
 				(IREMM10_HBSTART - 1) - (x - IREMM10_HBEND)) = col; // only when flip_screen(?)
 }
 
@@ -108,9 +108,9 @@ VIDEO_START( m10 )
 	m10_state *state = machine.driver_data<m10_state>();
 
 	state->m_tx_tilemap = tilemap_create(machine, get_tile_info, tilemap_scan, 8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_tx_tilemap, 0);
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0, 62);
-	tilemap_set_scrolldy(state->m_tx_tilemap, 0, 0);
+	state->m_tx_tilemap->set_transparent_pen(0);
+	state->m_tx_tilemap->set_scrolldx(0, 62);
+	state->m_tx_tilemap->set_scrolldy(0, 0);
 
 	state->m_back_gfx = gfx_element_alloc(machine, &backlayout, state->m_chargen, 8, 0);
 
@@ -125,27 +125,27 @@ VIDEO_START( m15 )
 	machine.gfx[0] = gfx_element_alloc(machine, &charlayout, state->m_chargen, 8, 0);
 
 	state->m_tx_tilemap = tilemap_create(machine, get_tile_info,tilemap_scan, 8, 8, 32, 32);
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0, 116);
-	tilemap_set_scrolldy(state->m_tx_tilemap, 0, 0);
+	state->m_tx_tilemap->set_scrolldx(0, 116);
+	state->m_tx_tilemap->set_scrolldy(0, 0);
 
 	return ;
 }
 
 /***************************************************************************
 
-  Draw the game screen in the given bitmap_t.
+  Draw the game screen in the given bitmap_ind16.
 
 ***************************************************************************/
 
-SCREEN_UPDATE( m10 )
+SCREEN_UPDATE_IND16( m10 )
 {
-	m10_state *state = screen->machine().driver_data<m10_state>();
+	m10_state *state = screen.machine().driver_data<m10_state>();
 	int offs;
 	static const int color[4]= { 3, 3, 5, 5 };
 	static const int xpos[4] = { 4*8, 26*8, 7*8, 6*8};
 	int i;
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	for (i = 0; i < 4; i++)
 		if (state->m_flip)
@@ -158,14 +158,14 @@ SCREEN_UPDATE( m10 )
 		int y;
 
 		for (y = IREMM10_VBEND; y < IREMM10_VBSTART; y++)
-			plot_pixel_m10(screen->machine(), bitmap, 16, y, 1);
+			plot_pixel_m10(screen.machine(), bitmap, 16, y, 1);
 	}
 
 	for (offs = state->m_videoram_size - 1; offs >= 0; offs--)
-		tilemap_mark_tile_dirty(state->m_tx_tilemap, offs);
+		state->m_tx_tilemap->mark_tile_dirty(offs);
 
-	tilemap_set_flip(state->m_tx_tilemap, state->m_flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
-	tilemap_draw(bitmap, cliprect, state->m_tx_tilemap, 0, 0);
+	state->m_tx_tilemap->set_flip(state->m_flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -173,21 +173,21 @@ SCREEN_UPDATE( m10 )
 
 /***************************************************************************
 
-  Draw the game screen in the given bitmap_t.
+  Draw the game screen in the given bitmap_ind16.
 
 ***************************************************************************/
 
-SCREEN_UPDATE( m15 )
+SCREEN_UPDATE_IND16( m15 )
 {
-	m10_state *state = screen->machine().driver_data<m10_state>();
+	m10_state *state = screen.machine().driver_data<m10_state>();
 	int offs;
 
 	for (offs = state->m_videoram_size - 1; offs >= 0; offs--)
-		tilemap_mark_tile_dirty(state->m_tx_tilemap, offs);
+		state->m_tx_tilemap->mark_tile_dirty(offs);
 
-	//tilemap_mark_all_tiles_dirty(state->m_tx_tilemap);
-	tilemap_set_flip(state->m_tx_tilemap, state->m_flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
-	tilemap_draw(bitmap, cliprect, state->m_tx_tilemap, 0, 0);
+	//state->m_tx_tilemap->mark_all_dirty();
+	state->m_tx_tilemap->set_flip(state->m_flip ? TILEMAP_FLIPX | TILEMAP_FLIPY : 0);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }

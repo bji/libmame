@@ -39,7 +39,7 @@ static WRITE8_HANDLER( cball_vram_w )
 	cball_state *state = space->machine().driver_data<cball_state>();
 
 	state->m_video_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -50,15 +50,15 @@ static VIDEO_START( cball )
 }
 
 
-static SCREEN_UPDATE( cball )
+static SCREEN_UPDATE_IND16( cball )
 {
-	cball_state *state = screen->machine().driver_data<cball_state>();
+	cball_state *state = screen.machine().driver_data<cball_state>();
 
 	/* draw playfield */
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* draw sprite */
-	drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1],
+	drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1],
 		state->m_video_ram[0x399] >> 4,
 		0,
 		0, 0,
@@ -235,10 +235,9 @@ static MACHINE_CONFIG_START( cball, cball_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 262)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 0, 223)
-	MCFG_SCREEN_UPDATE(cball)
+	MCFG_SCREEN_UPDATE_STATIC(cball)
 
 	MCFG_GFXDECODE(cball)
 	MCFG_PALETTE_LENGTH(6)

@@ -126,6 +126,9 @@ public:
 	// sound stream update overrides
 	virtual void sound_stream_update(sound_stream &stream, stream_sample_t **inputs, stream_sample_t **outputs, int samples) = 0;
 
+	// stream creation
+	sound_stream *stream_alloc(int inputs, int outputs, int sample_rate);
+
 	// helpers
 	int inputs() const;
 	int outputs() const;
@@ -135,7 +138,7 @@ public:
 
 protected:
 	// optional operation overrides
-	virtual bool interface_validity_check(emu_options &options, const game_driver &driver) const;
+	virtual void interface_validity_check(validity_checker &valid) const;
 	virtual void interface_pre_start();
 	virtual void interface_post_start();
 	virtual void interface_pre_reset();
@@ -146,5 +149,7 @@ protected:
 	int				m_auto_allocated_inputs;	// number of auto-allocated inputs targeting us
 };
 
+// iterator
+typedef device_interface_iterator<device_sound_interface> sound_interface_iterator;
 
 #endif	/* __DISOUND_H__ */

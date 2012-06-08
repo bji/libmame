@@ -55,7 +55,7 @@ WRITE8_HANDLER( goldstar_fg_vidram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_fg_vidram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( goldstar_fg_atrram_w )
@@ -63,7 +63,7 @@ WRITE8_HANDLER( goldstar_fg_atrram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_fg_atrram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_goldstar_fg_tile_info )
@@ -114,7 +114,7 @@ WRITE8_HANDLER( goldstar_reel1_ram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_reel1_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel1_tilemap,offset);
+	state->m_reel1_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_goldstar_reel1_tile_info )
@@ -134,7 +134,7 @@ WRITE8_HANDLER( goldstar_reel2_ram_w )
 {
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 	state->m_reel2_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel2_tilemap,offset);
+	state->m_reel2_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_goldstar_reel2_tile_info )
@@ -154,7 +154,7 @@ WRITE8_HANDLER( goldstar_reel3_ram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_reel3_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel3_tilemap,offset);
+	state->m_reel3_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_goldstar_reel3_tile_info )
@@ -174,7 +174,7 @@ WRITE8_HANDLER( unkch_reel1_attrram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_reel1_attrram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel1_tilemap,offset);
+	state->m_reel1_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( unkch_reel2_attrram_w )
@@ -182,7 +182,7 @@ WRITE8_HANDLER( unkch_reel2_attrram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_reel2_attrram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel2_tilemap,offset);
+	state->m_reel2_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -191,7 +191,7 @@ WRITE8_HANDLER( unkch_reel3_attrram_w )
 	goldstar_state *state = space->machine().driver_data<goldstar_state>();
 
 	state->m_reel3_attrram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel3_tilemap,offset);
+	state->m_reel3_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -245,12 +245,12 @@ VIDEO_START( goldstar )
 	state->m_reel2_tilemap = tilemap_create(machine,get_goldstar_reel2_tile_info,tilemap_scan_rows,8,32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_goldstar_reel3_tile_info,tilemap_scan_rows,8,32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
+	state->m_reel2_tilemap->set_scroll_cols(64);
+	state->m_reel3_tilemap->set_scroll_cols(64);
 
 	state->m_fg_tilemap = tilemap_create(machine,get_goldstar_fg_tile_info,tilemap_scan_rows,8,8, 64, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	// is there an enable reg for this game?
 	state->m_cm_enable_reg = 0x0b;
@@ -262,10 +262,10 @@ VIDEO_START( bingowng )
 
 	state->m_reel1_tilemap = tilemap_create(machine,get_goldstar_reel1_tile_info,tilemap_scan_rows,8,32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
 
 	state->m_fg_tilemap = tilemap_create(machine,get_goldstar_fg_tile_info,tilemap_scan_rows,8,8, 64, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	// is there an enable reg for this game?
 	state->m_cm_enable_reg = 0x0b;
@@ -279,12 +279,12 @@ VIDEO_START( magical )
 	state->m_reel2_tilemap = tilemap_create(machine,get_goldstar_reel2_tile_info,tilemap_scan_rows,8,32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_goldstar_reel3_tile_info,tilemap_scan_rows,8,32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 32);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 32);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 32);
+	state->m_reel1_tilemap->set_scroll_cols(32);
+	state->m_reel2_tilemap->set_scroll_cols(32);
+	state->m_reel3_tilemap->set_scroll_cols(32);
 
 	state->m_fg_tilemap = tilemap_create(machine,get_magical_fg_tile_info,tilemap_scan_rows,8,8, 64, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	// is there an enable reg for this game?
 	state->m_cm_enable_reg = 0x0b;
@@ -298,16 +298,16 @@ VIDEO_START( unkch )
 	state->m_reel2_tilemap = tilemap_create(machine,get_unkch_reel2_tile_info,tilemap_scan_rows,8,32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_unkch_reel3_tile_info,tilemap_scan_rows,8,32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 32);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 32);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 32);
+	state->m_reel1_tilemap->set_scroll_cols(32);
+	state->m_reel2_tilemap->set_scroll_cols(32);
+	state->m_reel3_tilemap->set_scroll_cols(32);
 
 	state->m_cmaster_girl_num = 0;
 	state->m_cmaster_girl_pal = 0;
 	state->m_unkch_vidreg = 0x00;
 
 	state->m_fg_tilemap = tilemap_create(machine,get_cherrym_fg_tile_info,tilemap_scan_rows,8,8, 64, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	state->m_cm_enable_reg = 0x0b;
 }
@@ -320,15 +320,15 @@ VIDEO_START( cherrym )
 	state->m_reel2_tilemap = tilemap_create(machine,get_goldstar_reel2_tile_info,tilemap_scan_rows,8,32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_goldstar_reel3_tile_info,tilemap_scan_rows,8,32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
+	state->m_reel2_tilemap->set_scroll_cols(64);
+	state->m_reel3_tilemap->set_scroll_cols(64);
 
 	state->m_cmaster_girl_num = 0;
 	state->m_cmaster_girl_pal = 0;
 
 	state->m_fg_tilemap = tilemap_create(machine,get_cherrym_fg_tile_info,tilemap_scan_rows,8,8, 64, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	state->m_cm_enable_reg = 0x0b;
 }
@@ -343,9 +343,9 @@ WRITE8_HANDLER( goldstar_fa00_w )
 
 	/* bit 2 selects background gfx color (I think) */
 	state->m_bgcolor = (data & 0x04) >> 2;
-	tilemap_mark_all_tiles_dirty (state->m_reel1_tilemap);
-	tilemap_mark_all_tiles_dirty (state->m_reel2_tilemap);
-	tilemap_mark_all_tiles_dirty (state->m_reel3_tilemap);
+	state->m_reel1_tilemap->mark_all_dirty();
+	state->m_reel2_tilemap->mark_all_dirty();
+	state->m_reel3_tilemap->mark_all_dirty();
 }
 
 WRITE8_HANDLER( cm_background_col_w )
@@ -381,44 +381,19 @@ WRITE8_HANDLER( cm_background_col_w )
 	state->m_bgcolor = (data & 0x03) >> 0;
 	#endif
 
-	tilemap_mark_all_tiles_dirty (state->m_reel1_tilemap);
-	tilemap_mark_all_tiles_dirty (state->m_reel2_tilemap);
-	tilemap_mark_all_tiles_dirty (state->m_reel3_tilemap);
+	state->m_reel1_tilemap->mark_all_dirty();
+	state->m_reel2_tilemap->mark_all_dirty();
+	state->m_reel3_tilemap->mark_all_dirty();
 }
 
-// are these hardcoded, or registers?
-static const rectangle visible1 = { 0*8, (14+48)*8-1,  4*8,  (4+7)*8-1 };
-static const rectangle visible2 = { 0*8, (14+48)*8-1, 12*8, (12+7)*8-1 };
-static const rectangle visible3 = { 0*8, (14+48)*8-1, 20*8, (20+7)*8-1 };
-
-static const rectangle cm91_visible1 = { 0*8, (14+48)*8-1, 4*8,  (4+7)*8-1 };	/* same start for reel1 */
-static const rectangle cm91_visible2 = { 0*8, (14+48)*8-1, 11*8, (12+7)*8-1 };	/* 4 pixels less for reel2 */
-static const rectangle cm91_visible3 = { 0*8, (14+48)*8-1, 19*8, (19+7)*8-1 };	/* 8 pixels less for reel3 */
-
-static const rectangle am1a_visible1 = { 0*8, (14+48)*8-1,  4*8,  (4+6)*8-1 };
-static const rectangle am1a_visible2 = { 0*8, (14+48)*8-1, 10*8, (10+6)*8-1 };
-static const rectangle am1a_visible3 = { 0*8, (14+48)*8-1, 16*8, (16+6)*8-1 };
-
-static const rectangle unkch_visible1 = { 0*8, (14+48)*8-1,  3*8,  (3+7)*8-1 };
-static const rectangle unkch_visible2 = { 0*8, (14+48)*8-1, 10*8, (10+7)*8-1 };
-static const rectangle unkch_visible3 = { 0*8, (14+48)*8-1, 17*8, (17+7)*8-1 };
-
-static const rectangle magical_visible1 = { 0*8, (14+48)*8-1,  4*8,  (4+8)*8-1 };
-static const rectangle magical_visible2 = { 0*8, (14+48)*8-1, 12*8, (12+8)*8-1 };
-static const rectangle magical_visible3 = { 0*8, (14+48)*8-1, 20*8, (20+8)*8-1 };
-
-static const rectangle magical_visible1alt = { 0*8, (16+48)*8-1,  4*8,  16*8-1 };
-static const rectangle magical_visible2alt = { 0*8, (16+48)*8-1, 16*8,  28*8-1 };
-
-static const rectangle bingowng_visible1 = { 0*8, (14+48)*8-1,  3*8,  (4+7)*8-1 };
 
 
-SCREEN_UPDATE( goldstar )
+SCREEN_UPDATE_IND16( goldstar )
 {
-	goldstar_state *state = screen->machine().driver_data<goldstar_state>();
+	goldstar_state *state = screen.machine().driver_data<goldstar_state>();
 	int i;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!state->m_cm_enable_reg &0x01)
 		return 0;
@@ -427,22 +402,27 @@ SCREEN_UPDATE( goldstar )
 	{
 		for (i= 0;i < 64;i++)
 		{
-			tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
-			tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i]);
-			tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i]);
+			state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
+			state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i]);
+			state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i]);
 		}
 
 
-		tilemap_draw(bitmap, &visible1, state->m_reel1_tilemap, 0, 0);
-		tilemap_draw(bitmap, &visible2, state->m_reel2_tilemap, 0, 0);
-		tilemap_draw(bitmap, &visible3, state->m_reel3_tilemap, 0, 0);
+		// are these hardcoded, or registers?
+		const rectangle visible1(0*8, (14+48)*8-1,  4*8,  (4+7)*8-1);
+		const rectangle visible2(0*8, (14+48)*8-1, 12*8, (12+7)*8-1);
+		const rectangle visible3(0*8, (14+48)*8-1, 20*8, (20+7)*8-1);
+
+		state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+		state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+		state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 	}
 
 	if (state->m_cm_enable_reg &0x04)
 	{
-		if (screen->machine().region("user1")->base())
+		if (screen.machine().region("user1")->base())
 		{
-			const gfx_element *gfx = screen->machine().gfx[2];
+			const gfx_element *gfx = screen.machine().gfx[2];
 			int girlyscroll = (INT8)((state->m_cm_girl_scroll & 0xf0));
 			int girlxscroll = (INT8)((state->m_cm_girl_scroll & 0x0f)<<4);
 
@@ -452,19 +432,19 @@ SCREEN_UPDATE( goldstar )
 
 	if (state->m_cm_enable_reg &0x02)
 	{
-		tilemap_draw(bitmap,cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;
 }
 
 
-SCREEN_UPDATE( bingowng )
+SCREEN_UPDATE_IND16( bingowng )
 {
-	goldstar_state *state = screen->machine().driver_data<goldstar_state>();
+	goldstar_state *state = screen.machine().driver_data<goldstar_state>();
 	int i;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!state->m_cm_enable_reg &0x01)
 		return 0;
@@ -473,18 +453,19 @@ SCREEN_UPDATE( bingowng )
 	{
 		for (i= 0;i < 64;i++)
 		{
-			tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
+			state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
 		}
 
 
-		tilemap_draw(bitmap, &bingowng_visible1, state->m_reel1_tilemap, 0, 0);
+		const rectangle visible1(0*8, (14+48)*8-1,  3*8,  (4+7)*8-1);
+		state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
 	}
 
 	if (state->m_cm_enable_reg &0x04)
 	{
-		if (screen->machine().region("user1")->base())
+		if (screen.machine().region("user1")->base())
 		{
-			const gfx_element *gfx = screen->machine().gfx[2];
+			const gfx_element *gfx = screen.machine().gfx[2];
 			int girlyscroll = (INT8)((state->m_cm_girl_scroll & 0xf0));
 			int girlxscroll = (INT8)((state->m_cm_girl_scroll & 0x0f)<<4);
 
@@ -494,19 +475,19 @@ SCREEN_UPDATE( bingowng )
 
 	if (state->m_cm_enable_reg &0x02)
 	{
-		tilemap_draw(bitmap,cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;
 }
 
 
-SCREEN_UPDATE( magical )
+SCREEN_UPDATE_IND16( magical )
 {
-	goldstar_state *state = screen->machine().driver_data<goldstar_state>();
+	goldstar_state *state = screen.machine().driver_data<goldstar_state>();
 	int i;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!state->m_cm_enable_reg &0x01)
 		return 0;
@@ -518,47 +499,54 @@ SCREEN_UPDATE( magical )
 		{
 			for (i= 0;i < 32;i++)
 			{
-				tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i*2]);
-				tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i*2]);
-			//  tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i*2]);
+				state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i*2]);
+				state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i*2]);
+			//  state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i*2]);
 			}
 
 
-			tilemap_draw(bitmap, &magical_visible1alt, state->m_reel1_tilemap, 0, 0);
-			tilemap_draw(bitmap, &magical_visible2alt, state->m_reel2_tilemap, 0, 0);
-			//tilemap_draw(bitmap, &magical_visible3, state->m_reel3_tilemap, 0, 0);
+			const rectangle visible1alt(0*8, (16+48)*8-1,  4*8,  16*8-1);
+			const rectangle visible2alt(0*8, (16+48)*8-1, 16*8,  28*8-1);
+
+			state->m_reel1_tilemap->draw(bitmap, visible1alt, 0, 0);
+			state->m_reel2_tilemap->draw(bitmap, visible2alt, 0, 0);
+			//state->m_reel3_tilemap->draw(bitmap, &magical_visible3, 0, 0);
 		}
 		else
 		{
 			for (i= 0;i < 32;i++)
 			{
-				tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i*2]);
-				tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i*2]);
-				tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i*2]);
+				state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i*2]);
+				state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i*2]);
+				state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i*2]);
 			}
 
 
-			tilemap_draw(bitmap, &magical_visible1, state->m_reel1_tilemap, 0, 0);
-			tilemap_draw(bitmap, &magical_visible2, state->m_reel2_tilemap, 0, 0);
-			tilemap_draw(bitmap, &magical_visible3, state->m_reel3_tilemap, 0, 0);
+			const rectangle visible1(0*8, (14+48)*8-1,  4*8,  (4+8)*8-1);
+			const rectangle visible2(0*8, (14+48)*8-1, 12*8, (12+8)*8-1);
+			const rectangle visible3(0*8, (14+48)*8-1, 20*8, (20+8)*8-1);
+
+			state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+			state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+			state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 		}
 	}
 
 	if (state->m_cm_enable_reg &0x02)
 	{
-		tilemap_draw(bitmap,cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;
 }
 
 
-SCREEN_UPDATE( unkch )
+SCREEN_UPDATE_IND16( unkch )
 {
-	goldstar_state *state = screen->machine().driver_data<goldstar_state>();
+	goldstar_state *state = screen.machine().driver_data<goldstar_state>();
 	int i;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!state->m_cm_enable_reg &0x01)
 		return 0;
@@ -571,12 +559,12 @@ SCREEN_UPDATE( unkch )
 		{
 			for (i= 0;i < 32;i++)
 			{
-				tilemap_set_scrolly(state->m_reel1_tilemap, i, -0x08/*state->m_reel1_scroll[(i*2)+1]*/);
-			//  tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[(i*2)+1]);
-			//  tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[(i*2)+1]);
+				state->m_reel1_tilemap->set_scrolly(i, -0x08/*state->m_reel1_scroll[(i*2)+1]*/);
+			//  state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[(i*2)+1]);
+			//  state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[(i*2)+1]);
 			}
 
-			tilemap_draw(bitmap, cliprect, state->m_reel1_tilemap, 0, 0);
+			state->m_reel1_tilemap->draw(bitmap, cliprect, 0, 0);
 
 		}
 		// or draw the reels normally?
@@ -584,31 +572,35 @@ SCREEN_UPDATE( unkch )
 		{
 			for (i= 0;i < 32;i++)
 			{
-				tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i*2]);
-				tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i*2]);
-				tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i*2]);
+				state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i*2]);
+				state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i*2]);
+				state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i*2]);
 			}
 
-			tilemap_draw(bitmap, &unkch_visible1, state->m_reel1_tilemap, 0, 0);
-			tilemap_draw(bitmap, &unkch_visible2, state->m_reel2_tilemap, 0, 0);
-			tilemap_draw(bitmap, &unkch_visible3, state->m_reel3_tilemap, 0, 0);
+			const rectangle visible1(0*8, (14+48)*8-1,  3*8,  (3+7)*8-1);
+			const rectangle visible2(0*8, (14+48)*8-1, 10*8, (10+7)*8-1);
+			const rectangle visible3(0*8, (14+48)*8-1, 17*8, (17+7)*8-1);
+
+			state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+			state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+			state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 		}
 	}
 
 	if (state->m_cm_enable_reg &0x02)
 	{
-		tilemap_draw(bitmap,cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;
 }
 
-SCREEN_UPDATE( cmast91 )
+SCREEN_UPDATE_IND16( cmast91 )
 {
-	goldstar_state *state = screen->machine().driver_data<goldstar_state>();
+	goldstar_state *state = screen.machine().driver_data<goldstar_state>();
 	int i;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!state->m_cm_enable_reg &0x01)
 		return 0;
@@ -617,30 +609,34 @@ SCREEN_UPDATE( cmast91 )
 	{
 		for (i= 0;i < 64;i++)
 		{
-			tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
-			tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i]);
-			tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i]);
+			state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
+			state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i]);
+			state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i]);
 		}
 
-		tilemap_draw(bitmap, &cm91_visible1, state->m_reel1_tilemap, 0, 0);
-		tilemap_draw(bitmap, &cm91_visible2, state->m_reel2_tilemap, 0, 0);
-		tilemap_draw(bitmap, &cm91_visible3, state->m_reel3_tilemap, 0, 0);
+		const rectangle visible1(0*8, (14+48)*8-1, 4*8,  (4+7)*8-1);	/* same start for reel1 */
+		const rectangle visible2(0*8, (14+48)*8-1, 11*8, (12+7)*8-1);	/* 4 pixels less for reel2 */
+		const rectangle visible3(0*8, (14+48)*8-1, 19*8, (19+7)*8-1);	/* 8 pixels less for reel3 */
+
+		state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+		state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+		state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 	}
 
 	if (state->m_cm_enable_reg &0x02)
 	{
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;
 }
 
-SCREEN_UPDATE( amcoe1a )
+SCREEN_UPDATE_IND16( amcoe1a )
 {
-	goldstar_state *state = screen->machine().driver_data<goldstar_state>();
+	goldstar_state *state = screen.machine().driver_data<goldstar_state>();
 	int i;
 
-	bitmap_fill(bitmap,cliprect,get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	if (!state->m_cm_enable_reg &0x01)
 		return 0;
@@ -649,14 +645,18 @@ SCREEN_UPDATE( amcoe1a )
 	{
 		for (i= 0;i < 64;i++)
 		{
-			tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_reel1_scroll[i]);
-			tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_reel2_scroll[i]);
-			tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_reel3_scroll[i]);
+			state->m_reel1_tilemap->set_scrolly(i, state->m_reel1_scroll[i]);
+			state->m_reel2_tilemap->set_scrolly(i, state->m_reel2_scroll[i]);
+			state->m_reel3_tilemap->set_scrolly(i, state->m_reel3_scroll[i]);
 		}
 
-		tilemap_draw(bitmap, &am1a_visible1, state->m_reel1_tilemap, 0, 0);
-		tilemap_draw(bitmap, &am1a_visible2, state->m_reel2_tilemap, 0, 0);
-		tilemap_draw(bitmap, &am1a_visible3, state->m_reel3_tilemap, 0, 0);
+		const rectangle visible1(0*8, (14+48)*8-1,  4*8,  (4+6)*8-1);
+		const rectangle visible2(0*8, (14+48)*8-1, 10*8, (10+6)*8-1);
+		const rectangle visible3(0*8, (14+48)*8-1, 16*8, (16+6)*8-1);
+
+		state->m_reel1_tilemap->draw(bitmap, visible1, 0, 0);
+		state->m_reel2_tilemap->draw(bitmap, visible2, 0, 0);
+		state->m_reel3_tilemap->draw(bitmap, visible3, 0, 0);
 	}
 
 	if (state->m_cm_enable_reg &0x04)
@@ -666,7 +666,7 @@ SCREEN_UPDATE( amcoe1a )
 
 	if (state->m_cm_enable_reg &0x02)
 	{
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	}
 
 	return 0;

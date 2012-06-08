@@ -46,7 +46,7 @@ typedef struct {
 	pair	vce_address;			/* Current address in the palette */
 	pair	vce_data[512];			/* Palette data */
 	int		current_bitmap_line;	/* The current line in the display we are on */
-	bitmap_t	*bmp;
+	bitmap_ind16	*bmp;
 }VCE;
 
 typedef struct {
@@ -79,7 +79,7 @@ static void pce_refresh_sprites(running_machine &machine, int which, int line, U
 static void vdc_do_dma(running_machine &machine, int which);
 static void vpc_init( running_machine &machine );
 
-INTERRUPT_GEN( pce_interrupt )
+TIMER_DEVICE_CALLBACK( pce_interrupt )
 {
 	/* Draw the last scanline */
 	if ( vce.current_bitmap_line >= 14 && vce.current_bitmap_line < 14 + 242 )
@@ -96,7 +96,7 @@ INTERRUPT_GEN( pce_interrupt )
                otherwise is 2 + sprite# */
 			UINT8 drawn[VDC_WPF];
 			/* our line buffer */
-			UINT16 *line_buffer = BITMAP_ADDR16( vce.bmp, vce.current_bitmap_line, 86 );
+			UINT16 *line_buffer = &vce.bmp->pix16(vce.current_bitmap_line, 86 );
 
 			/* clear our priority/sprite collision detection buffer. */
 			memset(drawn, 0, VDC_WPF);
@@ -109,22 +109,22 @@ INTERRUPT_GEN( pce_interrupt )
 			/* Draw VDC #0 sprite layer */
 			if(vdc[0].vdc_data[CR].w & CR_SB)
 			{
-				pce_refresh_sprites(device->machine(), 0, vdc[0].current_segment_line, drawn, line_buffer);
+				pce_refresh_sprites(timer.machine(), 0, vdc[0].current_segment_line, drawn, line_buffer);
 			}
 		}
 	}
 	else
 	{
 		/* We are in one of the blanking areas */
-		draw_black_line(device->machine(), vce.current_bitmap_line );
+		draw_black_line(timer.machine(), vce.current_bitmap_line );
 	}
 
 	/* bump current scanline */
 	vce.current_bitmap_line = ( vce.current_bitmap_line + 1 ) % VDC_LPF;
-	vdc_advance_line(device->machine(), 0 );
+	vdc_advance_line(timer.machine(), 0 );
 }
 
-INTERRUPT_GEN( sgx_interrupt )
+TIMER_DEVICE_CALLBACK( sgx_interrupt )
 {
 	/* Draw the last scanline */
 	if ( vce.current_bitmap_line >= 14 && vce.current_bitmap_line < 14 + 242 )
@@ -156,7 +156,7 @@ INTERRUPT_GEN( sgx_interrupt )
 			/* Draw VDC #0 sprite layer */
 			if(vdc[0].vdc_data[CR].w & CR_SB)
 			{
-				pce_refresh_sprites(device->machine(), 0, vdc[0].current_segment_line, drawn[0], temp_buffer[0]);
+				pce_refresh_sprites(timer.machine(), 0, vdc[0].current_segment_line, drawn[0], temp_buffer[0]);
 			}
 
 			/* Draw VDC #1 background layer */
@@ -165,10 +165,10 @@ INTERRUPT_GEN( sgx_interrupt )
 			/* Draw VDC #1 sprite layer */
 			if ( vdc[1].vdc_data[CR].w & CR_SB )
 			{
-				pce_refresh_sprites(device->machine(), 1, vdc[1].current_segment_line, drawn[1], temp_buffer[1]);
+				pce_refresh_sprites(timer.machine(), 1, vdc[1].current_segment_line, drawn[1], temp_buffer[1]);
 			}
 
-			line_buffer = BITMAP_ADDR16( vce.bmp, vce.current_bitmap_line, 86 );
+			line_buffer = &vce.bmp->pix16(vce.current_bitmap_line, 86 );
 			/* Combine the output of both VDCs */
 			for( i = 0; i < 512; i++ )
 			{
@@ -269,13 +269,13 @@ INTERRUPT_GEN( sgx_interrupt )
 	else
 	{
 		/* We are in one of the blanking areas */
-		draw_black_line(device->machine(), vce.current_bitmap_line );
+		draw_black_line(timer.machine(), vce.current_bitmap_line );
 	}
 
 	/* bump current scanline */
 	vce.current_bitmap_line = ( vce.current_bitmap_line + 1 ) % VDC_LPF;
-	vdc_advance_line(device->machine(), 0 );
-	vdc_advance_line(device->machine(), 1 );
+	vdc_advance_line(timer.machine(), 0 );
+	vdc_advance_line(timer.machine(), 1 );
 }
 
 static void vdc_advance_line(running_machine &machine, int which)
@@ -423,7 +423,7 @@ VIDEO_START( pce )
 	memset(vdc[1].vram, 0, 0x10000);
 
 	/* create display bitmap */
-	vce.bmp = machine.primary_screen->alloc_compatible_bitmap();
+	vce.bmp = auto_bitmap_ind16_alloc(machine, machine.primary_screen->width(), machine.primary_screen->height());
 
 	vdc[0].inc = 1;
 	vdc[1].inc = 1;
@@ -432,10 +432,10 @@ VIDEO_START( pce )
 }
 
 
-SCREEN_UPDATE( pce )
+SCREEN_UPDATE_IND16( pce )
 {
 	/* copy our rendering buffer to the display */
-	copybitmap (bitmap,vce.bmp,0,0,0,0,cliprect);
+	copybitmap (bitmap,*vce.bmp,0,0,0,0,cliprect);
 	return 0;
 }
 
@@ -444,7 +444,7 @@ static void draw_black_line(running_machine &machine, int line)
 	int i;
 
 	/* our line buffer */
-	UINT16 *line_buffer = BITMAP_ADDR16( vce.bmp, line, 0 );
+	UINT16 *line_buffer = &vce.bmp->pix16(line);
 
 	for( i=0; i< VDC_WPF; i++ )
 		line_buffer[i] = get_black_pen( machine );
@@ -458,7 +458,7 @@ static void draw_overscan_line(int line)
 	int color_base = vce.vce_control & 0x80 ? 512 : 0;
 
 	/* our line buffer */
-	UINT16 *line_buffer = BITMAP_ADDR16( vce.bmp, line, 0 );
+	UINT16 *line_buffer = &vce.bmp->pix16(line);
 
 	for ( i = 0; i < VDC_WPF; i++ )
 		line_buffer[i] = color_base + vce.vce_data[0x100].w;
@@ -472,7 +472,7 @@ static void draw_sgx_overscan_line(int line)
 	int color_base = vce.vce_control & 0x80 ? 512 : 0;
 
 	/* our line buffer */
-	UINT16 *line_buffer = BITMAP_ADDR16( vce.bmp, line, 0 );
+	UINT16 *line_buffer = &vce.bmp->pix16(line);
 
 	for ( i = 0; i < VDC_WPF; i++ )
 		line_buffer[i] = color_base + vce.vce_data[0].w;

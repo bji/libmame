@@ -4,6 +4,8 @@
 
 */
 
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6502/m6502.h"
 #include "cpu/i86/i86.h"
@@ -12,17 +14,41 @@ class gts80a_state : public driver_device
 {
 public:
 	gts80a_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
-static ADDRESS_MAP_START( gts80a_map, AS_PROGRAM, 8 )
+class caveman_state : public gts80a_state
+{
+public:
+	caveman_state(const machine_config &mconfig, device_type type, const char *tag)
+		: gts80a_state(mconfig, type, tag),
+		  m_videocpu(*this, "video_cpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_videocpu;
+};
+
+static ADDRESS_MAP_START( gts80a_map, AS_PROGRAM, 8, gts80a_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x1000, 0x17ff) AM_MIRROR(0xc000) AM_ROM	/* PROM */
 	AM_RANGE(0x2000, 0x2fff) AM_MIRROR(0xc000) AM_ROM	/* u2 ROM */
 	AM_RANGE(0x3000, 0x3fff) AM_MIRROR(0xc000) AM_ROM	/* u3 ROM */
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( caveman_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( caveman_map, AS_PROGRAM, 8, gts80a_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x1000, 0x17ff) AM_MIRROR(0xc000) AM_ROM	/* PROM */
 	AM_RANGE(0x2000, 0x2fff) AM_MIRROR(0xc000) AM_ROM	/* u2 ROM */
@@ -35,7 +61,7 @@ INPUT_PORTS_END
 static INPUT_PORTS_START( caveman )
 INPUT_PORTS_END
 
-static MACHINE_RESET( gts80a )
+void gts80a_state::machine_reset()
 {
 }
 
@@ -48,8 +74,6 @@ static MACHINE_CONFIG_START( gts80a_s, gts80a_state )
 	MCFG_CPU_ADD("maincpu", M6502, 850000)
 	MCFG_CPU_PROGRAM_MAP(gts80a_map)
 
-	MCFG_MACHINE_RESET( gts80a )
-
 	/* related to src/mame/audio/gottlieb.c */
 //  MCFG_IMPORT_FROM(gts80s_s)
 MACHINE_CONFIG_END
@@ -59,28 +83,24 @@ static MACHINE_CONFIG_START( gts80a_ss, gts80a_state )
 	MCFG_CPU_ADD("maincpu", M6502, 850000)
 	MCFG_CPU_PROGRAM_MAP(gts80a_map)
 
-	MCFG_MACHINE_RESET( gts80a )
-
 	/* related to src/mame/audio/gottlieb.c */
 //  MCFG_IMPORT_FROM(gts80s_ss)
 MACHINE_CONFIG_END
 
-static ADDRESS_MAP_START( video_map, AS_PROGRAM, 16 )
+static ADDRESS_MAP_START( video_map, AS_PROGRAM, 16, caveman_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 	AM_RANGE(0x08000, 0x0ffff) AM_ROM
 	AM_RANGE(0xf8000, 0xfffff) AM_ROM
 ADDRESS_MAP_END
 
-static ADDRESS_MAP_START( video_io_map, AS_IO, 16 )
+static ADDRESS_MAP_START( video_io_map, AS_IO, 16, caveman_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
-static MACHINE_CONFIG_START( caveman, gts80a_state )
+static MACHINE_CONFIG_START( caveman, caveman_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6502, 850000)
 	MCFG_CPU_PROGRAM_MAP(caveman_map)
-
-	MCFG_MACHINE_RESET( gts80a )
 
 	/* related to src/mame/audio/gottlieb.c */
 //  MCFG_IMPORT_FROM(gts80s_ss)
@@ -629,27 +649,28 @@ ROM_START(touchdn)
 	ROM_RELOAD( 0xf800, 0x0800)
 ROM_END
 
-/* disp3 */GAME(1984,	alienstr,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Alien Star",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1983,	amazonh,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Amazon Hunt",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1981,	dvlsdre,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Devil's Dare",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1981,	dvlsdre2,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Devil's Dare (Sound Only)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1984,	eldorado,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"El Dorado City of Gold",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1983,	goinnuts,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Goin' Nuts",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1985,	icefever,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Ice Fever",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1984,	jack2opn,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Jacks to Open",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1983,	krullp,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Krull (Pinball)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1982,	punk,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Punk!",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1983,	qbquest,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Q*Bert's Quest",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1983,	rackempp,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Rack 'Em Up (Pinball)",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1983,	raimfire,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Ready...Aim...Fire!",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1982,	rocky,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Rocky",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1983,	rflshdlx,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Royal Flush Deluxe",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1982,	spirit,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Spirit",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* cust  */GAME(1982,	striker,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Striker",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1983,	sorbit,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Super Orbit",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1984,	thegames,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"The Games",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-/* disp3 */GAME(1984,	touchdn,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Touchdown",			GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+
+/* disp3 */GAME(1984,	alienstr,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Alien Star",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1983,	amazonh,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Amazon Hunt",			GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1981,	dvlsdre,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Devil's Dare",			GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1981,	dvlsdre2,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Devil's Dare (Sound Only)",	GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1984,	eldorado,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"El Dorado City of Gold",	GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1983,	goinnuts,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Goin' Nuts",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1985,	icefever,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Ice Fever",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1984,	jack2opn,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Jacks to Open",			GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1983,	krullp,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Krull (Pinball)",				GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1982,	punk,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Punk!",				GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1983,	qbquest,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Q*Bert's Quest",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1983,	rackempp,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Rack 'em Up! (Pinball)",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1983,	raimfire,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Ready...Aim...Fire!",		GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1982,	rocky,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Rocky",				GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1983,	rflshdlx,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Royal Flush Deluxe",		GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1982,	spirit,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Spirit",				GAME_IS_SKELETON_MECHANICAL)
+/* cust  */GAME(1982,	striker,	0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Striker",				GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1983,	sorbit,		0,		gts80a_ss,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Super Orbit",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1984,	thegames,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"The Games",			GAME_IS_SKELETON_MECHANICAL)
+/* disp3 */GAME(1984,	touchdn,	0,		gts80a_s,	gts80a,	gts80a,	ROT0,	"Gottlieb",		"Touchdown",			GAME_IS_SKELETON_MECHANICAL)
 
 /* custom (+video) */
-GAME(1981,	caveman,	0,			caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo)",		GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	cavemana,	caveman,	caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo, set 2)",	GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1981,	caveman,	0,			caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo)",		GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	cavemana,	caveman,	caveman,	caveman,	gts80a,	ROT0,	"Gottlieb",		"Caveman (Pinball/Video Combo, set 2)",	GAME_IS_SKELETON_MECHANICAL)

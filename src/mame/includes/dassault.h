@@ -42,4 +42,5 @@ public:
 
 /*----------- defined in video/dassault.c -----------*/
 
-SCREEN_UPDATE( dassault );
+VIDEO_START(dassault);
+SCREEN_UPDATE_RGB32( dassault );

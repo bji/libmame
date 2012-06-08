@@ -323,7 +323,7 @@ static MC6845_BEGIN_UPDATE( begin_update )
 static MC6845_UPDATE_ROW( update_row )
 {
 	qix_state *state = device->machine().driver_data<qix_state>();
-	UINT32 *dest = BITMAP_ADDR32(bitmap, y, 0);
+	UINT32 *dest = &bitmap.pix32(y);
 	UINT16 x;
 
 	pen_t *pens = (pen_t *)param;
@@ -334,22 +334,6 @@ static MC6845_UPDATE_ROW( update_row )
 
 	for (x = 0; x < x_count * 8; x++)
 		dest[x] = pens[state->m_videoram[(offs + x) ^ offs_xor]];
-}
-
-
-
-/*************************************
- *
- *  Standard video update
- *
- *************************************/
-
-static SCREEN_UPDATE( qix )
-{
-	mc6845_device *mc6845 = screen->machine().device<mc6845_device>(MC6845_TAG);
-	mc6845->update(bitmap, cliprect);
-
-	return 0;
 }
 
 
@@ -452,9 +436,8 @@ MACHINE_CONFIG_FRAGMENT( qix_video )
 	MCFG_MC6845_ADD(MC6845_TAG, MC6845, QIX_CHARACTER_CLOCK, mc6845_intf)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(QIX_CHARACTER_CLOCK*8, 256, 0, 256, 256, 0, 256)	/* temporary, CRTC will configure screen */
-	MCFG_SCREEN_UPDATE(qix)
+	MCFG_SCREEN_UPDATE_DEVICE(MC6845_TAG, mc6845_device, screen_update)
 MACHINE_CONFIG_END
 
 

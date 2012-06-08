@@ -283,7 +283,7 @@ static BOOL WINAPI control_handler(DWORD type);
 static int is_double_click_start(int argc);
 static DWORD WINAPI watchdog_thread_entry(LPVOID lpParameter);
 static LONG WINAPI exception_filter(struct _EXCEPTION_POINTERS *info);
-static void winui_output_error(void *param, const char *format, va_list argptr);
+static void winui_output_error(delegate_late_bind *__dummy, const char *format, va_list argptr);
 
 
 
@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
 	if (win_is_gui_application() || is_double_click_start(argc))
 	{
 		// if we are a GUI app, output errors to message boxes
-		mame_set_output_channel(OUTPUT_CHANNEL_ERROR, winui_output_error, NULL, NULL, NULL);
+		mame_set_output_channel(OUTPUT_CHANNEL_ERROR, output_delegate(FUNC(winui_output_error), (delegate_late_bind *)0));
 
 		// make sure any console window that opened on our behalf is nuked
 		FreeConsole();
@@ -539,7 +539,7 @@ static BOOL WINAPI control_handler(DWORD type)
 //  winui_output_error
 //============================================================
 
-static void winui_output_error(void *param, const char *format, va_list argptr)
+static void winui_output_error(delegate_late_bind *param, const char *format, va_list argptr)
 {
 	char buffer[1024];
 
@@ -548,7 +548,7 @@ static void winui_output_error(void *param, const char *format, va_list argptr)
 		winwindow_toggle_full_screen();
 
 	vsnprintf(buffer, ARRAY_LENGTH(buffer), format, argptr);
-	win_message_box_utf8(win_window_list ? win_window_list->hwnd : NULL, buffer, APPNAME, MB_OK);
+	win_message_box_utf8(win_window_list ? win_window_list->hwnd : NULL, buffer, emulator_info::get_appname(), MB_OK);
 }
 
 
@@ -709,6 +709,10 @@ void windows_osd_interface::osd_exit(running_machine &machine)
 	// cleanup sockets
 	win_cleanup_sockets();
 
+	#ifdef USE_NETWORK
+	winnetdev_deinit(machine);
+	#endif
+
 	// take down the watchdog thread if it exists
 	if (watchdog_thread != NULL)
 	{
@@ -828,7 +832,7 @@ void windows_osd_interface::font_close(osd_font font)
 //  pixel of a black & white font
 //-------------------------------------------------
 
-bitmap_t *windows_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, INT32 &width, INT32 &xoffs, INT32 &yoffs)
+bool windows_osd_interface::font_get_bitmap(osd_font font, unicode_char chnum, bitmap_argb32 &bitmap, INT32 &width, INT32 &xoffs, INT32 &yoffs)
 {
 	// create a dummy DC to work with
 	HDC dummyDC = CreateCompatibleDC(NULL);
@@ -934,17 +938,16 @@ bitmap_t *windows_osd_interface::font_get_bitmap(osd_font font, unicode_char chn
 	}
 
 	// allocate a new bitmap
-	bitmap_t *bitmap = NULL;
 	if (actbounds.max_x >= actbounds.min_x && actbounds.max_y >= actbounds.min_y)
 	{
-		bitmap = auto_alloc(machine(), bitmap_t(actbounds.max_x + 1 - actbounds.min_x, actbounds.max_y + 1 - actbounds.min_y, BITMAP_FORMAT_ARGB32));
+		bitmap.allocate(actbounds.max_x + 1 - actbounds.min_x, actbounds.max_y + 1 - actbounds.min_y);
 
 		// copy the bits into it
-		for (int y = 0; y < bitmap->height; y++)
+		for (int y = 0; y < bitmap.height(); y++)
 		{
-			UINT32 *dstrow = BITMAP_ADDR32(bitmap, y, 0);
+			UINT32 *dstrow = &bitmap.pix32(y);
 			UINT8 *srcrow = &bits[(y + actbounds.min_y) * rowbytes];
-			for (int x = 0; x < bitmap->width; x++)
+			for (int x = 0; x < bitmap.width(); x++)
 			{
 				int effx = x + actbounds.min_x;
 				dstrow[x] = ((srcrow[effx / 8] << (effx % 8)) & 0x80) ? MAKE_ARGB(0xff,0xff,0xff,0xff) : MAKE_ARGB(0x00,0xff,0xff,0xff);
@@ -961,7 +964,7 @@ bitmap_t *windows_osd_interface::font_get_bitmap(osd_font font, unicode_char chn
 	DeleteObject(dib);
 	SelectObject(dummyDC, oldfont);
 	DeleteDC(dummyDC);
-	return bitmap;
+	return bitmap.valid();
 }
 
 
@@ -1028,6 +1031,7 @@ static DWORD WINAPI watchdog_thread_entry(LPVOID lpParameter)
 		if (wait_result == WAIT_TIMEOUT)
 		{
 			fprintf(stderr, "Terminating due to watchdog timeout\n");
+			fflush(stderr);
 			TerminateProcess(GetCurrentProcess(), -1);
 		}
 	}

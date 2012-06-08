@@ -7,7 +7,9 @@ class hng64_state : public driver_device
 {
 public:
 	hng64_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu")
+		{ }
 
 	int m_mcu_type;
 	UINT32 *m_mainram;
@@ -94,6 +96,8 @@ public:
 	float m_lightStrength;
 	float m_lightVector[3];
 
+	required_device<cpu_device> m_maincpu;
+
 };
 
 
@@ -103,4 +107,5 @@ WRITE32_HANDLER( hng64_videoram_w );
 void hng64_command3d(running_machine& machine, const UINT16* packet);
 
 VIDEO_START( hng64 );
-SCREEN_UPDATE( hng64 );
+SCREEN_UPDATE_RGB32( hng64 );
+SCREEN_VBLANK( hng64 );

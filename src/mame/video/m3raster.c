@@ -2,9 +2,9 @@ static void draw_scanline_normal(void *dest, INT32 scanline, const poly_extent *
 {
 	const poly_extra_data *extra = (const poly_extra_data *)extradata;
 	const cached_texture *texture = extra->texture;
-	bitmap_t *destmap = (bitmap_t *)dest;
-	UINT16 *p = BITMAP_ADDR16(destmap, scanline, 0);
-	UINT32 *d = BITMAP_ADDR32(extra->zbuffer, scanline, 0);
+	bitmap_ind16 *destmap = (bitmap_ind16 *)dest;
+	UINT16 *p = &destmap->pix16(scanline);
+	UINT32 *d = &extra->zbuffer->pix32(scanline);
 	float ooz = extent->param[0].start;
 	float uoz = extent->param[1].start;
 	float voz = extent->param[2].start;
@@ -51,9 +51,9 @@ static void draw_scanline_trans(void *dest, INT32 scanline, const poly_extent *e
 {
 	const poly_extra_data *extra = (const poly_extra_data *)extradata;
 	const cached_texture *texture = extra->texture;
-	bitmap_t *destmap = (bitmap_t *)dest;
-	UINT16 *p = BITMAP_ADDR16(destmap, scanline, 0);
-	UINT32 *d = BITMAP_ADDR32(extra->zbuffer, scanline, 0);
+	bitmap_ind16 *destmap = (bitmap_ind16 *)dest;
+	UINT16 *p = &destmap->pix16(scanline);
+	UINT32 *d = &extra->zbuffer->pix32(scanline);
 	float ooz = extent->param[0].start;
 	float uoz = extent->param[1].start;
 	float voz = extent->param[2].start;
@@ -106,9 +106,9 @@ static void draw_scanline_alpha(void *dest, INT32 scanline, const poly_extent *e
 {
 	const poly_extra_data *extra = (const poly_extra_data *)extradata;
 	const cached_texture *texture = extra->texture;
-	bitmap_t *destmap = (bitmap_t *)dest;
-	UINT16 *p = BITMAP_ADDR16(destmap, scanline, 0);
-	UINT32 *d = BITMAP_ADDR32(extra->zbuffer, scanline, 0);
+	bitmap_ind16 *destmap = (bitmap_ind16 *)dest;
+	UINT16 *p = &destmap->pix16(scanline);
+	UINT32 *d = &extra->zbuffer->pix32(scanline);
 	float ooz = extent->param[0].start;
 	float uoz = extent->param[1].start;
 	float voz = extent->param[2].start;
@@ -167,9 +167,9 @@ static void draw_scanline_alpha_test(void *dest, INT32 scanline, const poly_exte
 {
 	const poly_extra_data *extra = (const poly_extra_data *)extradata;
 	const cached_texture *texture = extra->texture;
-	bitmap_t *destmap = (bitmap_t *)dest;
-	UINT16 *p = BITMAP_ADDR16(destmap, scanline, 0);
-	UINT32 *d = BITMAP_ADDR32(extra->zbuffer, scanline, 0);
+	bitmap_ind16 *destmap = (bitmap_ind16 *)dest;
+	UINT16 *p = &destmap->pix16(scanline);
+	UINT32 *d = &extra->zbuffer->pix32(scanline);
 	float ooz = extent->param[0].start;
 	float uoz = extent->param[1].start;
 	float voz = extent->param[2].start;
@@ -226,9 +226,9 @@ static void draw_scanline_alpha_test(void *dest, INT32 scanline, const poly_exte
 static void draw_scanline_color(void *dest, INT32 scanline, const poly_extent *extent, const void *extradata, int threadid)
 {
 	const poly_extra_data *extra = (const poly_extra_data *)extradata;
-	bitmap_t *destmap = (bitmap_t *)dest;
-	UINT16 *p = BITMAP_ADDR16(destmap, scanline, 0);
-	UINT32 *d = BITMAP_ADDR32(extra->zbuffer, scanline, 0);
+	bitmap_ind16 *destmap = (bitmap_ind16 *)dest;
+	UINT16 *p = &destmap->pix16(scanline);
+	UINT32 *d = &extra->zbuffer->pix32(scanline);
 	float ooz = extent->param[0].start;
 	float doozdx = extent->param[0].dpdx;
 	int fr = extra->color & 0x7c00;

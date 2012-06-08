@@ -187,14 +187,14 @@ INLINE void *waveram0_ptr_from_texture_addr(UINT32 addr, int width)
 #ifdef UNUSED_FUNCTION
 INLINE void waveram_plot(int y, int x, UINT32 color)
 {
-	if (x >= 0 && x <= zeus_cliprect.max_x && y >= 0 && y < zeus_cliprect.max_y)
+	if (zeus_cliprect.contains(x, y))
 		WAVERAM_WRITEPIX(zeus_renderbase, y, x, color);
 }
 #endif
 
 INLINE void waveram_plot_depth(int y, int x, UINT32 color, UINT16 depth)
 {
-	if (x >= 0 && x <= zeus_cliprect.max_x && y >= 0 && y < zeus_cliprect.max_y)
+	if (zeus_cliprect.contains(x, y))
 	{
 		WAVERAM_WRITEPIX(zeus_renderbase, y, x, color);
 		WAVERAM_WRITEDEPTH(zeus_renderbase, y, x, depth);
@@ -204,7 +204,7 @@ INLINE void waveram_plot_depth(int y, int x, UINT32 color, UINT16 depth)
 #ifdef UNUSED_FUNCTION
 INLINE void waveram_plot_check_depth(int y, int x, UINT32 color, UINT16 depth)
 {
-	if (x >= 0 && x <= zeus_cliprect.max_x && y >= 0 && y < zeus_cliprect.max_y)
+	if (zeus_cliprect.contains(x, y))
 	{
 		UINT16 *depthptr = WAVERAM_PTRDEPTH(zeus_renderbase, y, x);
 		if (depth <= *depthptr)
@@ -219,7 +219,7 @@ INLINE void waveram_plot_check_depth(int y, int x, UINT32 color, UINT16 depth)
 #ifdef UNUSED_FUNCTION
 INLINE void waveram_plot_check_depth_nowrite(int y, int x, UINT32 color, UINT16 depth)
 {
-	if (x >= 0 && x <= zeus_cliprect.max_x && y >= 0 && y < zeus_cliprect.max_y)
+	if (zeus_cliprect.contains(x, y))
 	{
 		UINT16 *depthptr = WAVERAM_PTRDEPTH(zeus_renderbase, y, x);
 		if (depth <= *depthptr)
@@ -358,24 +358,24 @@ static void exit_handler(running_machine &machine)
  *
  *************************************/
 
-SCREEN_UPDATE( midzeus2 )
+SCREEN_UPDATE_RGB32( midzeus2 )
 {
 	int x, y;
 
 	poly_wait(poly, "VIDEO_UPDATE");
 
-if (screen->machine().input().code_pressed(KEYCODE_UP)) { zbase += 1.0f; popmessage("Zbase = %f", zbase); }
-if (screen->machine().input().code_pressed(KEYCODE_DOWN)) { zbase -= 1.0f; popmessage("Zbase = %f", zbase); }
+if (screen.machine().input().code_pressed(KEYCODE_UP)) { zbase += 1.0f; popmessage("Zbase = %f", zbase); }
+if (screen.machine().input().code_pressed(KEYCODE_DOWN)) { zbase -= 1.0f; popmessage("Zbase = %f", zbase); }
 
 	/* normal update case */
-	if (!screen->machine().input().code_pressed(KEYCODE_W))
+	if (!screen.machine().input().code_pressed(KEYCODE_W))
 	{
 		const void *base = waveram1_ptr_from_expanded_addr(zeusbase[0x38]);
-		int xoffs = screen->visible_area().min_x;
-		for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+		int xoffs = screen.visible_area().min_x;
+		for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 		{
-			UINT32 *dest = (UINT32 *)bitmap->base + y * bitmap->rowpixels;
-			for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+			UINT32 *dest = &bitmap.pix32(y);
+			for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 				dest[x] = WAVERAM_READPIX(base, y, x - xoffs);
 		}
 	}
@@ -385,18 +385,18 @@ if (screen->machine().input().code_pressed(KEYCODE_DOWN)) { zbase -= 1.0f; popme
 	{
 		const UINT64 *base;
 
-		if (screen->machine().input().code_pressed(KEYCODE_DOWN)) yoffs += screen->machine().input().code_pressed(KEYCODE_LSHIFT) ? 0x40 : 1;
-		if (screen->machine().input().code_pressed(KEYCODE_UP)) yoffs -= screen->machine().input().code_pressed(KEYCODE_LSHIFT) ? 0x40 : 1;
-		if (screen->machine().input().code_pressed(KEYCODE_LEFT) && texel_width > 4) { texel_width >>= 1; while (screen->machine().input().code_pressed(KEYCODE_LEFT)) ; }
-		if (screen->machine().input().code_pressed(KEYCODE_RIGHT) && texel_width < 512) { texel_width <<= 1; while (screen->machine().input().code_pressed(KEYCODE_RIGHT)) ; }
+		if (screen.machine().input().code_pressed(KEYCODE_DOWN)) yoffs += screen.machine().input().code_pressed(KEYCODE_LSHIFT) ? 0x40 : 1;
+		if (screen.machine().input().code_pressed(KEYCODE_UP)) yoffs -= screen.machine().input().code_pressed(KEYCODE_LSHIFT) ? 0x40 : 1;
+		if (screen.machine().input().code_pressed(KEYCODE_LEFT) && texel_width > 4) { texel_width >>= 1; while (screen.machine().input().code_pressed(KEYCODE_LEFT)) ; }
+		if (screen.machine().input().code_pressed(KEYCODE_RIGHT) && texel_width < 512) { texel_width <<= 1; while (screen.machine().input().code_pressed(KEYCODE_RIGHT)) ; }
 
 		if (yoffs < 0) yoffs = 0;
 		base = (const UINT64 *)waveram0_ptr_from_expanded_addr(yoffs << 16);
 
-		for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+		for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 		{
-			UINT32 *dest = (UINT32 *)bitmap->base + y * bitmap->rowpixels;
-			for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+			UINT32 *dest = &bitmap.pix32(y);
+			for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 			{
 				UINT8 tex = get_texel_8bit(base, y, x, texel_width);
 				dest[x] = (tex << 16) | (tex << 8) | tex;
@@ -564,12 +564,8 @@ static void zeus_register_update(running_machine &machine, offs_t offset, UINT32
 			{
 				int vtotal = zeusbase[0x37] & 0xffff;
 				int htotal = zeusbase[0x34] >> 16;
-				rectangle visarea;
 
-				visarea.min_x = zeusbase[0x33] >> 16;
-				visarea.max_x = (zeusbase[0x34] & 0xffff) - 1;
-				visarea.min_y = 0;
-				visarea.max_y = zeusbase[0x35] & 0xffff;
+				rectangle visarea(zeusbase[0x33] >> 16, (zeusbase[0x34] & 0xffff) - 1, 0, zeusbase[0x35] & 0xffff);
 				if (htotal > 0 && vtotal > 0 && visarea.min_x < visarea.max_x && visarea.max_y < vtotal)
 				{
 					machine.primary_screen->configure(htotal, vtotal, visarea, HZ_TO_ATTOSECONDS((double)MIDZEUS_VIDEO_CLOCK / 4.0 / (htotal * vtotal)));
@@ -1260,7 +1256,7 @@ In memory:
 	extra->texbase = WAVERAM_BLOCK0(zeus_texbase);
 	extra->palbase = waveram0_ptr_from_expanded_addr(zeusbase[0x41]);
 
-	poly_render_quad_fan(poly, NULL, &zeus_cliprect, callback, 4, numverts, &clipvert[0]);
+	poly_render_quad_fan(poly, NULL, zeus_cliprect, callback, 4, numverts, &clipvert[0]);
 }
 
 

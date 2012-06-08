@@ -14,7 +14,9 @@ class model3_state : public driver_device
 {
 public:
 	model3_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
     int m_sound_irq_enable;
     emu_timer *m_sound_timer;
@@ -50,7 +52,6 @@ public:
 	UINT64 *m_network_ram;
 	int m_prot_data_ptr;
 	int m_scsp_last_line;
-	int m_vblank;
 	UINT32 *m_vrom;
 	int m_step;
 	UINT64 *m_paletteram64;
@@ -77,8 +78,8 @@ public:
 	UINT32 *m_polygon_ram;
 	UINT16 *m_pal_lookup;
 	int m_real3d_display_list;
-	bitmap_t *m_bitmap3d;
-	bitmap_t *m_zbuffer;
+	bitmap_ind16 m_bitmap3d;
+	bitmap_ind32 m_zbuffer;
 	rectangle m_clip3d;
 	rectangle *m_screen_clip;
 	VECTOR3 m_parallel_light;
@@ -100,6 +101,8 @@ public:
 	PLANE m_clip_plane[5];
 	UINT32 m_matrix_base_address;
 	cached_texture *m_texcache[2][1024/32][2048/32];
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -130,7 +133,7 @@ READ64_HANDLER(model3_palette_r);
 WRITE64_HANDLER(model3_palette_w);
 
 VIDEO_START(model3);
-SCREEN_UPDATE(model3);
+SCREEN_UPDATE_IND16(model3);
 
 WRITE64_HANDLER(real3d_cmd_w);
 WRITE64_HANDLER(real3d_display_list_w);

@@ -334,20 +334,20 @@ static VIDEO_START(dderby)
 	dmndrby_state *state = machine.driver_data<dmndrby_state>();
 	state->m_racetrack_tilemap_rom = machine.region("user1")->base();
 	state->m_racetrack_tilemap = tilemap_create(machine,get_dmndrby_tile_info,tilemap_scan_rows,16,16, 16, 512);
-	tilemap_mark_all_tiles_dirty(state->m_racetrack_tilemap);
+	state->m_racetrack_tilemap->mark_all_dirty();
 
 }
 
-static SCREEN_UPDATE(dderby)
+static SCREEN_UPDATE_IND16(dderby)
 {
-	dmndrby_state *state = screen->machine().driver_data<dmndrby_state>();
+	dmndrby_state *state = screen.machine().driver_data<dmndrby_state>();
 	int x,y,count;
 	int off,scrolly;
-	const gfx_element *gfx = screen->machine().gfx[0];
-	const gfx_element *sprites = screen->machine().gfx[1];
-	const gfx_element *track = screen->machine().gfx[2];
+	const gfx_element *gfx = screen.machine().gfx[0];
+	const gfx_element *sprites = screen.machine().gfx[1];
+	const gfx_element *track = screen.machine().gfx[2];
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 
 /* Draw racetrack
@@ -517,10 +517,9 @@ static MACHINE_CONFIG_START( dderby, dmndrby_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(dderby)
+	MCFG_SCREEN_UPDATE_STATIC(dderby)
 
 	MCFG_GFXDECODE(dmndrby)
 	MCFG_PALETTE_LENGTH(0x300)

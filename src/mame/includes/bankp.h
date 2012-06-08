@@ -26,6 +26,8 @@ public:
 	tilemap_t *m_fg_tilemap;
 	int     m_scroll_x;
 	int     m_priority;
+
+	UINT8 m_nmi_mask;
 };
 
 
@@ -40,6 +42,6 @@ WRITE8_HANDLER( bankp_out_w );
 
 PALETTE_INIT( bankp );
 VIDEO_START( bankp );
-SCREEN_UPDATE( bankp );
+SCREEN_UPDATE_IND16( bankp );
 
 

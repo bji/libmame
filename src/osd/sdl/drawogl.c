@@ -247,7 +247,7 @@ struct _sdl_info
 	GLhandleARB		glsl_program[2*GLSL_SHADER_MAX];  // GLSL programs, or 0
 	int				glsl_program_num;	// number of GLSL programs
 	int				glsl_program_mb2sc;	// GLSL program idx, which transforms
-			                            // the mame-bitmap -> screen-bitmap (size/rotation/..)
+			                            // the mame-bitmap. screen-bitmap (size/rotation/..)
 										// All progs <= glsl_program_mb2sc using the mame bitmap
 										// as input, otherwise the screen bitmap.
 										// All progs >= glsl_program_mb2sc using the screen bitmap
@@ -1206,7 +1206,8 @@ static int drawogl_window_draw(sdl_window_info *window, UINT32 dc, int update)
 
 	// figure out if we're vector
 	scrnum = is_vector = 0;
-	for (screen = window->machine().config().first_screen(); screen != NULL; screen = screen->next_screen())
+	screen_device_iterator iter(window->machine().root_device());
+	for (screen = iter.first(); screen != NULL; screen = iter.next())
 	{
 		if (scrnum == window->index)
 		{
@@ -2018,8 +2019,8 @@ static int texture_fbo_create(UINT32 text_unit, UINT32 text_name, UINT32 fbo_nam
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 	pfn_glFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
 				   GL_TEXTURE_2D, text_name, 0);
@@ -2304,8 +2305,8 @@ static int texture_shader_create(sdl_window_info *window,
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 		assert ( texture->lut_texture );
 	}
@@ -2369,8 +2370,8 @@ static int texture_shader_create(sdl_window_info *window,
 		}
 		else
 		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		}
 	} else {
 		UINT32 * dummy = NULL;
@@ -2400,8 +2401,8 @@ static int texture_shader_create(sdl_window_info *window,
 		}
 		else
 		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		}
 	}
 
@@ -2439,7 +2440,7 @@ static texture_info *texture_create(sdl_window_info *window, const render_texinf
         //
         // src/emu/validity.c:validate_display() states,
         // an emulated driver can only produce
-        //      BITMAP_FORMAT_INDEXED16, BITMAP_FORMAT_RGB15 and BITMAP_FORMAT_RGB32
+        //      BITMAP_FORMAT_IND16 and BITMAP_FORMAT_RGB32
         // where only the first original paletted.
         //
         // other paletted formats, i.e.:
@@ -2462,12 +2463,6 @@ static texture_info *texture_create(sdl_window_info *window, const render_texinf
 			break;
 		case TEXFORMAT_PALETTE16:
 			texture->format = SDL_TEXFORMAT_PALETTE16;
-			break;
-		case TEXFORMAT_RGB15:
-            if (texsource->palette != NULL)
-                texture->format = SDL_TEXFORMAT_RGB15_PALETTED;
-            else
-                texture->format = SDL_TEXFORMAT_RGB15;
 			break;
 		case TEXFORMAT_PALETTEA16:
 			texture->format = SDL_TEXFORMAT_PALETTE16A;
@@ -2534,8 +2529,8 @@ static texture_info *texture_create(sdl_window_info *window, const render_texinf
 		if( texture->texTarget==GL_TEXTURE_RECTANGLE_ARB )
 		{
 			// texture rectangles can't wrap
-			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		} else {
 			// set wrapping mode appropriately
 			if (texture->flags & PRIMFLAG_TEXWRAP_MASK)
@@ -2545,8 +2540,8 @@ static texture_info *texture_create(sdl_window_info *window, const render_texinf
 			}
 			else
 			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 			}
 		}
 	}
@@ -2956,7 +2951,8 @@ static void texture_shader_update(sdl_window_info *window, texture_info *texture
 
 		scrnum = 0;
 		container = (render_container *)NULL;
-		for (screen_device *screen = window->machine().first_screen(); screen != NULL; screen = screen->next_screen())
+		screen_device_iterator iter(window->machine().root_device());
+		for (screen_device *screen = iter.first(); screen != NULL; screen = iter.next())
 		{
 			if (scrnum == window->start_viewscreen)
 			{

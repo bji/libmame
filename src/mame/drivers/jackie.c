@@ -44,7 +44,6 @@ Note
 
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "sound/2413intf.h"
 
@@ -53,7 +52,9 @@ class jackie_state : public driver_device
 {
 public:
 	jackie_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	int m_exp_bank;
 	UINT8 *m_fg_tile_ram;
@@ -73,6 +74,8 @@ public:
 	int m_hopper;
 	UINT8 m_out[3];
 	UINT16 m_unk_reg[3][5];
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -90,14 +93,14 @@ static WRITE8_HANDLER( fg_tile_w )
 {
 	jackie_state *state = space->machine().driver_data<jackie_state>();
 	state->m_fg_tile_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( fg_color_w )
 {
 	jackie_state *state = space->machine().driver_data<jackie_state>();
 	state->m_fg_color_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -114,7 +117,7 @@ static WRITE8_HANDLER( jackie_reel1_ram_w )
 {
 	jackie_state *state = space->machine().driver_data<jackie_state>();
 	state->m_reel1_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel1_tilemap,offset);
+	state->m_reel1_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_jackie_reel1_tile_info )
@@ -130,7 +133,7 @@ static WRITE8_HANDLER( jackie_reel2_ram_w )
 {
 	jackie_state *state = space->machine().driver_data<jackie_state>();
 	state->m_reel2_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel2_tilemap,offset);
+	state->m_reel2_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_jackie_reel2_tile_info )
@@ -145,7 +148,7 @@ static WRITE8_HANDLER( jackie_reel3_ram_w )
 {
 	jackie_state *state = space->machine().driver_data<jackie_state>();
 	state->m_reel3_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_reel3_tilemap,offset);
+	state->m_reel3_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_jackie_reel3_tile_info )
@@ -162,29 +165,29 @@ static VIDEO_START(jackie)
 	state->m_reel2_tilemap = tilemap_create(machine,get_jackie_reel2_tile_info,tilemap_scan_rows,8,32, 64, 8);
 	state->m_reel3_tilemap = tilemap_create(machine,get_jackie_reel3_tile_info,tilemap_scan_rows,8,32, 64, 8);
 
-	tilemap_set_scroll_cols(state->m_reel1_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel2_tilemap, 64);
-	tilemap_set_scroll_cols(state->m_reel3_tilemap, 64);
+	state->m_reel1_tilemap->set_scroll_cols(64);
+	state->m_reel2_tilemap->set_scroll_cols(64);
+	state->m_reel3_tilemap->set_scroll_cols(64);
 
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows,	8,  8,	64, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
 
-static SCREEN_UPDATE(jackie)
+static SCREEN_UPDATE_IND16(jackie)
 {
-	jackie_state *state = screen->machine().driver_data<jackie_state>();
+	jackie_state *state = screen.machine().driver_data<jackie_state>();
 	int i,j;
 	int startclipmin = 0;
-	const rectangle &visarea = screen->visible_area();
+	const rectangle &visarea = screen.visible_area();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	for (i=0;i < 0x40;i++)
 	{
-		tilemap_set_scrolly(state->m_reel1_tilemap, i, state->m_bg_scroll[i+0x000]);
-		tilemap_set_scrolly(state->m_reel2_tilemap, i, state->m_bg_scroll[i+0x040]);
-		tilemap_set_scrolly(state->m_reel3_tilemap, i, state->m_bg_scroll[i+0x080]);
+		state->m_reel1_tilemap->set_scrolly(i, state->m_bg_scroll[i+0x000]);
+		state->m_reel2_tilemap->set_scrolly(i, state->m_bg_scroll[i+0x040]);
+		state->m_reel3_tilemap->set_scrolly(i, state->m_bg_scroll[i+0x080]);
 	}
 
 	for (j=0; j < 0x100-1; j++)
@@ -193,22 +196,19 @@ static SCREEN_UPDATE(jackie)
 		int rowenable = state->m_bg_scroll2[j];
 
 		/* draw top of screen */
-		clip.min_x = visarea.min_x;
-		clip.max_x = visarea.max_x;
-		clip.min_y = startclipmin;
-		clip.max_y = startclipmin+1;
+		clip.set(visarea.min_x, visarea.max_x, startclipmin, startclipmin+1);
 
 		if (rowenable==0)
 		{
-			tilemap_draw(bitmap,&clip,state->m_reel1_tilemap,0,0);
+			state->m_reel1_tilemap->draw(bitmap, clip, 0,0);
 		}
 		else if (rowenable==1)
 		{
-			tilemap_draw(bitmap,&clip,state->m_reel2_tilemap,0,0);
+			state->m_reel2_tilemap->draw(bitmap, clip, 0,0);
 		}
 		else if (rowenable==2)
 		{
-			tilemap_draw(bitmap,&clip,state->m_reel3_tilemap,0,0);
+			state->m_reel3_tilemap->draw(bitmap, clip, 0,0);
 		}
 		else if (rowenable==3)
 		{
@@ -217,7 +217,7 @@ static SCREEN_UPDATE(jackie)
 		startclipmin+=1;
 	}
 
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -231,18 +231,6 @@ static MACHINE_RESET( jackie )
 	state->m_nmi_enable	=	0;
 	state->m_hopper		=	0;
 	state->m_bg_enable	=	1;
-}
-
-static INTERRUPT_GEN( jackie_interrupt )
-{
-	jackie_state *state = device->machine().driver_data<jackie_state>();
-	if (cpu_getiloops(device) % 2) {
-		if (state->m_irq_enable)
-		device_set_input_line(device, 0, HOLD_LINE);
-	} else {
-		if (state->m_nmi_enable)
-		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	}
 }
 
 
@@ -555,6 +543,19 @@ static DRIVER_INIT( jackie )
 	rom[0x7e86] = 0xc3;
 }
 
+static TIMER_DEVICE_CALLBACK( jackie_irq )
+{
+	jackie_state *state = timer.machine().driver_data<jackie_state>();
+	int scanline = param;
+
+	if((scanline % 32) != 0)
+		return;
+
+	if((scanline % 64) == 32 && state->m_irq_enable)
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
+	else if	((scanline % 64) == 0 && state->m_nmi_enable)
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
+}
 
 static MACHINE_CONFIG_START( jackie, jackie_state )
 
@@ -562,7 +563,7 @@ static MACHINE_CONFIG_START( jackie, jackie_state )
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_12MHz / 2)
 	MCFG_CPU_PROGRAM_MAP(jackie_prg_map)
 	MCFG_CPU_IO_MAP(jackie_io_map)
-	MCFG_CPU_VBLANK_INT_HACK(jackie_interrupt,8)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", jackie_irq, "screen", 0, 1)
 
 	MCFG_MACHINE_RESET(jackie)
 
@@ -570,10 +571,9 @@ static MACHINE_CONFIG_START( jackie, jackie_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0, 32*8-1)
-	MCFG_SCREEN_UPDATE(jackie)
+	MCFG_SCREEN_UPDATE_STATIC(jackie)
 
 	MCFG_GFXDECODE(jackie)
 	MCFG_PALETTE_LENGTH(2048)

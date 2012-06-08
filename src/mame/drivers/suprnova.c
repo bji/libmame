@@ -145,12 +145,12 @@ NEP-16
 */
 
 #include "emu.h"
-#include "deprecat.h"
 #include "sound/ymz280b.h"
 #include "cpu/sh2/sh2.h"
 #include "machine/nvram.h"
 #include "video/sknsspr.h"
 #include "includes/suprnova.h"
+#include "machine/msm6242.h"
 
 static void hit_calc_orig(UINT16 p, UINT16 s, UINT16 org, UINT16 *l, UINT16 *r)
 {
@@ -317,7 +317,7 @@ static WRITE32_HANDLER ( skns_hit2_w )
 		case 'A':
 			if (data < 2) hit.disconnect= 0;
 		break;
-		// unknow country id, unlock per default
+		// unknown country id, unlock per default
 		default:
 			hit.disconnect= 0;
 		break;
@@ -438,19 +438,15 @@ static MACHINE_RESET(skns)
 }
 
 
-static INTERRUPT_GEN(skns_interrupt)
+static TIMER_DEVICE_CALLBACK(skns_irq)
 {
-	UINT8 interrupt = 5;
-	switch(cpu_getiloops(device))
-	{
-		case 0:
-			interrupt = 5; // VBLANK
-			break;
-		case 1:
-			interrupt = 1; // SPC
-			break;
-	}
-	device_set_input_line(device,interrupt,HOLD_LINE);
+	skns_state *state = timer.machine().driver_data<skns_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu,5,HOLD_LINE); //vblank
+	else if(scanline == 0)
+		device_set_input_line(state->m_maincpu,1,HOLD_LINE); // spc
 }
 
 /**********************************************************************************
@@ -607,18 +603,6 @@ INPUT_PORTS_END
 
 
 
-static WRITE32_HANDLER( skns_msm6242_w )
-{
-	skns_state *state = space->machine().driver_data<skns_state>();
-	COMBINE_DATA(&state->m_timer_0_temp[offset]);
-
-	if(offset>=4)
-	{
-		mame_printf_debug("Timer 0 outbound\n");
-		return;
-	}
-}
-
 static WRITE32_HANDLER( skns_io_w )
 {
 	switch(offset) {
@@ -680,46 +664,6 @@ static WRITE32_HANDLER( skns_io_w )
 	}
 }
 
-
-static READ32_HANDLER( skns_msm6242_r )
-{
-	system_time systime;
-	long value;
-
-	space->machine().base_datetime(systime);
-	// The clock is not y2k-compatible, wrap back 10 years, screw the leap years
-	//  tm->tm_year -= 10;
-
-	switch(offset) {
-	case 0:
-		value  = (systime.local_time.second % 10)<<24;
-		value |= (systime.local_time.second / 10)<<16;
-		value |= (systime.local_time.minute % 10)<<8;
-		value |= (systime.local_time.minute / 10);
-		break;
-	case 1:
-		value  = (systime.local_time.hour % 10)<<24;
-		value |= ((systime.local_time.hour / 10) /*| (tm->tm_hour >= 12 ? 4 : 0)*/)<<16;
-		value |= (systime.local_time.mday % 10)<<8;
-		value |= (systime.local_time.mday / 10);
-		break;
-	case 2:
-		value  = ((systime.local_time.month + 1) % 10)<<24;
-		value |= ((systime.local_time.month + 1) / 10)<<16;
-		value |= (systime.local_time.year % 10)<<8;
-		value |= ((systime.local_time.year / 10) % 10);
-		break;
-	case 3:
-	default:
-		value  = (systime.local_time.weekday)<<24;
-		value |= (1)<<16;
-		value |= (6)<<8;
-		value |= (4);
-		break;
-	}
-	return value;
-}
-
 /* end old driver code */
 
 static WRITE32_HANDLER( skns_v3t_w )
@@ -749,7 +693,7 @@ static ADDRESS_MAP_START( skns_map, AS_PROGRAM, 32 )
 	AM_RANGE(0x0040000c, 0x0040000f) AM_READ_PORT("40000c")
 	AM_RANGE(0x00800000, 0x00801fff) AM_RAM AM_SHARE("nvram") /* 'backup' RAM */
 	AM_RANGE(0x00c00000, 0x00c00003) AM_DEVREADWRITE8("ymz", ymz280b_r, ymz280b_w, 0xffff0000) /* ymz280_w (sound) */
-	AM_RANGE(0x01000000, 0x0100000f) AM_READWRITE(skns_msm6242_r, skns_msm6242_w)
+	AM_RANGE(0x01000000, 0x0100000f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write, 0xffffffff)
 	AM_RANGE(0x01800000, 0x01800003) AM_WRITE(skns_hit2_w)
 	AM_RANGE(0x02000000, 0x02003fff) AM_RAM AM_BASE_SIZE_GENERIC(spriteram) /* sprite ram */
 	AM_RANGE(0x02100000, 0x0210003f) AM_RAM AM_BASE_MEMBER(skns_state, m_spc_regs) /* sprite registers */
@@ -810,12 +754,17 @@ static const ymz280b_interface ymz280b_intf =
 };
 
 
-
+static MSM6242_INTERFACE( rtc_intf )
+{
+	DEVCB_NULL
+};
 
 static MACHINE_CONFIG_START( skns, skns_state )
 	MCFG_CPU_ADD("maincpu", SH2,28638000)
 	MCFG_CPU_PROGRAM_MAP(skns_map)
-	MCFG_CPU_VBLANK_INT_HACK(skns_interrupt,2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", skns_irq, "screen", 0, 1)
+
+	MCFG_MSM6242_ADD("rtc", rtc_intf)
 
 	MCFG_MACHINE_RESET(skns)
 	MCFG_NVRAM_ADD_1FILL("nvram")
@@ -832,11 +781,10 @@ static MACHINE_CONFIG_START( skns, skns_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.5971) // measured by Guru
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
-	MCFG_SCREEN_SIZE(320,240)
+	MCFG_SCREEN_SIZE(340,262)
 	MCFG_SCREEN_VISIBLE_AREA(0,319,0,239)
-	MCFG_SCREEN_UPDATE(skns)
-	MCFG_SCREEN_EOF(skns)
+	MCFG_SCREEN_UPDATE_STATIC(skns)
+	MCFG_SCREEN_VBLANK_STATIC(skns)
 
 	MCFG_PALETTE_LENGTH(32768)
 	MCFG_GFXDECODE(skns_bg)
@@ -1193,11 +1141,36 @@ ROM_END
 
 ROM_START( galpanis )
 	ROM_REGION( 0x080000, "maincpu", 0 ) /* SH-2 Code */
+	ROM_LOAD       ( "sknse1.u10", 0x000000, 0x080000, CRC(e2b9d7d1) SHA1(b530a3bb9dedc8cfafcba9f1f10277590be04a15) ) /* Europe BIOS */
+
+	ROM_REGION32_BE( 0x200000, "user1", 0 ) /* SH-2 Code mapped at 0x04000000 */
+	ROM_LOAD16_BYTE( "gps-000-e1.u10", 0x000000, 0x100000, CRC(b9ea3c44) SHA1(c1913545cd71ee75e60ade744a2a1054f770b981) )
+	ROM_LOAD16_BYTE( "gps-001-e1.u8",  0x000001, 0x100000, CRC(ded57bd0) SHA1(4c0122f0521829d4d83b6b1c403f7e6470f14951) )
+
+	ROM_REGION( 0x1000000, "gfx1", 0 )
+	ROM_LOAD( "gps10000.u24", 0x000000, 0x400000, CRC(a1a7acf2) SHA1(52c86ae907f0c0236808c19f652955b09e90ec5a) )
+	ROM_LOAD( "gps10100.u20", 0x400000, 0x400000, CRC(49f764b6) SHA1(9f4289858c3dac625ef623cc381a47b45aa5d8e2) )
+	ROM_LOAD( "gps10200.u17", 0x800000, 0x400000, CRC(51980272) SHA1(6c0706d913b33995579aaf0688c4bf26d6d35a78) )
+
+	ROM_REGION( 0x800000, "gfx2", 0 )
+	ROM_LOAD( "gps20000.u16", 0x000000, 0x400000, CRC(c146a09e) SHA1(5af5a7b9d9a55ec7aba3fd85a3a0211b92b1b84f) )
+	ROM_LOAD( "gps20100.u13", 0x400000, 0x400000, CRC(9dfa2dc6) SHA1(a058c42fd76c23c0e5c8c11f5617fd29e056be7d) )
+
+	ROM_REGION( 0x800000, "gfx3", ROMREGION_ERASE00 ) /* Tiles Plane B */
+	/* First 0x040000 bytes (0x03ff Tiles) are RAM Based Tiles */
+	/* 0x040000 - 0x3fffff empty? */
+
+	ROM_REGION( 0x400000, "ymz", 0 ) /* Samples */
+	ROM_LOAD( "gps30000.u4", 0x000000, 0x400000, CRC(9e4da8e3) SHA1(6506d9300a442883357003a05fd2c78d364c35bb) )
+ROM_END
+
+ROM_START( galpanisj )
+	ROM_REGION( 0x080000, "maincpu", 0 ) /* SH-2 Code */
 	ROM_LOAD       ( "sknsj1.u10",   0x000000, 0x080000, CRC(7e2b836c) SHA1(92c5a7a2472496028bff0e5980d41dd294f42144) ) /* Japan BIOS */
 
 	ROM_REGION32_BE( 0x200000, "user1", 0 ) /* SH-2 Code mapped at 0x04000000 */
-	ROM_LOAD16_BYTE( "gps-e.u10", 0x000000, 0x100000, CRC(c6938c3f) SHA1(05853ee6a44a55702788a75580b04a4be45e9bcb) )
-	ROM_LOAD16_BYTE( "gps-o.u8",  0x000001, 0x100000, CRC(e764177a) SHA1(3a1333eb1022ed1a275b9c3d44b5f4ab81618fb6) )
+	ROM_LOAD16_BYTE( "gps-000-j1.u10", 0x000000, 0x100000, CRC(c6938c3f) SHA1(05853ee6a44a55702788a75580b04a4be45e9bcb) )
+	ROM_LOAD16_BYTE( "gps-001-j1.u8",  0x000001, 0x100000, CRC(e764177a) SHA1(3a1333eb1022ed1a275b9c3d44b5f4ab81618fb6) )
 
 	ROM_REGION( 0x1000000, "gfx1", 0 )
 	ROM_LOAD( "gps10000.u24", 0x000000, 0x400000, CRC(a1a7acf2) SHA1(52c86ae907f0c0236808c19f652955b09e90ec5a) )
@@ -1777,7 +1750,8 @@ GAME( 1996, skns,      0,        skns, skns,     0,         ROT0,  "Kaneko", "Su
 GAME( 1996, galpani4,  skns,     sknsj, cyvern,   galpani4,  ROT0,  "Kaneko", "Gals Panic 4 (Japan)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, galpani4k, galpani4, sknsk, cyvern,   galpani4,  ROT0,  "Kaneko", "Gals Panic 4 (Korea)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1996, jjparads,  skns,     sknsj, skns_1p,  jjparads,  ROT0,  "Electro Design", "Jan Jan Paradise", GAME_IMPERFECT_GRAPHICS )
-GAME( 1997, galpanis,  skns,     sknsj, galpanis, galpanis,  ROT0,  "Kaneko", "Gals Panic S - Extra Edition (Japan)", GAME_IMPERFECT_GRAPHICS )
+GAME( 1997, galpanis,  skns,     sknse, galpanis, galpanis,  ROT0,  "Kaneko", "Gals Panic S - Extra Edition (Europe)", GAME_IMPERFECT_GRAPHICS )
+GAME( 1997, galpanisj, galpanis, sknsj, galpanis, galpanis,  ROT0,  "Kaneko", "Gals Panic S - Extra Edition (Japan)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1997, galpanisk, galpanis, sknsk, galpanis, galpanis,  ROT0,  "Kaneko", "Gals Panic S - Extra Edition (Korea)", GAME_IMPERFECT_GRAPHICS )
 GAME( 1997, jjparad2,  skns,     sknsj, skns_1p,  jjparad2,  ROT0,  "Electro Design", "Jan Jan Paradise 2", GAME_IMPERFECT_GRAPHICS )
 GAME( 1997, sengekis,  skns,     sknsa, skns,     sengekis,  ROT90, "Kaneko / Warashi", "Sengeki Striker (Asia)", GAME_IMPERFECT_GRAPHICS )

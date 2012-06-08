@@ -27,6 +27,9 @@ public:
 	int      m_sprite_bank2;
 	int      m_old_gfx_bank;					// needed by atlantol
 	int		 m_sprites_gfx_banked;
+
+	UINT8    m_irq_mask;
+	UINT8    m_yieartf_nmi_mask;
 };
 
 
@@ -39,6 +42,6 @@ WRITE8_HANDLER( atlantol_gfxbank_w );
 
 PALETTE_INIT( trackfld );
 VIDEO_START( trackfld );
-SCREEN_UPDATE( trackfld );
+SCREEN_UPDATE_IND16( trackfld );
 VIDEO_START( atlantol );
 

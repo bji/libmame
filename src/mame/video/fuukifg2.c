@@ -44,7 +44,7 @@
 
 ***************************************************************************/
 
-INLINE void get_tile_info(running_machine &machine, tile_data *tileinfo, tilemap_memory_index tile_index, int _N_)
+INLINE void get_tile_info(running_machine &machine, tile_data &tileinfo, tilemap_memory_index tile_index, int _N_)
 {
 	fuuki16_state *state = machine.driver_data<fuuki16_state>();
 	UINT16 code = state->m_vram[_N_][2 * tile_index + 0];
@@ -61,7 +61,7 @@ INLINE void fuuki16_vram_w(address_space *space, offs_t offset, UINT16 data, UIN
 {
 	fuuki16_state *state = space->machine().driver_data<fuuki16_state>();
 	COMBINE_DATA(&state->m_vram[_N_][offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap[_N_], offset / 2);
+	state->m_tilemap[_N_]->mark_tile_dirty(offset / 2);
 }
 
 WRITE16_HANDLER( fuuki16_vram_0_w ) { fuuki16_vram_w(space, offset, data, mem_mask, 0); }
@@ -99,10 +99,10 @@ VIDEO_START( fuuki16 )
 	state->m_tilemap[2] = tilemap_create(machine, get_tile_info_2, tilemap_scan_rows, 8, 8, 64, 32);
 	state->m_tilemap[3] = tilemap_create(machine, get_tile_info_3, tilemap_scan_rows, 8, 8, 64, 32);
 
-	tilemap_set_transparent_pen(state->m_tilemap[0], 0x0f);	// 4 bits
-	tilemap_set_transparent_pen(state->m_tilemap[1], 0xff);	// 8 bits
-	tilemap_set_transparent_pen(state->m_tilemap[2], 0x0f);	// 4 bits
-	tilemap_set_transparent_pen(state->m_tilemap[3], 0x0f);	// 4 bits
+	state->m_tilemap[0]->set_transparent_pen(0x0f);	// 4 bits
+	state->m_tilemap[1]->set_transparent_pen(0xff);	// 8 bits
+	state->m_tilemap[2]->set_transparent_pen(0x0f);	// 4 bits
+	state->m_tilemap[3]->set_transparent_pen(0x0f);	// 4 bits
 
 	machine.gfx[2]->color_granularity = 16; /* 256 colour tiles with palette selectable on 16 colour boundaries */
 }
@@ -135,12 +135,12 @@ VIDEO_START( fuuki16 )
 
 ***************************************************************************/
 
-static void draw_sprites( screen_device &screen, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	fuuki16_state *state = screen.machine().driver_data<fuuki16_state>();
 	int offs;
 	const gfx_element *gfx = screen.machine().gfx[0];
-	bitmap_t *priority_bitmap = screen.machine().priority_bitmap;
+	bitmap_ind8 &priority_bitmap = screen.machine().priority_bitmap;
 	const rectangle &visarea = screen.visible_area();
 	UINT16 *spriteram16 = state->m_spriteram;
 	int max_x =	visarea.max_x + 1;
@@ -265,26 +265,26 @@ if (screen.machine().input().code_pressed(KEYCODE_X))
 ***************************************************************************/
 
 /* Wrapper to handle bg and bg2 ttogether */
-static void fuuki16_draw_layer( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int i, int flag, int pri )
+static void fuuki16_draw_layer( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int i, int flag, int pri )
 {
 	fuuki16_state *state = machine.driver_data<fuuki16_state>();
 	int buffer = (state->m_vregs[0x1e / 2] & 0x40);
 
 	switch( i )
 	{
-		case 2:	if (buffer)	tilemap_draw(bitmap, cliprect, state->m_tilemap[3], flag, pri);
-				else		tilemap_draw(bitmap, cliprect, state->m_tilemap[2], flag, pri);
+		case 2:	if (buffer)	state->m_tilemap[3]->draw(bitmap, cliprect, flag, pri);
+				else		state->m_tilemap[2]->draw(bitmap, cliprect, flag, pri);
 				return;
-		case 1:	tilemap_draw(bitmap, cliprect, state->m_tilemap[1], flag, pri);
+		case 1:	state->m_tilemap[1]->draw(bitmap, cliprect, flag, pri);
 				return;
-		case 0:	tilemap_draw(bitmap, cliprect, state->m_tilemap[0], flag, pri);
+		case 0:	state->m_tilemap[0]->draw(bitmap, cliprect, flag, pri);
 				return;
 	}
 }
 
-SCREEN_UPDATE( fuuki16 )
+SCREEN_UPDATE_IND16( fuuki16 )
 {
-	fuuki16_state *state = screen->machine().driver_data<fuuki16_state>();
+	fuuki16_state *state = screen.machine().driver_data<fuuki16_state>();
 	UINT16 layer0_scrollx, layer0_scrolly;
 	UINT16 layer1_scrollx, layer1_scrolly;
 	UINT16 layer2_scrollx, layer2_scrolly;
@@ -306,12 +306,12 @@ SCREEN_UPDATE( fuuki16 )
 	int tm_middle = pri_table[state->m_priority[0] & 0x0f][1];
 	int tm_back   = pri_table[state->m_priority[0] & 0x0f][2];
 
-	flip_screen_set(screen->machine(), state->m_vregs[0x1e / 2] & 1);
+	flip_screen_set(screen.machine(), state->m_vregs[0x1e / 2] & 1);
 
 	/* Layers scrolling */
 
-	scrolly_offs = state->m_vregs[0xc / 2] - (flip_screen_get(screen->machine()) ? 0x103 : 0x1f3);
-	scrollx_offs = state->m_vregs[0xe / 2] - (flip_screen_get(screen->machine()) ? 0x2a7 : 0x3f6);
+	scrolly_offs = state->m_vregs[0xc / 2] - (flip_screen_get(screen.machine()) ? 0x103 : 0x1f3);
+	scrollx_offs = state->m_vregs[0xe / 2] - (flip_screen_get(screen.machine()) ? 0x2a7 : 0x3f6);
 
 	layer0_scrolly = state->m_vregs[0x0 / 2] + scrolly_offs;
 	layer0_scrollx = state->m_vregs[0x2 / 2] + scrollx_offs;
@@ -321,30 +321,30 @@ SCREEN_UPDATE( fuuki16 )
 	layer2_scrolly = state->m_vregs[0x8 / 2];
 	layer2_scrollx = state->m_vregs[0xa / 2];
 
-	tilemap_set_scrollx(state->m_tilemap[0], 0, layer0_scrollx);
-	tilemap_set_scrolly(state->m_tilemap[0], 0, layer0_scrolly);
-	tilemap_set_scrollx(state->m_tilemap[1], 0, layer1_scrollx);
-	tilemap_set_scrolly(state->m_tilemap[1], 0, layer1_scrolly);
+	state->m_tilemap[0]->set_scrollx(0, layer0_scrollx);
+	state->m_tilemap[0]->set_scrolly(0, layer0_scrolly);
+	state->m_tilemap[1]->set_scrollx(0, layer1_scrollx);
+	state->m_tilemap[1]->set_scrolly(0, layer1_scrolly);
 
-	tilemap_set_scrollx(state->m_tilemap[2], 0, layer2_scrollx + 0x10);
-	tilemap_set_scrolly(state->m_tilemap[2], 0, layer2_scrolly /*+ 0x02*/);
-	tilemap_set_scrollx(state->m_tilemap[3], 0, layer2_scrollx + 0x10);
-	tilemap_set_scrolly(state->m_tilemap[3], 0, layer2_scrolly /*+ 0x02*/);
+	state->m_tilemap[2]->set_scrollx(0, layer2_scrollx + 0x10);
+	state->m_tilemap[2]->set_scrolly(0, layer2_scrolly /*+ 0x02*/);
+	state->m_tilemap[3]->set_scrollx(0, layer2_scrollx + 0x10);
+	state->m_tilemap[3]->set_scrolly(0, layer2_scrolly /*+ 0x02*/);
 
 	/* The backmost tilemap decides the background color(s) but sprites can
        go below the opaque pixels of that tilemap. We thus need to mark the
        transparent pixels of this layer with a different priority value */
-//  fuuki16_draw_layer(screen->machine(), bitmap, cliprect, tm_back, TILEMAP_DRAW_OPAQUE, 0);
+//  fuuki16_draw_layer(screen.machine(), bitmap, cliprect, tm_back, TILEMAP_DRAW_OPAQUE, 0);
 
 	/* Actually, bg colour is simply the last pen i.e. 0x1fff -pjp */
-	bitmap_fill(bitmap, cliprect, (0x800 * 4) - 1);
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	bitmap.fill((0x800 * 4) - 1, cliprect);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	fuuki16_draw_layer(screen->machine(), bitmap, cliprect, tm_back,   0, 1);
-	fuuki16_draw_layer(screen->machine(), bitmap, cliprect, tm_middle, 0, 2);
-	fuuki16_draw_layer(screen->machine(), bitmap, cliprect, tm_front,  0, 4);
+	fuuki16_draw_layer(screen.machine(), bitmap, cliprect, tm_back,   0, 1);
+	fuuki16_draw_layer(screen.machine(), bitmap, cliprect, tm_middle, 0, 2);
+	fuuki16_draw_layer(screen.machine(), bitmap, cliprect, tm_front,  0, 4);
 
-	draw_sprites(*screen, bitmap, cliprect);
+	draw_sprites(screen, bitmap, cliprect);
 
 	return 0;
 }

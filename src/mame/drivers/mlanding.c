@@ -58,22 +58,22 @@ static VIDEO_START(mlanding)
 // 256: Cockpit
 // 512: control centre screen
 // 768: plane landing sequence
-static SCREEN_UPDATE(mlanding)
+static SCREEN_UPDATE_IND16(mlanding)
 {
-	mlanding_state *state = screen->machine().driver_data<mlanding_state>();
+	mlanding_state *state = screen.machine().driver_data<mlanding_state>();
 	int x, y;
 
-	for (y = cliprect->min_y; y <= cliprect->max_y; ++y)
+	for (y = cliprect.min_y; y <= cliprect.max_y; ++y)
 	{
-		UINT16 *src = &state->m_g_ram[y * 512/2 + cliprect->min_x];
-		UINT16 *dst = BITMAP_ADDR16(bitmap, y, cliprect->min_x);
+		UINT16 *src = &state->m_g_ram[y * 512/2 + cliprect.min_x];
+		UINT16 *dst = &bitmap.pix16(y, cliprect.min_x);
 
-		for (x = cliprect->min_x; x <= cliprect->max_x; x += 2)
+		for (x = cliprect.min_x; x <= cliprect.max_x; x += 2)
 		{
 			UINT16 srcpix = *src++;
 
-			*dst++ = screen->machine().pens[256+(srcpix & 0xff) + (state->m_pal_fg_bank & 1 ? 0x100 : 0x000)];
-			*dst++ = screen->machine().pens[256+(srcpix >> 8) + (state->m_pal_fg_bank & 1 ? 0x100 : 0x000)];
+			*dst++ = screen.machine().pens[256+(srcpix & 0xff) + (state->m_pal_fg_bank & 1 ? 0x100 : 0x000)];
+			*dst++ = screen.machine().pens[256+(srcpix >> 8) + (state->m_pal_fg_bank & 1 ? 0x100 : 0x000)];
 		}
 	}
 
@@ -771,12 +771,11 @@ static MACHINE_CONFIG_START( mlanding, mlanding_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0, 511, 14*8, 511)
-	MCFG_SCREEN_UPDATE(mlanding)
+	MCFG_SCREEN_UPDATE_STATIC(mlanding)
 
 	MCFG_PALETTE_LENGTH(512*16)
 

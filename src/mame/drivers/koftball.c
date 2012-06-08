@@ -29,7 +29,6 @@ ft5_v6_c4.u58 /
 #define NVRAM_HACK 1
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m68000/m68000.h"
 #include "sound/okim6295.h"
 
@@ -38,7 +37,9 @@ class koftball_state : public driver_device
 {
 public:
 	koftball_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT16 *m_bmc_1_videoram;
 	UINT16 *m_bmc_2_videoram;
@@ -48,6 +49,8 @@ public:
 	UINT8 *m_bmc_colorram;
 	int m_clr_offset;
 	UINT16 m_prot_data;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
@@ -79,14 +82,14 @@ static VIDEO_START( koftball )
 	state->m_tilemap_1 = tilemap_create(machine, get_t1_tile_info,tilemap_scan_rows,8,8,64,32);
 	state->m_tilemap_2 = tilemap_create(machine, get_t2_tile_info,tilemap_scan_rows,8,8,64,32);
 
-	tilemap_set_transparent_pen(state->m_tilemap_1,0);
+	state->m_tilemap_1->set_transparent_pen(0);
 }
 
-static SCREEN_UPDATE( koftball )
+static SCREEN_UPDATE_IND16( koftball )
 {
-	koftball_state *state = screen->machine().driver_data<koftball_state>();
-	tilemap_draw( bitmap, cliprect, state->m_tilemap_2, 0, 0);
-	tilemap_draw( bitmap, cliprect, state->m_tilemap_1, 0, 0);
+	koftball_state *state = screen.machine().driver_data<koftball_state>();
+	state->m_tilemap_2->draw(bitmap, cliprect, 0, 0);
+	state->m_tilemap_1->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -141,14 +144,14 @@ static WRITE16_HANDLER(bmc_1_videoram_w)
 {
 	koftball_state *state = space->machine().driver_data<koftball_state>();
 	COMBINE_DATA(&state->m_bmc_1_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap_1, offset);
+	state->m_tilemap_1->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER(bmc_2_videoram_w)
 {
 	koftball_state *state = space->machine().driver_data<koftball_state>();
 	COMBINE_DATA(&state->m_bmc_2_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_tilemap_2, offset);
+	state->m_tilemap_2->mark_tile_dirty(offset);
 }
 
 static ADDRESS_MAP_START( koftball_mem, AS_PROGRAM, 16 )
@@ -202,10 +205,19 @@ static INPUT_PORTS_START( koftball )
 INPUT_PORTS_END
 
 
-static INTERRUPT_GEN( bmc_interrupt )
+static TIMER_DEVICE_CALLBACK( bmc_interrupt )
 {
-	static const int bmcints[]={2,3,6};
-	device_set_input_line(device, bmcints[cpu_getiloops(device)], HOLD_LINE);
+	koftball_state *state = timer.machine().driver_data<koftball_state>();
+	int scanline = param;
+
+	if(scanline == 240)
+		device_set_input_line(state->m_maincpu, 2, HOLD_LINE);
+
+	if(scanline == 128)
+		device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
+
+	if(scanline == 64)
+		device_set_input_line(state->m_maincpu, 6, HOLD_LINE);
 }
 
 static const gfx_layout tilelayout =
@@ -227,14 +239,13 @@ GFXDECODE_END
 static MACHINE_CONFIG_START( koftball, koftball_state )
 	MCFG_CPU_ADD("maincpu", M68000, 21477270/2 )
 	MCFG_CPU_PROGRAM_MAP(koftball_mem)
-	MCFG_CPU_VBLANK_INT_HACK(bmc_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", bmc_interrupt, "screen", 0, 1)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_UPDATE(koftball)
+	MCFG_SCREEN_UPDATE_STATIC(koftball)
 
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_GFXDECODE(koftball)
 
 	MCFG_SCREEN_SIZE(64*8, 32*8)

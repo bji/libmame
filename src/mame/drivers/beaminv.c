@@ -33,7 +33,7 @@ Stephh's notes (based on the games Z80 code and some tests) :
       . 2 players game : [0x1839] = 0xaa (player 1) or 0x55 (player 2)
   - Credits are stored at address 0x1837 (BCD coded, range 0x00-0x99)
 
-2) 'beaminva'
+2) 'pacominv'
 
   - Routine to handle the analog inputs at 0x04bd.
     Contents from 0x3400 (IN2) is compared with contents from 0x1d05 (value in RAM).
@@ -53,6 +53,7 @@ Stephh's notes (based on the games Z80 code and some tests) :
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
+#include "beaminv.lh"
 
 
 class beaminv_state : public driver_device
@@ -164,9 +165,9 @@ static MACHINE_RESET( beaminv )
  *
  *************************************/
 
-static SCREEN_UPDATE( beaminv )
+static SCREEN_UPDATE_RGB32( beaminv )
 {
-	beaminv_state *state = screen->machine().driver_data<beaminv_state>();
+	beaminv_state *state = screen.machine().driver_data<beaminv_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < state->m_videoram_size; offs++)
@@ -180,7 +181,7 @@ static SCREEN_UPDATE( beaminv )
 		for (i = 0; i < 8; i++)
 		{
 			pen_t pen = (data & 0x01) ? RGB_WHITE : RGB_BLACK;
-			*BITMAP_ADDR32(bitmap, y, x) = pen;
+			bitmap.pix32(y, x) = pen;
 
 			data = data >> 1;
 			x = x + 1;
@@ -297,7 +298,7 @@ static INPUT_PORTS_START( beaminv )
 INPUT_PORTS_END
 
 
-static INPUT_PORTS_START( beaminva )
+static INPUT_PORTS_START( pacominv )
 	PORT_INCLUDE( beaminv )
 
 	PORT_MODIFY("DSW")
@@ -339,11 +340,10 @@ static MACHINE_CONFIG_START( beaminv, beaminv_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 247, 16, 231)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_UPDATE(beaminv)
+	MCFG_SCREEN_UPDATE_STATIC(beaminv)
 
 MACHINE_CONFIG_END
 
@@ -366,7 +366,7 @@ ROM_START( beaminv )
 ROM_END
 
 
-ROM_START( beaminva )
+ROM_START( pacominv )
 	ROM_REGION( 0x10000, "maincpu", 0 )
 	ROM_LOAD( "rom_0", 0x0000, 0x0400, CRC(67e100dd) SHA1(5f58e2ed3da14c48f7c382ee6091a59caf8e0609) )
 	ROM_LOAD( "rom_1", 0x0400, 0x0400, CRC(442bbe98) SHA1(0e0382d4f6491629449759747019bd453a458b66) )
@@ -384,5 +384,5 @@ ROM_END
  *
  *************************************/
 
-GAME( 1979, beaminv,  0,       beaminv, beaminv,  0, ROT270, "Tekunon Kougyou", "Beam Invader (set 1)", GAME_NO_SOUND | GAME_SUPPORTS_SAVE )
-GAME( 1979, beaminva, beaminv, beaminv, beaminva, 0, ROT270, "Tekunon Kougyou", "Beam Invader (set 2)", GAME_NO_SOUND | GAME_SUPPORTS_SAVE ) // what's the real title ?
+GAMEL( 1979, beaminv,  0,       beaminv, beaminv,  0, ROT270, "Tekunon Kougyou",   "Beam Invader",  GAME_NO_SOUND | GAME_SUPPORTS_SAVE, layout_beaminv )
+GAMEL( 1979, pacominv, beaminv, beaminv, pacominv, 0, ROT270, "Pacom Corporation", "Pacom Invader", GAME_NO_SOUND | GAME_SUPPORTS_SAVE, layout_beaminv )

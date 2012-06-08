@@ -134,6 +134,8 @@ public:
 	UINT8 *  m_scrollram;
 	size_t   m_spriteram_size;
 
+	UINT8    m_nmi_mask;
+
 	/* video-related */
 	tilemap_t  *m_bg_tilemap;
 	tilemap_t  *m_fg_tilemap;
@@ -216,7 +218,7 @@ static WRITE8_HANDLER( m63_videoram_w )
 	m63_state *state = space->machine().driver_data<m63_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( m63_colorram_w )
@@ -224,7 +226,7 @@ static WRITE8_HANDLER( m63_colorram_w )
 	m63_state *state = space->machine().driver_data<m63_state>();
 
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( m63_videoram2_w )
@@ -232,7 +234,7 @@ static WRITE8_HANDLER( m63_videoram2_w )
 	m63_state *state = space->machine().driver_data<m63_state>();
 
 	state->m_videoram2[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( m63_palbank_w )
@@ -242,7 +244,7 @@ static WRITE8_HANDLER( m63_palbank_w )
 	if (state->m_pal_bank != (data & 0x01))
 	{
 		state->m_pal_bank = data & 0x01;
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 	}
 }
 
@@ -251,7 +253,7 @@ static WRITE8_HANDLER( m63_flipscreen_w )
 	if (flip_screen_get(space->machine()) != (~data & 0x01))
 	{
 		flip_screen_set(space->machine(), ~data & 0x01);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -291,11 +293,11 @@ static VIDEO_START( m63 )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 
-	tilemap_set_scroll_cols(state->m_bg_tilemap, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_bg_tilemap->set_scroll_cols(32);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	m63_state *state = machine.driver_data<m63_state>();
 	int offs;
@@ -336,18 +338,18 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-static SCREEN_UPDATE( m63 )
+static SCREEN_UPDATE_IND16( m63 )
 {
-	m63_state *state = screen->machine().driver_data<m63_state>();
+	m63_state *state = screen.machine().driver_data<m63_state>();
 
 	int col;
 
 	for (col = 0; col < 32; col++)
-		tilemap_set_scrolly(state->m_bg_tilemap, col, state->m_scrollram[col * 8]);
+		state->m_bg_tilemap->set_scrolly(col, state->m_scrollram[col * 8]);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -434,6 +436,14 @@ static WRITE8_HANDLER( fghtbskt_samples_w )
 		sample_start_raw(state->m_samples, 0, state->m_samplebuf + ((data & 0xf0) << 8), 0x2000, 8000, 0);
 }
 
+static WRITE8_HANDLER( nmi_mask_w )
+{
+	m63_state *state = space->machine().driver_data<m63_state>();
+
+	state->m_nmi_mask = data & 1;
+}
+
+
 static ADDRESS_MAP_START( m63_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0000, 0xbfff) AM_ROM
 	AM_RANGE(0xd000, 0xdfff) AM_RAM
@@ -443,7 +453,7 @@ static ADDRESS_MAP_START( m63_map, AS_PROGRAM, 8 )
 	AM_RANGE(0xe400, 0xe7ff) AM_RAM_WRITE(m63_videoram2_w) AM_BASE_MEMBER(m63_state, m_videoram2)
 	AM_RANGE(0xe800, 0xebff) AM_RAM_WRITE(m63_videoram_w) AM_BASE_MEMBER(m63_state, m_videoram)
 	AM_RANGE(0xec00, 0xefff) AM_RAM_WRITE(m63_colorram_w) AM_BASE_MEMBER(m63_state, m_colorram)
-	AM_RANGE(0xf000, 0xf000) AM_WRITE(interrupt_enable_w)	/* NMI enable */
+	AM_RANGE(0xf000, 0xf000) AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xf002, 0xf002) AM_WRITE(m63_flipscreen_w)
 	AM_RANGE(0xf003, 0xf003) AM_WRITE(m63_palbank_w)
 	AM_RANGE(0xf006, 0xf007) AM_WRITE(coin_w)
@@ -472,7 +482,7 @@ static ADDRESS_MAP_START( fghtbskt_map, AS_PROGRAM, 8 )
 	AM_RANGE(0xf001, 0xf001) AM_WRITENOP
 	AM_RANGE(0xf002, 0xf002) AM_WRITE(soundlatch_w)
 	AM_RANGE(0xf800, 0xf800) AM_WRITENOP
-	AM_RANGE(0xf801, 0xf801) AM_WRITE(interrupt_enable_w)
+	AM_RANGE(0xf801, 0xf801) AM_WRITE(nmi_mask_w)
 	AM_RANGE(0xf802, 0xf802) AM_WRITE(fghtbskt_flipscreen_w)
 	AM_RANGE(0xf803, 0xf803) AM_WRITENOP
 	AM_RANGE(0xf804, 0xf804) AM_WRITENOP
@@ -734,12 +744,21 @@ static MACHINE_RESET( m63 )
 	state->m_p2 = 0;
 }
 
+
+static INTERRUPT_GEN( vblank_irq )
+{
+	m63_state *state = device->machine().driver_data<m63_state>();
+
+	if(state->m_nmi_mask)
+		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 static MACHINE_CONFIG_START( m63, m63_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu",Z80,XTAL_12MHz/4)     /* 3 MHz */
 	MCFG_CPU_PROGRAM_MAP(m63_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("soundcpu",I8039,XTAL_12MHz/4)	/* ????? */
 	MCFG_CPU_PROGRAM_MAP(i8039_map)
@@ -753,10 +772,9 @@ static MACHINE_CONFIG_START( m63, m63_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(m63)
+	MCFG_SCREEN_UPDATE_STATIC(m63)
 
 	MCFG_GFXDECODE(m63)
 	MCFG_PALETTE_LENGTH(256+4)
@@ -784,7 +802,7 @@ static MACHINE_CONFIG_START( fghtbskt, m63_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_12MHz/4)     /* 3 MHz */
 	MCFG_CPU_PROGRAM_MAP(fghtbskt_map)
-	MCFG_CPU_VBLANK_INT("screen", nmi_line_pulse)
+	MCFG_CPU_VBLANK_INT("screen", vblank_irq)
 
 	MCFG_CPU_ADD("soundcpu", I8039,XTAL_12MHz/4)	/* ????? */
 	MCFG_CPU_PROGRAM_MAP(i8039_map)
@@ -798,10 +816,9 @@ static MACHINE_CONFIG_START( fghtbskt, m63_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(m63)
+	MCFG_SCREEN_UPDATE_STATIC(m63)
 
 	MCFG_GFXDECODE(fghtbskt)
 	MCFG_PALETTE_LENGTH(256)

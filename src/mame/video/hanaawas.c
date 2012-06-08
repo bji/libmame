@@ -66,7 +66,7 @@ WRITE8_HANDLER( hanaawas_videoram_w )
 {
 	hanaawas_state *state = space->machine().driver_data<hanaawas_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( hanaawas_colorram_w )
@@ -75,8 +75,8 @@ WRITE8_HANDLER( hanaawas_colorram_w )
 	state->m_colorram[offset] = data;
 
 	/* dirty both current and next offsets */
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, (offset + (flip_screen_get(space->machine()) ? -1 : 1)) & 0x03ff);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
+	state->m_bg_tilemap->mark_tile_dirty((offset + (flip_screen_get(space->machine()) ? -1 : 1)) & 0x03ff);
 }
 
 WRITE8_DEVICE_HANDLER( hanaawas_portB_w )
@@ -85,7 +85,7 @@ WRITE8_DEVICE_HANDLER( hanaawas_portB_w )
 	if (flip_screen_get(device->machine()) != (~data & 0x80))
 	{
 		flip_screen_set(device->machine(), ~data & 0x80);
-		tilemap_mark_all_tiles_dirty_all(device->machine());
+		device->machine().tilemap().mark_all_dirty();
 	}
 }
 
@@ -108,9 +108,9 @@ VIDEO_START( hanaawas )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-SCREEN_UPDATE( hanaawas )
+SCREEN_UPDATE_IND16( hanaawas )
 {
-	hanaawas_state *state = screen->machine().driver_data<hanaawas_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	hanaawas_state *state = screen.machine().driver_data<hanaawas_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

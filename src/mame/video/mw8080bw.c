@@ -8,9 +8,9 @@
 #include "includes/mw8080bw.h"
 
 
-SCREEN_UPDATE( mw8080bw )
+SCREEN_UPDATE_RGB32( mw8080bw )
 {
-	mw8080bw_state *state = screen->machine().driver_data<mw8080bw_state>();
+	mw8080bw_state *state = screen.machine().driver_data<mw8080bw_state>();
 	UINT8 x = 0;
 	UINT8 y = MW8080BW_VCOUNTER_START_NO_VBLANK;
 	UINT8 video_data = 0;
@@ -19,7 +19,7 @@ SCREEN_UPDATE( mw8080bw )
 	{
 		/* plot the current pixel */
 		pen_t pen = (video_data & 0x01) ? RGB_WHITE : RGB_BLACK;
-		*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
+		bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
 
 		/* next pixel */
 		video_data = video_data >> 1;
@@ -34,7 +34,7 @@ SCREEN_UPDATE( mw8080bw )
 			for (i = 0; i < 4; i++)
 			{
 				pen = (video_data & 0x01) ? RGB_WHITE : RGB_BLACK;
-				*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
+				bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
 
 				video_data = video_data >> 1;
 			}
@@ -75,9 +75,9 @@ SCREEN_UPDATE( mw8080bw )
 #define PHANTOM2_SIDE_TRENCH_LIGHT_RGB32_PEN     MAKE_RGB(0x72, 0x72, 0x72)
 
 
-SCREEN_UPDATE( spcenctr )
+SCREEN_UPDATE_RGB32( spcenctr )
 {
-	mw8080bw_state *state = screen->machine().driver_data<mw8080bw_state>();
+	mw8080bw_state *state = screen.machine().driver_data<mw8080bw_state>();
 	UINT8 line_buf[256]; /* 256x1 bit RAM */
 
 	UINT8 x = 0;
@@ -121,7 +121,7 @@ SCREEN_UPDATE( spcenctr )
 				pen = line_buf[x] ? PHANTOM2_BOTTOM_TRENCH_LIGHT_RGB32_PEN : PHANTOM2_BOTTOM_TRENCH_DARK_RGB32_PEN;
 		}
 
-		*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
+		bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
 
 		center = center + 1;
 		width = width + ((center & 0x80) ? -1 : 1);
@@ -143,7 +143,7 @@ SCREEN_UPDATE( spcenctr )
 			for (i = 0; i < 4; i++)
 			{
 				pen = (video_data & 0x01) ? RGB_WHITE : RGB_BLACK;
-				*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
+				bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
 
 				video_data = video_data >> 1;
 			}
@@ -219,9 +219,9 @@ SCREEN_UPDATE( spcenctr )
 #define PHANTOM2_RGB32_CLOUD_PEN          MAKE_RGB(0xc0, 0xc0, 0xc0)
 
 
-SCREEN_UPDATE( phantom2 )
+SCREEN_UPDATE_RGB32( phantom2 )
 {
-	mw8080bw_state *state = screen->machine().driver_data<mw8080bw_state>();
+	mw8080bw_state *state = screen.machine().driver_data<mw8080bw_state>();
 	UINT8 x = 0;
 	UINT8 y = MW8080BW_VCOUNTER_START_NO_VBLANK;
 	UINT8 video_data = 0;
@@ -229,7 +229,7 @@ SCREEN_UPDATE( phantom2 )
 
 	UINT16 cloud_counter = state->m_phantom2_cloud_counter;
 
-	UINT8 *cloud_region = screen->machine().region("proms")->base();
+	UINT8 *cloud_region = screen.machine().region("proms")->base();
 
 	while (1)
 	{
@@ -246,7 +246,7 @@ SCREEN_UPDATE( phantom2 )
 		else
 			pen = bit ? RGB_WHITE : RGB_BLACK;
 
-		*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
+		bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
 
 		/* move to next pixel -- if ripple carry is currently set,
            prepare for loading the shift register */
@@ -280,7 +280,7 @@ SCREEN_UPDATE( phantom2 )
 			for (i = 0; i < 4; i++)
 			{
 				pen = (video_data & 0x01) ? RGB_WHITE : RGB_BLACK;
-				*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
+				bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
 
 				video_data = video_data >> 1;
 			}
@@ -311,14 +311,18 @@ SCREEN_UPDATE( phantom2 )
 }
 
 
-SCREEN_EOF( phantom2 )
+SCREEN_VBLANK( phantom2 )
 {
-	mw8080bw_state *state = machine.driver_data<mw8080bw_state>();
+	// falling edge
+	if (!vblank_on)
+	{
+		mw8080bw_state *state = screen.machine().driver_data<mw8080bw_state>();
 
-	state->m_phantom2_cloud_counter += MW8080BW_VTOTAL;
+		state->m_phantom2_cloud_counter += MW8080BW_VTOTAL;
 
-	if (state->m_phantom2_cloud_counter >= PHANTOM2_CLOUD_COUNTER_END)
-		state->m_phantom2_cloud_counter = PHANTOM2_CLOUD_COUNTER_START + (state->m_phantom2_cloud_counter - PHANTOM2_CLOUD_COUNTER_END);
+		if (state->m_phantom2_cloud_counter >= PHANTOM2_CLOUD_COUNTER_END)
+			state->m_phantom2_cloud_counter = PHANTOM2_CLOUD_COUNTER_START + (state->m_phantom2_cloud_counter - PHANTOM2_CLOUD_COUNTER_END);
+	}
 }
 
 
@@ -331,9 +335,9 @@ SCREEN_EOF( phantom2 )
 
 /* the flip screen circuit is just a couple of relays on the monitor PCB */
 
-SCREEN_UPDATE( invaders )
+SCREEN_UPDATE_RGB32( invaders )
 {
-	mw8080bw_state *state = screen->machine().driver_data<mw8080bw_state>();
+	mw8080bw_state *state = screen.machine().driver_data<mw8080bw_state>();
 	UINT8 x = 0;
 	UINT8 y = MW8080BW_VCOUNTER_START_NO_VBLANK;
 	UINT8 video_data = 0;
@@ -345,9 +349,9 @@ SCREEN_UPDATE( invaders )
 		pen_t pen = (video_data & 0x01) ? RGB_WHITE : RGB_BLACK;
 
 		if (flip)
-			*BITMAP_ADDR32(bitmap, MW8080BW_VBSTART - 1 - (y - MW8080BW_VCOUNTER_START_NO_VBLANK), MW8080BW_HPIXCOUNT - 1 - x) = pen;
+			bitmap.pix32(MW8080BW_VBSTART - 1 - (y - MW8080BW_VCOUNTER_START_NO_VBLANK), MW8080BW_HPIXCOUNT - 1 - x) = pen;
 		else
-			*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
+			bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, x) = pen;
 
 		/* next pixel */
 		video_data = video_data >> 1;
@@ -364,9 +368,9 @@ SCREEN_UPDATE( invaders )
 				pen = (video_data & 0x01) ? RGB_WHITE : RGB_BLACK;
 
 				if (flip)
-					*BITMAP_ADDR32(bitmap, MW8080BW_VBSTART - 1 - (y - MW8080BW_VCOUNTER_START_NO_VBLANK), MW8080BW_HPIXCOUNT - 1 - (256 + i)) = pen;
+					bitmap.pix32(MW8080BW_VBSTART - 1 - (y - MW8080BW_VCOUNTER_START_NO_VBLANK), MW8080BW_HPIXCOUNT - 1 - (256 + i)) = pen;
 				else
-					*BITMAP_ADDR32(bitmap, y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
+					bitmap.pix32(y - MW8080BW_VCOUNTER_START_NO_VBLANK, 256 + i) = pen;
 
 				video_data = video_data >> 1;
 			}

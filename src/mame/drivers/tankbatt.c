@@ -99,14 +99,12 @@ static WRITE8_HANDLER( tankbatt_interrupt_enable_w )
 
 	/* hack - turn off the engine noise if the normal game nmi's are disabled */
 	if (data) sample_stop (space->machine().device("samples"), 2);
-//  interrupt_enable_w (offset, !data);
 }
 
 static WRITE8_HANDLER( tankbatt_demo_interrupt_enable_w )
 {
 	tankbatt_state *state = space->machine().driver_data<tankbatt_state>();
 	state->m_nmi_enable = data;
-//  interrupt_enable_w (offset, data);
 }
 
 static WRITE8_HANDLER( tankbatt_sh_expl_w )
@@ -274,10 +272,10 @@ GFXDECODE_END
 static const char *const tankbatt_sample_names[] =
 {
 	"*tankbatt",
-	"fire.wav",
-	"engine1.wav",
-	"engine2.wav",
-	"explode1.wav",
+	"fire",
+	"engine1",
+	"engine2",
+	"explode1",
     0	/* end of array */
 };
 
@@ -300,10 +298,9 @@ static MACHINE_CONFIG_START( tankbatt, tankbatt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(tankbatt)
+	MCFG_SCREEN_UPDATE_STATIC(tankbatt)
 
 	MCFG_GFXDECODE(tankbatt)
 	MCFG_PALETTE_LENGTH(256*2)

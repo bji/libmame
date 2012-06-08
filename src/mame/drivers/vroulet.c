@@ -81,14 +81,14 @@ static WRITE8_HANDLER( vroulet_videoram_w )
 {
 	vroulet_state *state = space->machine().driver_data<vroulet_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE8_HANDLER( vroulet_colorram_w )
 {
 	vroulet_state *state = space->machine().driver_data<vroulet_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -108,11 +108,11 @@ static VIDEO_START(vroulet)
 		8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE(vroulet)
+static SCREEN_UPDATE_IND16(vroulet)
 {
-	vroulet_state *state = screen->machine().driver_data<vroulet_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[0], 0x320, 1, 0, 0,
+	vroulet_state *state = screen.machine().driver_data<vroulet_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[0], 0x320, 1, 0, 0,
 		state->m_ball[1], state->m_ball[0] - 12, 0);
 	return 0;
 }
@@ -292,10 +292,9 @@ static MACHINE_CONFIG_START( vroulet, vroulet_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(vroulet)
+	MCFG_SCREEN_UPDATE_STATIC(vroulet)
 
 	MCFG_GFXDECODE(vroulet)
 	MCFG_PALETTE_LENGTH(128*4)

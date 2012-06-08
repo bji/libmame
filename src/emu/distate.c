@@ -489,7 +489,7 @@ void device_state_interface::set_state(int index, UINT64 value)
 //  of indexed state from a string
 //-------------------------------------------------
 
-void device_state_interface::set_state(int index, const char *string)
+void device_state_interface::set_state_string(int index, const char *string)
 {
 	// NULL or out-of-range entry is a no-op
 	const device_state_entry *entry = state_find_entry(index);
@@ -517,7 +517,7 @@ device_state_entry &device_state_interface::state_add(int index, const char *sym
 	assert(symbol != NULL);
 
 	// allocate new entry
-	device_state_entry *entry = auto_alloc(device().machine(), device_state_entry(index, symbol, data, size));
+	device_state_entry *entry = global_alloc(device_state_entry(index, symbol, data, size));
 
 	// append to the end of the list
 	m_state_list.append(*entry);

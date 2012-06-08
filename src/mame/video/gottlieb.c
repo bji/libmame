@@ -6,7 +6,6 @@
 
 #include "emu.h"
 #include "includes/gottlieb.h"
-#include "machine/laserdsc.h"
 #include "video/resnet.h"
 
 
@@ -57,14 +56,14 @@ WRITE8_HANDLER( gottlieb_video_control_w )
 	if (flip_screen_x_get(space->machine()) != (data & 0x02))
 	{
 		flip_screen_x_set(space->machine(), data & 0x02);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 
 	/* bit 2 controls horizonal flip screen */
 	if (flip_screen_y_get(space->machine()) != (data & 0x04))
 	{
 		flip_screen_y_set(space->machine(), data & 0x04);
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 
 	/* in Q*Bert Qubes only, bit 4 controls the sprite bank */
@@ -75,7 +74,6 @@ WRITE8_HANDLER( gottlieb_video_control_w )
 WRITE8_HANDLER( gottlieb_laserdisc_video_control_w )
 {
 	gottlieb_state *state = space->machine().driver_data<gottlieb_state>();
-	device_t *laserdisc = space->machine().devicelist().first(PIONEER_PR8210);
 
 	/* bit 0 works like the other games */
 	gottlieb_video_control_w(space, offset, data & 0x01);
@@ -85,8 +83,8 @@ WRITE8_HANDLER( gottlieb_laserdisc_video_control_w )
 
 	/* bit 2 video enable (0 = black screen) */
 	/* bit 3 genlock control (1 = show laserdisc image) */
-	laserdisc_overlay_enable(laserdisc, (data & 0x04) ? TRUE : FALSE);
-	laserdisc_video_enable(laserdisc, ((data & 0x0c) == 0x0c) ? TRUE : FALSE);
+	state->m_laserdisc->overlay_enable((data & 0x04) ? TRUE : FALSE);
+	state->m_laserdisc->video_enable(((data & 0x0c) == 0x0c) ? TRUE : FALSE);
 
 	/* configure the palette if the laserdisc is enabled */
 	state->m_transparent0 = (data >> 3) & 1;
@@ -106,7 +104,7 @@ WRITE8_HANDLER( gottlieb_videoram_w )
 	gottlieb_state *state = space->machine().driver_data<gottlieb_state>();
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -167,8 +165,8 @@ VIDEO_START( gottlieb )
 
 	/* configure the background tilemap */
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_bg_tilemap, 0);
-	tilemap_set_scrolldx(state->m_bg_tilemap, 0, 318 - 256);
+	state->m_bg_tilemap->set_transparent_pen(0);
+	state->m_bg_tilemap->set_scrolldx(0, 318 - 256);
 
 	gfx_element_set_source(machine.gfx[0], state->m_charram);
 
@@ -194,8 +192,8 @@ VIDEO_START( screwloo )
 
 	/* configure the background tilemap */
 	state->m_bg_tilemap = tilemap_create(machine, get_screwloo_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_bg_tilemap, 0);
-	tilemap_set_scrolldx(state->m_bg_tilemap, 0, 318 - 256);
+	state->m_bg_tilemap->set_transparent_pen(0);
+	state->m_bg_tilemap->set_scrolldx(0, 318 - 256);
 
 	gfx_element_set_source(machine.gfx[0], state->m_charram);
 
@@ -213,11 +211,11 @@ VIDEO_START( screwloo )
  *
  *************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	gottlieb_state *state = machine.driver_data<gottlieb_state>();
 	UINT8 *spriteram = state->m_spriteram;
-	rectangle clip = *cliprect;
+	rectangle clip = cliprect;
     int offs;
 
     /* this is a temporary guess until the sprite hardware is better understood */
@@ -235,7 +233,7 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 		if (flip_screen_x_get(machine)) sx = 233 - sx;
 		if (flip_screen_y_get(machine)) sy = 244 - sy;
 
-		drawgfx_transpen(bitmap, &clip,
+		drawgfx_transpen(bitmap, clip,
 			machine.gfx[2],
 			code, 0,
 			flip_screen_x_get(machine), flip_screen_y_get(machine),
@@ -251,21 +249,21 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
  *
  *************************************/
 
-SCREEN_UPDATE( gottlieb )
+SCREEN_UPDATE_RGB32( gottlieb )
 {
-	gottlieb_state *state = screen->machine().driver_data<gottlieb_state>();
+	gottlieb_state *state = screen.machine().driver_data<gottlieb_state>();
 	/* if the background has lower priority, render it first, else clear the screen */
 	if (!state->m_background_priority)
-		tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, TILEMAP_DRAW_OPAQUE, 0);
+		state->m_bg_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE, 0);
 	else
-		bitmap_fill(bitmap, cliprect, 0);
+		bitmap.fill(screen.machine().pens[0], cliprect);
 
 	/* draw the sprites */
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 
 	/* if the background has higher priority, render it now */
 	if (state->m_background_priority)
-		tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+		state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }

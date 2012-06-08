@@ -58,8 +58,8 @@ enum
     MACROS
 ***************************************************************************/
 
-//#define NX(_dv, _x) ((float) (_x)/(float)rect_get_width(&(_dv)->bounds))
-//#define NY(_dv, _y) ((float) (_y)/(float)rect_get_height(&(_dv)->bounds))
+//#define NX(_dv, _x) ((float) (_x)/(float)(_dv)->bounds.width())
+//#define NY(_dv, _y) ((float) (_y)/(float)(_dv)->bounds.height())
 #define NX(_dv, _x) ((float) (_x)/(float) (dv)->rt_width)
 #define NY(_dv, _y) ((float) (_y)/(float) (dv)->rt_height)
 
@@ -166,10 +166,7 @@ public:
 		this->state = flags | VIEW_STATE_NEEDS_UPDATE;
 
 		// initial size
-		this->bounds.min_x = 0;
-		this->bounds.min_y = 0;
-		this->bounds.max_x = 300;
-		this->bounds.max_y = 300;
+		this->bounds.set(0, 300, 0, 300);
 
 		/* specials */
 		switch (type)
@@ -220,37 +217,6 @@ public:
 /***************************************************************************
     INLINE FUNCTIONS
 ***************************************************************************/
-
-INLINE int rect_get_width(rectangle *r)
-{
-	return r->max_x - r->min_x + 1;
-}
-
-INLINE int rect_get_height(rectangle *r)
-{
-	return r->max_y - r->min_y + 1;
-}
-
-INLINE void rect_set_width(rectangle *r, int width)
-{
-	r->max_x = r->min_x + width - 1;
-}
-
-INLINE void rect_set_height(rectangle *r, int height)
-{
-	r->max_y = r->min_y + height - 1;
-}
-
-INLINE void rect_move(rectangle *r, int x, int y)
-{
-	int dx = x - r->min_x;
-	int dy = y - r->min_y;
-
-	r->min_x += dx;
-	r->max_x += dx;
-	r->min_y += dy;
-	r->max_y += dy;
-}
 
 INLINE int dview_is_state(DView *dv, int state)
 {
@@ -316,47 +282,46 @@ static DView *dview_alloc(render_target *target, running_machine &machine, debug
 
 static void dview_free(DView *dv)
 {
-	//astring_free(dv->title);
 	LIST_REMOVE(list, dv, DView);
 	auto_free(dv->machine(), dv);
 }
 
-static void dview_get_rect(DView *dv, int type, rectangle *rect)
+static void dview_get_rect(DView *dv, int type, rectangle &rect)
 {
-	*rect = dv->bounds;
+	rect = dv->bounds;
 	switch (type)
 	{
 	case RECT_DVIEW:
 		break;
 	case RECT_DVIEW_CLIENT:
-		rect->min_x += BORDER_XTHICKNESS;
-		rect->max_x -= (BORDER_XTHICKNESS + dv->vsb.visible * VSB_WIDTH);
-		rect->min_y += 2 * BORDER_YTHICKNESS + TITLE_HEIGHT;
-		rect->max_y -= (BORDER_YTHICKNESS + dv->hsb.visible * HSB_HEIGHT);
+		rect.min_x += BORDER_XTHICKNESS;
+		rect.max_x -= (BORDER_XTHICKNESS + dv->vsb.visible * VSB_WIDTH);
+		rect.min_y += 2 * BORDER_YTHICKNESS + TITLE_HEIGHT;
+		rect.max_y -= (BORDER_YTHICKNESS + dv->hsb.visible * HSB_HEIGHT);
 		break;
 	case RECT_DVIEW_HSB:
-		rect->min_x += 0;
-		rect->max_x -= /* dv->vsb.visible * */ VSB_WIDTH;
-		rect->min_y = dv->bounds.max_y - HSB_HEIGHT;
-		rect->max_y -= 0;
+		rect.min_x += 0;
+		rect.max_x -= /* dv->vsb.visible * */ VSB_WIDTH;
+		rect.min_y = dv->bounds.max_y - HSB_HEIGHT;
+		rect.max_y -= 0;
 		break;
 	case RECT_DVIEW_VSB:
-		rect->min_x = dv->bounds.max_x - VSB_WIDTH;
-		rect->max_x -= 0;
-		rect->min_y += TITLE_HEIGHT;
-		rect->max_y -= /* dv->hsb.visible * */ HSB_HEIGHT;
+		rect.min_x = dv->bounds.max_x - VSB_WIDTH;
+		rect.max_x -= 0;
+		rect.min_y += TITLE_HEIGHT;
+		rect.max_y -= /* dv->hsb.visible * */ HSB_HEIGHT;
 		break;
 	case RECT_DVIEW_SIZE:
-		rect->min_x = dv->bounds.max_x - VSB_WIDTH;
-		rect->max_x -= 0;
-		rect->min_y = dv->bounds.max_y - HSB_HEIGHT;
-		rect->max_y -= 0;
+		rect.min_x = dv->bounds.max_x - VSB_WIDTH;
+		rect.max_x -= 0;
+		rect.min_y = dv->bounds.max_y - HSB_HEIGHT;
+		rect.max_y -= 0;
 		break;
 	case RECT_DVIEW_TITLE:
-		rect->min_x += 0;
-		rect->max_x -= 0;
-		rect->min_y += 0;
-		rect->max_y = rect->min_y + TITLE_HEIGHT - 1;
+		rect.min_x += 0;
+		rect.max_x -= 0;
+		rect.min_y += 0;
+		rect.max_y = rect.min_y + TITLE_HEIGHT - 1;
 		break;
 	default:
 		assert_always(FALSE, "unknown rectangle type");
@@ -373,7 +338,7 @@ static void dview_draw_outlined_box(DView *dv, int rtype, int x, int y, int w, i
 {
 	rectangle r;
 
-	dview_get_rect(dv, rtype, &r);
+	dview_get_rect(dv, rtype, r);
 	ui_draw_outlined_box(dv->container, NX(dv, x + r.min_x), NY(dv, y + r.min_y),
 			NX(dv, x + r.min_x + w), NY(dv, y + r.min_y + h), bg);
 }
@@ -382,7 +347,7 @@ static void dview_draw_box(DView *dv, int rtype, int x, int y, int w, int h, rgb
 {
 	rectangle r;
 
-	dview_get_rect(dv, rtype, &r);
+	dview_get_rect(dv, rtype, r);
 	dv->container->add_rect(NX(dv, x + r.min_x), NY(dv, y + r.min_y),
 			NX(dv, x + r.min_x + w), NY(dv, y + r.min_y + h), col,
 			PRIMFLAG_BLENDMODE(BLENDMODE_ALPHA));
@@ -392,13 +357,13 @@ static void dview_draw_char(DView *dv, int rtype, int x, int y, int h, rgb_t col
 {
 	rectangle r;
 
-	dview_get_rect(dv, rtype, &r);
+	dview_get_rect(dv, rtype, r);
 	dv->container->add_char(
 			NX(dv, x + r.min_x),
 			NY(dv, y + r.min_y),
 			NY(dv, h),
 			debug_font_aspect,
-			//(float) rect_get_height(&dv->bounds) / (float) rect_get_width(&dv->bounds), //render_get_ui_aspect(),
+			//(float) dv->bounds.height() / (float) dv->bounds->width(), //render_get_ui_aspect(),
 			col,
 			*debug_font,
 			ch);
@@ -408,8 +373,8 @@ static int dview_xy_in_rect(DView *dv, int type, int x, int y)
 {
 	rectangle r;
 
-	dview_get_rect(dv, type, &r);
-	if (x >= r.min_x && x <= r.max_x && y >= r.min_y && y <= r.max_y)
+	dview_get_rect(dv, type, r);
+	if (r.contains(x, y))
 		return TRUE;
 	return FALSE;
 }
@@ -423,12 +388,12 @@ static void dview_draw_hsb(DView *dv)
 	rectangle r;
 	adjustment *sb = &dv->hsb;
 
-	dview_get_rect(dv, RECT_DVIEW_HSB, &r);
+	dview_get_rect(dv, RECT_DVIEW_HSB, r);
 
 	dview_draw_outlined_box(dv, RECT_DVIEW_HSB, 0, 0, VSB_WIDTH,HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
-	dview_draw_outlined_box(dv, RECT_DVIEW_HSB, rect_get_width(&r) - VSB_WIDTH, 0, VSB_WIDTH, HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
+	dview_draw_outlined_box(dv, RECT_DVIEW_HSB, r.width() - VSB_WIDTH, 0, VSB_WIDTH, HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
 
-	ts = (r.max_x - r.min_x + 1) - 2 * VSB_WIDTH;
+	ts = (r.width()) - 2 * VSB_WIDTH;
 
 	sz = (ts * (sb->page_size)) / (sb->upper - sb->lower);
 	ts = ts - sz;
@@ -447,12 +412,12 @@ static void dview_draw_vsb(DView *dv)
 	rectangle r;
 	adjustment *sb = &dv->vsb;
 
-	dview_get_rect(dv, RECT_DVIEW_VSB, &r);
+	dview_get_rect(dv, RECT_DVIEW_VSB, r);
 
-	dview_draw_outlined_box(dv, RECT_DVIEW_VSB, 0, rect_get_height(&r) - HSB_HEIGHT, VSB_WIDTH, HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
-	dview_draw_outlined_box(dv, RECT_DVIEW_VSB, 0, 0,               VSB_WIDTH, HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
+	dview_draw_outlined_box(dv, RECT_DVIEW_VSB, 0, r.height() - HSB_HEIGHT, VSB_WIDTH, HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
+	dview_draw_outlined_box(dv, RECT_DVIEW_VSB, 0, 0,                       VSB_WIDTH, HSB_HEIGHT, MAKE_ARGB(0xff, 0xff, 0x00, 0x00));
 
-	ts = (r.max_y - r.min_y + 1) - 2 * HSB_HEIGHT;
+	ts = r.height() - 2 * HSB_HEIGHT;
 
 	sz = (ts * (sb->page_size)) / (sb->upper - sb->lower);
 	ts = ts - sz;
@@ -466,10 +431,10 @@ static void dview_draw_size(DView *dv)
 {
 	rectangle r;
 
-	dview_get_rect(dv, RECT_DVIEW_SIZE, &r);
+	dview_get_rect(dv, RECT_DVIEW_SIZE, r);
 
 	dview_draw_outlined_box(dv, RECT_DVIEW_SIZE, 0, 0,
-			rect_get_width(&r),rect_get_height(&r), MAKE_ARGB(0xff, 0xff, 0xff, 0x00));
+			r.width(),r.height(), MAKE_ARGB(0xff, 0xff, 0xff, 0x00));
 }
 
 static void dview_set_title(DView *dv, astring title)
@@ -487,12 +452,12 @@ static void dview_draw_title(DView *dv)
 	rgb_t col = MAKE_ARGB(0xff,0x00,0x00,0xff);
 	rectangle r;
 
-	dview_get_rect(dv, RECT_DVIEW_TITLE, &r);
+	dview_get_rect(dv, RECT_DVIEW_TITLE, r);
 
 	if (dv == focus_view)
 		col = MAKE_ARGB(0xff,0x00,0x7f,0x00);
 
-	dview_draw_outlined_box(dv, RECT_DVIEW_TITLE, 0, 0, rect_get_width(&dv->bounds), TITLE_HEIGHT, col);
+	dview_draw_outlined_box(dv, RECT_DVIEW_TITLE, 0, 0, dv->bounds.width(), TITLE_HEIGHT, col);
 
 	if (!dv->title)
 		return;
@@ -562,13 +527,13 @@ static int dview_on_mouse(DView *dv, int mx, int my, int button)
 			rectangle r;
 			int xt;
 
-			dview_get_rect(dv, RECT_DVIEW_HSB, &r);
+			dview_get_rect(dv, RECT_DVIEW_HSB, r);
 			x -= r.min_x;
 
-			xt = (x - VSB_WIDTH) * (sb->upper - sb->lower) / (rect_get_width(&r) - 2 * dv->vsb.visible * VSB_WIDTH) + sb->lower;
+			xt = (x - VSB_WIDTH) * (sb->upper - sb->lower) / (r.width() - 2 * dv->vsb.visible * VSB_WIDTH) + sb->lower;
 			if (x < VSB_WIDTH)
 				sb->value -= sb->step_increment;
-			else if (x > rect_get_width(&r) - VSB_WIDTH)
+			else if (x > r.width() - VSB_WIDTH)
 				sb->value += sb->step_increment;
 			else if (xt < sb->value)
 				sb->value -= sb->page_increment;
@@ -601,13 +566,13 @@ static int dview_on_mouse(DView *dv, int mx, int my, int button)
 			rectangle r;
 			int yt;
 
-			dview_get_rect(dv, RECT_DVIEW_VSB, &r);
+			dview_get_rect(dv, RECT_DVIEW_VSB, r);
 			y -= r.min_y;
-			yt = (y - HSB_HEIGHT) * (sb->upper - sb->lower) / (rect_get_height(&r) - 2 * HSB_HEIGHT) + sb->lower;
+			yt = (y - HSB_HEIGHT) * (sb->upper - sb->lower) / (r.height() - 2 * HSB_HEIGHT) + sb->lower;
 
 			if (y < HSB_HEIGHT)
 				sb->value -= sb->step_increment;
-			else if (y > rect_get_height(&r) - HSB_HEIGHT)
+			else if (y > r.height() - HSB_HEIGHT)
 				sb->value += sb->step_increment;
 			else if (yt < sb->value)
 				sb->value -= sb->page_increment;
@@ -712,11 +677,11 @@ static void dview_draw(DView *dv)
 
 	dview_draw_title(dv);
 
-	dview_get_rect(dv, RECT_DVIEW_CLIENT, &r);
+	dview_get_rect(dv, RECT_DVIEW_CLIENT, r);
 
 	dview_draw_outlined_box(dv, RECT_DVIEW_CLIENT, 0, 0,
-			rect_get_width(&r) /*- (dv->vs ? VSB_WIDTH : 0)*/,
-			rect_get_height(&r) /*- (dv->hsb.visible ? HSB_HEIGHT : 0)*/, bg_base);
+			r.width() /*- (dv->vs ? VSB_WIDTH : 0)*/,
+			r.height() /*- (dv->hsb.visible ? HSB_HEIGHT : 0)*/, bg_base);
 
 	/* background first */
 	viewdata = dv->view->viewdata();
@@ -785,8 +750,8 @@ static void dview_size_allocate(DView *dv)
 	dv->container->get_user_settings(rcus);
 	rcus.m_xoffset = (float) dv->ofs_x / (float) dv->rt_width;
 	rcus.m_yoffset = (float) dv->ofs_y / (float) dv->rt_height;
-	rcus.m_xscale = 1.0; //(float) rect_get_width(&dv->bounds) / (float) dv->rt_width;
-	rcus.m_yscale = 1.0; //(float) rect_get_height(&dv->bounds) / (float) dv->rt_height;
+	rcus.m_xscale = 1.0; //(float) dv->bounds.width() / (float) dv->rt_width;
+	rcus.m_yscale = 1.0; //(float) dv->bounds.height() / (float) dv->rt_height;
 	dv->container->set_user_settings(rcus);
 	//printf("%d %d %d %d\n", wpos.min_x, wpos.max_x, wpos.min_y, wpos.max_y);
 
@@ -795,18 +760,18 @@ static void dview_size_allocate(DView *dv)
 
 	dv->hsb.visible = 0;
 	dv->vsb.visible = 0;
-	dview_get_rect(dv, RECT_DVIEW_CLIENT, &r);
+	dview_get_rect(dv, RECT_DVIEW_CLIENT, r);
 
-	dv->hsb.visible = (size.x * debug_font_width > rect_get_width(&r) ? 1 : 0);
-	dv->vsb.visible = (size.y * debug_font_height > rect_get_height(&r) ? 1 : 0);
-	dview_get_rect(dv, RECT_DVIEW_CLIENT, &r);
+	dv->hsb.visible = (size.x * debug_font_width > r.width() ? 1 : 0);
+	dv->vsb.visible = (size.y * debug_font_height > r.height() ? 1 : 0);
+	dview_get_rect(dv, RECT_DVIEW_CLIENT, r);
 
-	dv->hsb.visible = (size.x * debug_font_width > rect_get_width(&r) ? 1 : 0);
-	dv->vsb.visible = (size.y * debug_font_height > rect_get_height(&r) ? 1 : 0);
-	dview_get_rect(dv, RECT_DVIEW_CLIENT, &r);
+	dv->hsb.visible = (size.x * debug_font_width > r.width() ? 1 : 0);
+	dv->vsb.visible = (size.y * debug_font_height > r.height() ? 1 : 0);
+	dview_get_rect(dv, RECT_DVIEW_CLIENT, r);
 
-	col.y = (rect_get_height(&r) - 2 * BORDER_YTHICKNESS /*+ debug_font_height  - 1*/) / debug_font_height;
-	col.x = (rect_get_width(&r) - 2 * BORDER_XTHICKNESS /*+ debug_font_width - 1*/) / debug_font_width;
+	col.y = (r.height() - 2 * BORDER_YTHICKNESS /*+ debug_font_height  - 1*/) / debug_font_height;
+	col.x = (r.width() - 2 * BORDER_XTHICKNESS /*+ debug_font_width - 1*/) / debug_font_width;
 
 	vsize.y = size.y - pos.y;
 	vsize.x = size.x - pos.x;
@@ -831,7 +796,7 @@ static void dview_size_allocate(DView *dv)
 	dv->view->set_visible_size(vsize);
 
 	if(dv->hsb.visible) {
-		int span = (rect_get_width(&r) - 2 * BORDER_XTHICKNESS) / debug_font_width;
+		int span = (r.width() - 2 * BORDER_XTHICKNESS) / debug_font_width;
 
 		if(pos.x + span > size.x)
 			pos.x = size.x - span;
@@ -848,7 +813,7 @@ static void dview_size_allocate(DView *dv)
 	}
 
 	if(dv->vsb.visible) {
-		int span = (rect_get_height(&r) - 2 * BORDER_YTHICKNESS) / debug_font_height;
+		int span = (r.height() - 2 * BORDER_YTHICKNESS) / debug_font_height;
 
 		if(pos.y + span > size.y)
 			pos.y = size.y - span;
@@ -958,7 +923,7 @@ static void process_string(DView *dv, const char *str)
 		downcast<debug_view_disasm *>(dv->view)->set_expression(str);
 		break;
 	case DVT_CONSOLE:
-		if(!dv->editor.str[(long)0])
+		if(!dv->editor.str[(int)0])
 			debug_cpu_get_visible_cpu(dv->machine())->debug()->single_step();
 		else
 			debug_console_execute_command(dv->machine(), str, 1);
@@ -1159,15 +1124,23 @@ static void render_editor(DView_edit *editor)
     menu_main_populate - populate the main menu
   -------------------------------------------------*/
 
+class ui_menu_debug : public ui_menu {
+public:
+	ui_menu_debug(running_machine &machine, render_container *container) : ui_menu(machine, container) {}
+	virtual ~ui_menu_debug() {}
+	virtual void populate() {}
+	virtual void handle() {}
+};
+
 static void CreateMainMenu(running_machine &machine)
 {
 	const char *subtext = "";
 	int rc;
 	astring title;
 
-	if (menu != NULL)
-		ui_menu_free(menu);
-	menu = ui_menu_alloc(machine, &machine.render().ui_container(),NULL,NULL);
+	if (menu)
+		auto_free(machine, menu);
+	menu = auto_alloc_clear(machine, ui_menu_debug(machine, &machine.render().ui_container()));
 
 	switch (focus_view->type)
 	{
@@ -1188,8 +1161,8 @@ static void CreateMainMenu(running_machine &machine)
 		break;
 	}
 
-	ui_menu_item_append(menu, title.cat(focus_view->title), NULL, MENU_FLAG_DISABLE, NULL);
-	ui_menu_item_append(menu, MENU_SEPARATOR_ITEM, NULL, 0, NULL);
+	menu->item_append(title.cat(focus_view->title), NULL, MENU_FLAG_DISABLE, NULL);
+	menu->item_append(MENU_SEPARATOR_ITEM, NULL, 0, NULL);
 
 	switch (focus_view->type)
 	{
@@ -1202,38 +1175,38 @@ static void CreateMainMenu(running_machine &machine)
 		case DASM_RIGHTCOL_ENCRYPTED:	subtext = "Enc Opcodes"; break;
 		case DASM_RIGHTCOL_COMMENTS:		subtext = "Comments"; break;
 		}
-		ui_menu_item_append(menu, "View", subtext, MENU_FLAG_RIGHT_ARROW, (void *)on_view_opcodes_activate);
-		ui_menu_item_append(menu, "Run to cursor", NULL, 0, (void *)on_run_to_cursor_activate);
+		menu->item_append("View", subtext, MENU_FLAG_RIGHT_ARROW, (void *)on_view_opcodes_activate);
+		menu->item_append("Run to cursor", NULL, 0, (void *)on_run_to_cursor_activate);
 
 		if (!dview_is_state(focus_view, VIEW_STATE_FOLLOW_CPU))
 		{
-			ui_menu_item_append(menu, "CPU", focus_view->view->source()->name(), MENU_FLAG_RIGHT_ARROW, (void *)on_disasm_cpu_activate);
+			menu->item_append("CPU", focus_view->view->source()->name(), MENU_FLAG_RIGHT_ARROW, (void *)on_disasm_cpu_activate);
 		}
-		ui_menu_item_append(menu, MENU_SEPARATOR_ITEM, NULL, 0, NULL);
+		menu->item_append(MENU_SEPARATOR_ITEM, NULL, 0, NULL);
 		break;
 	}
 	}
 
 	/* add input menu items */
 
-	ui_menu_item_append(menu, "New Memory Window", NULL, 0, (void *)on_memory_window_activate);
-	ui_menu_item_append(menu, "New Disassembly Window", NULL, 0, (void *)on_disassembly_window_activate);
-	ui_menu_item_append(menu, "New Error Log Window", NULL, 0, (void *)on_log_window_activate);
-	ui_menu_item_append(menu, MENU_SEPARATOR_ITEM, NULL, 0, NULL);
-	ui_menu_item_append(menu, "Run", NULL, 0, (void *)on_run_activate);
-	ui_menu_item_append(menu, "Run to Next CPU", NULL, 0, (void *)on_run_cpu_activate);
-	ui_menu_item_append(menu, "Run until Next Interrupt on This CPU", NULL, 0, (void *)on_run_irq_activate);
-	ui_menu_item_append(menu, "Run until Next VBLANK", NULL, 0, (void *)on_run_vbl_activate);
-	ui_menu_item_append(menu, MENU_SEPARATOR_ITEM, NULL, 0, NULL);
-	ui_menu_item_append(menu, "Step Into", NULL, 0, (void *)on_step_into_activate);
-	ui_menu_item_append(menu, "Step Over", NULL, 0, (void *)on_step_over_activate);
-	ui_menu_item_append(menu, MENU_SEPARATOR_ITEM, NULL, 0, NULL);
-	ui_menu_item_append(menu, "Soft Reset", NULL, 0, (void *)on_soft_reset_activate);
-	ui_menu_item_append(menu, "Hard Reset", NULL, 0, (void *)on_hard_reset_activate);
-	ui_menu_item_append(menu, MENU_SEPARATOR_ITEM, NULL, 0, NULL);
+	menu->item_append("New Memory Window", NULL, 0, (void *)on_memory_window_activate);
+	menu->item_append("New Disassembly Window", NULL, 0, (void *)on_disassembly_window_activate);
+	menu->item_append("New Error Log Window", NULL, 0, (void *)on_log_window_activate);
+	menu->item_append(MENU_SEPARATOR_ITEM, NULL, 0, NULL);
+	menu->item_append("Run", NULL, 0, (void *)on_run_activate);
+	menu->item_append("Run to Next CPU", NULL, 0, (void *)on_run_cpu_activate);
+	menu->item_append("Run until Next Interrupt on This CPU", NULL, 0, (void *)on_run_irq_activate);
+	menu->item_append("Run until Next VBLANK", NULL, 0, (void *)on_run_vbl_activate);
+	menu->item_append(MENU_SEPARATOR_ITEM, NULL, 0, NULL);
+	menu->item_append("Step Into", NULL, 0, (void *)on_step_into_activate);
+	menu->item_append("Step Over", NULL, 0, (void *)on_step_over_activate);
+	menu->item_append(MENU_SEPARATOR_ITEM, NULL, 0, NULL);
+	menu->item_append("Soft Reset", NULL, 0, (void *)on_soft_reset_activate);
+	menu->item_append("Hard Reset", NULL, 0, (void *)on_hard_reset_activate);
+	menu->item_append(MENU_SEPARATOR_ITEM, NULL, 0, NULL);
 	if (!dview_is_state(focus_view, VIEW_STATE_FOLLOW_CPU))
-		ui_menu_item_append(menu, "Close Window", NULL, 0, (void *)on_close_activate);
-	ui_menu_item_append(menu, "Exit", NULL, 0, (void *)on_exit_activate);
+		menu->item_append("Close Window", NULL, 0, (void *)on_close_activate);
+	menu->item_append("Exit", NULL, 0, (void *)on_exit_activate);
 }
 
 static int map_point(DView *dv, INT32 target_x, INT32 target_y, INT32 *mapped_x, INT32 *mapped_y)
@@ -1355,10 +1328,10 @@ static void handle_menus(running_machine &machine)
 	if (menu != NULL)
 	{
 		/* process the menu */
-		event = ui_menu_process(machine, menu, 0);
+		event = menu->process(0);
 		if (event != NULL && (event->iptkey == IPT_UI_SELECT || (event->iptkey == IPT_UI_RIGHT)))
 		{
-			//ui_menu_free(menu);
+			//auto_free(machine, menu);
 			//menu = NULL;
 			((void (*)(DView *, const ui_menu_event *)) event->itemref)(focus_view, event);
 			//ui_menu_stack_push(ui_menu_alloc(machine, menu->container, (ui_menu_handler_func)event->itemref, NULL));
@@ -1366,7 +1339,7 @@ static void handle_menus(running_machine &machine)
 		}
 		else if (ui_input_pressed(machine, IPT_UI_CONFIGURE))
 		{
-			ui_menu_free(menu);
+			auto_free(machine, menu);
 			menu = NULL;
 		}
 	}

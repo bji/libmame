@@ -201,7 +201,7 @@ static void update_pixel(running_machine &machine, int vram, int x, int y)
 {
 	nbmj9195_state *state = machine.driver_data<nbmj9195_state>();
 	UINT16 color = state->m_videoram[vram][(y * machine.primary_screen->width()) + x];
-	*BITMAP_ADDR16(state->m_tmpbitmap[vram], y, x) = color;
+	state->m_tmpbitmap[vram].pix16(y, x) = color;
 }
 
 static TIMER_CALLBACK( blitter_timer_callback )
@@ -394,7 +394,7 @@ VIDEO_START( nbmj9195_1layer )
 	int width = machine.primary_screen->width();
 	int height = machine.primary_screen->height();
 
-	state->m_tmpbitmap[0] = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap[0]);
 	state->m_videoram[0] = auto_alloc_array_clear(machine, UINT16, width * height);
 	state->m_palette = auto_alloc_array(machine, UINT8, 0x200);
 	state->m_clut[0] = auto_alloc_array(machine, UINT8, 0x1000);
@@ -409,8 +409,8 @@ VIDEO_START( nbmj9195_2layer )
 	int width = machine.primary_screen->width();
 	int height = machine.primary_screen->height();
 
-	state->m_tmpbitmap[0] = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_tmpbitmap[1] = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap[0]);
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap[1]);
 	state->m_videoram[0] = auto_alloc_array_clear(machine, UINT16, width * height);
 	state->m_videoram[1] = auto_alloc_array_clear(machine, UINT16, width * height);
 	state->m_palette = auto_alloc_array(machine, UINT8, 0x200);
@@ -427,8 +427,8 @@ VIDEO_START( nbmj9195_nb22090 )
 	int width = machine.primary_screen->width();
 	int height = machine.primary_screen->height();
 
-	state->m_tmpbitmap[0] = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_tmpbitmap[1] = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap[0]);
+	machine.primary_screen->register_screen_bitmap(state->m_tmpbitmap[1]);
 	state->m_videoram[0] = auto_alloc_array_clear(machine, UINT16, width * height);
 	state->m_videoram[1] = auto_alloc_array_clear(machine, UINT16, width * height);
 	state->m_videoworkram[0] = auto_alloc_array_clear(machine, UINT16, width * height);
@@ -445,27 +445,27 @@ VIDEO_START( nbmj9195_nb22090 )
 
 
 ******************************************************************************/
-SCREEN_UPDATE( nbmj9195 )
+SCREEN_UPDATE_IND16( nbmj9195 )
 {
-	nbmj9195_state *state = screen->machine().driver_data<nbmj9195_state>();
+	nbmj9195_state *state = screen.machine().driver_data<nbmj9195_state>();
 	int i;
 	int x, y;
 	int scrolly[2];
 
 	if (state->m_screen_refresh)
 	{
-		int width = screen->width();
-		int height = screen->height();
+		int width = screen.width();
+		int height = screen.height();
 
 		state->m_screen_refresh = 0;
 
 		for (y = 0; y < height; y++)
 			for (x = 0; x < width; x++)
 			{
-				update_pixel(screen->machine(), 0, x, y);
+				update_pixel(screen.machine(), 0, x, y);
 
 				if (state->m_gfxdraw_mode)
-					update_pixel(screen->machine(), 1, x, y);
+					update_pixel(screen.machine(), 1, x, y);
 			}
 	}
 
@@ -494,7 +494,7 @@ SCREEN_UPDATE( nbmj9195 )
 		// nbmj9195 1layer
 		copyscrollbitmap(bitmap, state->m_tmpbitmap[0], SCANLINE_MAX, state->m_scrollx_raster[0], 1, &scrolly[0], cliprect);
 	else
-		bitmap_fill(bitmap, 0, 0x0ff);
+		bitmap.fill(0x0ff);
 
 	if (state->m_dispflag[1])
 	{

@@ -170,17 +170,10 @@ void eeprom_device::static_set_default_value(device_t &device, UINT16 value)
 //  on this device
 //-------------------------------------------------
 
-bool eeprom_device::device_validity_check(emu_options &options, const game_driver &driver) const
+void eeprom_device::device_validity_check(validity_checker &valid) const
 {
-	bool error = false;
-
 	if (m_data_bits != 8 && m_data_bits != 16)
-	{
-		mame_printf_error("%s: %s eeprom device '%s' specified invalid data width %d\n", driver.source_file, driver.name, tag(), m_data_bits);
-		error = true;
-	}
-
-	return error;
+		mame_printf_error("Invalid data width %d specified\n", m_data_bits);
 }
 
 
@@ -453,9 +446,9 @@ void eeprom_device::write(int bit)
 		if (m_locked == 0)
 		{
 			if (m_data_bits == 16)
-				m_addrspace[0]->write_word(address * 2, 0x0000);
+				m_addrspace[0]->write_word(address * 2, 0xFFFF);
 			else
-				m_addrspace[0]->write_byte(address, 0x00);
+				m_addrspace[0]->write_byte(address, 0xFF);
 		}
 		else
 			logerror("Error: EEPROM %s is locked\n", tag());

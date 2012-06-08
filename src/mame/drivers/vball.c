@@ -4,7 +4,7 @@
 
  TODO:
  Needs to be tilemapped. The background layer and sprite layer are identical to spdodgeb, except for the
-  back-switched graphics roms and the size of the pallete banks.
+  back-switched graphics roms and the size of the palette banks.
 
  03/28/03 - Additions by Steve Ellenoff
  ---------------------------------------
@@ -420,10 +420,9 @@ static MACHINE_CONFIG_START( vball, vball_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, 384, 0, 256, 272, 8, 248)	/* based on ddragon driver */
-	MCFG_SCREEN_UPDATE(vb)
+	MCFG_SCREEN_UPDATE_STATIC(vb)
 
 	MCFG_GFXDECODE(vb)
 	MCFG_PALETTE_LENGTH(256)

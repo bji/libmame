@@ -32,7 +32,7 @@ static WRITE8_HANDLER( goindol_bankswitch_w )
 	if (state->m_char_bank != ((data & 0x10) >> 4))
 	{
 		state->m_char_bank = (data & 0x10) >> 4;
-		tilemap_mark_all_tiles_dirty_all(space->machine());
+		space->machine().tilemap().mark_all_dirty();
 	}
 
 	flip_screen_set(space->machine(), data & 0x20);
@@ -260,10 +260,9 @@ static MACHINE_CONFIG_START( goindol, goindol_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(goindol)
+	MCFG_SCREEN_UPDATE_STATIC(goindol)
 
 	MCFG_GFXDECODE(goindol)
 	MCFG_PALETTE_LENGTH(256)

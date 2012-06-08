@@ -301,12 +301,15 @@ UINT8 riot6532_device::reg_r(UINT8 offset)
 		else
 		{
 			/* call the input callback if it exists */
-			port->m_in = port->m_in_func(0);
-
-			/* changes to port A need to update the PA7 state */
-			if (port == &m_port[0])
+			if (!port->m_in_func.isnull())
 			{
-				update_pa7_state();
+				port->m_in = port->m_in_func(0);
+
+				/* changes to port A need to update the PA7 state */
+				if (port == &m_port[0])
+				{
+					update_pa7_state();
+				}
 			}
 
 			/* apply the DDR to the result */
@@ -466,7 +469,8 @@ void riot6532_device::device_start()
 	assert(this != NULL);
 
 	/* set static values */
-	m_index = machine().devicelist().indexof(RIOT6532, tag());
+	device_type_iterator<&device_creator<riot6532_device>, riot6532_device> iter(machine().root_device());
+	m_index = iter.indexof(*this);
 
 	/* configure the ports */
 	m_port[0].m_in_func.resolve(m_in_a_cb, *this);

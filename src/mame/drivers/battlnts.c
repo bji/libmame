@@ -131,7 +131,7 @@ static INPUT_PORTS_START( battlnts )
 
 	PORT_START("P1")
 	KONAMI8_B1(1)
-	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Allow_Continue ) ) PORT_DIPLOCATION("SW3:4")
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Allow_Continue ) ) PORT_DIPLOCATION("SW3:4")
 	PORT_DIPSETTING(	0x80, "3 Times" )
 	PORT_DIPSETTING(	0x00, "5 Times" )
 
@@ -139,23 +139,20 @@ static INPUT_PORTS_START( battlnts )
 	KONAMI8_B1_UNK(2)
 INPUT_PORTS_END
 
-static INPUT_PORTS_START( thehustlj )
+static INPUT_PORTS_START( rackemup )
 	PORT_INCLUDE( battlnts )
 
 	PORT_MODIFY("DSW2")
 	PORT_DIPNAME( 0x03, 0x02, "Balls" )					PORT_DIPLOCATION("SW2:1,2")
-	PORT_DIPSETTING(	0x03, "1" )
-	PORT_DIPSETTING(	0x02, "2" )
-	PORT_DIPSETTING(	0x01, "3" )
-	PORT_DIPSETTING(	0x00, "6" )
-	PORT_DIPNAME( 0x18, 0x18, "Time To Aim" )			PORT_DIPLOCATION("SW2:4,5")
+	PORT_DIPSETTING(	0x03, "2" )
+	PORT_DIPSETTING(	0x02, "3" )
+	PORT_DIPSETTING(	0x01, "4" )
+	PORT_DIPSETTING(	0x00, "7" )
+	PORT_DIPNAME( 0x18, 0x10, "Time To Aim" )			PORT_DIPLOCATION("SW2:4,5")
 	PORT_DIPSETTING(	0x18, "25s (Stage 1: 30s)" )
 	PORT_DIPSETTING(	0x10, "20s (Stage 1: 25s)" )
 	PORT_DIPSETTING(	0x08, "17s (Stage 1: 22s)" )
 	PORT_DIPSETTING(	0x00, "15s (Stage 1: 20s)" )
-
-	PORT_MODIFY("DSW3")
-	PORT_DIPUNUSED_DIPLOC( 0x40, 0x40, "SW3:2" )
 
 	PORT_MODIFY("P1")
 	KONAMI8_B12(1)
@@ -163,6 +160,13 @@ static INPUT_PORTS_START( thehustlj )
 
 	PORT_MODIFY("P2")
 	KONAMI8_B12_UNK(2)
+INPUT_PORTS_END
+
+static INPUT_PORTS_START( thehustl )
+	PORT_INCLUDE( rackemup )
+
+	PORT_MODIFY("DSW3")
+	PORT_DIPUNUSED_DIPLOC( 0x40, 0x40, "SW3:2" )
 INPUT_PORTS_END
 
 
@@ -259,10 +263,9 @@ static MACHINE_CONFIG_START( battlnts, battlnts_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(battlnts)
+	MCFG_SCREEN_UPDATE_STATIC(battlnts)
 
 	MCFG_GFXDECODE(battlnts)
 	MCFG_PALETTE_LENGTH(128)
@@ -415,6 +418,6 @@ static DRIVER_INIT( rackemup )
 
 GAME( 1987, battlnts,  0,        battlnts, battlnts, 0,        ROT90, "Konami", "Battlantis", GAME_SUPPORTS_SAVE )
 GAME( 1987, battlntsj, battlnts, battlnts, battlnts, 0,        ROT90, "Konami", "Battlantis (Japan)", GAME_SUPPORTS_SAVE )
-GAME( 1987, rackemup,  0,        battlnts, thehustlj,rackemup, ROT90, "Konami", "Rack 'em Up", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
-GAME( 1987, thehustl,  rackemup, battlnts, thehustlj,0,        ROT90, "Konami", "The Hustler (Japan version M)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
-GAME( 1987, thehustlj, rackemup, battlnts, thehustlj,0,        ROT90, "Konami", "The Hustler (Japan version J)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
+GAME( 1987, rackemup,  0,        battlnts, rackemup, rackemup, ROT90, "Konami", "Rack 'em Up", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
+GAME( 1987, thehustl,  rackemup, battlnts, thehustl, 0,        ROT90, "Konami", "The Hustler (Japan version M)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )
+GAME( 1987, thehustlj, rackemup, battlnts, thehustl, 0,        ROT90, "Konami", "The Hustler (Japan version J)", GAME_NO_COCKTAIL | GAME_SUPPORTS_SAVE )

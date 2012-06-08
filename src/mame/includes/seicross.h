@@ -17,6 +17,8 @@ public:
 	UINT8 *m_colorram;
 	tilemap_t *m_bg_tilemap;
 	UINT8 *m_row_scroll;
+
+	UINT8 m_irq_mask;
 };
 
 
@@ -27,4 +29,4 @@ WRITE8_HANDLER( seicross_colorram_w );
 
 PALETTE_INIT( seicross );
 VIDEO_START( seicross );
-SCREEN_UPDATE( seicross );
+SCREEN_UPDATE_IND16( seicross );

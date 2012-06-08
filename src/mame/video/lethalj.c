@@ -24,8 +24,8 @@ INLINE void get_crosshair_xy(running_machine &machine, int player, int *x, int *
 {
 	static const char *const gunnames[] = { "LIGHT0_X", "LIGHT0_Y", "LIGHT1_X", "LIGHT1_Y" };
 	const rectangle &visarea = machine.primary_screen->visible_area();
-	int width = visarea.max_x + 1 - visarea.min_x;
-	int height = visarea.max_y + 1 - visarea.min_y;
+	int width = visarea.width();
+	int height = visarea.height();
 
 	*x = ((input_port_read_safe(machine, gunnames[player * 2], 0x00) & 0xff) * width) / 255;
 	*y = ((input_port_read_safe(machine, gunnames[1 + player * 2], 0x00) & 0xff) * height) / 255;
@@ -171,11 +171,11 @@ WRITE16_HANDLER( lethalj_blitter_w )
  *
  *************************************/
 
-void lethalj_scanline_update(screen_device &screen, bitmap_t *bitmap, int scanline, const tms34010_display_params *params)
+void lethalj_scanline_update(screen_device &screen, bitmap_ind16 &bitmap, int scanline, const tms34010_display_params *params)
 {
 	lethalj_state *state = screen.machine().driver_data<lethalj_state>();
 	UINT16 *src = &state->m_screenram[(state->m_vispage << 17) | ((params->rowaddr << 9) & 0x3fe00)];
-	UINT16 *dest = BITMAP_ADDR16(bitmap, scanline, 0);
+	UINT16 *dest = &bitmap.pix16(scanline);
 	int coladdr = params->coladdr << 1;
 	int x;
 

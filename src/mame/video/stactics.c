@@ -236,11 +236,11 @@ INLINE int get_pixel_on_plane(UINT8 *videoram, UINT8 y, UINT8 x, UINT8 y_scroll)
 }
 
 
-static void draw_background(stactics_state *state, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_background(stactics_state *state, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	int y;
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	/* for every row */
 	for (y = 0; y < 0x100; y++)
@@ -275,7 +275,7 @@ static void draw_background(stactics_state *state, bitmap_t *bitmap, const recta
 
 			/* plot if visible */
 			if ((sy >= 0) && (sy < 0x100) && (sx >= 0) && (sx < 0x100))
-				*BITMAP_ADDR16(bitmap, sy, sx) = pen;
+				bitmap.pix16(sy, sx) = pen;
 		}
 	}
 }
@@ -388,13 +388,13 @@ static VIDEO_START( stactics )
  *
  *************************************/
 
-static SCREEN_UPDATE( stactics )
+static SCREEN_UPDATE_IND16( stactics )
 {
-	stactics_state *state = screen->machine().driver_data<stactics_state>();
+	stactics_state *state = screen.machine().driver_data<stactics_state>();
 
 	update_beam(state);
 	draw_background(state, bitmap, cliprect);
-	update_artwork(screen->machine(), state);
+	update_artwork(screen.machine(), state);
 
 	state->m_frame_count = (state->m_frame_count + 1) & 0x0f;
 
@@ -416,10 +416,9 @@ MACHINE_CONFIG_FRAGMENT( stactics_video )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(stactics)
+	MCFG_SCREEN_UPDATE_STATIC(stactics)
 
 	MCFG_PALETTE_LENGTH(0x400)
 

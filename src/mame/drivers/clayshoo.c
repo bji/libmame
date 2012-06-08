@@ -183,9 +183,9 @@ static MACHINE_START( clayshoo )
  *
  *************************************/
 
-static SCREEN_UPDATE( clayshoo )
+static SCREEN_UPDATE_RGB32( clayshoo )
 {
-	clayshoo_state *state = screen->machine().driver_data<clayshoo_state>();
+	clayshoo_state *state = screen.machine().driver_data<clayshoo_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < state->m_videoram_size; offs++)
@@ -198,7 +198,7 @@ static SCREEN_UPDATE( clayshoo )
 		for (i = 0; i < 8; i++)
 		{
 			pen_t pen = (data & 0x80) ? RGB_WHITE : RGB_BLACK;
-			*BITMAP_ADDR32(bitmap, y, x) = pen;
+			bitmap.pix32(y, x) = pen;
 
 			data = data << 1;
 			x = x + 1;
@@ -334,12 +334,11 @@ static MACHINE_CONFIG_START( clayshoo, clayshoo_state )
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 64, 255)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_UPDATE(clayshoo)
+	MCFG_SCREEN_UPDATE_STATIC(clayshoo)
 
 	MCFG_PPI8255_ADD( "ppi8255_0", ppi8255_intf[0] )
 	MCFG_PPI8255_ADD( "ppi8255_1", ppi8255_intf[1] )

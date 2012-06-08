@@ -30,9 +30,9 @@ public:
 };
 
 
-static SCREEN_UPDATE( mosaicf2 )
+static SCREEN_UPDATE_IND16( mosaicf2 )
 {
-	mosaicf2_state *state = screen->machine().driver_data<mosaicf2_state>();
+	mosaicf2_state *state = screen.machine().driver_data<mosaicf2_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < 0x10000; offs++)
@@ -42,8 +42,8 @@ static SCREEN_UPDATE( mosaicf2 )
 
 		if ((x < 0xa0) && (y < 0xe0))
 		{
-			*BITMAP_ADDR16(bitmap, y, (x * 2) + 0) = (state->m_videoram[offs] >> 16) & 0x7fff;
-			*BITMAP_ADDR16(bitmap, y, (x * 2) + 1) = (state->m_videoram[offs] >>  0) & 0x7fff;
+			bitmap.pix16(y, (x * 2) + 0) = (state->m_videoram[offs] >> 16) & 0x7fff;
+			bitmap.pix16(y, (x * 2) + 1) = (state->m_videoram[offs] >>  0) & 0x7fff;
 		}
 	}
 
@@ -143,10 +143,9 @@ static MACHINE_CONFIG_START( mosaicf2, mosaicf2_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 512)
 	MCFG_SCREEN_VISIBLE_AREA(0, 319, 0, 223)
-	MCFG_SCREEN_UPDATE(mosaicf2)
+	MCFG_SCREEN_UPDATE_STATIC(mosaicf2)
 
 	MCFG_PALETTE_INIT(RRRRR_GGGGG_BBBBB)
 	MCFG_PALETTE_LENGTH(32768)

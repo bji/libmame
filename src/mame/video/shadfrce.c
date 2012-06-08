@@ -19,7 +19,7 @@ WRITE16_HANDLER( shadfrce_fgvideoram_w )
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
 	state->m_fgvideoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fgtilemap,offset/2);
+	state->m_fgtilemap->mark_tile_dirty(offset/2);
 }
 
 static TILE_GET_INFO( get_shadfrce_bg0tile_info )
@@ -42,7 +42,7 @@ WRITE16_HANDLER( shadfrce_bg0videoram_w )
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
 	state->m_bg0videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg0tilemap,offset/2);
+	state->m_bg0tilemap->mark_tile_dirty(offset/2);
 }
 
 static TILE_GET_INFO( get_shadfrce_bg1tile_info )
@@ -61,7 +61,7 @@ WRITE16_HANDLER( shadfrce_bg1videoram_w )
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
 	state->m_bg1videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg1tilemap,offset);
+	state->m_bg1tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -72,10 +72,10 @@ VIDEO_START( shadfrce )
 	shadfrce_state *state = machine.driver_data<shadfrce_state>();
 
 	state->m_fgtilemap = tilemap_create(machine, get_shadfrce_fgtile_info,tilemap_scan_rows,    8,  8,64,32);
-	tilemap_set_transparent_pen(state->m_fgtilemap,0);
+	state->m_fgtilemap->set_transparent_pen(0);
 
 	state->m_bg0tilemap = tilemap_create(machine, get_shadfrce_bg0tile_info,tilemap_scan_rows, 16, 16,32,32);
-	tilemap_set_transparent_pen(state->m_bg0tilemap,0);
+	state->m_bg0tilemap->set_transparent_pen(0);
 
 	state->m_bg1tilemap = tilemap_create(machine, get_shadfrce_bg1tile_info,tilemap_scan_rows, 16, 16,32,32);
 
@@ -86,34 +86,34 @@ WRITE16_HANDLER ( shadfrce_bg0scrollx_w )
 {
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
-	tilemap_set_scrollx( state->m_bg0tilemap, 0, data & 0x1ff );
+	state->m_bg0tilemap->set_scrollx(0, data & 0x1ff );
 }
 
 WRITE16_HANDLER ( shadfrce_bg0scrolly_w )
 {
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
-	tilemap_set_scrolly( state->m_bg0tilemap, 0, data  & 0x1ff );
+	state->m_bg0tilemap->set_scrolly(0, data  & 0x1ff );
 }
 
 WRITE16_HANDLER ( shadfrce_bg1scrollx_w )
 {
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
-	tilemap_set_scrollx( state->m_bg1tilemap, 0, data  & 0x1ff );
+	state->m_bg1tilemap->set_scrollx(0, data  & 0x1ff );
 }
 
 WRITE16_HANDLER ( shadfrce_bg1scrolly_w )
 {
 	shadfrce_state *state = space->machine().driver_data<shadfrce_state>();
 
-	tilemap_set_scrolly( state->m_bg1tilemap, 0, data & 0x1ff );
+	state->m_bg1tilemap->set_scrolly(0, data & 0x1ff );
 }
 
 
 
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 
 	/* | ---- ---- hhhf Fe-Y | ---- ---- yyyy yyyy | ---- ---- TTTT TTTT | ---- ---- tttt tttt |
@@ -162,30 +162,34 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-SCREEN_UPDATE( shadfrce )
+SCREEN_UPDATE_IND16( shadfrce )
 {
-	shadfrce_state *state = screen->machine().driver_data<shadfrce_state>();
-	bitmap_fill(screen->machine().priority_bitmap,cliprect,0);
+	shadfrce_state *state = screen.machine().driver_data<shadfrce_state>();
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
 	if (state->m_video_enable)
 	{
-		tilemap_draw(bitmap,cliprect,state->m_bg1tilemap,0,0);
-		tilemap_draw(bitmap,cliprect,state->m_bg0tilemap,0,1);
-		draw_sprites(screen->machine(), bitmap,cliprect);
-		tilemap_draw(bitmap,cliprect,state->m_fgtilemap, 0,0);
+		state->m_bg1tilemap->draw(bitmap, cliprect, 0,0);
+		state->m_bg0tilemap->draw(bitmap, cliprect, 0,1);
+		draw_sprites(screen.machine(), bitmap,cliprect);
+		state->m_fgtilemap->draw(bitmap, cliprect, 0,0);
 	}
 	else
 	{
-		bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+		bitmap.fill(get_black_pen(screen.machine()), cliprect);
 	}
 
 	return 0;
 }
 
-SCREEN_EOF( shadfrce )
+SCREEN_VBLANK( shadfrce )
 {
-	shadfrce_state *state = machine.driver_data<shadfrce_state>();
+	// rising edge
+	if (vblank_on)
+	{
+		shadfrce_state *state = screen.machine().driver_data<shadfrce_state>();
 
-	/* looks like sprites are *two* frames ahead */
-	memcpy(state->m_spvideoram_old, state->m_spvideoram, state->m_spvideoram_size);
+		/* looks like sprites are *two* frames ahead */
+		memcpy(state->m_spvideoram_old, state->m_spvideoram, state->m_spvideoram_size);
+	}
 }

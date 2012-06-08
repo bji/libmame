@@ -150,7 +150,7 @@ public:
 
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	dreamwld_state *state = machine.driver_data<dreamwld_state>();
 	const gfx_element *gfx = machine.gfx[0];
@@ -219,8 +219,8 @@ static WRITE32_HANDLER( dreamwld_bg_videoram_w )
 {
 	dreamwld_state *state = space->machine().driver_data<dreamwld_state>();
 	COMBINE_DATA(&state->m_bg_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset * 2);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset * 2 + 1);
+	state->m_bg_tilemap->mark_tile_dirty(offset * 2);
+	state->m_bg_tilemap->mark_tile_dirty(offset * 2 + 1);
 }
 
 static TILE_GET_INFO( get_dreamwld_bg_tile_info )
@@ -238,8 +238,8 @@ static WRITE32_HANDLER( dreamwld_bg2_videoram_w )
 {
 	dreamwld_state *state = space->machine().driver_data<dreamwld_state>();
 	COMBINE_DATA(&state->m_bg2_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg2_tilemap, offset * 2);
-	tilemap_mark_tile_dirty(state->m_bg2_tilemap, offset * 2 + 1);
+	state->m_bg2_tilemap->mark_tile_dirty(offset * 2);
+	state->m_bg2_tilemap->mark_tile_dirty(offset * 2 + 1);
 }
 
 static TILE_GET_INFO( get_dreamwld_bg2_tile_info )
@@ -258,13 +258,13 @@ static VIDEO_START( dreamwld )
 
 	state->m_bg_tilemap = tilemap_create(machine, get_dreamwld_bg_tile_info,tilemap_scan_rows, 16, 16, 64,32);
 	state->m_bg2_tilemap = tilemap_create(machine, get_dreamwld_bg2_tile_info,tilemap_scan_rows, 16, 16, 64,32);
-	tilemap_set_transparent_pen(state->m_bg2_tilemap,0);
+	state->m_bg2_tilemap->set_transparent_pen(0);
 
-	tilemap_set_scroll_rows(state->m_bg_tilemap, 256);	// line scrolling
-	tilemap_set_scroll_cols(state->m_bg_tilemap, 1);
+	state->m_bg_tilemap->set_scroll_rows(256);	// line scrolling
+	state->m_bg_tilemap->set_scroll_cols(1);
 
-	tilemap_set_scroll_rows(state->m_bg2_tilemap, 256);	// line scrolling
-	tilemap_set_scroll_cols(state->m_bg2_tilemap, 1);
+	state->m_bg2_tilemap->set_scroll_rows(256);	// line scrolling
+	state->m_bg2_tilemap->set_scroll_cols(1);
 
 	state->m_spritebuf1 = auto_alloc_array(machine, UINT32, 0x2000 / 4);
 	state->m_spritebuf2 = auto_alloc_array(machine, UINT32, 0x2000 / 4);
@@ -272,17 +272,21 @@ static VIDEO_START( dreamwld )
 
 }
 
-SCREEN_EOF( dreamwld )
+SCREEN_VBLANK( dreamwld )
 {
-	dreamwld_state *state = machine.driver_data<dreamwld_state>();
-	memcpy(state->m_spritebuf2, state->m_spritebuf1, 0x2000);
-	memcpy(state->m_spritebuf1, state->m_spriteram, 0x2000);
+	// rising edge
+	if (vblank_on)
+	{
+		dreamwld_state *state = screen.machine().driver_data<dreamwld_state>();
+		memcpy(state->m_spritebuf2, state->m_spritebuf1, 0x2000);
+		memcpy(state->m_spritebuf1, state->m_spriteram, 0x2000);
+	}
 }
 
 
-static SCREEN_UPDATE( dreamwld )
+static SCREEN_UPDATE_IND16( dreamwld )
 {
-	dreamwld_state *state = screen->machine().driver_data<dreamwld_state>();
+	dreamwld_state *state = screen.machine().driver_data<dreamwld_state>();
 //  int tm0size, tm1size;
 
 	tilemap_t *tmptilemap0, *tmptilemap1;
@@ -298,8 +302,8 @@ static SCREEN_UPDATE( dreamwld )
 	UINT32 layer0_ctrl = state->m_vregs[0x412 / 4];
 	UINT32 layer1_ctrl = state->m_vregs[0x416 / 4];
 
-	tilemap_set_scrolly(tmptilemap0, 0, layer0_scrolly);
-	tilemap_set_scrolly(tmptilemap1, 0, layer1_scrolly);
+	tmptilemap0->set_scrolly(0, layer0_scrolly);
+	tmptilemap1->set_scrolly(0, layer1_scrolly);
 
 	// not on this hw?
 #if 0
@@ -336,8 +340,8 @@ static SCREEN_UPDATE( dreamwld )
 				x0 = ((UINT16 *)state->m_vregs)[BYTE_XOR_BE(0x000/2 + ((i + layer0_scrolly)&0xff))]; // different handling to psikyo.c? ( + scrolly )
 		}
 
-		tilemap_set_scrollx(
-			tmptilemap0,
+
+			tmptilemap0->set_scrollx(
 			(i + layer0_scrolly) % 256 /*tilemap_width(tm0size) */,
 			layer0_scrollx + x0 );
 
@@ -353,8 +357,8 @@ static SCREEN_UPDATE( dreamwld )
 				x1 = ((UINT16 *)state->m_vregs)[BYTE_XOR_BE(0x200/2 + ((i + layer1_scrolly)&0xff))];  // different handling to psikyo.c? ( + scrolly )
 		}
 
-		tilemap_set_scrollx(
-			tmptilemap1,
+
+			tmptilemap1->set_scrollx(
 			(i + layer1_scrolly) % 256 /* tilemap_width(tm1size) */,
 			layer1_scrollx + x1 );
 	}
@@ -366,19 +370,19 @@ static SCREEN_UPDATE( dreamwld )
 	if (state->m_tilebank[0] != state->m_tilebankold[0])
 	{
 		state->m_tilebankold[0] = state->m_tilebank[0];
-		tilemap_mark_all_tiles_dirty(state->m_bg_tilemap);
+		state->m_bg_tilemap->mark_all_dirty();
 	}
 
 	if (state->m_tilebank[1] != state->m_tilebankold[1])
 	{
 		state->m_tilebankold[1] = state->m_tilebank[1];
-		tilemap_mark_all_tiles_dirty(state->m_bg2_tilemap);
+		state->m_bg2_tilemap->mark_all_dirty();
 	}
 
-	tilemap_draw(bitmap, cliprect, tmptilemap0, 0, 0);
-	tilemap_draw(bitmap, cliprect, tmptilemap1, 0, 0);
+	tmptilemap0->draw(bitmap, cliprect, 0, 0);
+	tmptilemap1->draw(bitmap, cliprect, 0, 0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }
@@ -584,11 +588,10 @@ static MACHINE_CONFIG_START( baryon, dreamwld_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(58)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512,256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 304-1, 0, 224-1)
-	MCFG_SCREEN_UPDATE(dreamwld)
-	MCFG_SCREEN_EOF(dreamwld)
+	MCFG_SCREEN_UPDATE_STATIC(dreamwld)
+	MCFG_SCREEN_VBLANK_STATIC(dreamwld)
 
 	MCFG_PALETTE_LENGTH(0x1000)
 	MCFG_GFXDECODE(dreamwld)

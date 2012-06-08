@@ -189,7 +189,7 @@ static WRITE8_HANDLER( pacland_flipscreen_w )
 	int bit = !BIT(offset,11);
 	/* can't use flip_screen_set(space->machine(), ) because the visible area is asymmetrical */
 	flip_screen_set_no_update(space->machine(), bit);
-	tilemap_set_flip_all(space->machine(),flip_screen_get(space->machine()) ? (TILEMAP_FLIPX | TILEMAP_FLIPY) : 0);
+	space->machine().tilemap().set_flip_all(flip_screen_get(space->machine()) ? (TILEMAP_FLIPX | TILEMAP_FLIPY) : 0);
 }
 
 
@@ -219,16 +219,18 @@ static WRITE8_HANDLER( pacland_led_w )
 
 static WRITE8_HANDLER( pacland_irq_1_ctrl_w )
 {
+	pacland_state *state = space->machine().driver_data<pacland_state>();
 	int bit = !BIT(offset, 11);
-	cpu_interrupt_enable(space->machine().device("maincpu"), bit);
+	state->m_main_irq_mask = bit;
 	if (!bit)
 		cputag_set_input_line(space->machine(), "maincpu", 0, CLEAR_LINE);
 }
 
 static WRITE8_HANDLER( pacland_irq_2_ctrl_w )
 {
+	pacland_state *state = space->machine().driver_data<pacland_state>();
 	int bit = !BIT(offset, 13);
-	cpu_interrupt_enable(space->machine().device("mcu"), bit);
+	state->m_mcu_irq_mask = bit;
 	if (!bit)
 		cputag_set_input_line(space->machine(), "mcu", 0, CLEAR_LINE);
 }
@@ -279,49 +281,49 @@ ADDRESS_MAP_END
 
 
 static INPUT_PORTS_START( pacland )
-	PORT_START("DSWA")	/* DSWA */
-	PORT_SERVICE( 0x80, IP_ACTIVE_LOW )
-	PORT_DIPNAME( 0x60, 0x60, DEF_STR( Lives ) )
+	PORT_START("DSWA")
+	PORT_SERVICE_DIPLOC( 0x80, IP_ACTIVE_LOW, "SWA:1" )
+	PORT_DIPNAME( 0x60, 0x60, DEF_STR( Lives ) )		PORT_DIPLOCATION("SWA:3,2")
 	PORT_DIPSETTING(    0x40, "2" )
 	PORT_DIPSETTING(    0x60, "3" )
 	PORT_DIPSETTING(    0x20, "4" )
 	PORT_DIPSETTING(    0x00, "5" )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Coin_A ) )
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Coin_A ) )		PORT_DIPLOCATION("SWA:5,4")
 	PORT_DIPSETTING(    0x00, DEF_STR( 3C_1C ) )
 	PORT_DIPSETTING(    0x08, DEF_STR( 2C_1C ) )
 	PORT_DIPSETTING(    0x18, DEF_STR( 1C_1C ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( 1C_2C ) )
-	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Demo_Sounds ) )
+	PORT_DIPNAME( 0x04, 0x04, DEF_STR( Demo_Sounds ) )	PORT_DIPLOCATION("SWA:6")
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( On ) )
-	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Coin_B ) )
+	PORT_DIPNAME( 0x03, 0x03, DEF_STR( Coin_B ) )		PORT_DIPLOCATION("SWA:8,7")
 	PORT_DIPSETTING(    0x00, DEF_STR( 3C_1C ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( 2C_1C ) )
 	PORT_DIPSETTING(    0x03, DEF_STR( 1C_1C ) )
 	PORT_DIPSETTING(    0x02, DEF_STR( 1C_2C ) )
 
-	PORT_START("DSWB")	/* DSWB */
-	PORT_DIPNAME( 0xe0, 0xe0, DEF_STR( Bonus_Life ) )
-	PORT_DIPSETTING(    0xe0, "30K 80K 130K 300K 500K 1M" )
-	PORT_DIPSETTING(    0x80, "30K 80K every 100K" )
-	PORT_DIPSETTING(    0x40, "30K 80K 150K" )
-	PORT_DIPSETTING(    0xc0, "30K 100K 200K 400K 600K 1M" )
-	PORT_DIPSETTING(    0xa0, "40K 100K 180K 300K 500K 1M" )
-	PORT_DIPSETTING(    0x20, "40K 100K 200K" )
-	PORT_DIPSETTING(    0x00, "40K" )
-	PORT_DIPSETTING(    0x60, "50K 150K every 200K" )
-	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Difficulty ) )
+	PORT_START("DSWB")
+	PORT_DIPNAME( 0xe0, 0xe0, DEF_STR( Bonus_Life ) )	PORT_DIPLOCATION("SWB:3,2,1")
+	PORT_DIPSETTING(    0xe0, "30K 80K 130K 300K 500K 1M" )		// "A"
+	PORT_DIPSETTING(    0x80, "30K 80K every 100K" )			// "D"
+	PORT_DIPSETTING(    0x40, "30K 80K 150K" )					// "F"
+	PORT_DIPSETTING(    0xc0, "30K 100K 200K 400K 600K 1M" )	// "B"
+	PORT_DIPSETTING(    0xa0, "40K 100K 180K 300K 500K 1M" )	// "C"
+	PORT_DIPSETTING(    0x20, "40K 100K 200K" )					// "G"
+	PORT_DIPSETTING(    0x00, "40K" )							// "H"
+	PORT_DIPSETTING(    0x60, "50K 150K every 200K" )			// "E"
+	PORT_DIPNAME( 0x18, 0x18, DEF_STR( Difficulty ) )	PORT_DIPLOCATION("SWB:5,4")
 	PORT_DIPSETTING(    0x10, "B (Easy)" )
 	PORT_DIPSETTING(    0x18, "A (Average)" )
 	PORT_DIPSETTING(    0x08, "C (Hard)" )
 	PORT_DIPSETTING(    0x00, "D (Very Hard)" )
-	PORT_DIPNAME( 0x04, 0x04, "Round Select" )
+	PORT_DIPNAME( 0x04, 0x04, "Round Select" )			PORT_DIPLOCATION("SWB:6")
 	PORT_DIPSETTING(    0x04, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, "Freeze" )
+	PORT_DIPNAME( 0x02, 0x02, "Freeze" )				PORT_DIPLOCATION("SWB:7")
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x01, 0x01, "Trip Select" )
+	PORT_DIPNAME( 0x01, 0x01, "Trip Select" )			PORT_DIPLOCATION("SWB:8")
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x01, DEF_STR( On ) )
 
@@ -396,19 +398,33 @@ static const namco_interface namco_config =
 	0		/* stereo */
 };
 
+static INTERRUPT_GEN( main_vblank_irq )
+{
+	pacland_state *state = device->machine().driver_data<pacland_state>();
 
+	if(state->m_main_irq_mask)
+		cputag_set_input_line(device->machine(), "maincpu", 0, ASSERT_LINE);
+}
+
+static INTERRUPT_GEN( mcu_vblank_irq )
+{
+	pacland_state *state = device->machine().driver_data<pacland_state>();
+
+	if(state->m_mcu_irq_mask)
+		cputag_set_input_line(device->machine(), "mcu", 0, ASSERT_LINE);
+}
 
 static MACHINE_CONFIG_START( pacland, pacland_state )
 
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6809, 49152000/32)	/* 1.536 MHz */
 	MCFG_CPU_PROGRAM_MAP(main_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", main_vblank_irq)
 
 	MCFG_CPU_ADD("mcu", HD63701, 49152000/8)	/* 1.536 MHz? */
 	MCFG_CPU_PROGRAM_MAP(mcu_map)
 	MCFG_CPU_IO_MAP(mcu_port_map)
-	MCFG_CPU_VBLANK_INT("screen", irq0_line_assert)
+	MCFG_CPU_VBLANK_INT("screen", mcu_vblank_irq)
 
 	MCFG_QUANTUM_TIME(attotime::from_hz(6000))	/* we need heavy synching between the MCU and the CPU */
 
@@ -416,10 +432,9 @@ static MACHINE_CONFIG_START( pacland, pacland_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60.606060)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(3*8, 39*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(pacland)
+	MCFG_SCREEN_UPDATE_STATIC(pacland)
 
 	MCFG_GFXDECODE(pacland)
 	MCFG_PALETTE_LENGTH(256*4+256*4+64*16)

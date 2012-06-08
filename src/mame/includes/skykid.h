@@ -13,13 +13,15 @@ public:
 	UINT8 m_priority;
 	UINT16 m_scroll_x;
 	UINT16 m_scroll_y;
+	UINT8 m_main_irq_mask;
+	UINT8 m_mcu_irq_mask;
 };
 
 
 /*----------- defined in video/skykid.c -----------*/
 
 VIDEO_START( skykid );
-SCREEN_UPDATE( skykid );
+SCREEN_UPDATE_IND16( skykid );
 PALETTE_INIT( skykid );
 
 READ8_HANDLER( skykid_videoram_r );

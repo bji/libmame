@@ -337,14 +337,6 @@ static TMS9928A_INTERFACE(pachifev_tms9928a_interface)
     DEVCB_NULL
 };
 
-static SCREEN_UPDATE( pachifev )
-{
-	tms9928a_device *tms9928a = screen->machine().device<tms9928a_device>( "tms9928a" );
-
-	tms9928a->update( bitmap, cliprect );
-	return 0;
-}
-
 static MACHINE_START( pachifev)
 {
 	pachifev_state *state = machine.driver_data<pachifev_state>();
@@ -376,7 +368,7 @@ static MACHINE_CONFIG_START( pachifev, pachifev_state )
     /* video hardware */
 	MCFG_TMS9928A_ADD( "tms9928a", TMS9928A, pachifev_tms9928a_interface )
 	MCFG_TMS9928A_SCREEN_ADD_NTSC( "screen" )
-	MCFG_SCREEN_UPDATE( pachifev )
+	MCFG_SCREEN_UPDATE_DEVICE( "tms9928a", tms9928a_device, screen_update )
 
     /* sound hardware */
     MCFG_SPEAKER_STANDARD_MONO("mono")
@@ -385,9 +377,9 @@ static MACHINE_CONFIG_START( pachifev, pachifev_state )
     MCFG_SOUND_CONFIG(msm5205_config)
     MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.00)
 #endif
-    MCFG_SOUND_ADD("sn76_1", SN76489A, XTAL_10_738635MHz/3) /* guess */
+    MCFG_SOUND_ADD("sn76_1", Y2404, XTAL_10_738635MHz/3) /* guess */
     MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.30)
-    MCFG_SOUND_ADD("sn76_2", SN76489A, XTAL_10_738635MHz/3) /* guess */
+    MCFG_SOUND_ADD("sn76_2", Y2404, XTAL_10_738635MHz/3) /* guess */
     MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.30)
 MACHINE_CONFIG_END
 

@@ -49,8 +49,8 @@ VIDEO_START( cabal )
 	state->m_background_layer = tilemap_create(machine, get_back_tile_info,tilemap_scan_rows,16,16,16,16);
 	state->m_text_layer       = tilemap_create(machine, get_text_tile_info,tilemap_scan_rows,  8,8,32,32);
 
-	tilemap_set_transparent_pen(state->m_text_layer,3);
-	tilemap_set_transparent_pen(state->m_background_layer,15);
+	state->m_text_layer->set_transparent_pen(3);
+	state->m_background_layer->set_transparent_pen(15);
 }
 
 
@@ -62,8 +62,8 @@ WRITE16_HANDLER( cabal_flipscreen_w )
 	{
 		cabal_state *state = space->machine().driver_data<cabal_state>();
 		int flip = (data & 0x20) ? (TILEMAP_FLIPX | TILEMAP_FLIPY) : 0;
-		tilemap_set_flip(state->m_background_layer,flip);
-		tilemap_set_flip(state->m_text_layer,flip);
+		state->m_background_layer->set_flip(flip);
+		state->m_text_layer->set_flip(flip);
 
 		flip_screen_set(space->machine(), data & 0x20);
 	}
@@ -73,14 +73,14 @@ WRITE16_HANDLER( cabal_background_videoram16_w )
 {
 	cabal_state *state = space->machine().driver_data<cabal_state>();
 	COMBINE_DATA(&state->m_videoram[offset]);
-	tilemap_mark_tile_dirty(state->m_background_layer,offset);
+	state->m_background_layer->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER( cabal_text_videoram16_w )
 {
 	cabal_state *state = space->machine().driver_data<cabal_state>();
 	COMBINE_DATA(&state->m_colorram[offset]);
-	tilemap_mark_tile_dirty(state->m_text_layer,offset);
+	state->m_text_layer->mark_tile_dirty(offset);
 }
 
 
@@ -105,7 +105,7 @@ WRITE16_HANDLER( cabal_text_videoram16_w )
 
 ********************************************************************/
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	cabal_state *state = machine.driver_data<cabal_state>();
 	int offs,data0,data1,data2;
@@ -146,12 +146,12 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 }
 
 
-SCREEN_UPDATE( cabal )
+SCREEN_UPDATE_IND16( cabal )
 {
-	cabal_state *state = screen->machine().driver_data<cabal_state>();
-	tilemap_draw(bitmap,cliprect,state->m_background_layer,TILEMAP_DRAW_OPAQUE,0);
-	draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_text_layer,0,0);
+	cabal_state *state = screen.machine().driver_data<cabal_state>();
+	state->m_background_layer->draw(bitmap, cliprect, TILEMAP_DRAW_OPAQUE,0);
+	draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_text_layer->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 

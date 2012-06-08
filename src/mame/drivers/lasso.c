@@ -4,21 +4,22 @@
 
         driver by Phil Stroffolino, Nicola Salmoria, Luca Elia
 
----------------------------------------------------------------------------
-Year + Game                 By              CPUs        Sound Chips
----------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
+Year + Game                 By              CPUs        Sound Chips         Misc Info
+--------------------------------------------------------------------------------------
 82  Lasso                   SNK             3 x 6502    2 x SN76489
 83  Chameleon               Jaleco          2 x 6502    2 x SN76489
 84  Wai Wai Jockey Gate-In! Jaleco/Casio    2 x 6502    2 x SN76489 + DAC
-84  Pinbo                   Jaleco          6502 + Z80  2 x AY-8910
----------------------------------------------------------------------------
+84  Pinbo                   Jaleco          6502 + Z80  2 x AY-8910         6502 @ 18MHz/24, Z80 @ 18MHz/6, AY @ 18MHz/12
+--------------------------------------------------------------------------------------
 
 Notes:
 
-- unknown CPU speeds (affect game timing), currently using same as the
-  Rock-Ola games of the same area.  Lot of similarities between these
-  hardware.  The music ends at the perfect time with this clock speed
+- unknown CPU speeds unless noted above (affect game timing), currently using
+  same as the Rock-Ola games of the same area.  Lot of similarities between
+  these hardware.  The music ends at the perfect time with this clock speed
 - Lasso: fire button auto-repeats on high score entry screen (real behavior?)
+- Pinbo: bgcolor is wrong, how does it generate it? ($a0, should be darkblue)
 
 ***************************************************************************
 
@@ -181,6 +182,7 @@ static ADDRESS_MAP_START( pinbo_main_map, AS_PROGRAM, 8 )
 	AM_RANGE(0x0800, 0x0bff) AM_RAM_WRITE(lasso_colorram_w) AM_BASE_MEMBER(lasso_state, m_colorram)
 	AM_RANGE(0x1000, 0x10ff) AM_RAM AM_BASE_SIZE_MEMBER(lasso_state, m_spriteram, m_spriteram_size)
 	AM_RANGE(0x1800, 0x1800) AM_WRITE(pinbo_sound_command_w)
+	AM_RANGE(0x1801, 0x1801) AM_WRITEONLY AM_BASE_MEMBER(lasso_state, m_back_color)
 	AM_RANGE(0x1802, 0x1802) AM_WRITE(pinbo_video_control_w)
 	AM_RANGE(0x1804, 0x1804) AM_READ_PORT("1804")
 	AM_RANGE(0x1805, 0x1805) AM_READ_PORT("1805")
@@ -518,10 +520,9 @@ static MACHINE_CONFIG_START( base, lasso_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(57)	/* guess, but avoids glitching of Chameleon's high score table */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(lasso)
+	MCFG_SCREEN_UPDATE_STATIC(lasso)
 
 	MCFG_GFXDECODE(lasso)
 	MCFG_PALETTE_LENGTH(0x40)
@@ -558,7 +559,7 @@ static MACHINE_CONFIG_DERIVED( chameleo, base )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(chameleo)
+	MCFG_SCREEN_UPDATE_STATIC(chameleo)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( wwjgtin, base )
@@ -576,7 +577,7 @@ static MACHINE_CONFIG_DERIVED( wwjgtin, base )
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
 	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)	// Smaller visible area?
-	MCFG_SCREEN_UPDATE(wwjgtin)
+	MCFG_SCREEN_UPDATE_STATIC(wwjgtin)
 	MCFG_GFXDECODE(wwjgtin)	// Has 1 additional layer
 	MCFG_PALETTE_LENGTH(0x40 + 16*16)
 
@@ -591,30 +592,30 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( pinbo, base )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("maincpu")
+	MCFG_CPU_REPLACE("maincpu", M6502, XTAL_18MHz/24)
 	MCFG_CPU_PROGRAM_MAP(pinbo_main_map)
+	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
 
-	MCFG_CPU_REPLACE("audiocpu", Z80, 3000000)
+	MCFG_CPU_REPLACE("audiocpu", Z80, XTAL_18MHz/6)
 	MCFG_CPU_PROGRAM_MAP(pinbo_audio_map)
 	MCFG_CPU_IO_MAP(pinbo_audio_io_map)
 
 	/* video hardware */
 	MCFG_GFXDECODE(pinbo)
 	MCFG_PALETTE_LENGTH(256)
-
 	MCFG_PALETTE_INIT(RRRR_GGGG_BBBB)
 	MCFG_VIDEO_START(pinbo)
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(pinbo)
+	MCFG_SCREEN_UPDATE_STATIC(chameleo)
 
 	/* sound hardware */
 	MCFG_DEVICE_REMOVE("sn76489.1")
 	MCFG_DEVICE_REMOVE("sn76489.2")
 
-	MCFG_SOUND_ADD("ay1", AY8910, 1250000)
+	MCFG_SOUND_ADD("ay1", AY8910, XTAL_18MHz/12)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.55)
 
-	MCFG_SOUND_ADD("ay2", AY8910, 1250000)
+	MCFG_SOUND_ADD("ay2", AY8910, XTAL_18MHz/12)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.55)
 MACHINE_CONFIG_END
 
@@ -789,9 +790,9 @@ ROM_START( pinbo )
 	ROM_CONTINUE(       	 0xb800, 0x0800 )
 
 	ROM_REGION( 0x00300, "proms", 0 )
-	ROM_LOAD( "red.l10",     0x0000, 0x0100, CRC(e6c9ba52) SHA1(6ea96f9bd71de6181d675b0f2d59a8c5e1be5aa3) )
-	ROM_LOAD( "green.k10",   0x0100, 0x0100, CRC(1bf2d335) SHA1(dcb074d3de939dfc652743e25bc66bd6fbdc3289) )
-	ROM_LOAD( "blue.n10",    0x0200, 0x0100, CRC(e41250ad) SHA1(2e9a2babbacb1753057d46cf1dd6dc183611747e) )
+	ROM_LOAD( "red.l10",     0x0000, 0x0100, CRC(e6c9ba52) SHA1(6ea96f9bd71de6181d675b0f2d59a8c5e1be5aa3) ) // 2nd half is garbage?
+	ROM_LOAD( "green.k10",   0x0100, 0x0100, CRC(1bf2d335) SHA1(dcb074d3de939dfc652743e25bc66bd6fbdc3289) ) // "
+	ROM_LOAD( "blue.n10",    0x0200, 0x0100, CRC(e41250ad) SHA1(2e9a2babbacb1753057d46cf1dd6dc183611747e) ) // "
 ROM_END
 
 ROM_START( pinboa )

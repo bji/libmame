@@ -14,7 +14,7 @@
  *
  *************************************/
 
-static void get_tile_info_common( running_machine &machine, tile_data *tileinfo, tilemap_memory_index tile_index, UINT8 *alpha_videoram )
+static void get_tile_info_common( running_machine &machine, tile_data &tileinfo, tilemap_memory_index tile_index, UINT8 *alpha_videoram )
 {
 	int code = alpha_videoram[tile_index] & 0x3f;
 	int flip = alpha_videoram[tile_index] & 0x40;
@@ -64,7 +64,7 @@ WRITE8_HANDLER( atarifb_alpha1_videoram_w )
 	atarifb_state *state = space->machine().driver_data<atarifb_state>();
 
 	state->m_alphap1_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_alpha1_tilemap, offset);
+	state->m_alpha1_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -73,7 +73,7 @@ WRITE8_HANDLER( atarifb_alpha2_videoram_w )
 	atarifb_state *state = space->machine().driver_data<atarifb_state>();
 
 	state->m_alphap2_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_alpha2_tilemap, offset);
+	state->m_alpha2_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -82,7 +82,7 @@ WRITE8_HANDLER( atarifb_field_videoram_w )
 	atarifb_state *state = space->machine().driver_data<atarifb_state>();
 
 	state->m_field_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_field_tilemap, offset);
+	state->m_field_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -104,10 +104,10 @@ VIDEO_START( atarifb )
 
 
 
-static void draw_playfield_and_alpha( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int playfield_x_offset, int playfield_y_offset )
+static void draw_playfield_and_alpha( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int playfield_x_offset, int playfield_y_offset )
 {
 	atarifb_state *state = machine.driver_data<atarifb_state>();
-	static const rectangle bigfield_area = { 4 * 8, 34 * 8 - 1, 0 * 8, 32 * 8 - 1 };
+	const rectangle bigfield_area(4 * 8, 34 * 8 - 1, 0 * 8, 32 * 8 - 1);
 
 	int scroll_x[1];
 	int scroll_y[1];
@@ -115,16 +115,16 @@ static void draw_playfield_and_alpha( running_machine &machine, bitmap_t *bitmap
 	scroll_x[0] = - *state->m_scroll_register + 32 + playfield_x_offset;
 	scroll_y[0] = 8 + playfield_y_offset;
 
-	copybitmap(bitmap, tilemap_get_pixmap(state->m_alpha1_tilemap), 0, 0, 35*8, 1*8, NULL);
-	copybitmap(bitmap, tilemap_get_pixmap(state->m_alpha2_tilemap), 0, 0,  0*8, 1*8, NULL);
-	copyscrollbitmap(bitmap, tilemap_get_pixmap(state->m_field_tilemap),  1, scroll_x, 1, scroll_y, &bigfield_area);
+	copybitmap(bitmap, state->m_alpha1_tilemap->pixmap(), 0, 0, 35*8, 1*8, cliprect);
+	copybitmap(bitmap, state->m_alpha2_tilemap->pixmap(), 0, 0,  0*8, 1*8, cliprect);
+	copyscrollbitmap(bitmap, state->m_field_tilemap->pixmap(),  1, scroll_x, 1, scroll_y, bigfield_area);
 }
 
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int gfx, int is_soccer )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int gfx, int is_soccer )
 {
 	atarifb_state *state = machine.driver_data<atarifb_state>();
-	static const rectangle bigfield_area = { 4 * 8, 34 * 8 - 1, 0 * 8, 32 * 8 - 1 };
+	const rectangle bigfield_area(4 * 8, 34 * 8 - 1, 0 * 8, 32 * 8 - 1);
 
 	int obj;
 
@@ -152,14 +152,14 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 		{
 			shade = ((state->m_spriteram[obj * 2 + 1 + 0x20]) & 0x07);
 
-			drawgfx_transpen(bitmap, &bigfield_area, machine.gfx[gfx + 1],
+			drawgfx_transpen(bitmap, bigfield_area, machine.gfx[gfx + 1],
 				charcode, shade,
 				flipx, flipy, sx, sy, 0);
 
 			shade = ((state->m_spriteram[obj * 2 + 1 + 0x20]) & 0x08) >> 3;
 		}
 
-		drawgfx_transpen(bitmap, &bigfield_area, machine.gfx[gfx],
+		drawgfx_transpen(bitmap, bigfield_area, machine.gfx[gfx],
 				charcode, shade,
 				flipx, flipy, sx, sy, 0);
 
@@ -171,7 +171,7 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 			if ((charcode == 0x11) && (sy == 0x07))
 			{
 				sy = 0xf1; /* When multiplexed, it's 0x10...why? */
-				drawgfx_transpen(bitmap, &bigfield_area, machine.gfx[gfx],
+				drawgfx_transpen(bitmap, bigfield_area, machine.gfx[gfx],
 					charcode, 0,
 					flipx, flipy, sx, sy, 0);
 			}
@@ -180,31 +180,31 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 }
 
 
-SCREEN_UPDATE( atarifb )
+SCREEN_UPDATE_IND16( atarifb )
 {
-	draw_playfield_and_alpha(screen->machine(), bitmap, cliprect, 0, 0);
+	draw_playfield_and_alpha(screen.machine(), bitmap, cliprect, 0, 0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 1, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 1, 0);
 
 	return 0;
 }
 
 
-SCREEN_UPDATE( abaseb )
+SCREEN_UPDATE_IND16( abaseb )
 {
-	draw_playfield_and_alpha(screen->machine(), bitmap, cliprect, -8, 0);
+	draw_playfield_and_alpha(screen.machine(), bitmap, cliprect, -8, 0);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 1, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect, 1, 0);
 
 	return 0;
 }
 
 
-SCREEN_UPDATE( soccer )
+SCREEN_UPDATE_IND16( soccer )
 {
-	draw_playfield_and_alpha(screen->machine(), bitmap, cliprect, 0, 8);
+	draw_playfield_and_alpha(screen.machine(), bitmap, cliprect, 0, 8);
 
-	draw_sprites(screen->machine(), bitmap, cliprect, 2, 1);
+	draw_sprites(screen.machine(), bitmap, cliprect, 2, 1);
 
 	return 0;
 }

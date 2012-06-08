@@ -1,6 +1,9 @@
 /*
     Williams System 7
 */
+
+#define ADDRESS_MAP_MODERN
+
 #include "emu.h"
 #include "cpu/m6800/m6800.h"
 
@@ -8,18 +11,28 @@ class williams_s7_state : public driver_device
 {
 public:
 	williams_s7_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_maincpu(*this, "maincpu")
+	{ }
+
+protected:
+
+	// devices
+	required_device<cpu_device> m_maincpu;
+
+	// driver_device overrides
+	virtual void machine_reset();
 };
 
 
-static ADDRESS_MAP_START( williams_s7_map, AS_PROGRAM, 8 )
+static ADDRESS_MAP_START( williams_s7_map, AS_PROGRAM, 8, williams_s7_state )
 	AM_RANGE(0x0000, 0xffff) AM_NOP
 ADDRESS_MAP_END
 
 static INPUT_PORTS_START( williams_s7 )
 INPUT_PORTS_END
 
-static MACHINE_RESET( williams_s7 )
+void williams_s7_state::machine_reset()
 {
 }
 
@@ -31,8 +44,6 @@ static MACHINE_CONFIG_START( williams_s7, williams_s7_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6800, 1000000)
 	MCFG_CPU_PROGRAM_MAP(williams_s7_map)
-
-	MCFG_MACHINE_RESET( williams_s7 )
 MACHINE_CONFIG_END
 
 /*----------------------------
@@ -413,22 +424,22 @@ ROM_START(ratrc_l1)
 ROM_END
 
 
-GAME(1982,	vrkon_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Varkon (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	barra_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Barracora (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	bk_l4,		0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Black Knight (L-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	bk_f4,		bk_l4,		williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Black Knight (L-4, French speech)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	bk_l3,		bk_l4,		williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Black Knight (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1980,	csmic_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Cosmic Gunfight (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1982,	dfndr_l4,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Defender (L-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1983,	fpwr2_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Firepower II (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	hypbl_l4,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"HyperBall (L-4)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1983,	jst_l2,		0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Joust (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	jngld_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Jungle Lord (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1983,	lsrcu_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Laser Cue (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	pharo_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Pharaoh (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1981,	solar_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Solar Fire (L-2)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1984,	strlt_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Star Light (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1982,	tmfnt_l5,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Time Fantasy (L-5)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1982,	wrlok_l3,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Warlok (L-3)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1982,	thund_p1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Thunderball (P-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
-GAME(1983,	ratrc_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Rat Race (L-1)",				GAME_NOT_WORKING | GAME_NO_SOUND | GAME_MECHANICAL)
+GAME(1982,	vrkon_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Varkon (L-1)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	barra_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Barracora (L-1)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	bk_l4,		0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Black Knight (L-4)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	bk_f4,		bk_l4,		williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Black Knight (L-4, French speech)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	bk_l3,		bk_l4,		williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Black Knight (L-3)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1980,	csmic_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Cosmic Gunfight (L-1)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1982,	dfndr_l4,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Defender (L-4)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1983,	fpwr2_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Firepower II (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	hypbl_l4,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"HyperBall (L-4)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1983,	jst_l2,		0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Joust (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	jngld_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Jungle Lord (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1983,	lsrcu_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Laser Cue (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	pharo_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Pharaoh (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1981,	solar_l2,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Solar Fire (L-2)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1984,	strlt_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Star Light (L-1)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1982,	tmfnt_l5,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Time Fantasy (L-5)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1982,	wrlok_l3,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Warlok (L-3)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1982,	thund_p1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Thunderball (P-1)",				GAME_IS_SKELETON_MECHANICAL)
+GAME(1983,	ratrc_l1,	0,			williams_s7,	williams_s7,	williams_s7,	ROT0,	"Williams",				"Rat Race (L-1)",				GAME_IS_SKELETON_MECHANICAL)

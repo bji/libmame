@@ -16,6 +16,8 @@ public:
 	/* video-related */
 	tilemap_t  *m_bg_tilemap;
 	int		 m_sprites_gfx_banked;
+
+	UINT8    m_irq_mask;
 };
 
 /*----------- defined in video/hyperspt.c -----------*/
@@ -26,6 +28,6 @@ WRITE8_HANDLER( hyperspt_flipscreen_w );
 
 PALETTE_INIT( hyperspt );
 VIDEO_START( hyperspt );
-SCREEN_UPDATE( hyperspt );
+SCREEN_UPDATE_IND16( hyperspt );
 VIDEO_START( roadf );
 

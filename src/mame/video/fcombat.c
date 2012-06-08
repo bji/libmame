@@ -134,17 +134,17 @@ WRITE8_HANDLER( fcombat_videoreg_w )
 
 
 
-SCREEN_UPDATE( fcombat )
+SCREEN_UPDATE_IND16( fcombat )
 {
-	fcombat_state *state = screen->machine().driver_data<fcombat_state>();
+	fcombat_state *state = screen.machine().driver_data<fcombat_state>();
 	int sx, sy, offs, i;
 
 	/* draw background */
-	tilemap_set_scrolly(state->m_bgmap, 0, state->m_fcombat_sh);
-	tilemap_set_scrollx(state->m_bgmap, 0, state->m_fcombat_sv - 24);
+	state->m_bgmap->set_scrolly(0, state->m_fcombat_sh);
+	state->m_bgmap->set_scrollx(0, state->m_fcombat_sv - 24);
 
-	tilemap_mark_all_tiles_dirty(state->m_bgmap);
-	tilemap_draw(bitmap, cliprect, state->m_bgmap, 0, 0);
+	state->m_bgmap->mark_all_dirty();
+	state->m_bgmap->draw(bitmap, cliprect, 0, 0);
 	//draw_background(bitmap, cliprect);
 
 	/* draw sprites */
@@ -162,7 +162,7 @@ SCREEN_UPDATE( fcombat )
 		int code2 = code;
 
 		int color = ((flags >> 1) & 0x03) | ((code >> 5) & 0x04) | (code & 0x08) | (state->m_sprite_palette * 16);
-				const gfx_element *gfx = screen->machine().gfx[1];
+				const gfx_element *gfx = screen.machine().gfx[1];
 
 		if (state->m_cocktail_flip)
 		{
@@ -204,7 +204,7 @@ SCREEN_UPDATE( fcombat )
 			int y = state->m_cocktail_flip ? (31 * 8 - 8 * sy) : 8 * sy;
 
 			offs = sx + sy * 64;
-			drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[0],
+			drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[0],
 				state->m_videoram[offs] + 256 * state->m_char_bank,
 				((state->m_videoram[offs] & 0xf0) >> 4) + state->m_char_palette * 16,
 				state->m_cocktail_flip, state->m_cocktail_flip, x, y, 0);

@@ -196,7 +196,6 @@
 #include "sound/ay8910.h"
 #include "video/v9938.h"
 #include "machine/nvram.h"
-#include "deprecat.h"
 #include "kas89.lh"
 
 
@@ -204,7 +203,9 @@ class kas89_state : public driver_device
 {
 public:
 	kas89_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_v9938(*this, "v9938")
+		{ }
 
 	UINT8 m_mux_data;
 	UINT8 m_main_nmi_enable;
@@ -216,6 +217,7 @@ public:
 	device_t *m_maincpu;
 	device_t *m_audiocpu;
 
+	required_device<v9938_device> m_v9938;
 };
 
 #define VDP_MEM             0x40000
@@ -225,22 +227,18 @@ public:
 *      Interrupt handling & Video      *
 ***************************************/
 
-static void kas89_vdp_interrupt(running_machine &machine, int i)
+static void kas89_vdp_interrupt(device_t *, v99x8_device &device, int i)
 {
-	cputag_set_input_line (machine, "maincpu", 0, (i ? ASSERT_LINE : CLEAR_LINE));
+	cputag_set_input_line (device.machine(), "maincpu", 0, (i ? ASSERT_LINE : CLEAR_LINE));
 }
 
-static INTERRUPT_GEN( kas89_interrupt )
+static TIMER_DEVICE_CALLBACK( kas89_interrupt )
 {
-	v9938_interrupt(device->machine(), 0);
-}
+	kas89_state *state = timer.machine().driver_data<kas89_state>();
+	int scanline = param;
 
-
-static VIDEO_START( kas89 )
-{
-	VIDEO_START_CALL(generic_bitmapped);
-	v9938_init (machine, 0, *machine.primary_screen, machine.generic.tmpbitmap, MODEL_V9938, VDP_MEM, kas89_vdp_interrupt);
-	v9938_reset(0);
+	if((scanline % 2) == 0)
+		state->m_v9938->interrupt();
 }
 
 
@@ -261,7 +259,6 @@ static MACHINE_RESET(kas89)
 {
 	kas89_state *state = machine.driver_data<kas89_state>();
 
-	v9938_reset(0);
 	state->m_main_nmi_enable = 0;
 }
 
@@ -306,15 +303,21 @@ static READ8_HANDLER( mux_r )
 	return state->m_mux_data;
 }
 
-static INTERRUPT_GEN ( kas89_nmi_interrupt )
+static TIMER_DEVICE_CALLBACK ( kas89_nmi_cb )
 {
-	kas89_state *state = device->machine().driver_data<kas89_state>();
+	kas89_state *state = timer.machine().driver_data<kas89_state>();
 
 	if (state->m_main_nmi_enable)
-	{
-		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
-	}
+		device_set_input_line(state->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
 }
+
+static TIMER_DEVICE_CALLBACK ( kas89_sound_nmi_cb )
+{
+	kas89_state *state = timer.machine().driver_data<kas89_state>();
+
+	device_set_input_line(state->m_audiocpu, INPUT_LINE_NMI, PULSE_LINE);
+}
+
 
 static WRITE8_HANDLER( control_w )
 {
@@ -513,10 +516,7 @@ ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( kas89_io, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x40, 0x40) AM_WRITE(v9938_0_vram_w) AM_READ(v9938_0_vram_r)
-	AM_RANGE(0x41, 0x41) AM_WRITE(v9938_0_command_w) AM_READ(v9938_0_status_r)
-	AM_RANGE(0x42, 0x42) AM_WRITE(v9938_0_palette_w)
-	AM_RANGE(0x43, 0x43) AM_WRITE(v9938_0_register_w)
+	AM_RANGE(0x40, 0x43) AM_DEVREADWRITE_MODERN("v9938", v9938_device, read, write)
 	AM_RANGE(0x80, 0x80) AM_WRITE(mux_w)
 	AM_RANGE(0x81, 0x81) AM_READ(mux_r)
 	AM_RANGE(0x82, 0x82) AM_WRITE(control_w)	/* Bit6 trigger the 138Hz osc. tied to main Z80's NMI.*/
@@ -773,13 +773,13 @@ static MACHINE_CONFIG_START( kas89, kas89_state )
 	MCFG_CPU_ADD("maincpu", Z80, MASTER_CLOCK/6)	/* Confirmed */
 	MCFG_CPU_PROGRAM_MAP(kas89_map)
 	MCFG_CPU_IO_MAP(kas89_io)
-	MCFG_CPU_VBLANK_INT_HACK(kas89_interrupt, 262)
-	MCFG_CPU_PERIODIC_INT(kas89_nmi_interrupt, 138)	/* Connected to a 138Hz osc. *AND* bit6 of port $82 */
+	MCFG_TIMER_ADD_SCANLINE("scantimer", kas89_interrupt, "screen", 0, 1)
+	MCFG_TIMER_ADD_PERIODIC("kas89_nmi", kas89_nmi_cb, attotime::from_hz(138)) /* Connected to a 138Hz osc. *AND* bit6 of port $82 */
 
 	MCFG_CPU_ADD("audiocpu", Z80, MASTER_CLOCK/6)	/* Confirmed */
 	MCFG_CPU_PROGRAM_MAP(audio_map)
 	MCFG_CPU_IO_MAP(audio_io)
-	MCFG_CPU_PERIODIC_INT(nmi_line_pulse, 138)		/* Connected to a 138Hz osc.*/
+	MCFG_TIMER_ADD_PERIODIC("kas89_snmi", kas89_sound_nmi_cb, attotime::from_hz(138)) /* Connected to a 138Hz osc.*/
 
 	MCFG_MACHINE_START(kas89)
 	MCFG_MACHINE_RESET(kas89)
@@ -787,17 +787,18 @@ static MACHINE_CONFIG_START( kas89, kas89_state )
 	MCFG_NVRAM_ADD_0FILL("nvram")
 
 	/* video hardware */
+	MCFG_V9938_ADD("v9938", "screen", VDP_MEM)
+	MCFG_V99X8_INTERRUPT_CALLBACK_STATIC(kas89_vdp_interrupt)
+
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(544, 480)
+	MCFG_SCREEN_UPDATE_DEVICE("v9938", v9938_device, screen_update)
+	MCFG_SCREEN_SIZE(544, 524)
 	MCFG_SCREEN_VISIBLE_AREA(0, 544 - 1, 0, 480 - 1)
-	MCFG_SCREEN_UPDATE(generic_bitmapped)
 
 	MCFG_PALETTE_LENGTH(512)
 	MCFG_PALETTE_INIT(v9938)
-	MCFG_VIDEO_START(kas89)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

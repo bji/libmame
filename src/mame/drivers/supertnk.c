@@ -242,9 +242,9 @@ static WRITE8_HANDLER( supertnk_bitplane_select_1_w )
 }
 
 
-static SCREEN_UPDATE( supertnk )
+static SCREEN_UPDATE_RGB32( supertnk )
 {
-	supertnk_state *state = screen->machine().driver_data<supertnk_state>();
+	supertnk_state *state = screen.machine().driver_data<supertnk_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < 0x2000; offs++)
@@ -261,7 +261,7 @@ static SCREEN_UPDATE( supertnk )
 		for (i = 0; i < 8; i++)
 		{
 			UINT8 color = ((data0 & 0x80) >> 5) | ((data1 & 0x80) >> 6) | ((data2 & 0x80) >> 7);
-			*BITMAP_ADDR32(bitmap, y, x) = state->m_pens[color];
+			bitmap.pix32(y, x) = state->m_pens[color];
 
 			data0 = data0 << 1;
 			data1 = data1 << 1;
@@ -434,12 +434,11 @@ static MACHINE_CONFIG_START( supertnk, supertnk_state )
 	MCFG_VIDEO_START(supertnk)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_UPDATE(supertnk)
+	MCFG_SCREEN_UPDATE_STATIC(supertnk)
 
 	/* audio hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

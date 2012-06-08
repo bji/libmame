@@ -189,10 +189,10 @@ static VIDEO_START( supershot )
 	state->m_tilemap = tilemap_create(machine, get_supershot_text_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static SCREEN_UPDATE( supershot )
+static SCREEN_UPDATE_IND16( supershot )
 {
-	supershot_state *state = screen->machine().driver_data<supershot_state>();
-	tilemap_draw(bitmap, cliprect, state->m_tilemap, 0, 0);
+	supershot_state *state = screen.machine().driver_data<supershot_state>();
+	state->m_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -201,7 +201,7 @@ static WRITE8_HANDLER( supershot_vidram_w )
 	supershot_state *state = space->machine().driver_data<supershot_state>();
 
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tilemap, offset);
+	state->m_tilemap->mark_tile_dirty(offset);
 }
 
 /*************************************
@@ -333,12 +333,11 @@ static MACHINE_CONFIG_START( supershot, supershot_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE((32)*8, (32)*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 32*8-1)
 
 	MCFG_VIDEO_START(supershot)
-	MCFG_SCREEN_UPDATE(supershot)
+	MCFG_SCREEN_UPDATE_STATIC(supershot)
 
 	MCFG_GFXDECODE(supershot)
 	MCFG_PALETTE_LENGTH(2)

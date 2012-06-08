@@ -53,7 +53,6 @@ puzznici note
 */
 
 #include "emu.h"
-#include "deprecat.h"
 #include "includes/taitoipt.h"
 #include "cpu/z80/z80.h"
 #include "audio/taitosnd.h"
@@ -309,31 +308,32 @@ static IRQ_CALLBACK( irq_callback )
 	return state->m_irq_adr_table[state->m_last_irq_level];
 }
 
-static INTERRUPT_GEN( vbl_interrupt )
+static TIMER_DEVICE_CALLBACK( vbl_interrupt )
 {
-	taitol_state *state = device->machine().driver_data<taitol_state>();
-	device_set_irq_callback(device, irq_callback);
+	taitol_state *state = timer.machine().driver_data<taitol_state>();
+	int scanline = param;
+	device_set_irq_callback(state->m_maincpu, irq_callback);
 
 	/* kludge to make plgirls boot */
-	if (cpu_get_reg(device, Z80_IM) != 2)
+	if (cpu_get_reg(state->m_maincpu, Z80_IM) != 2)
 		return;
 
 	// What is really generating interrupts 0 and 1 is still to be found
 
-	if (cpu_getiloops(device) == 1 && (state->m_irq_enable & 1))
+	if (scanline == 120 && (state->m_irq_enable & 1))
 	{
 		state->m_last_irq_level = 0;
-		device_set_input_line(device, 0, HOLD_LINE);
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
 	}
-	else if (cpu_getiloops(device) == 2 && (state->m_irq_enable & 2))
+	else if (scanline == 0 && (state->m_irq_enable & 2))
 	{
 		state->m_last_irq_level = 1;
-		device_set_input_line(device, 0, HOLD_LINE);
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
 	}
-	else if (cpu_getiloops(device) == 0 && (state->m_irq_enable & 4))
+	else if (scanline == 240 && (state->m_irq_enable & 4))
 	{
 		state->m_last_irq_level = 2;
-		device_set_input_line(device, 0, HOLD_LINE);
+		device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
 	}
 }
 
@@ -1879,7 +1879,7 @@ static MACHINE_CONFIG_START( fhawk, taitol_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_13_33056MHz/2)	/* verified freq on pin122 of TC0090LVC cpu */
 	MCFG_CPU_PROGRAM_MAP(fhawk_map)
-	MCFG_CPU_VBLANK_INT_HACK(vbl_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", vbl_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_12MHz/3)		/* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(fhawk_3_map)
@@ -1897,11 +1897,10 @@ static MACHINE_CONFIG_START( fhawk, taitol_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(taitol)
-	MCFG_SCREEN_EOF(taitol)
+	MCFG_SCREEN_UPDATE_STATIC(taitol)
+	MCFG_SCREEN_VBLANK_STATIC(taitol)
 
 	MCFG_GFXDECODE(2)
 	MCFG_PALETTE_LENGTH(256)
@@ -1979,7 +1978,7 @@ static MACHINE_CONFIG_START( kurikint, taitol_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_13_33056MHz/2)	/* verified freq on pin122 of TC0090LVC cpu */
 	MCFG_CPU_PROGRAM_MAP(kurikint_map)
-	MCFG_CPU_VBLANK_INT_HACK(vbl_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", vbl_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu",  Z80, XTAL_12MHz/3)		/* verified on pcb */
 	MCFG_CPU_PROGRAM_MAP(kurikint_2_map)
@@ -1994,11 +1993,10 @@ static MACHINE_CONFIG_START( kurikint, taitol_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(taitol)
-	MCFG_SCREEN_EOF(taitol)
+	MCFG_SCREEN_UPDATE_STATIC(taitol)
+	MCFG_SCREEN_VBLANK_STATIC(taitol)
 
 	MCFG_GFXDECODE(2)
 	MCFG_PALETTE_LENGTH(256)
@@ -2032,7 +2030,7 @@ static MACHINE_CONFIG_START( plotting, taitol_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_13_33056MHz/2)	/* verified freq on pin122 of TC0090LVC cpu */
 	MCFG_CPU_PROGRAM_MAP(plotting_map)
-	MCFG_CPU_VBLANK_INT_HACK(vbl_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", vbl_interrupt, "screen", 0, 1)
 
 	MCFG_MACHINE_START(taito_l)
 	MCFG_MACHINE_RESET(plotting)
@@ -2041,11 +2039,10 @@ static MACHINE_CONFIG_START( plotting, taitol_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(taitol)
-	MCFG_SCREEN_EOF(taitol)
+	MCFG_SCREEN_UPDATE_STATIC(taitol)
+	MCFG_SCREEN_VBLANK_STATIC(taitol)
 
 	MCFG_GFXDECODE(1)
 	MCFG_PALETTE_LENGTH(256)
@@ -2119,7 +2116,7 @@ static MACHINE_CONFIG_START( evilston, taitol_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_13_33056MHz/2)	/* not verified */
 	MCFG_CPU_PROGRAM_MAP(evilston_map)
-	MCFG_CPU_VBLANK_INT_HACK(vbl_interrupt,3)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", vbl_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", Z80, XTAL_12MHz/3)		/* not verified */
 	MCFG_CPU_PROGRAM_MAP(evilston_2_map)
@@ -2135,11 +2132,10 @@ static MACHINE_CONFIG_START( evilston, taitol_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(taitol)
-	MCFG_SCREEN_EOF(taitol)
+	MCFG_SCREEN_UPDATE_STATIC(taitol)
+	MCFG_SCREEN_VBLANK_STATIC(taitol)
 
 	MCFG_GFXDECODE(2)
 	MCFG_PALETTE_LENGTH(256)

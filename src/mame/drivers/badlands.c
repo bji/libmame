@@ -524,11 +524,10 @@ static MACHINE_CONFIG_START( badlands, badlands_state )
 	MCFG_PALETTE_LENGTH(256)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	/* note: these parameters are from published specs, not derived */
 	/* the board uses an SOS-2 chip to generate video signals */
 	MCFG_SCREEN_RAW_PARAMS(ATARI_CLOCK_14MHz/2, 456, 0, 336, 262, 0, 240)
-	MCFG_SCREEN_UPDATE(badlands)
+	MCFG_SCREEN_UPDATE_STATIC(badlands)
 
 	MCFG_VIDEO_START(badlands)
 
@@ -693,9 +692,9 @@ static void scanline_update_bootleg(screen_device &screen, int scanline)
 {
 	/* sound IRQ is on 32V */
 //  if (scanline & 32)
-//      atarigen_6502_irq_ack_r(screen->machine(), 0);
+//      atarigen_6502_irq_ack_r(screen.machine(), 0);
 //  else if (!(input_port_read(machine, "FE4000") & 0x40))
-//      atarigen_6502_irq_gen(screen->machine().device("audiocpu"));
+//      atarigen_6502_irq_gen(screen.machine().device("audiocpu"));
 }
 
 
@@ -733,11 +732,10 @@ static MACHINE_CONFIG_START( badlandsb, badlands_state )
 	MCFG_PALETTE_LENGTH(256)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	/* note: these parameters are from published specs, not derived */
 	/* the board uses an SOS-2 chip to generate video signals */
 	MCFG_SCREEN_RAW_PARAMS(ATARI_CLOCK_14MHz/2, 456, 0, 336, 262, 0, 240)
-	MCFG_SCREEN_UPDATE(badlands)
+	MCFG_SCREEN_UPDATE_STATIC(badlands)
 
 	MCFG_VIDEO_START(badlands)
 

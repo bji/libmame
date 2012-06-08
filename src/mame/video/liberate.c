@@ -14,7 +14,7 @@
 #include "includes/liberate.h"
 
 #if 0
-void debug_print(bitmap_t *bitmap)
+void debug_print(bitmap_ind16 &bitmap)
 {
 	int i, j;
 	char buf[20 * 16];
@@ -107,7 +107,7 @@ WRITE8_HANDLER( deco16_io_w )
 	liberate_state *state = space->machine().driver_data<liberate_state>();
 	state->m_io_ram[offset] = data;
 	if (offset > 1 && offset < 6)
-		tilemap_mark_all_tiles_dirty(state->m_back_tilemap);
+		state->m_back_tilemap->mark_all_dirty();
 
 	switch (offset)
 	{
@@ -115,7 +115,7 @@ WRITE8_HANDLER( deco16_io_w )
 			if (((data >> 4) & 3) != state->m_background_color)
 			{
 				state->m_background_color = (data >> 4) & 3;
-				tilemap_mark_all_tiles_dirty(state->m_back_tilemap);
+				state->m_back_tilemap->mark_all_dirty();
 			}
 			state->m_background_disable = data & 0x4;
 			flip_screen_set(space->machine(), data & 0x01);
@@ -138,7 +138,7 @@ WRITE8_HANDLER( prosoccr_io_w )
 	liberate_state *state = space->machine().driver_data<liberate_state>();
 	state->m_io_ram[offset] = data;
 	if (offset > 1 && offset < 6)
-		tilemap_mark_all_tiles_dirty(state->m_back_tilemap);
+		state->m_back_tilemap->mark_all_dirty();
 
 	//  popmessage("%02x %02x",state->m_io_ram[6],state->m_io_ram[7]);
 
@@ -173,7 +173,7 @@ WRITE8_HANDLER( prosport_io_w )
 		case 0:
 			//background_disable = ~data & 0x80;
 			flip_screen_set(space->machine(), data & 0x80);
-			tilemap_mark_all_tiles_dirty(state->m_back_tilemap);
+			state->m_back_tilemap->mark_all_dirty();
 			break;
 		case 2: /* Sound */
 			soundlatch_w(space, 0, data);
@@ -189,21 +189,21 @@ WRITE8_HANDLER( liberate_videoram_w )
 {
 	liberate_state *state = space->machine().driver_data<liberate_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fix_tilemap, offset);
+	state->m_fix_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( liberate_colorram_w )
 {
 	liberate_state *state = space->machine().driver_data<liberate_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fix_tilemap, offset);
+	state->m_fix_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( prosport_bg_vram_w )
 {
 	liberate_state *state = space->machine().driver_data<liberate_state>();
 	state->m_bg_vram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_back_tilemap, offset);
+	state->m_back_tilemap->mark_tile_dirty(offset);
 }
 
 /***************************************************************************/
@@ -214,7 +214,7 @@ VIDEO_START( prosoccr )
 	state->m_back_tilemap = tilemap_create(machine, get_back_tile_info, back_scan, 16, 16, 32, 32);
 	state->m_fix_tilemap = tilemap_create(machine, get_fix_tile_info, fix_scan, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fix_tilemap, 0);
+	state->m_fix_tilemap->set_transparent_pen(0);
 
 	state->m_charram = auto_alloc_array(machine, UINT8, 0x1800 * 2);
 }
@@ -225,8 +225,8 @@ VIDEO_START( boomrang )
 	state->m_back_tilemap = tilemap_create(machine, get_back_tile_info, back_scan, 16, 16, 32, 32);
 	state->m_fix_tilemap = tilemap_create(machine, get_fix_tile_info, fix_scan, 8, 8, 32, 32);
 
-	tilemap_set_transmask(state->m_back_tilemap, 0, 0x0001, 0x007e); /* Bottom 1 pen/Top 7 pens */
-	tilemap_set_transparent_pen(state->m_fix_tilemap, 0);
+	state->m_back_tilemap->set_transmask(0, 0x0001, 0x007e); /* Bottom 1 pen/Top 7 pens */
+	state->m_fix_tilemap->set_transparent_pen(0);
 }
 
 VIDEO_START( liberate )
@@ -235,7 +235,7 @@ VIDEO_START( liberate )
 	state->m_back_tilemap = tilemap_create(machine, get_back_tile_info, back_scan, 16, 16, 32, 32);
 	state->m_fix_tilemap = tilemap_create(machine, get_fix_tile_info, fix_scan, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fix_tilemap, 0);
+	state->m_fix_tilemap->set_transparent_pen(0);
 }
 
 VIDEO_START( prosport )
@@ -244,7 +244,7 @@ VIDEO_START( prosport )
 	state->m_back_tilemap = tilemap_create(machine, prosport_get_back_tile_info, back_scan, 16, 16, 32, 32);
 	state->m_fix_tilemap = tilemap_create(machine, get_fix_tile_info, fix_scan, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fix_tilemap, 0);
+	state->m_fix_tilemap->set_transparent_pen(0);
 }
 
 /***************************************************************************/
@@ -290,7 +290,7 @@ PALETTE_INIT( liberate )
 
 /***************************************************************************/
 
-static void liberate_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void liberate_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	liberate_state *state = machine.driver_data<liberate_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -359,7 +359,7 @@ static void liberate_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 	}
 }
 
-static void prosport_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void prosport_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	liberate_state *state = machine.driver_data<liberate_state>();
 	int offs, multi, fx, fy, sx, sy, sy2, code, code2, color, gfx_region;
@@ -424,7 +424,7 @@ static void prosport_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 	}
 }
 
-static void boomrang_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int pri )
+static void boomrang_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int pri )
 {
 	liberate_state *state = machine.driver_data<liberate_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -485,7 +485,7 @@ static void boomrang_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 	}
 }
 
-static void prosoccr_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void prosoccr_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	liberate_state *state = machine.driver_data<liberate_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -512,42 +512,42 @@ static void prosoccr_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 
 /***************************************************************************/
 
-SCREEN_UPDATE( prosoccr )
+SCREEN_UPDATE_IND16( prosoccr )
 {
-	liberate_state *state = screen->machine().driver_data<liberate_state>();
-	tilemap_set_scrolly(state->m_back_tilemap, 0,  state->m_io_ram[1]);
-	tilemap_set_scrollx(state->m_back_tilemap, 0, -state->m_io_ram[0]);
+	liberate_state *state = screen.machine().driver_data<liberate_state>();
+	state->m_back_tilemap->set_scrolly(0,  state->m_io_ram[1]);
+	state->m_back_tilemap->set_scrollx(0, -state->m_io_ram[0]);
 
 	if (state->m_background_disable)
-		bitmap_fill(bitmap, cliprect, 32);
+		bitmap.fill(32, cliprect);
 	else
-		tilemap_draw(bitmap, cliprect, state->m_back_tilemap, 0, 0);
+		state->m_back_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	tilemap_draw(bitmap, cliprect, state->m_fix_tilemap, 0, 0);
-	prosoccr_draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_fix_tilemap->draw(bitmap, cliprect, 0, 0);
+	prosoccr_draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }
 
-SCREEN_UPDATE( prosport )
+SCREEN_UPDATE_IND16( prosport )
 {
-	liberate_state *state = screen->machine().driver_data<liberate_state>();
+	liberate_state *state = screen.machine().driver_data<liberate_state>();
 	UINT8 *videoram = state->m_videoram;
 	UINT8 *colorram = state->m_colorram;
 	int mx, my, tile, offs, gfx_region;
 	int scrollx, scrolly;
 
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
 	offs = 0;
 	/* TODO: what's bits 0 and 2 for? Internal scrolling state? */
 	scrolly = ((state->m_io_ram[0] & 0x8) << 5);
 	scrollx = ((state->m_io_ram[0] & 0x2) << 7) | (state->m_io_ram[1]);
 
-	tilemap_set_scrolly(state->m_back_tilemap, 0, scrolly);
-	tilemap_set_scrollx(state->m_back_tilemap, 0, -scrollx);
+	state->m_back_tilemap->set_scrolly(0, scrolly);
+	state->m_back_tilemap->set_scrollx(0, -scrollx);
 
-	tilemap_draw(bitmap, cliprect, state->m_back_tilemap, 0, 0);
+	state->m_back_tilemap->draw(bitmap, cliprect, 0, 0);
 
 //  popmessage("%d %02x %02x %02x %02x %02x %02x %02x %02x",scrollx,deco16_io_ram[0],deco16_io_ram[1],deco16_io_ram[2],deco16_io_ram[3]
 //  ,deco16_io_ram[4],deco16_io_ram[5],deco16_io_ram[6],deco16_io_ram[7]);
@@ -564,47 +564,47 @@ SCREEN_UPDATE( prosport )
 		my = (offs) % 32;
 		mx = (offs) / 32;
 
-		drawgfx_transpen(bitmap, cliprect,screen->machine().gfx[gfx_region],
+		drawgfx_transpen(bitmap, cliprect,screen.machine().gfx[gfx_region],
 				tile, 1, 0, 0, 248 - 8 * mx, 8 * my, 0);
 	}
 
-	prosport_draw_sprites(screen->machine(), bitmap, cliprect);
+	prosport_draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }
 
-SCREEN_UPDATE( boomrang )
+SCREEN_UPDATE_IND16( boomrang )
 {
-	liberate_state *state = screen->machine().driver_data<liberate_state>();
-	tilemap_set_scrolly(state->m_back_tilemap, 0,  state->m_io_ram[1]);
-	tilemap_set_scrollx(state->m_back_tilemap, 0, -state->m_io_ram[0]);
+	liberate_state *state = screen.machine().driver_data<liberate_state>();
+	state->m_back_tilemap->set_scrolly(0,  state->m_io_ram[1]);
+	state->m_back_tilemap->set_scrollx(0, -state->m_io_ram[0]);
 
 	if (state->m_background_disable)
-		bitmap_fill(bitmap, cliprect, 32);
+		bitmap.fill(32, cliprect);
 	else
-		tilemap_draw(bitmap, cliprect, state->m_back_tilemap, TILEMAP_DRAW_LAYER1, 0);
+		state->m_back_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_LAYER1, 0);
 
-	boomrang_draw_sprites(screen->machine(),bitmap,cliprect,8);
+	boomrang_draw_sprites(screen.machine(),bitmap,cliprect,8);
 	if (!state->m_background_disable)
-		tilemap_draw(bitmap, cliprect, state->m_back_tilemap, TILEMAP_DRAW_LAYER0, 0);
+		state->m_back_tilemap->draw(bitmap, cliprect, TILEMAP_DRAW_LAYER0, 0);
 
-	boomrang_draw_sprites(screen->machine(), bitmap, cliprect, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fix_tilemap, 0, 0);
+	boomrang_draw_sprites(screen.machine(), bitmap, cliprect, 0);
+	state->m_fix_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
-SCREEN_UPDATE( liberate )
+SCREEN_UPDATE_IND16( liberate )
 {
-	liberate_state *state = screen->machine().driver_data<liberate_state>();
-	tilemap_set_scrolly(state->m_back_tilemap, 0,  state->m_io_ram[1]);
-	tilemap_set_scrollx(state->m_back_tilemap, 0, -state->m_io_ram[0]);
+	liberate_state *state = screen.machine().driver_data<liberate_state>();
+	state->m_back_tilemap->set_scrolly(0,  state->m_io_ram[1]);
+	state->m_back_tilemap->set_scrollx(0, -state->m_io_ram[0]);
 
 	if (state->m_background_disable)
-		bitmap_fill(bitmap, cliprect, 32);
+		bitmap.fill(32, cliprect);
 	else
-		tilemap_draw(bitmap, cliprect, state->m_back_tilemap, 0, 0);
+		state->m_back_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	liberate_draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_fix_tilemap, 0, 0);
+	liberate_draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_fix_tilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }

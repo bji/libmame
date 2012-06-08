@@ -41,14 +41,15 @@ Dumping Notes:
 
 #include "emu.h"
 #include "cpu/z80/z80.h"
-#include "machine/laserdsc.h"
+#include "machine/ldv1000.h"
 
 
 class gpworld_state : public driver_device
 {
 public:
 	gpworld_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		  m_laserdisc(*this, "laserdisc") { }
 
 	UINT8 m_nmi_enable;
 	UINT8 m_start_lamp;
@@ -58,7 +59,7 @@ public:
 	UINT8* m_tile_RAM;
 	UINT8* m_sprite_RAM;
 	UINT8* m_palette_RAM;
-	device_t *m_laserdisc;
+	required_device<pioneer_ldv1000_device> m_laserdisc;
 };
 
 
@@ -70,7 +71,7 @@ public:
 
 
 /* VIDEO GOODS */
-static void gpworld_draw_tiles(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void gpworld_draw_tiles(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	gpworld_state *state = machine.driver_data<gpworld_state>();
 	UINT8 characterX, characterY;
@@ -88,24 +89,19 @@ static void gpworld_draw_tiles(running_machine &machine, bitmap_t *bitmap,const 
 	}
 }
 
-INLINE void draw_pixel(bitmap_t *bitmap,const rectangle *cliprect,int x,int y,int color,int flip)
+INLINE void draw_pixel(bitmap_ind16 &bitmap,const rectangle &cliprect,int x,int y,int color,int flip)
 {
 	if (flip)
 	{
-		x = bitmap->width - x - 1;
-		y = bitmap->height - y - 1;
+		x = bitmap.width() - x - 1;
+		y = bitmap.height() - y - 1;
 	}
 
-	if (x < cliprect->min_x ||
-		x > cliprect->max_x ||
-		y < cliprect->min_y ||
-		y > cliprect->max_y)
-		return;
-
-	*BITMAP_ADDR32(bitmap, y, x) = color;
+	if (cliprect.contains(x, y))
+		bitmap.pix16(y, x) = color;
 }
 
-static void gpworld_draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void gpworld_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	gpworld_state *state = machine.driver_data<gpworld_state>();
 	const int SPR_Y_TOP     = 0;
@@ -216,12 +212,12 @@ static void gpworld_draw_sprites(running_machine &machine, bitmap_t *bitmap, con
 }
 
 
-static SCREEN_UPDATE( gpworld )
+static SCREEN_UPDATE_IND16( gpworld )
 {
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
-	gpworld_draw_tiles(screen->machine(), bitmap, cliprect);
-	gpworld_draw_sprites(screen->machine(), bitmap, cliprect);
+	gpworld_draw_tiles(screen.machine(), bitmap, cliprect);
+	gpworld_draw_sprites(screen.machine(), bitmap, cliprect);
 
 	return 0;
 }
@@ -229,8 +225,6 @@ static SCREEN_UPDATE( gpworld )
 
 static MACHINE_START( gpworld )
 {
-	gpworld_state *state = machine.driver_data<gpworld_state>();
-	state->m_laserdisc = machine.device("laserdisc");
 }
 
 
@@ -435,8 +429,8 @@ static INTERRUPT_GEN( vblank_callback_gpworld )
 	/* Do an NMI if the enabled bit is set */
 	if (state->m_nmi_enable)
 	{
-		laserdisc_data_w(state->m_laserdisc,state->m_ldp_write_latch);
-		state->m_ldp_read_latch  = laserdisc_data_r(state->m_laserdisc);
+		state->m_laserdisc->data_w(state->m_ldp_write_latch);
+		state->m_ldp_read_latch = state->m_laserdisc->status_r();
 		device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
 	}
 
@@ -471,11 +465,11 @@ static MACHINE_CONFIG_START( gpworld, gpworld_state )
 
 	MCFG_MACHINE_START(gpworld)
 
-	MCFG_LASERDISC_ADD("laserdisc", PIONEER_LDV1000, "screen", "ldsound")
-	MCFG_LASERDISC_OVERLAY(gpworld, 512, 256, BITMAP_FORMAT_INDEXED16)
+	MCFG_LASERDISC_LDV1000_ADD("laserdisc")
+	MCFG_LASERDISC_OVERLAY_STATIC(512, 256, gpworld)
 
 	/* video hardware */
-	MCFG_LASERDISC_SCREEN_ADD_NTSC("screen", BITMAP_FORMAT_INDEXED16)
+	MCFG_LASERDISC_SCREEN_ADD_NTSC("screen", "laserdisc")
 
 	MCFG_GFXDECODE(gpworld)
 	MCFG_PALETTE_LENGTH(1024)
@@ -483,7 +477,7 @@ static MACHINE_CONFIG_START( gpworld, gpworld_state )
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_STEREO("lspeaker", "rspeaker")
 
-	MCFG_SOUND_ADD("ldsound", LASERDISC_SOUND, 0)
+	MCFG_SOUND_MODIFY("laserdisc")
 	MCFG_SOUND_ROUTE(0, "lspeaker", 1.0)
 	MCFG_SOUND_ROUTE(1, "rspeaker", 1.0)
 MACHINE_CONFIG_END

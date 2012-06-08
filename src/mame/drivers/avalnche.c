@@ -44,9 +44,9 @@
  *
  *************************************/
 
-static SCREEN_UPDATE( avalnche )
+static SCREEN_UPDATE_RGB32( avalnche )
 {
-	avalnche_state *state = screen->machine().driver_data<avalnche_state>();
+	avalnche_state *state = screen.machine().driver_data<avalnche_state>();
 	offs_t offs;
 
 	for (offs = 0; offs < state->m_videoram_size; offs++)
@@ -66,7 +66,7 @@ static SCREEN_UPDATE( avalnche )
 			else
 				pen = (data & 0x80) ? RGB_BLACK : RGB_WHITE;
 
-			*BITMAP_ADDR32(bitmap, y, x) = pen;
+			bitmap.pix32(y, x) = pen;
 
 			data = data << 1;
 			x = x + 1;
@@ -261,10 +261,9 @@ static MACHINE_CONFIG_START( avalnche, avalnche_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(avalnche)
+	MCFG_SCREEN_UPDATE_STATIC(avalnche)
 
 	/* sound hardware */
 	MCFG_SPEAKER_STANDARD_MONO("mono")

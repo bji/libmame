@@ -20,8 +20,6 @@ public:
 	/* video-related */
 	tilemap_t   *m_bg_layer;
 	tilemap_t   *m_fg_layer;
-	int       m_xsproff;
-	int       m_ysproff;
 	int       m_bestri_tilebank;
 
 	/* devices */
@@ -32,7 +30,7 @@ public:
 /*----------- defined in video/crospang.c -----------*/
 
 VIDEO_START( crospang );
-SCREEN_UPDATE( crospang );
+SCREEN_UPDATE_IND16( crospang );
 
 WRITE16_HANDLER ( crospang_fg_scrolly_w );
 WRITE16_HANDLER ( crospang_bg_scrolly_w );

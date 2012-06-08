@@ -9,7 +9,9 @@ class model2_state : public driver_device
 {
 public:
 	model2_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu")
+		{ }
 
 	UINT32 *m_workram;
 	UINT32 m_intreq;
@@ -64,13 +66,15 @@ public:
 	poly_manager *m_poly;
 	raster_state *m_raster;
 	geo_state *m_geo;
-	bitmap_t *m_sys24_bitmap;
+	bitmap_rgb32 m_sys24_bitmap;
+
+	required_device<cpu_device> m_maincpu;
 };
 
 
 /*----------- defined in video/model2.c -----------*/
 
 VIDEO_START(model2);
-SCREEN_UPDATE(model2);
+SCREEN_UPDATE_RGB32(model2);
 
 void model2_3d_set_zclip( running_machine &machine, UINT8 clip );

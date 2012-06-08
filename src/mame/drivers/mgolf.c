@@ -43,7 +43,7 @@ static WRITE8_HANDLER( mgolf_vram_w )
 {
 	mgolf_state *state = space->machine().driver_data<mgolf_state>();
 	state->m_video_ram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -54,25 +54,25 @@ static VIDEO_START( mgolf )
 }
 
 
-static SCREEN_UPDATE( mgolf )
+static SCREEN_UPDATE_IND16( mgolf )
 {
-	mgolf_state *state = screen->machine().driver_data<mgolf_state>();
+	mgolf_state *state = screen.machine().driver_data<mgolf_state>();
 	int i;
 
 	/* draw playfield */
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	/* draw sprites */
 	for (i = 0; i < 2; i++)
 	{
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1],
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1],
 			state->m_video_ram[0x399 + 4 * i],
 			i,
 			0, 0,
 			state->m_video_ram[0x390 + 2 * i] - 7,
 			state->m_video_ram[0x398 + 4 * i] - 16, 0);
 
-		drawgfx_transpen(bitmap, cliprect, screen->machine().gfx[1],
+		drawgfx_transpen(bitmap, cliprect, screen.machine().gfx[1],
 			state->m_video_ram[0x39b + 4 * i],
 			i,
 			0, 0,
@@ -331,10 +331,9 @@ static MACHINE_CONFIG_START( mgolf, mgolf_state )
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 262)
 	MCFG_SCREEN_VISIBLE_AREA(0, 255, 0, 223)
-	MCFG_SCREEN_UPDATE(mgolf)
+	MCFG_SCREEN_UPDATE_STATIC(mgolf)
 
 	MCFG_GFXDECODE(mgolf)
 	MCFG_PALETTE_LENGTH(4)

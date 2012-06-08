@@ -626,7 +626,6 @@ Notes:
 
 #include "emu.h"
 #include "cpu/v60/v60.h"
-#include "deprecat.h"
 #include "video/segaic24.h"
 #include "cpu/m68000/m68000.h"
 #include "cpu/mb86233/mb86233.h"
@@ -634,8 +633,6 @@ Notes:
 #include "sound/2612intf.h"
 #include "machine/nvram.h"
 #include "includes/model1.h"
-
-
 
 static READ16_HANDLER( io_r )
 {
@@ -714,21 +711,23 @@ static void irq_init(running_machine &machine)
 	device_set_irq_callback(machine.device("maincpu"), irq_callback);
 }
 
-static INTERRUPT_GEN(model1_interrupt)
+static TIMER_DEVICE_CALLBACK( model1_interrupt )
 {
-	model1_state *state = device->machine().driver_data<model1_state>();
-	if (cpu_getiloops(device))
+	model1_state *state = timer.machine().driver_data<model1_state>();
+	int scanline = param;
+
+	if (scanline == 384)
 	{
-		irq_raise(device->machine(), 1);
+		irq_raise(timer.machine(), 1);
 	}
-	else
+	else if(scanline == 384/2)
 	{
-		irq_raise(device->machine(), state->m_sound_irq);
+		irq_raise(timer.machine(), state->m_sound_irq);
 
 		// if the FIFO has something in it, signal the 68k too
 		if (state->m_fifo_rptr != state->m_fifo_wptr)
 		{
-			cputag_set_input_line(device->machine(), "audiocpu", 2, HOLD_LINE);
+			cputag_set_input_line(timer.machine(), "audiocpu", 2, HOLD_LINE);
 		}
 	}
 }
@@ -858,6 +857,11 @@ static WRITE16_HANDLER( snd_latch_to_68k_w )
 	state->m_to_68k[state->m_fifo_wptr] = data;
 	state->m_fifo_wptr++;
 	if (state->m_fifo_wptr >= ARRAY_LENGTH(state->m_to_68k)) state->m_fifo_wptr = 0;
+
+    if (state->m_dsbz80 != NULL)
+    {
+        state->m_dsbz80->latch_w(*space, 0, data);
+    }
 
 	// signal the 68000 that there's data waiting
 	cputag_set_input_line(space->machine(), "audiocpu", 2, HOLD_LINE);
@@ -1080,7 +1084,7 @@ INPUT_PORTS_END
 
 static INPUT_PORTS_START( wingwar )
 	PORT_START("AN0")	/* X */
-	PORT_BIT( 0xff, 0x80, IPT_AD_STICK_X ) PORT_SENSITIVITY(100) PORT_KEYDELTA(4)
+	PORT_BIT( 0xff, 0x80, IPT_AD_STICK_X ) PORT_SENSITIVITY(100) PORT_KEYDELTA(4) PORT_REVERSE
 
 	PORT_START("AN1")	/* Y */
 	PORT_BIT( 0xff, 0x80, IPT_AD_STICK_Y ) PORT_SENSITIVITY(100) PORT_KEYDELTA(4) PORT_REVERSE
@@ -1094,19 +1098,19 @@ static INPUT_PORTS_START( wingwar )
 	PORT_SERVICE_NO_TOGGLE(0x0004, IP_ACTIVE_LOW)
 	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_SERVICE1 )
 	PORT_BIT( 0x0010, IP_ACTIVE_LOW, IPT_START1 )
-	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_PLAYER(1)
-	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_PLAYER(1)
-	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_PLAYER(1) PORT_NAME("View 1")
+	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_PLAYER(1) PORT_NAME("View 2")
+	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_PLAYER(1) PORT_NAME("View 3")
 	PORT_BIT( 0xff00, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
 	PORT_START("IN1")
-	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_BUTTON4 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0001, IP_ACTIVE_LOW, IPT_BUTTON4 ) PORT_PLAYER(1) PORT_NAME("View 4")
 	PORT_BIT( 0x0002, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x0004, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x0008, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x0010, IP_ACTIVE_LOW, IPT_BUTTON5 ) PORT_PLAYER(1)
-	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_BUTTON6 ) PORT_PLAYER(1)
-	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_BUTTON7 ) PORT_PLAYER(1)
+	PORT_BIT( 0x0010, IP_ACTIVE_LOW, IPT_BUTTON5 ) PORT_PLAYER(1) PORT_NAME("Machine Gun")
+	PORT_BIT( 0x0020, IP_ACTIVE_LOW, IPT_BUTTON6 ) PORT_PLAYER(1) PORT_NAME("Missile")
+	PORT_BIT( 0x0040, IP_ACTIVE_LOW, IPT_BUTTON7 ) PORT_PLAYER(1) PORT_NAME("Smoke")
 	PORT_BIT( 0x0080, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0xff00, IP_ACTIVE_LOW, IPT_UNKNOWN )
 
@@ -1333,12 +1337,12 @@ ROM_START( swa )
         ROM_LOAD( "mpr-16484.bin", 0x000000, 0x200000, CRC(9d4c334d) SHA1(8b4d903f14559fed425d225bb23ccfe8da23cbd3) )
         ROM_LOAD( "mpr-16485.bin", 0x200000, 0x200000, CRC(95aadcad) SHA1(4276db655db9834692c3843eb96a3e3a89cb7252) )
 
-	ROM_REGION( 0x20000, "cpu2", 0 ) /* Z80 DSB code */
-        ROM_LOAD( "epr-16471.bin", 0x000000, 0x020000, CRC(f4ee84a4) SHA1(f12b214e6f195b0e5f49ba9f41d8e54bfcea9acc) )
+    ROM_REGION( 0x20000, "mpegcpu", 0 ) /* Z80 DSB code */
+    ROM_LOAD( "epr-16471.bin", 0x000000, 0x020000, CRC(f4ee84a4) SHA1(f12b214e6f195b0e5f49ba9f41d8e54bfcea9acc) )
 
-	ROM_REGION( 0x400000, "mpeg", 0 ) /* DSB MPEG data */
-        ROM_LOAD( "mpr-16514.bin", 0x000000, 0x200000, CRC(3175b0be) SHA1(63649d053c8c17ce1746d16d0cc8202be20c302f) )
-        ROM_LOAD( "mpr-16515.bin", 0x000000, 0x200000, CRC(3114d748) SHA1(9ef090623cdd2a1d06b5d1bc4b9a07ab4eff5b76) )
+    ROM_REGION( 0x400000, "ymz770", 0 ) /* DSB MPEG data */
+    ROM_LOAD( "mpr-16514.bin", 0x000000, 0x200000, CRC(3175b0be) SHA1(63649d053c8c17ce1746d16d0cc8202be20c302f) )
+    ROM_LOAD( "mpr-16515.bin", 0x200000, 0x200000, CRC(3114d748) SHA1(9ef090623cdd2a1d06b5d1bc4b9a07ab4eff5b76) )
 
 	ROM_REGION32_LE( 0xc00000, "user1", 0 ) /* TGP model roms */
 	ROM_LOAD32_WORD( "mpr-16476.26", 0x000000, 0x200000, CRC(d48609ae) SHA1(8c8686a5c9ca4837447a7f70ed194e2f1882b66d) )
@@ -1505,7 +1509,7 @@ static MACHINE_CONFIG_START( model1, model1_state )
 	MCFG_CPU_ADD("maincpu", V60, 16000000)
 	MCFG_CPU_PROGRAM_MAP(model1_mem)
 	MCFG_CPU_IO_MAP(model1_io)
-	MCFG_CPU_VBLANK_INT_HACK(model1_interrupt, 2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", model1_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", M68000, 10000000)	// verified on real h/w
 	MCFG_CPU_PROGRAM_MAP(model1_snd)
@@ -1520,9 +1524,8 @@ static MACHINE_CONFIG_START( model1, model1_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_RAW_PARAMS(XTAL_16MHz, 656, 0/*+69*/, 496/*+69*/, 424, 0/*+25*/, 384/*+25*/)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB15)
-	MCFG_SCREEN_UPDATE(model1)
-	MCFG_SCREEN_EOF(model1)
+	MCFG_SCREEN_UPDATE_STATIC(model1)
+	MCFG_SCREEN_VBLANK_STATIC(model1)
 
 	MCFG_PALETTE_LENGTH(8192)
 
@@ -1543,11 +1546,15 @@ static MACHINE_CONFIG_START( model1, model1_state )
 	MCFG_SOUND_ROUTE(1, "rspeaker", 1.0)
 MACHINE_CONFIG_END
 
+static MACHINE_CONFIG_DERIVED(swa, model1)
+    MCFG_DSBZ80_ADD(DSBZ80_TAG)
+MACHINE_CONFIG_END
+
 static MACHINE_CONFIG_START( model1_vr, model1_state )
 	MCFG_CPU_ADD("maincpu", V60, 16000000)
 	MCFG_CPU_PROGRAM_MAP(model1_vr_mem)
 	MCFG_CPU_IO_MAP(model1_vr_io)
-	MCFG_CPU_VBLANK_INT_HACK(model1_interrupt, 2)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", model1_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("audiocpu", M68000, 10000000)	// verified on real h/w
 	MCFG_CPU_PROGRAM_MAP(model1_snd)
@@ -1566,9 +1573,8 @@ static MACHINE_CONFIG_START( model1_vr, model1_state )
 
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_RAW_PARAMS(XTAL_16MHz, 656, 0/*+69*/, 496/*+69*/, 424, 0/*+25*/, 384/*+25*/)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB15)
-	MCFG_SCREEN_UPDATE(model1)
-	MCFG_SCREEN_EOF(model1)
+	MCFG_SCREEN_UPDATE_STATIC(model1)
+	MCFG_SCREEN_VBLANK_STATIC(model1)
 
 	MCFG_PALETTE_LENGTH(8192)
 
@@ -1592,7 +1598,7 @@ MACHINE_CONFIG_END
 GAME( 1993, vf,       0,       model1,    vf,       0, ROT0, "Sega", "Virtua Fighter", GAME_IMPERFECT_GRAPHICS )
 GAME( 1992, vr,       0,       model1_vr, vr,       0, ROT0, "Sega", "Virtua Racing", GAME_IMPERFECT_GRAPHICS )
 GAME( 1993, vformula, vr,      model1_vr, vr,       0, ROT0, "Sega", "Virtua Formula", GAME_IMPERFECT_GRAPHICS )
-GAME( 1993, swa,      0,       model1,    swa,      0, ROT0, "Sega", "Star Wars Arcade", GAME_NOT_WORKING | GAME_IMPERFECT_SOUND )
+GAME( 1993, swa,      0,       swa,       swa,      0, ROT0, "Sega", "Star Wars Arcade", GAME_NOT_WORKING | GAME_IMPERFECT_SOUND )
 GAME( 1994, wingwar,  0,       model1,    wingwar,  0, ROT0, "Sega", "Wing War (World)", GAME_NOT_WORKING )
 GAME( 1994, wingwaru, wingwar, model1,    wingwar,  0, ROT0, "Sega", "Wing War (US)", GAME_NOT_WORKING )
 GAME( 1994, wingwarj, wingwar, model1,    wingwar,  0, ROT0, "Sega", "Wing War (Japan)", GAME_NOT_WORKING )

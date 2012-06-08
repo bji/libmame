@@ -30,9 +30,9 @@ public:
  *
  *************************************/
 
-static SCREEN_UPDATE( tgtpanic )
+static SCREEN_UPDATE_RGB32( tgtpanic )
 {
-	tgtpanic_state *state = screen->machine().driver_data<tgtpanic_state>();
+	tgtpanic_state *state = screen.machine().driver_data<tgtpanic_state>();
 	UINT32 colors[4];
 	UINT32 offs;
 	UINT32 x, y;
@@ -50,17 +50,17 @@ static SCREEN_UPDATE( tgtpanic )
 		x = (offs >> 7) << 2;
 
 		/* I'm guessing the hardware doubles lines */
-		*BITMAP_ADDR32(bitmap, y + 0, x + 0) = colors[val & 3];
-		*BITMAP_ADDR32(bitmap, y + 1, x + 0) = colors[val & 3];
+		bitmap.pix32(y + 0, x + 0) = colors[val & 3];
+		bitmap.pix32(y + 1, x + 0) = colors[val & 3];
 		val >>= 2;
-		*BITMAP_ADDR32(bitmap, y + 0, x + 1) = colors[val & 3];
-		*BITMAP_ADDR32(bitmap, y + 1, x + 1) = colors[val & 3];
+		bitmap.pix32(y + 0, x + 1) = colors[val & 3];
+		bitmap.pix32(y + 1, x + 1) = colors[val & 3];
 		val >>= 2;
-		*BITMAP_ADDR32(bitmap, y + 0, x + 2) = colors[val & 3];
-		*BITMAP_ADDR32(bitmap, y + 1, x + 2) = colors[val & 3];
+		bitmap.pix32(y + 0, x + 2) = colors[val & 3];
+		bitmap.pix32(y + 1, x + 2) = colors[val & 3];
 		val >>= 2;
-		*BITMAP_ADDR32(bitmap, y + 0, x + 3) = colors[val & 3];
-		*BITMAP_ADDR32(bitmap, y + 1, x + 3) = colors[val & 3];
+		bitmap.pix32(y + 0, x + 3) = colors[val & 3];
+		bitmap.pix32(y + 1, x + 3) = colors[val & 3];
 	}
 
 	return 0;
@@ -139,10 +139,9 @@ static MACHINE_CONFIG_START( tgtpanic, tgtpanic_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60) /* Unverified */
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500)) /* Unverified */
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 192 - 1, 0, 192 - 1)
-	MCFG_SCREEN_UPDATE(tgtpanic)
+	MCFG_SCREEN_UPDATE_STATIC(tgtpanic)
 MACHINE_CONFIG_END
 
 

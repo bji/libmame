@@ -28,14 +28,14 @@ WRITE8_HANDLER( kchamp_videoram_w )
 {
 	kchamp_state *state = space->machine().driver_data<kchamp_state>();
 	state->m_videoram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( kchamp_colorram_w )
 {
 	kchamp_state *state = space->machine().driver_data<kchamp_state>();
 	state->m_colorram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( kchamp_flipscreen_w )
@@ -68,7 +68,7 @@ VIDEO_START( kchamp )
              3        XXXXXXXX
 */
 
-static void kchamp_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void kchamp_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	kchamp_state *state = machine.driver_data<kchamp_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -97,7 +97,7 @@ static void kchamp_draw_sprites( running_machine &machine, bitmap_t *bitmap, con
 	}
 }
 
-static void kchampvs_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void kchampvs_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	kchamp_state *state = machine.driver_data<kchamp_state>();
 	UINT8 *spriteram = state->m_spriteram;
@@ -127,20 +127,20 @@ static void kchampvs_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 }
 
 
-SCREEN_UPDATE( kchamp )
+SCREEN_UPDATE_IND16( kchamp )
 {
-	kchamp_state *state = screen->machine().driver_data<kchamp_state>();
+	kchamp_state *state = screen.machine().driver_data<kchamp_state>();
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	kchamp_draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	kchamp_draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }
 
-SCREEN_UPDATE( kchampvs )
+SCREEN_UPDATE_IND16( kchampvs )
 {
-	kchamp_state *state = screen->machine().driver_data<kchamp_state>();
+	kchamp_state *state = screen.machine().driver_data<kchamp_state>();
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	kchampvs_draw_sprites(screen->machine(), bitmap, cliprect);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	kchampvs_draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

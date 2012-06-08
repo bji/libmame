@@ -74,7 +74,7 @@ static WRITE16_HANDLER( k3_bgram_w )
 {
 	k3_state *state = space->machine().driver_data<k3_state>();
 	COMBINE_DATA(&state->m_bgram[offset]);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_k3_bg_tile_info )
@@ -90,7 +90,7 @@ static VIDEO_START(k3)
 	state->m_bg_tilemap = tilemap_create(machine, get_k3_bg_tile_info, tilemap_scan_rows, 16, 16, 32, 64);
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	k3_state *state = machine.driver_data<k3_state>();
 	const gfx_element *gfx = machine.gfx[0];
@@ -116,11 +116,11 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	}
 }
 
-static SCREEN_UPDATE(k3)
+static SCREEN_UPDATE_IND16(k3)
 {
-	k3_state *state = screen->machine().driver_data<k3_state>();
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	k3_state *state = screen.machine().driver_data<k3_state>();
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }
 
@@ -128,13 +128,13 @@ static SCREEN_UPDATE(k3)
 static WRITE16_HANDLER( k3_scrollx_w )
 {
 	k3_state *state = space->machine().driver_data<k3_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, data);
+	state->m_bg_tilemap->set_scrollx(0, data);
 }
 
 static WRITE16_HANDLER( k3_scrolly_w )
 {
 	k3_state *state = space->machine().driver_data<k3_state>();
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, data);
+	state->m_bg_tilemap->set_scrolly(0, data);
 }
 
 static WRITE16_HANDLER( k3_soundbanks_w )
@@ -262,10 +262,9 @@ static MACHINE_CONFIG_START( k3, k3_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 0*8, 28*8-1)
-	MCFG_SCREEN_UPDATE(k3)
+	MCFG_SCREEN_UPDATE_STATIC(k3)
 
 	MCFG_PALETTE_LENGTH(0x800)
 

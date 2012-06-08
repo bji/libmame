@@ -183,12 +183,12 @@ WRITE16_HANDLER( gaelco2_vram_w )
 
 	/* tilemap 0 writes */
 	if ((offset >= pant0_start) && (offset < pant0_end)){
-		tilemap_mark_tile_dirty(state->m_pant[0], ((offset << 1) & 0x1fff) >> 2);
+		state->m_pant[0]->mark_tile_dirty(((offset << 1) & 0x1fff) >> 2);
 	}
 
 	/* tilemap 1 writes */
 	if ((offset >= pant1_start) && (offset < pant1_end)){
-		tilemap_mark_tile_dirty(state->m_pant[1], ((offset << 1) & 0x1fff) >> 2);
+		state->m_pant[1]->mark_tile_dirty(((offset << 1) & 0x1fff) >> 2);
 	}
 }
 
@@ -271,13 +271,13 @@ VIDEO_START( gaelco2 )
 	state->m_pant[1] = tilemap_create(machine, get_tile_info_gaelco2_screen1,tilemap_scan_rows,16,16,64,32);
 
 	/* set tilemap properties */
-	tilemap_set_transparent_pen(state->m_pant[0],0);
-	tilemap_set_transparent_pen(state->m_pant[1],0);
+	state->m_pant[0]->set_transparent_pen(0);
+	state->m_pant[1]->set_transparent_pen(0);
 
-	tilemap_set_scroll_rows(state->m_pant[0], 512);
-	tilemap_set_scroll_cols(state->m_pant[0], 1);
-	tilemap_set_scroll_rows(state->m_pant[1], 512);
-	tilemap_set_scroll_cols(state->m_pant[1], 1);
+	state->m_pant[0]->set_scroll_rows(512);
+	state->m_pant[0]->set_scroll_cols(1);
+	state->m_pant[1]->set_scroll_rows(512);
+	state->m_pant[1]->set_scroll_cols(1);
 
 	state->m_dual_monitor = 0;
 }
@@ -292,13 +292,13 @@ VIDEO_START( gaelco2_dual )
 	state->m_pant[1] = tilemap_create(machine, get_tile_info_gaelco2_screen1_dual,tilemap_scan_rows,16,16,64,32);
 
 	/* set tilemap properties */
-	tilemap_set_transparent_pen(state->m_pant[0],0);
-	tilemap_set_transparent_pen(state->m_pant[1],0);
+	state->m_pant[0]->set_transparent_pen(0);
+	state->m_pant[1]->set_transparent_pen(0);
 
-	tilemap_set_scroll_rows(state->m_pant[0], 512);
-	tilemap_set_scroll_cols(state->m_pant[0], 1);
-	tilemap_set_scroll_rows(state->m_pant[1], 512);
-	tilemap_set_scroll_cols(state->m_pant[1], 1);
+	state->m_pant[0]->set_scroll_rows(512);
+	state->m_pant[0]->set_scroll_cols(1);
+	state->m_pant[1]->set_scroll_rows(512);
+	state->m_pant[1]->set_scroll_cols(1);
 
 	state->m_dual_monitor = 1;
 }
@@ -339,19 +339,19 @@ VIDEO_START( gaelco2_dual )
 
 ***************************************************************************/
 
-static void draw_sprites(screen_device *screen, bitmap_t *bitmap, const rectangle *cliprect, int mask, int xoffs)
+static void draw_sprites(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, int mask, int xoffs)
 {
-	gaelco2_state *state = screen->machine().driver_data<gaelco2_state>();
-	UINT16 *buffered_spriteram16 = screen->machine().generic.buffered_spriteram.u16;
+	gaelco2_state *state = screen.machine().driver_data<gaelco2_state>();
+	UINT16 *buffered_spriteram16 = screen.machine().generic.buffered_spriteram.u16;
 	int j, x, y, ex, ey, px, py;
-	const gfx_element *gfx = screen->machine().gfx[0];
+	const gfx_element *gfx = screen.machine().gfx[0];
 
 	/* get sprite ram start and end offsets */
 	int start_offset = (state->m_vregs[1] & 0x10)*0x100;
 	int end_offset = start_offset + 0x1000;
 
 	/* sprite offset is based on the visible area */
-	int spr_x_adjust = (screen->visible_area().max_x - 320 + 1) - (511 - 320 - 1) - ((state->m_vregs[0] >> 4) & 0x01) + xoffs;
+	int spr_x_adjust = (screen.visible_area().max_x - 320 + 1) - (511 - 320 - 1) - ((state->m_vregs[0] >> 4) & 0x01) + xoffs;
 
 	for (j = start_offset; j < end_offset; j += 8){
 		int data = buffered_spriteram16[(j/2) + 0];
@@ -398,11 +398,11 @@ static void draw_sprites(screen_device *screen, bitmap_t *bitmap, const rectangl
 						for (py = 0; py < gfx->height; py++){
 							/* get a pointer to the current line in the screen bitmap */
 							int ypos = ((sy + ey*16 + py) & 0x1ff);
-							UINT16 *srcy = BITMAP_ADDR16(bitmap, ypos, 0);
+							UINT16 *srcy = &bitmap.pix16(ypos);
 
 							int gfx_py = yflip ? (gfx->height - 1 - py) : py;
 
-							if ((ypos < cliprect->min_y) || (ypos > cliprect->max_y)) continue;
+							if ((ypos < cliprect.min_y) || (ypos > cliprect.max_y)) continue;
 
 							for (px = 0; px < gfx->width; px++){
 								/* get current pixel */
@@ -417,7 +417,7 @@ static void draw_sprites(screen_device *screen, bitmap_t *bitmap, const rectangl
 
 								if ((gfx_pen == 0) || (gfx_pen >= 16)) continue;
 
-								if ((xpos < cliprect->min_x) || (xpos > cliprect->max_x)) continue;
+								if ((xpos < cliprect.min_x) || (xpos > cliprect.max_x)) continue;
 
 								/* make background color darker or brighter */
 								*pixel = src_color + 4096*gfx_pen;
@@ -436,9 +436,9 @@ static void draw_sprites(screen_device *screen, bitmap_t *bitmap, const rectangl
 
 ***************************************************************************/
 
-SCREEN_UPDATE( gaelco2 )
+SCREEN_UPDATE_IND16( gaelco2 )
 {
-	gaelco2_state *state = screen->machine().driver_data<gaelco2_state>();
+	gaelco2_state *state = screen.machine().driver_data<gaelco2_state>();
 	int i;
 
 	/* read scroll values */
@@ -448,31 +448,28 @@ SCREEN_UPDATE( gaelco2 )
 	int scroll1y = state->m_videoram[0x2804/2] + 0x01;
 
 	/* set y scroll registers */
-	tilemap_set_scrolly(state->m_pant[0], 0, scroll0y & 0x1ff);
-	tilemap_set_scrolly(state->m_pant[1], 0, scroll1y & 0x1ff);
+	state->m_pant[0]->set_scrolly(0, scroll0y & 0x1ff);
+	state->m_pant[1]->set_scrolly(0, scroll1y & 0x1ff);
 
 	/* set x linescroll registers */
 	for (i = 0; i < 512; i++){
-		tilemap_set_scrollx(state->m_pant[0], i & 0x1ff, (state->m_vregs[0] & 0x8000) ? (state->m_videoram[(0x2000/2) + i] + 0x14) & 0x3ff : scroll0x & 0x3ff);
-		tilemap_set_scrollx(state->m_pant[1], i & 0x1ff, (state->m_vregs[1] & 0x8000) ? (state->m_videoram[(0x2400/2) + i] + 0x10) & 0x3ff : scroll1x & 0x3ff);
+		state->m_pant[0]->set_scrollx(i & 0x1ff, (state->m_vregs[0] & 0x8000) ? (state->m_videoram[(0x2000/2) + i] + 0x14) & 0x3ff : scroll0x & 0x3ff);
+		state->m_pant[1]->set_scrollx(i & 0x1ff, (state->m_vregs[1] & 0x8000) ? (state->m_videoram[(0x2400/2) + i] + 0x10) & 0x3ff : scroll1x & 0x3ff);
 	}
 
 	/* draw screen */
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
-	tilemap_draw(bitmap, cliprect, state->m_pant[1], 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_pant[0], 0, 0);
+	state->m_pant[1]->draw(bitmap, cliprect, 0, 0);
+	state->m_pant[0]->draw(bitmap, cliprect, 0, 0);
 	draw_sprites(screen, bitmap, cliprect, 0, 0);
 	return 0;
 }
 
-SCREEN_UPDATE( gaelco2_dual )
+static UINT32 dual_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, int index)
 {
-	gaelco2_state *state = screen->machine().driver_data<gaelco2_state>();
+	gaelco2_state *state = screen.machine().driver_data<gaelco2_state>();
 	int i;
-
-	device_t *left_screen  = screen->machine().device("lscreen");
-	device_t *right_screen = screen->machine().device("rscreen");
 
 	/* read scroll values */
 	int scroll0x = state->m_videoram[0x2802/2] + 0x14;
@@ -481,39 +478,37 @@ SCREEN_UPDATE( gaelco2_dual )
 	int scroll1y = state->m_videoram[0x2804/2] + 0x01;
 
 	/* set y scroll registers */
-	tilemap_set_scrolly(state->m_pant[0], 0, scroll0y & 0x1ff);
-	tilemap_set_scrolly(state->m_pant[1], 0, scroll1y & 0x1ff);
+	state->m_pant[0]->set_scrolly(0, scroll0y & 0x1ff);
+	state->m_pant[1]->set_scrolly(0, scroll1y & 0x1ff);
 
 	/* set x linescroll registers */
 	for (i = 0; i < 512; i++){
-		tilemap_set_scrollx(state->m_pant[0], i & 0x1ff, (state->m_vregs[0] & 0x8000) ? (state->m_videoram[(0x2000/2) + i] + 0x14) & 0x3ff : scroll0x & 0x3ff);
-		tilemap_set_scrollx(state->m_pant[1], i & 0x1ff, (state->m_vregs[1] & 0x8000) ? (state->m_videoram[(0x2400/2) + i] + 0x10) & 0x3ff : scroll1x & 0x3ff);
+		state->m_pant[0]->set_scrollx(i & 0x1ff, (state->m_vregs[0] & 0x8000) ? (state->m_videoram[(0x2000/2) + i] + 0x14) & 0x3ff : scroll0x & 0x3ff);
+		state->m_pant[1]->set_scrollx(i & 0x1ff, (state->m_vregs[1] & 0x8000) ? (state->m_videoram[(0x2400/2) + i] + 0x10) & 0x3ff : scroll1x & 0x3ff);
 	}
 
 	/* draw screen */
-	bitmap_fill(bitmap, cliprect, 0);
+	bitmap.fill(0, cliprect);
 
-	if (screen == right_screen)
-	{
-		/* monitor 2 output */
-		tilemap_draw(bitmap,cliprect,state->m_pant[1], 0, 0);
-		draw_sprites(screen,bitmap,cliprect, 0x8000, 0);
-	}
-	else if (screen == left_screen)
-	{
-		/* monitor 1 output */
-		tilemap_draw(bitmap,cliprect,state->m_pant[0], 0, 0);
-		draw_sprites(screen,bitmap,cliprect, 0x0000, 0);
-	}
+	state->m_pant[index]->draw(bitmap, cliprect, 0, 0);
+	draw_sprites(screen,bitmap,cliprect, 0x8000 * index, 0);
 
 	return 0;
 }
 
+SCREEN_UPDATE_IND16( gaelco2_left ) { return dual_update(screen, bitmap, cliprect, 0); }
+SCREEN_UPDATE_IND16( gaelco2_right ) { return dual_update(screen, bitmap, cliprect, 1); }
 
-SCREEN_EOF( gaelco2 )
+
+
+SCREEN_VBLANK( gaelco2 )
 {
-	address_space *space = machine.device("maincpu")->memory().space(AS_PROGRAM);
+	// rising edge
+	if (vblank_on)
+	{
+		address_space *space = screen.machine().device("maincpu")->memory().space(AS_PROGRAM);
 
-	/* sprites are one frame ahead */
-	buffer_spriteram16_w(space, 0, 0, 0xffff);
+		/* sprites are one frame ahead */
+		buffer_spriteram16_w(space, 0, 0, 0xffff);
+	}
 }

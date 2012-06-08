@@ -98,8 +98,8 @@ static VIDEO_START(bestleag)
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info,bsb_bg_scan,16,16,128, 64);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info,bsb_bg_scan,16,16,128, 64);
 
-	tilemap_set_transparent_pen(state->m_tx_tilemap,15);
-	tilemap_set_transparent_pen(state->m_fg_tilemap,15);
+	state->m_tx_tilemap->set_transparent_pen(15);
+	state->m_fg_tilemap->set_transparent_pen(15);
 }
 
 /*
@@ -107,7 +107,7 @@ Note: sprite chip is different than the other Big Striker sets and they
       include several similiarities with other Playmark games (including
       the sprite end code and the data being offset (i.e. spriteram starting from 0x16/2))
 */
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	bestleag_state *state = machine.driver_data<bestleag_state>();
 	UINT16 *spriteram16 = state->m_spriteram;
@@ -163,37 +163,37 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-static SCREEN_UPDATE(bestleag)
+static SCREEN_UPDATE_IND16(bestleag)
 {
-	bestleag_state *state = screen->machine().driver_data<bestleag_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap,0,(state->m_vregs[0x00/2] & 0xfff) + (state->m_vregs[0x08/2] & 0x7) - 3);
-	tilemap_set_scrolly(state->m_bg_tilemap,0,state->m_vregs[0x02/2]);
-	tilemap_set_scrollx(state->m_tx_tilemap,0,state->m_vregs[0x04/2]);
-	tilemap_set_scrolly(state->m_tx_tilemap,0,state->m_vregs[0x06/2]);
-	tilemap_set_scrollx(state->m_fg_tilemap,0,state->m_vregs[0x08/2] & 0xfff8);
-	tilemap_set_scrolly(state->m_fg_tilemap,0,state->m_vregs[0x0a/2]);
+	bestleag_state *state = screen.machine().driver_data<bestleag_state>();
+	state->m_bg_tilemap->set_scrollx(0,(state->m_vregs[0x00/2] & 0xfff) + (state->m_vregs[0x08/2] & 0x7) - 3);
+	state->m_bg_tilemap->set_scrolly(0,state->m_vregs[0x02/2]);
+	state->m_tx_tilemap->set_scrollx(0,state->m_vregs[0x04/2]);
+	state->m_tx_tilemap->set_scrolly(0,state->m_vregs[0x06/2]);
+	state->m_fg_tilemap->set_scrollx(0,state->m_vregs[0x08/2] & 0xfff8);
+	state->m_fg_tilemap->set_scrolly(0,state->m_vregs[0x0a/2]);
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
-	draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
-static SCREEN_UPDATE(bestleaw)
+static SCREEN_UPDATE_IND16(bestleaw)
 {
-	bestleag_state *state = screen->machine().driver_data<bestleag_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap,0,state->m_vregs[0x08/2]);
-	tilemap_set_scrolly(state->m_bg_tilemap,0,state->m_vregs[0x0a/2]);
-	tilemap_set_scrollx(state->m_tx_tilemap,0,state->m_vregs[0x00/2]);
-	tilemap_set_scrolly(state->m_tx_tilemap,0,state->m_vregs[0x02/2]);
-	tilemap_set_scrollx(state->m_fg_tilemap,0,state->m_vregs[0x04/2]);
-	tilemap_set_scrolly(state->m_fg_tilemap,0,state->m_vregs[0x06/2]);
+	bestleag_state *state = screen.machine().driver_data<bestleag_state>();
+	state->m_bg_tilemap->set_scrollx(0,state->m_vregs[0x08/2]);
+	state->m_bg_tilemap->set_scrolly(0,state->m_vregs[0x0a/2]);
+	state->m_tx_tilemap->set_scrollx(0,state->m_vregs[0x00/2]);
+	state->m_tx_tilemap->set_scrolly(0,state->m_vregs[0x02/2]);
+	state->m_fg_tilemap->set_scrollx(0,state->m_vregs[0x04/2]);
+	state->m_fg_tilemap->set_scrolly(0,state->m_vregs[0x06/2]);
 
-	tilemap_draw(bitmap,cliprect,state->m_bg_tilemap,0,0);
-	tilemap_draw(bitmap,cliprect,state->m_fg_tilemap,0,0);
-	draw_sprites(screen->machine(),bitmap,cliprect);
-	tilemap_draw(bitmap,cliprect,state->m_tx_tilemap,0,0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0,0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0,0);
+	draw_sprites(screen.machine(),bitmap,cliprect);
+	state->m_tx_tilemap->draw(bitmap, cliprect, 0,0);
 	return 0;
 }
 
@@ -201,21 +201,21 @@ static WRITE16_HANDLER( bestleag_txram_w )
 {
 	bestleag_state *state = space->machine().driver_data<bestleag_state>();
 	state->m_txram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tx_tilemap,offset);
+	state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( bestleag_bgram_w )
 {
 	bestleag_state *state = space->machine().driver_data<bestleag_state>();
 	state->m_bgram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_bg_tilemap,offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( bestleag_fgram_w )
 {
 	bestleag_state *state = space->machine().driver_data<bestleag_state>();
 	state->m_fgram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_fg_tilemap,offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_DEVICE_HANDLER( oki_bank_w )
@@ -363,10 +363,9 @@ static MACHINE_CONFIG_START( bestleag, bestleag_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(bestleag)
+	MCFG_SCREEN_UPDATE_STATIC(bestleag)
 
 	MCFG_GFXDECODE(bestleag)
 	MCFG_PALETTE_LENGTH(0x800)
@@ -382,7 +381,7 @@ MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( bestleaw, bestleag )
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(bestleaw)
+	MCFG_SCREEN_UPDATE_STATIC(bestleaw)
 MACHINE_CONFIG_END
 
 

@@ -68,7 +68,7 @@ static TILE_GET_INFO( equites_fg_info )
 
 	SET_TILE_INFO(0, tile, color, 0);
 	if (color & 0x10)
-		tileinfo->flags |= TILE_FORCE_LAYER0;
+		tileinfo.flags |= TILE_FORCE_LAYER0;
 }
 
 static TILE_GET_INFO( splndrbt_fg_info )
@@ -79,7 +79,7 @@ static TILE_GET_INFO( splndrbt_fg_info )
 
 	SET_TILE_INFO(0, tile, color, 0);
 	if (color & 0x10)
-		tileinfo->flags |= TILE_FORCE_LAYER0;
+		tileinfo.flags |= TILE_FORCE_LAYER0;
 }
 
 static TILE_GET_INFO( equites_bg_info )
@@ -102,7 +102,7 @@ static TILE_GET_INFO( splndrbt_bg_info )
 	int fxy = (data & 0x0600) >> 9;
 
 	SET_TILE_INFO(1, tile, color, TILE_FLIPXY(fxy));
-	tileinfo->group = color;
+	tileinfo.group = color;
 }
 
 
@@ -120,24 +120,24 @@ VIDEO_START( equites )
 	state->save_pointer(NAME(state->m_fg_videoram), 0x800);
 
 	state->m_fg_tilemap = tilemap_create(machine, equites_fg_info, tilemap_scan_cols,  8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 
 	state->m_bg_tilemap = tilemap_create(machine, equites_bg_info, tilemap_scan_rows, 16, 16, 16, 16);
-	tilemap_set_transparent_pen(state->m_bg_tilemap, 0);
-	tilemap_set_scrolldx(state->m_bg_tilemap, 0, -10);
+	state->m_bg_tilemap->set_transparent_pen(0);
+	state->m_bg_tilemap->set_scrolldx(0, -10);
 }
 
 VIDEO_START( splndrbt )
 {
 	equites_state *state = machine.driver_data<equites_state>();
-	assert(machine.primary_screen->format() == BITMAP_FORMAT_INDEXED16);
+	assert(machine.primary_screen->format() == BITMAP_FORMAT_IND16);
 
 	state->m_fg_videoram = auto_alloc_array(machine, UINT8, 0x800);
 	state->save_pointer(NAME(state->m_fg_videoram), 0x800);
 
 	state->m_fg_tilemap = tilemap_create(machine, splndrbt_fg_info, tilemap_scan_cols,  8, 8, 32, 32);
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
-	tilemap_set_scrolldx(state->m_fg_tilemap, 8, -8);
+	state->m_fg_tilemap->set_transparent_pen(0);
+	state->m_fg_tilemap->set_scrolldx(8, -8);
 
 	state->m_bg_tilemap = tilemap_create(machine, splndrbt_bg_info, tilemap_scan_rows, 16, 16, 32, 32);
 	colortable_configure_tilemap_groups(machine.colortable, state->m_bg_tilemap, machine.gfx[1], 0x10);
@@ -164,7 +164,7 @@ WRITE16_HANDLER(equites_fg_videoram_w)
 	{
 		state->m_fg_videoram[offset] = data & 0xff;
 
-		tilemap_mark_tile_dirty(state->m_fg_tilemap, offset >> 1);
+		state->m_fg_tilemap->mark_tile_dirty(offset >> 1);
 	}
 }
 
@@ -173,7 +173,7 @@ WRITE16_HANDLER(equites_bg_videoram_w)
 	equites_state *state = space->machine().driver_data<equites_state>();
 	COMBINE_DATA(state->m_bg_videoram + offset);
 
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE16_HANDLER(equites_bgcolor_w)
@@ -187,10 +187,10 @@ WRITE16_HANDLER(equites_scrollreg_w)
 {
 	equites_state *state = space->machine().driver_data<equites_state>();
 	if (ACCESSING_BITS_0_7)
-		tilemap_set_scrolly(state->m_bg_tilemap, 0, data & 0xff);
+		state->m_bg_tilemap->set_scrolly(0, data & 0xff);
 
 	if (ACCESSING_BITS_8_15)
-		tilemap_set_scrollx(state->m_bg_tilemap, 0, data >> 8);
+		state->m_bg_tilemap->set_scrollx(0, data >> 8);
 }
 
 WRITE16_HANDLER(splndrbt_selchar0_w)
@@ -199,7 +199,7 @@ WRITE16_HANDLER(splndrbt_selchar0_w)
 	if (state->m_fg_char_bank != 0)
 	{
 		state->m_fg_char_bank = 0;
-		tilemap_mark_all_tiles_dirty(state->m_fg_tilemap);
+		state->m_fg_tilemap->mark_all_dirty();
 	}
 }
 
@@ -209,7 +209,7 @@ WRITE16_HANDLER(splndrbt_selchar1_w)
 	if (state->m_fg_char_bank != 1)
 	{
 		state->m_fg_char_bank = 1;
-		tilemap_mark_all_tiles_dirty(state->m_fg_tilemap);
+		state->m_fg_tilemap->mark_all_dirty();
 	}
 }
 
@@ -258,7 +258,7 @@ WRITE16_HANDLER(splndrbt_bg_scrolly_w)
  *
  *************************************/
 
-static void equites_draw_sprites_block( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int start, int end )
+static void equites_draw_sprites_block( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int start, int end )
 {
 	equites_state *state = machine.driver_data<equites_state>();
 	int offs;
@@ -299,7 +299,7 @@ static void equites_draw_sprites_block( running_machine &machine, bitmap_t *bitm
 	}
 }
 
-static void equites_draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void equites_draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	// note that we draw the sprites in three blocks; in each blocks, sprites at
 	// a lower address have priority. This gives good priorities in gekisou.
@@ -332,7 +332,7 @@ Also, note that sprites are 30x30, not 32x32.
 03020303 03030303 03030303 03030303
 */
 
-static void splndrbt_draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void splndrbt_draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	equites_state *state = machine.driver_data<equites_state>();
 	const UINT8 * const xrom = machine.region("user2")->base();
@@ -384,13 +384,13 @@ static void splndrbt_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 			{
 				int const y = yhalf ? sy + 1 + yy : sy - yy;
 
-				if (y >= cliprect->min_y && y <= cliprect->max_y)
+				if (y >= cliprect.min_y && y <= cliprect.max_y)
 				{
 					for (x = 0; x <= (scalex << 1); ++x)
 					{
 						int bx = (sx + x) & 0xff;
 
-						if (bx >= cliprect->min_x && bx <= cliprect->max_x)
+						if (bx >= cliprect.min_x && bx <= cliprect.max_x)
 						{
 							int xx = scalex ? (x * 29 + scalex) / (scalex << 1) + 1 : 16;	// FIXME This is wrong. Should use the PROM.
 							int const offset = (fx ? (31 - xx) : xx) + ((fy ^ yhalf) ? (16 + line) : (15 - line) ) * gfx->line_modulo;
@@ -398,7 +398,7 @@ static void splndrbt_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 							int pen = srcgfx[offset];
 
 							if ((transmask & (1 << pen)) == 0)
-								*BITMAP_ADDR16(bitmap, y, bx) = paldata[pen];
+								bitmap.pix16(y, bx) = paldata[pen];
 						}
 					}
 				}
@@ -408,11 +408,11 @@ static void splndrbt_draw_sprites( running_machine &machine, bitmap_t *bitmap, c
 }
 
 
-static void splndrbt_copy_bg( running_machine &machine, bitmap_t *dst_bitmap, const rectangle *cliprect )
+static void splndrbt_copy_bg( running_machine &machine, bitmap_ind16 &dst_bitmap, const rectangle &cliprect )
 {
 	equites_state *state = machine.driver_data<equites_state>();
-	bitmap_t * const src_bitmap = tilemap_get_pixmap(state->m_bg_tilemap);
-	bitmap_t * const flags_bitmap = tilemap_get_flagsmap(state->m_bg_tilemap);
+	bitmap_ind16 &src_bitmap = state->m_bg_tilemap->pixmap();
+	bitmap_ind8 &flags_bitmap = state->m_bg_tilemap->flagsmap();
 	const UINT8 * const xrom = machine.region("user1")->base();
 	const UINT8 * const yrom = xrom + 0x2000;
 	int scroll_x = state->m_splndrbt_bg_scrollx;
@@ -429,12 +429,12 @@ static void splndrbt_copy_bg( running_machine &machine, bitmap_t *dst_bitmap, co
 
 	for (dst_y = 32; dst_y < 256-32; ++dst_y)
 	{
-		if (dst_y >= cliprect->min_y && dst_y <= cliprect->max_y)
+		if (dst_y >= cliprect.min_y && dst_y <= cliprect.max_y)
 		{
 			const UINT8 * const romline = &xrom[(dst_y ^ dinvert) << 5];
-			const UINT16 * const src_line = BITMAP_ADDR16(src_bitmap, (src_y + scroll_y) & 0x1ff, 0);
-			const UINT8 * const flags_line = BITMAP_ADDR8(flags_bitmap, (src_y + scroll_y) & 0x1ff, 0);
-			UINT16 * const dst_line = BITMAP_ADDR16(dst_bitmap, dst_y, 0);
+			const UINT16 * const src_line = &src_bitmap.pix16((src_y + scroll_y) & 0x1ff);
+			const UINT8 * const flags_line = &flags_bitmap.pix8((src_y + scroll_y) & 0x1ff);
+			UINT16 * const dst_line = &dst_bitmap.pix16(dst_y);
 			int dst_x = 0;
 			int src_x;
 
@@ -463,34 +463,34 @@ static void splndrbt_copy_bg( running_machine &machine, bitmap_t *dst_bitmap, co
 
 
 
-SCREEN_UPDATE( equites )
+SCREEN_UPDATE_IND16( equites )
 {
-	equites_state *state = screen->machine().driver_data<equites_state>();
-	bitmap_fill(bitmap, cliprect, state->m_bgcolor);
+	equites_state *state = screen.machine().driver_data<equites_state>();
+	bitmap.fill(state->m_bgcolor, cliprect);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	equites_draw_sprites(screen->machine(), bitmap, cliprect);
+	equites_draw_sprites(screen.machine(), bitmap, cliprect);
 
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
 
-SCREEN_UPDATE( splndrbt )
+SCREEN_UPDATE_IND16( splndrbt )
 {
-	equites_state *state = screen->machine().driver_data<equites_state>();
-	bitmap_fill(bitmap, cliprect, state->m_bgcolor);
+	equites_state *state = screen.machine().driver_data<equites_state>();
+	bitmap.fill(state->m_bgcolor, cliprect);
 
-	splndrbt_copy_bg(screen->machine(), bitmap, cliprect);
+	splndrbt_copy_bg(screen.machine(), bitmap, cliprect);
 
 	if (state->m_fg_char_bank)
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
-	splndrbt_draw_sprites(screen->machine(), bitmap, cliprect);
+	splndrbt_draw_sprites(screen.machine(), bitmap, cliprect);
 
 	if (!state->m_fg_char_bank)
-		tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+		state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }

@@ -10,7 +10,8 @@ class dynax_state : public driver_device
 {
 public:
 	dynax_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag)
+		{ }
 
 	// up to 8 layers, 2 images per layer (interleaved on screen)
 	UINT8 *  m_pixmap[8][2];
@@ -216,12 +217,13 @@ VIDEO_START( mjelctrn );
 VIDEO_START( neruton );
 VIDEO_START( htengoku );
 
-SCREEN_UPDATE( hanamai );
-SCREEN_UPDATE( hnoridur );
-SCREEN_UPDATE( sprtmtch );
-SCREEN_UPDATE( mjdialq2 );
-SCREEN_UPDATE( jantouki );
-SCREEN_UPDATE( htengoku );
+SCREEN_UPDATE_IND16( hanamai );
+SCREEN_UPDATE_IND16( hnoridur );
+SCREEN_UPDATE_IND16( sprtmtch );
+SCREEN_UPDATE_IND16( mjdialq2 );
+SCREEN_UPDATE_IND16( jantouki_top );
+SCREEN_UPDATE_IND16( jantouki_bottom );
+SCREEN_UPDATE_IND16( htengoku );
 
 PALETTE_INIT( sprtmtch );
 
@@ -237,4 +239,4 @@ WRITE8_HANDLER( ddenlovr_transparency_pen_w );
 WRITE8_HANDLER( ddenlovr_transparency_mask_w );
 
 VIDEO_START(ddenlovr);
-SCREEN_UPDATE(ddenlovr);
+SCREEN_UPDATE_IND16(ddenlovr);

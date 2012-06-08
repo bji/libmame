@@ -14,7 +14,7 @@ WRITE8_HANDLER( renegade_videoram_w )
 	UINT8 *videoram = state->m_videoram;
 	videoram[offset] = data;
 	offset = offset % (64 * 16);
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( renegade_videoram2_w )
@@ -22,7 +22,7 @@ WRITE8_HANDLER( renegade_videoram2_w )
 	renegade_state *state = space->machine().driver_data<renegade_state>();
 	state->m_videoram2[offset] = data;
 	offset = offset % (32 * 32);
-	tilemap_mark_tile_dirty(state->m_fg_tilemap, offset);
+	state->m_fg_tilemap->mark_tile_dirty(offset);
 }
 
 WRITE8_HANDLER( renegade_flipscreen_w )
@@ -73,13 +73,13 @@ VIDEO_START( renegade )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tilemap_info, tilemap_scan_rows,      16, 16, 64, 16);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tilemap_info, tilemap_scan_rows,   8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
-	tilemap_set_scrolldx(state->m_bg_tilemap, 256, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
+	state->m_bg_tilemap->set_scrolldx(256, 0);
 
 	state_save_register_global(machine, state->m_scrollx);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	renegade_state *state = machine.driver_data<renegade_state>();
 	UINT8 *source = state->m_spriteram;
@@ -131,12 +131,12 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-SCREEN_UPDATE( renegade )
+SCREEN_UPDATE_IND16( renegade )
 {
-	renegade_state *state = screen->machine().driver_data<renegade_state>();
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_scrollx);
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0 , 0);
-	draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0 , 0);
+	renegade_state *state = screen.machine().driver_data<renegade_state>();
+	state->m_bg_tilemap->set_scrollx(0, state->m_scrollx);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0 , 0);
+	draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0 , 0);
 	return 0;
 }

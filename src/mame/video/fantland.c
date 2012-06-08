@@ -61,7 +61,7 @@
 #include "emu.h"
 #include "includes/fantland.h"
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap,const rectangle &cliprect)
 {
 	fantland_state *state = machine.driver_data<fantland_state>();
 	UINT8 *spriteram_2 = state->m_spriteram2;
@@ -139,10 +139,10 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap,const rectan
 	}
 }
 
-SCREEN_UPDATE( fantland )
+SCREEN_UPDATE_IND16( fantland )
 {
-	bitmap_fill(bitmap,cliprect,0);
-	draw_sprites(screen->machine(),bitmap,cliprect);
+	bitmap.fill(0, cliprect);
+	draw_sprites(screen.machine(),bitmap,cliprect);
 
 	return 0;
 }

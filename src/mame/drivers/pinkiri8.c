@@ -86,7 +86,7 @@ public:
 	janshi_vdp_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 protected:
 	virtual void device_config_complete();
-	virtual bool device_validity_check(emu_options &options, const game_driver &driver) const;
+	virtual void device_validity_check(validity_checker &valid) const;
 	virtual void device_start();
 	virtual void device_reset();
 	virtual const address_space_config *memory_space_config(address_spacenum spacenum = AS_0) const;
@@ -109,10 +109,8 @@ void janshi_vdp_device::device_config_complete()
 //  m_space_config = address_space_config("janshi_vdp", ENDIANNESS_BIG, 8,  address_bits, 0, *ADDRESS_MAP_NAME(janshi_vdp_map8));
 }
 
-bool janshi_vdp_device::device_validity_check(emu_options &options, const game_driver &driver) const
+void janshi_vdp_device::device_validity_check(validity_checker &valid) const
 {
-	bool error = false;
-	return error;
 }
 
 void janshi_vdp_device::device_start()
@@ -173,17 +171,17 @@ ronjan
 
 */
 
-static SCREEN_UPDATE( pinkiri8 )
+static SCREEN_UPDATE_IND16( pinkiri8 )
 {
-	pinkiri8_state *state = screen->machine().driver_data<pinkiri8_state>();
+	pinkiri8_state *state = screen.machine().driver_data<pinkiri8_state>();
 	int col_bank;
-	const gfx_element *gfx = screen->machine().gfx[0];
+	const gfx_element *gfx = screen.machine().gfx[0];
 
 	int game_type_hack = 0;
 
-	if (!strcmp(screen->machine().system().name,"janshi")) game_type_hack = 1;
+	if (!strcmp(screen.machine().system().name,"janshi")) game_type_hack = 1;
 
-	if ( screen->machine().input().code_pressed_once(KEYCODE_W) )
+	if ( screen.machine().input().code_pressed_once(KEYCODE_W) )
 	{
 		int i;
 		int count2;
@@ -213,7 +211,7 @@ static SCREEN_UPDATE( pinkiri8 )
 	//popmessage("%02x",state->m_janshi_crtc_regs[0x0a]);
 	col_bank = (state->m_janshi_crtc_regs[0x0a] & 0x40) >> 6;
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
 
 	/* FIXME: color is a bit of a mystery */
 	{
@@ -287,7 +285,7 @@ static SCREEN_UPDATE( pinkiri8 )
 
 			if (bit)
 			{
-				//col = screen->machine().rand();
+				//col = screen.machine().rand();
 				width = 2;
 			}
 			else
@@ -1103,10 +1101,9 @@ static MACHINE_CONFIG_START( pinkiri8, pinkiri8_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 64*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 64*8-1, 0*8, 64*8-1)
-	MCFG_SCREEN_UPDATE(pinkiri8)
+	MCFG_SCREEN_UPDATE_STATIC(pinkiri8)
 
 	MCFG_GFXDECODE(pinkiri8)
 	MCFG_PALETTE_LENGTH(0x2000)

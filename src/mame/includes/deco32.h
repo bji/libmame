@@ -5,9 +5,11 @@ class deco32_state : public driver_device
 public:
 	deco32_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu"),
 		m_decobsmt(*this, "decobsmt")
     { }
 
+	required_device<cpu_device> m_maincpu;
 	optional_device<decobsmt_device> m_decobsmt;
 
 	UINT32 *m_ram;
@@ -30,7 +32,7 @@ public:
 	UINT8 *m_dirty_palette;
 
 	int m_pri;
-	bitmap_t *m_tilemap_alpha_bitmap;
+	bitmap_ind16 *m_tilemap_alpha_bitmap;
 
 
 	UINT16 m_spriteram16[0x1000];
@@ -49,6 +51,7 @@ public:
 
 	device_t *m_deco_tilegen1;
 	device_t *m_deco_tilegen2;
+	UINT8 m_irq_source;
 };
 
 class dragngun_state : public deco32_state
@@ -75,13 +78,13 @@ VIDEO_START( dragngun );
 VIDEO_START( lockload );
 VIDEO_START( nslasher );
 
-SCREEN_EOF( captaven );
-SCREEN_EOF( dragngun );
+SCREEN_VBLANK( captaven );
+SCREEN_VBLANK( dragngun );
 
-SCREEN_UPDATE( captaven );
-SCREEN_UPDATE( fghthist );
-SCREEN_UPDATE( dragngun );
-SCREEN_UPDATE( nslasher );
+SCREEN_UPDATE_IND16( captaven );
+SCREEN_UPDATE_RGB32( fghthist );
+SCREEN_UPDATE_RGB32( dragngun );
+SCREEN_UPDATE_RGB32( nslasher );
 
 
 WRITE32_HANDLER( deco32_pf1_data_w );

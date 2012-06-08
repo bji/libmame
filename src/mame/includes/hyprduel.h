@@ -35,6 +35,7 @@ public:
 	int       m_sprite_xoffs;
 	int       m_sprite_yoffs;
 	int       m_sprite_yoffs_sub;
+	UINT8 *	  m_expanded_gfx1;
 
 	/* misc */
 	emu_timer *m_magerror_irq_timer;
@@ -64,4 +65,4 @@ WRITE16_HANDLER( hyprduel_scrollreg_init_w );
 
 VIDEO_START( hyprduel_14220 );
 VIDEO_START( magerror_14220 );
-SCREEN_UPDATE( hyprduel );
+SCREEN_UPDATE_IND16( hyprduel );

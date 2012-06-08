@@ -376,7 +376,7 @@ static WRITE8_HANDLER( tomahawk_video_control_2_w )
 }
 
 
-static void video_update_common( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, pen_t *pens )
+static void video_update_common( running_machine &machine, bitmap_rgb32 &bitmap, const rectangle &cliprect, pen_t *pens )
 {
 	astrof_state *state = machine.driver_data<astrof_state>();
 	offs_t offs;
@@ -397,7 +397,7 @@ static void video_update_common( running_machine &machine, bitmap_t *bitmap, con
 		if (!state->m_flipscreen)
 			y = ~y;
 
-		if ((y <= cliprect->min_y) || (y >= cliprect->max_y))
+		if ((y <= cliprect.min_y) || (y >= cliprect.max_y))
 			continue;
 
 		if (state->m_screen_off)
@@ -410,9 +410,9 @@ static void video_update_common( running_machine &machine, bitmap_t *bitmap, con
 			pen_t pen = (data & 0x01) ? fore_pen : back_pen;
 
 			if (state->m_flipscreen)
-				*BITMAP_ADDR32(bitmap, y, 255 - x) = pen;
+				bitmap.pix32(y, 255 - x) = pen;
 			else
-				*BITMAP_ADDR32(bitmap, y, x) = pen;
+				bitmap.pix32(y, x) = pen;
 
 			x = x + 1;
 			data = data >> 1;
@@ -421,25 +421,25 @@ static void video_update_common( running_machine &machine, bitmap_t *bitmap, con
 }
 
 
-static SCREEN_UPDATE( astrof )
+static SCREEN_UPDATE_RGB32( astrof )
 {
 	pen_t pens[ASTROF_NUM_PENS];
 
-	astrof_get_pens(screen->machine(), pens);
+	astrof_get_pens(screen.machine(), pens);
 
-	video_update_common(screen->machine(), bitmap, cliprect, pens);
+	video_update_common(screen.machine(), bitmap, cliprect, pens);
 
 	return 0;
 }
 
 
-static SCREEN_UPDATE( tomahawk )
+static SCREEN_UPDATE_RGB32( tomahawk )
 {
 	pen_t pens[TOMAHAWK_NUM_PENS];
 
-	tomahawk_get_pens(screen->machine(), pens);
+	tomahawk_get_pens(screen.machine(), pens);
 
-	video_update_common(screen->machine(), bitmap, cliprect, pens);
+	video_update_common(screen.machine(), bitmap, cliprect, pens);
 
 	return 0;
 }
@@ -965,7 +965,6 @@ static MACHINE_CONFIG_START( base, astrof_state )
 	MCFG_VIDEO_START(astrof)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
 	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, HTOTAL, HBEND, HBSTART, VTOTAL, VBEND, VBSTART)
 MACHINE_CONFIG_END
 
@@ -980,7 +979,7 @@ static MACHINE_CONFIG_DERIVED( astrof, base )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(astrof)
+	MCFG_SCREEN_UPDATE_STATIC(astrof)
 
 	/* audio hardware */
 	MCFG_FRAGMENT_ADD(astrof_audio)
@@ -1006,7 +1005,7 @@ static MACHINE_CONFIG_DERIVED( spfghmk2, base )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(astrof)
+	MCFG_SCREEN_UPDATE_STATIC(astrof)
 
 	/* audio hardware */
 	MCFG_FRAGMENT_ADD(spfghmk2_audio)
@@ -1023,7 +1022,7 @@ static MACHINE_CONFIG_DERIVED( tomahawk, base )
 
 	/* video hardware */
 	MCFG_SCREEN_MODIFY("screen")
-	MCFG_SCREEN_UPDATE(tomahawk)
+	MCFG_SCREEN_UPDATE_STATIC(tomahawk)
 
 	/* audio hardware */
 	MCFG_FRAGMENT_ADD(tomahawk_audio)

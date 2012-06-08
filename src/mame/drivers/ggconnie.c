@@ -17,7 +17,6 @@
 ****************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "machine/pcecommn.h"
 #include "video/vdc.h"
 #include "cpu/h6280/h6280.h"
@@ -158,16 +157,15 @@ static MACHINE_CONFIG_START( ggconnie, ggconnie_state )
 	MCFG_CPU_ADD("maincpu", H6280, PCE_MAIN_CLOCK/3)
 	MCFG_CPU_PROGRAM_MAP(sgx_mem)
 	MCFG_CPU_IO_MAP(sgx_io)
-	MCFG_CPU_VBLANK_INT_HACK(sgx_interrupt, VDC_LPF)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", sgx_interrupt, "screen", 0, 1)
 
-	MCFG_QUANTUM_TIME(attotime::from_hz(60))
+//  MCFG_QUANTUM_TIME(attotime::from_hz(60))
 
     /* video hardware */
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_RAW_PARAMS(PCE_MAIN_CLOCK/2, VDC_WPF, 70, 70 + 512 + 32, VDC_LPF, 14, 14+242)
-	MCFG_SCREEN_UPDATE( pce )
+	MCFG_SCREEN_UPDATE_STATIC( pce )
 
 	/* MCFG_GFXDECODE( pce_gfxdecodeinfo ) */
 	MCFG_PALETTE_LENGTH(1024)

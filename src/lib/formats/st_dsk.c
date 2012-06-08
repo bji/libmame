@@ -1,3 +1,36 @@
+/***************************************************************************
+
+    Copyright Olivier Galibert
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in
+          the documentation and/or other materials provided with the
+          distribution.
+        * Neither the name 'MAME' nor the names of its contributors may be
+          used to endorse or promote products derived from this software
+          without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY AARON GILES ''AS IS'' AND ANY EXPRESS OR
+    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL AARON GILES BE LIABLE FOR ANY DIRECT,
+    INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+    IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+
 /*********************************************************************
 
     formats/st_dsk.c
@@ -44,7 +77,7 @@ void st_format::find_size(io_generic *io, int &track_count, int &head_count, int
 	track_count = head_count = sector_count = 0;
 }
 
-int st_format::identify(io_generic *io)
+int st_format::identify(io_generic *io, UINT32 form_factor)
 {
 	int track_count, head_count, sector_count;
 	find_size(io, track_count, head_count, sector_count);
@@ -54,7 +87,7 @@ int st_format::identify(io_generic *io)
 	return 0;
 }
 
-bool st_format::load(io_generic *io, floppy_image *image)
+bool st_format::load(io_generic *io, UINT32 form_factor, floppy_image *image)
 {
 	int track_count, head_count, sector_count;
 	find_size(io, track_count, head_count, sector_count);
@@ -72,9 +105,11 @@ bool st_format::load(io_generic *io, floppy_image *image)
 		for(int head=0; head < head_count; head++) {
 			io_generic_read(io, sectdata, (track*head_count + head)*track_size, track_size);
 			generate_track(atari_st_fcp_get_desc(track, head, head_count, sector_count),
-						   track, head, sectors, sector_count+1, 100000, image);
+						   track, head, sectors, sector_count, 100000, image);
 		}
 	}
+
+	image->set_variant(floppy_image::DSDD);
 
 	return true;
 }
@@ -201,7 +236,7 @@ bool msa_format::compress(const UINT8 *buffer, int usize, UINT8 *dest, int &csiz
 	return dst < usize;
 }
 
-int msa_format::identify(io_generic *io)
+int msa_format::identify(io_generic *io, UINT32 form_factor)
 {
 	UINT16 sign, sect, head, strack, etrack;
 	read_header(io, sign, sect, head, strack, etrack);
@@ -215,7 +250,7 @@ int msa_format::identify(io_generic *io)
 	return 0;
 }
 
-bool msa_format::load(io_generic *io, floppy_image *image)
+bool msa_format::load(io_generic *io, UINT32 form_factor, floppy_image *image)
 {
 	UINT16 sign, sect, heads, strack, etrack;
 	read_header(io, sign, sect, heads, strack, etrack);
@@ -244,10 +279,11 @@ bool msa_format::load(io_generic *io, floppy_image *image)
 					return false;
 			}
 			generate_track(atari_st_fcp_get_desc(track, head, head+1, sect),
-						   track, head, sectors, sect+1, 100000, image);
+						   track, head, sectors, sect, 100000, image);
 		}
 	}
 
+	image->set_variant(floppy_image::DSDD);
 	return true;
 }
 

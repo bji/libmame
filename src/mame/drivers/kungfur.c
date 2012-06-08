@@ -81,46 +81,46 @@ g & 40
 #define LED_ON		0x0001
 #define LED_OFF		0x0000
 
-static void draw_led(bitmap_t *bitmap, int x, int y,UINT8 value)
+static void draw_led(bitmap_ind16 &bitmap, int x, int y,UINT8 value)
 {
-	plot_box(bitmap, x, y, 6, 10, 0x00000000);
+	bitmap.plot_box(x, y, 6, 10, 0x00000000);
 
 	/*a*/
-	*BITMAP_ADDR16(bitmap, y+0, x+1) = ((value & 0x01) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+0, x+2) = ((value & 0x01) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+0, x+3) = ((value & 0x01) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+0, x+1) = ((value & 0x01) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+0, x+2) = ((value & 0x01) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+0, x+3) = ((value & 0x01) ? LED_ON : LED_OFF);
 	/*b*/
-	*BITMAP_ADDR16(bitmap, y+1, x+4) = ((value & 0x02) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+2, x+4) = ((value & 0x02) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+3, x+4) = ((value & 0x02) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+1, x+4) = ((value & 0x02) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+2, x+4) = ((value & 0x02) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+3, x+4) = ((value & 0x02) ? LED_ON : LED_OFF);
 	/*c*/
-	*BITMAP_ADDR16(bitmap, y+5, x+4) = ((value & 0x04) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+6, x+4) = ((value & 0x04) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+7, x+4) = ((value & 0x04) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+5, x+4) = ((value & 0x04) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+6, x+4) = ((value & 0x04) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+7, x+4) = ((value & 0x04) ? LED_ON : LED_OFF);
 	/*d*/
-	*BITMAP_ADDR16(bitmap, y+8, x+1) = ((value & 0x08) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+8, x+2) = ((value & 0x08) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+8, x+3) = ((value & 0x08) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+8, x+1) = ((value & 0x08) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+8, x+2) = ((value & 0x08) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+8, x+3) = ((value & 0x08) ? LED_ON : LED_OFF);
 	/*e*/
-	*BITMAP_ADDR16(bitmap, y+5, x+0) = ((value & 0x10) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+6, x+0) = ((value & 0x10) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+7, x+0) = ((value & 0x10) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+5, x+0) = ((value & 0x10) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+6, x+0) = ((value & 0x10) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+7, x+0) = ((value & 0x10) ? LED_ON : LED_OFF);
 	/*f*/
-	*BITMAP_ADDR16(bitmap, y+1, x+0) = ((value & 0x20) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+2, x+0) = ((value & 0x20) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+3, x+0) = ((value & 0x20) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+1, x+0) = ((value & 0x20) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+2, x+0) = ((value & 0x20) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+3, x+0) = ((value & 0x20) ? LED_ON : LED_OFF);
 	/*g*/
-	*BITMAP_ADDR16(bitmap, y+4, x+1) = ((value & 0x40) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+4, x+2) = ((value & 0x40) ? LED_ON : LED_OFF);
-	*BITMAP_ADDR16(bitmap, y+4, x+3) = ((value & 0x40) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+4, x+1) = ((value & 0x40) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+4, x+2) = ((value & 0x40) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+4, x+3) = ((value & 0x40) ? LED_ON : LED_OFF);
 	/*"point" (just for debugging)*/
-	*BITMAP_ADDR16(bitmap, y+9, x+4) = ((value & 0x80) ? LED_ON : LED_OFF);
+	bitmap.pix16(y+9, x+4) = ((value & 0x80) ? LED_ON : LED_OFF);
 }
 
 /* actually debugging purpose, it will be converted to the artwork system at some point. */
-static SCREEN_UPDATE( kungfur )
+static SCREEN_UPDATE_IND16( kungfur )
 {
-	kungfur_state *state = screen->machine().driver_data<kungfur_state>();
+	kungfur_state *state = screen.machine().driver_data<kungfur_state>();
 //  popmessage("%02x %02x %02x %02x %02x %02x",io_data[0],io_data[1],io_data[2],io_data[3],io_data[4],io_data[5]);
 	int i;
 
@@ -368,10 +368,9 @@ static MACHINE_CONFIG_START( kungfur, kungfur_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
-	MCFG_SCREEN_UPDATE(kungfur)
+	MCFG_SCREEN_UPDATE_STATIC(kungfur)
 	MCFG_PALETTE_LENGTH(512)
 
 	MCFG_VIDEO_START(kungfur)

@@ -6,12 +6,10 @@ Custom blitter + background framebuffer + oki for sound.
 
 The background images on this hardware are in JPEG format, the Zoran chips are
 hardware JPEG decompression chips.
-Driver (temporary) uses fake rom with decompressed images (gfx.bin)
 
 TODO:
 - verify OKI rom banking  (bank num inverted or not)
 - DIPS
-- add jpeg decompression
 - fix transparency problems in some stages
 
 
@@ -66,189 +64,70 @@ Notes:
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "sound/okim6295.h"
 #include "cpu/mcs51/mcs51.h"
+#include "video/ramdac.h"
+#include "../../lib/libjpeg/jpeglib.h"
+
 
 #define FIFO_SIZE 1024
 #define IO_SIZE 	0x100
 #define COMMAND_SIZE 8
 #define x_offset 0x45
-#define y_offset 0x0d
+#define y_offset 0xe
 
 class sliver_state : public driver_device
 {
 public:
 	sliver_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu")
+		{ }
 
 	UINT16 m_io_offset;
 	UINT16 m_io_reg[IO_SIZE];
 	UINT16 m_fifo[FIFO_SIZE];
 	UINT16 m_fptr;
 
-	int m_jpeg_addr;
 	UINT16 m_jpeg1;
 	UINT16 m_jpeg2;
-	int m_jpeg_h;
-	int m_jpeg_w;
 	int m_jpeg_x;
 	int m_jpeg_y;
 	int m_tmp_counter;
 	int m_clr_offset;
 
 	UINT8 *m_colorram;
-	bitmap_t *m_bitmap_fg;
-	bitmap_t *m_bitmap_bg;
+	bitmap_rgb32 m_bitmap_fg;
+	bitmap_rgb32 m_bitmap_bg;
 
 	UINT16 m_tempbuf[8];
+
+	required_device<cpu_device> m_maincpu;
 };
-
-static const int gfxlookup[][4]=
-{
-   { 0x0000000, 0x0000000, 512, 256 },
-   { 0x0060000, 0x0007fa5, 512, 256 },
-   { 0x00c0000, 0x0008c04, 512, 512 },
-   { 0x0180000, 0x001642b, 512, 512 },
-   { 0x0240000, 0x00240fb, 512, 512 },
-   { 0x0300000, 0x0033494, 512, 256 },
-   { 0x0360000, 0x003ad9a, 512, 256 },
-   { 0x03c0000, 0x003cab3, 512, 256 },
-   { 0x0420000, 0x003e50c, 512, 256 },
-   { 0x0480000, 0x003fd94, 512, 256 },
-   { 0x04e0000, 0x004166e, 512, 256 },
-   { 0x0540000, 0x004306a, 512, 256 },
-   { 0x05a0000, 0x0044c65, 512, 256 },
-   { 0x0600000, 0x0046aeb, 512, 256 },
-   { 0x0660000, 0x0048a86, 512, 512 },
-   { 0x0720000, 0x00527c7, 512, 512 },
-   { 0x07e0000, 0x005a789, 512, 256 },
-   { 0x0840000, 0x005f9b0, 512, 256 },
-   { 0x08a0000, 0x0065621, 512, 512 },
-   { 0x0960000, 0x006fbd6, 512, 512 },
-   { 0x0a20000, 0x0077b98, 512, 512 },
-   { 0x0ae0000, 0x007fa6e, 512, 512 },
-   { 0x0ba0000, 0x0087a42, 512, 512 },
-   { 0x0c60000, 0x008f996, 512, 256 },
-   { 0x0cc0000, 0x0094b82, 512, 512 },
-   { 0x0d80000, 0x009e27a, 512, 512 },
-   { 0x0e40000, 0x00a6157, 512, 256 },
-   { 0x0ea0000, 0x00ab417, 512, 512 },
-   { 0x0f60000, 0x00b33c1, 512, 512 },
-   { 0x1020000, 0x00bd7f1, 512, 256 },
-   { 0x1080000, 0x00c1679, 512, 512 },
-   { 0x1140000, 0x00cbc8a, 512, 256 },
-   { 0x11a0000, 0x00d0ee2, 512, 256 },
-   { 0x1200000, 0x00d4d76, 512, 256 },
-   { 0x1260000, 0x00d8a4f, 512, 256 },
-   { 0x12c0000, 0x00dc980, 512, 256 },
-   { 0x1320000, 0x00e07ba, 512, 256 },
-   { 0x1380000, 0x00e45a2, 512, 256 },
-   { 0x13e0000, 0x00e842e, 512, 256 },
-   { 0x1440000, 0x00ec0db, 512, 256 },
-   { 0x14a0000, 0x00efdae, 512, 256 },
-   { 0x1500000, 0x00f3c99, 512, 256 },
-   { 0x1560000, 0x00f794f, 512, 256 },
-   { 0x15c0000, 0x00fb5db, 512, 256 },
-   { 0x1620000, 0x00ff2e6, 512, 256 },
-   { 0x1680000, 0x0103156, 512, 256 },
-   { 0x16e0000, 0x0106fcf, 512, 256 },
-   { 0x1740000, 0x010ae0c, 512, 256 },
-   { 0x17a0000, 0x010edaf, 512, 256 },
-   { 0x1800000, 0x0112bac, 512, 256 },
-   { 0x1860000, 0x01169c1, 128, 128 },
-   { 0x186c000, 0x0119b95, 128, 128 },
-   { 0x1878000, 0x011d0dc, 128, 128 },
-   { 0x1884000, 0x01205ca, 128, 128 },
-   { 0x1890000, 0x01236b2, 128, 128 },
-   { 0x189c000, 0x01268ff, 128, 128 },
-   { 0x18a8000, 0x0129bef, 128, 128 },
-   { 0x18b4000, 0x012cf51, 128, 128 },
-   { 0x18c0000, 0x0130331, 128, 128 },
-   { 0x18cc000, 0x013370d, 128, 128 },
-   { 0x18d8000, 0x0136a80, 128, 128 },
-   { 0x18e4000, 0x0139d2a, 128, 128 },
-   { 0x18f0000, 0x013ce39, 128, 128 },
-   { 0x18fc000, 0x0140236, 128, 128 },
-   { 0x1908000, 0x0143701, 128, 128 },
-   { 0x1914000, 0x0146cb3, 128, 128 },
-   { 0x1920000, 0x014a40d, 128, 128 },
-   { 0x192c000, 0x014da18, 128, 128 },
-   { 0x1938000, 0x0150ea4, 512, 256 },
-   { 0x1998000, 0x0154e17, 512, 256 },
-   { 0x19f8000, 0x0158ddf, 512, 256 },
-   { 0x1a58000, 0x015cd80, 512, 256 },
-   { 0x1ab8000, 0x0160d5b, 512, 256 },
-   { 0x1b18000, 0x0164d2f, 512, 256 },
-   { 0x1b78000, 0x017b5db, 512, 256 },
-   { 0x1bd8000, 0x017f2e6, 512, 256 },
-   { -1,-1,-1,-1}
-};
-
-static WRITE16_HANDLER( sliver_RAMDAC_offset_w )
-{
-	sliver_state *state = space->machine().driver_data<sliver_state>();
-
-	state->m_clr_offset=data*3;
-}
-
-static WRITE16_HANDLER( sliver_RAMDAC_color_w )
-{
-	sliver_state *state = space->machine().driver_data<sliver_state>();
-
-	state->m_colorram[state->m_clr_offset]=data;
-	state->m_clr_offset=(state->m_clr_offset+1)%768;
-}
 
 static void plot_pixel_rgb(sliver_state *state, int x, int y, UINT32 r, UINT32 g, UINT32 b)
 {
-	UINT16 color;
+//  printf("plot %d %d %d\n", r,g,b);
 
 	if (y < 0 || x < 0 || x > 383 || y > 255)
 		return;
 
-	if (state->m_bitmap_bg->bpp == 32)
-	{
-		*BITMAP_ADDR32(state->m_bitmap_bg, y, x) = r | (g<<8) | (b<<16);
-	}
-	else
-	{
-		r>>=3;
-		g>>=3;
-		b>>=3;
-		color = r|(g<<5)|(b<<10);
-		*BITMAP_ADDR16(state->m_bitmap_bg, y, x) = color;
-	}
+	state->m_bitmap_bg.pix32(y, x) = r | (g<<8) | (b<<16);
 }
 
 static void plot_pixel_pal(running_machine &machine, int x, int y, int addr)
 {
 	sliver_state *state = machine.driver_data<sliver_state>();
 	UINT32 r,g,b;
-	UINT16 color;
 
 	if (y < 0 || x < 0 || x > 383 || y > 255)
 		return;
 
-	addr*=3;
+	b=(state->m_colorram[addr] << 2) | (state->m_colorram[addr] & 0x3);
+	g=(state->m_colorram[addr+0x100] << 2) | (state->m_colorram[addr+0x100] & 3);
+	r=(state->m_colorram[addr+0x200] << 2) | (state->m_colorram[addr+0x200] & 3);
 
-	b=state->m_colorram[addr] << 2;
-	g=state->m_colorram[addr+1] << 2;
-	r=state->m_colorram[addr+2] << 2;
-
-	if (state->m_bitmap_fg->bpp == 32)
-	{
-
-		*BITMAP_ADDR32(state->m_bitmap_fg, y, x) = r | (g<<8) | (b<<16);
-	}
-	else
-	{
-		r>>=3;
-		g>>=3;
-		b>>=3;
-		color = r|(g<<5)|(b<<10);
-		*BITMAP_ADDR16(state->m_bitmap_fg, y, x) = color;
-	}
+	state->m_bitmap_fg.pix32(y, x) = r | (g<<8) | (b<<16);
 }
 
 static WRITE16_HANDLER( fifo_data_w )
@@ -312,7 +191,7 @@ static WRITE16_HANDLER( fifo_clear_w )
 {
 	sliver_state *state = space->machine().driver_data<sliver_state>();
 
-	bitmap_fill(state->m_bitmap_fg, 0,0);
+	state->m_bitmap_fg.fill(0);
 	state->m_fptr=0;
 	state->m_tmp_counter=0;
 }
@@ -333,60 +212,68 @@ static WRITE16_HANDLER( jpeg1_w )
 static void render_jpeg(running_machine &machine)
 {
 	sliver_state *state = machine.driver_data<sliver_state>();
-	int x, y;
-	int addr = state->m_jpeg_addr;
-	UINT8 *rom;
+	int x;
+	int addr = (int)state->m_jpeg2 + (((int)state->m_jpeg1) << 16);
 
-	bitmap_fill(state->m_bitmap_bg, 0, 0);
+	state->m_bitmap_bg.fill(0);
 	if (addr < 0)
 	{
 		return;
 	}
 
-	rom = machine.region("user3")->base();
-	for (y = 0; y < state->m_jpeg_h; y++)
-	{
-		for (x = 0; x < state->m_jpeg_w; x++)
-		{
-			plot_pixel_rgb(state, x - x_offset + state->m_jpeg_x, state->m_jpeg_h - y - y_offset - state->m_jpeg_y, rom[addr], rom[addr + 1], rom[addr + 2]);
-			addr+=3;
-		}
-	}
-}
+	//printf("access address %04x\n", addr);
 
-static int find_data(int offset)
-{
-	int idx = 0;
-	while (gfxlookup[idx][0] >= 0)
+	/* Access libJPEG */
 	{
-		if (offset == gfxlookup[idx][1])
+
+		struct jpeg_decompress_struct cinfo;
+		struct jpeg_error_mgr jerr;
+		JSAMPARRAY buffer;
+
+		cinfo.err = jpeg_std_error(&jerr);
+		jpeg_create_decompress(&cinfo);
+
+		jpeg_mem_src(&cinfo, machine.region("user2")->base()+addr, machine.region("user2")->bytes()-addr);
+
+		jpeg_read_header(&cinfo, TRUE);
+		jpeg_start_decompress(&cinfo);
+
+		int row_stride = cinfo.output_width * cinfo.output_components;
+
+		buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+
+		while (cinfo.output_scanline < cinfo.output_height)
 		{
-			return idx;
+			jpeg_read_scanlines(&cinfo, buffer, 1);
+			int y = cinfo.output_scanline;
+
+			for (x = 0; x < row_stride/3; x++)
+			{
+				UINT8 b = buffer[0][(x*3)];
+				UINT8 g = buffer[0][(x*3)+1];
+				UINT8 r = buffer[0][(x*3)+2];
+				plot_pixel_rgb(state, x - x_offset + state->m_jpeg_x, y - y_offset - state->m_jpeg_y, r, g, b);
+
+			}
+
 		}
-		++idx;
+
+		jpeg_finish_decompress(&cinfo);
+		jpeg_destroy_decompress(&cinfo);
+
+
 	}
-	return -1;
+
 }
 
 static WRITE16_HANDLER( jpeg2_w )
 {
 	sliver_state *state = space->machine().driver_data<sliver_state>();
-	int idx;
 
 	COMBINE_DATA(&state->m_jpeg2);
 
-	idx = find_data((int)state->m_jpeg2 + (((int)state->m_jpeg1) << 16));
-	if (idx >= 0)
-	{
-		state->m_jpeg_addr = gfxlookup[idx][0];
-		state->m_jpeg_w = gfxlookup[idx][2];
-		state->m_jpeg_h = gfxlookup[idx][3];
-		render_jpeg(space->machine());
-	}
-	else
-	{
-		state->m_jpeg_addr = -1;
-	}
+	render_jpeg(space->machine());
+
 }
 
 static WRITE16_HANDLER(io_offset_w)
@@ -430,9 +317,9 @@ static WRITE16_HANDLER(sound_w)
 static ADDRESS_MAP_START( sliver_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x000000, 0x0fffff) AM_ROM
 
-	AM_RANGE(0x100000, 0x100001) AM_WRITE(sliver_RAMDAC_offset_w)
-	AM_RANGE(0x100002, 0x100003) AM_WRITE(sliver_RAMDAC_color_w)
-	AM_RANGE(0x100004, 0x100005) AM_WRITENOP//RAMDAC
+	AM_RANGE(0x100000, 0x100001) AM_DEVWRITE8_MODERN("ramdac", ramdac_device, index_w, 0x00ff)
+	AM_RANGE(0x100002, 0x100003) AM_DEVWRITE8_MODERN("ramdac", ramdac_device, pal_w, 0x00ff)
+	AM_RANGE(0x100004, 0x100005) AM_DEVWRITE8_MODERN("ramdac", ramdac_device, mask_w, 0x00ff)
 
 	AM_RANGE(0x300002, 0x300003) AM_NOP // bit 0 tested, writes 0xe0 and 0xc0 - both r and w at the end of interrupt code
 
@@ -479,13 +366,13 @@ static VIDEO_START(sliver)
 {
 	sliver_state *state = machine.driver_data<sliver_state>();
 
-	state->m_bitmap_bg = machine.primary_screen->alloc_compatible_bitmap();
-	state->m_bitmap_fg = machine.primary_screen->alloc_compatible_bitmap();
+	machine.primary_screen->register_screen_bitmap(state->m_bitmap_bg);
+	machine.primary_screen->register_screen_bitmap(state->m_bitmap_fg);
 }
 
-static SCREEN_UPDATE(sliver)
+static SCREEN_UPDATE_RGB32(sliver)
 {
-	sliver_state *state = screen->machine().driver_data<sliver_state>();
+	sliver_state *state = screen.machine().driver_data<sliver_state>();
 
 	copybitmap      (bitmap, state->m_bitmap_bg, 0, 0, 0, 0, cliprect);
 	copybitmap_trans(bitmap, state->m_bitmap_fg, 0, 0, 0, 0, cliprect, 0);
@@ -562,30 +449,41 @@ static INPUT_PORTS_START( sliver )
 	PORT_DIPSETTING(      0x0000, DEF_STR( On ) )
 INPUT_PORTS_END
 
-static INTERRUPT_GEN( sliver_int )
+static ADDRESS_MAP_START( ramdac_map, AS_0, 8 )
+	AM_RANGE(0x000, 0x3ff) AM_RAM AM_BASE_MEMBER(sliver_state,m_colorram)
+ADDRESS_MAP_END
+
+static RAMDAC_INTERFACE( ramdac_intf )
 {
-	//valid interrupts are 2,3,4
-	device_set_input_line(device, 2+cpu_getiloops(device), HOLD_LINE);
+	0
+};
+
+static TIMER_DEVICE_CALLBACK ( obj_irq_cb )
+{
+	sliver_state *state = timer.machine().driver_data<sliver_state>();
+
+	device_set_input_line(state->m_maincpu, 3, HOLD_LINE);
 }
 
 static MACHINE_CONFIG_START( sliver, sliver_state )
-
 	MCFG_CPU_ADD("maincpu", M68000, 12000000)
 	MCFG_CPU_PROGRAM_MAP(sliver_map)
-	MCFG_CPU_VBLANK_INT_HACK(sliver_int,3)
+	MCFG_CPU_VBLANK_INT("screen",irq4_line_hold)
+	MCFG_TIMER_ADD_PERIODIC("obj_actel", obj_irq_cb, attotime::from_hz(60)) /* unknown clock, causes "obj actel ready error" without this */
+	// irq 2 valid but not used?
 
 	MCFG_CPU_ADD("audiocpu", I8051, 8000000)
 	MCFG_CPU_PROGRAM_MAP(soundmem_prg)
 	MCFG_CPU_IO_MAP(soundmem_io)
 
-
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_RGB32)
+	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500))
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 384-1-16, 0*8, 240-1)
-	MCFG_SCREEN_UPDATE(sliver)
+	MCFG_SCREEN_UPDATE_STATIC(sliver)
+
+	MCFG_RAMDAC_ADD("ramdac", ramdac_intf, ramdac_map)
 
 	MCFG_VIDEO_START(sliver)
 
@@ -618,17 +516,6 @@ ROM_START( sliver )
 	ROM_LOAD( "ka-10.bin", 0x000000, 0x80000, CRC(a6824271) SHA1(2eefa4e61491f7b72ccde744fa6f88a1a3c60c92) )
 	ROM_LOAD( "ka-11.bin", 0x080000, 0x80000, CRC(4ae121ff) SHA1(ece7cc07483801a0d436def977d72dc7b1a07c8f) )
 	ROM_LOAD( "ka-12.bin", 0x100000, 0x80000, CRC(0901e142) SHA1(68ebd38beeedf53414a831c01813881feee33446) )
-
-	ROM_REGION( 0x2000000, "user3", 0 ) /* decompressed GFX  - temporary!*/
-	ROM_LOAD( "gfx.bin", 0x000000, 0x2000000, BAD_DUMP CRC(706f264e) SHA1(dbcc8dbf30bd65d86bcde7d6db1b08af4242a253) )
 ROM_END
 
-static DRIVER_INIT(sliver)
-{
-	sliver_state *state = machine.driver_data<sliver_state>();
-
-	state->m_jpeg_addr = -1;
-	state->m_colorram=auto_alloc_array(machine, UINT8, 256*3);
-}
-
-GAME( 1996, sliver, 0,        sliver, sliver, sliver, ROT0,  "Hollow Corp", "Sliver", GAME_IMPERFECT_GRAPHICS )
+GAME( 1996, sliver, 0,        sliver, sliver, 0, ROT0,  "Hollow Corp", "Sliver", GAME_IMPERFECT_GRAPHICS )

@@ -76,11 +76,11 @@ static INTERRUPT_GEN( acefruit_vblank )
 	state->m_refresh_timer->adjust( attotime::zero );
 }
 
-static SCREEN_UPDATE( acefruit )
+static SCREEN_UPDATE_IND16( acefruit )
 {
-	acefruit_state *state = screen->machine().driver_data<acefruit_state>();
-	int startrow = cliprect->min_y / 8;
-	int endrow = cliprect->max_y / 8;
+	acefruit_state *state = screen.machine().driver_data<acefruit_state>();
+	int startrow = cliprect.min_y / 8;
+	int endrow = cliprect.max_y / 8;
 	int row;
 	int col;
 
@@ -98,7 +98,7 @@ static SCREEN_UPDATE( acefruit )
 
 			if( color < 0x4 )
 			{
-				drawgfx_opaque( bitmap, cliprect, screen->machine().gfx[ 1 ], code, color, 0, 0, col * 16, row * 8 );
+				drawgfx_opaque( bitmap, cliprect, screen.machine().gfx[ 1 ], code, color, 0, 0, col * 16, row * 8 );
 			}
 			else if( color >= 0x5 && color <= 0x7 )
 			{
@@ -106,7 +106,7 @@ static SCREEN_UPDATE( acefruit )
 				int x;
 				static const int spriteskip[] = { 1, 2, 4 };
 				int spritesize = spriteskip[ color - 5 ];
-				const gfx_element *gfx = screen->machine().gfx[ 0 ];
+				const gfx_element *gfx = screen.machine().gfx[ 0 ];
 
 				for( x = 0; x < 16; x++ )
 				{
@@ -115,7 +115,7 @@ static SCREEN_UPDATE( acefruit )
 
 					for( y = 0; y < 8; y++ )
 					{
-						UINT16 *dst = BITMAP_ADDR16( bitmap, y + ( row * 8 ), x + ( col * 16 ) );
+						UINT16 *dst = &bitmap.pix16(y + ( row * 8 ), x + ( col * 16 ) );
 						*( dst ) = *( gfxdata + ( ( spriterow + y ) * gfx->line_modulo ) + ( ( spriteindex % 64 ) >> 1 ) );
 					}
 
@@ -131,7 +131,7 @@ static SCREEN_UPDATE( acefruit )
 				{
 					for( y = 0; y < 8; y++ )
 					{
-						UINT16 *dst = BITMAP_ADDR16( bitmap, y + ( row * 8 ), x + ( col * 16 ) );
+						UINT16 *dst = &bitmap.pix16(y + ( row * 8 ), x + ( col * 16 ) );
 						*( dst ) = 0;
 					}
 				}
@@ -578,10 +578,9 @@ static MACHINE_CONFIG_START( acefruit, acefruit_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(512, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 511, 0, 255)
-	MCFG_SCREEN_UPDATE(acefruit)
+	MCFG_SCREEN_UPDATE_STATIC(acefruit)
 
 	MCFG_PALETTE_LENGTH(16)
 

@@ -85,7 +85,7 @@ static WRITE8_HANDLER( ram_w )
 	else
 		state->m_ram_1[offset] = data;
 
-	tilemap_mark_tile_dirty((offset & 0x0400) ? state->m_bg_tilemap : state->m_fg_tilemap, offset & 0x03ff);
+	((offset & 0x0400) ? state->m_bg_tilemap : state->m_fg_tilemap)->mark_tile_dirty(offset & 0x03ff);
 }
 
 
@@ -103,7 +103,7 @@ static WRITE8_HANDLER( ram_bank_w )
 
 	state->m_ram_bank = data & 0x01;
 
-	tilemap_mark_all_tiles_dirty_all(space->machine());
+	space->machine().tilemap().mark_all_dirty();
 }
 
 
@@ -190,18 +190,18 @@ static VIDEO_START( safarir )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 	state->m_fg_tilemap = tilemap_create(machine, get_fg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_fg_tilemap, 0);
+	state->m_fg_tilemap->set_transparent_pen(0);
 }
 
 
-static SCREEN_UPDATE( safarir )
+static SCREEN_UPDATE_IND16( safarir )
 {
-	safarir_state *state = screen->machine().driver_data<safarir_state>();
+	safarir_state *state = screen.machine().driver_data<safarir_state>();
 
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, *state->m_bg_scroll);
+	state->m_bg_tilemap->set_scrollx(0, *state->m_bg_scroll);
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_fg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_fg_tilemap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -274,17 +274,17 @@ static WRITE8_HANDLER( safarir_audio_w )
 static const char *const safarir_sample_names[] =
 {
 	"*safarir",
-	"sound1-1.wav",
-	"sound1-2.wav",
-	"sound2.wav",
-	"sound3.wav",
-	"sound4-1.wav",
-	"sound4-2.wav",
-	"sound5-1.wav",
-	"sound5-2.wav",
-	"sound6.wav",
-	"sound7.wav",
-	"sound8.wav",
+	"sound1-1",
+	"sound1-2",
+	"sound2",
+	"sound3",
+	"sound4-1",
+	"sound4-2",
+	"sound5-1",
+	"sound5-2",
+	"sound6",
+	"sound7",
+	"sound8",
 	0
 };
 
@@ -412,11 +412,10 @@ static MACHINE_CONFIG_START( safarir, safarir_state )
 	MCFG_GFXDECODE(safarir)
 
 	MCFG_SCREEN_ADD("screen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 0*8, 26*8-1)
 	MCFG_SCREEN_REFRESH_RATE(60)
-	MCFG_SCREEN_UPDATE(safarir)
+	MCFG_SCREEN_UPDATE_STATIC(safarir)
 
 	/* audio hardware */
 	MCFG_FRAGMENT_ADD(safarir_audio)

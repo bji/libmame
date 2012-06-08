@@ -129,21 +129,21 @@ static WRITE16_HANDLER( vmetal_texttileram_w )
 {
 	vmetal_state *state = space->machine().driver_data<vmetal_state>();
 	COMBINE_DATA(&state->m_texttileram[offset]);
-	tilemap_mark_tile_dirty(state->m_texttilemap, offset);
+	state->m_texttilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( vmetal_mid1tileram_w )
 {
 	vmetal_state *state = space->machine().driver_data<vmetal_state>();
 	COMBINE_DATA(&state->m_mid1tileram[offset]);
-	tilemap_mark_tile_dirty(state->m_mid1tilemap, offset);
+	state->m_mid1tilemap->mark_tile_dirty(offset);
 }
 
 static WRITE16_HANDLER( vmetal_mid2tileram_w )
 {
 	vmetal_state *state = space->machine().driver_data<vmetal_state>();
 	COMBINE_DATA(&state->m_mid2tileram[offset]);
-	tilemap_mark_tile_dirty(state->m_mid2tilemap, offset);
+	state->m_mid2tilemap->mark_tile_dirty(offset);
 }
 
 
@@ -411,30 +411,30 @@ static VIDEO_START(varia)
 	state->m_mid1tilemap = tilemap_create(machine, get_vmetal_mid1tilemap_tile_info, tilemap_scan_rows, 16, 16, 256, 256);
 	state->m_mid2tilemap = tilemap_create(machine, get_vmetal_mid2tilemap_tile_info, tilemap_scan_rows, 16, 16, 256, 256);
 
-	tilemap_set_transparent_pen(state->m_texttilemap, 15);
-	tilemap_set_transparent_pen(state->m_mid1tilemap, 15);
-	tilemap_set_transparent_pen(state->m_mid2tilemap, 15);
+	state->m_texttilemap->set_transparent_pen(15);
+	state->m_mid1tilemap->set_transparent_pen(15);
+	state->m_mid2tilemap->set_transparent_pen(15);
 }
 
-static SCREEN_UPDATE(varia)
+static SCREEN_UPDATE_IND16(varia)
 {
-	vmetal_state *state = screen->machine().driver_data<vmetal_state>();
+	vmetal_state *state = screen.machine().driver_data<vmetal_state>();
 
-	bitmap_fill(bitmap, cliprect, get_black_pen(screen->machine()));
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	bitmap.fill(get_black_pen(screen.machine()), cliprect);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 
-	tilemap_set_scrollx(state->m_mid2tilemap, 0, state->m_vmetal_videoregs[0x06a/2]-64 /*+ state->m_vmetal_videoregs[0x066/2]*/);
-	tilemap_set_scrollx(state->m_mid1tilemap, 0, state->m_vmetal_videoregs[0x07a/2]-64 /*+ state->m_vmetal_videoregs[0x076/2]*/);
-	tilemap_set_scrollx(state->m_texttilemap, 0, -64 /*+ state->m_vmetal_videoregs[0x076/2]*/);
+	state->m_mid2tilemap->set_scrollx(0, state->m_vmetal_videoregs[0x06a/2]-64 /*+ state->m_vmetal_videoregs[0x066/2]*/);
+	state->m_mid1tilemap->set_scrollx(0, state->m_vmetal_videoregs[0x07a/2]-64 /*+ state->m_vmetal_videoregs[0x076/2]*/);
+	state->m_texttilemap->set_scrollx(0, -64 /*+ state->m_vmetal_videoregs[0x076/2]*/);
 
-	tilemap_set_scrolly(state->m_mid2tilemap, 0, -64);
-	tilemap_set_scrolly(state->m_mid1tilemap, 0, -64);
-	tilemap_set_scrolly(state->m_texttilemap, 0, -64);
+	state->m_mid2tilemap->set_scrolly(0, -64);
+	state->m_mid1tilemap->set_scrolly(0, -64);
+	state->m_texttilemap->set_scrolly(0, -64);
 
-	tilemap_draw(bitmap, cliprect, state->m_mid1tilemap, 0, 0);
-	tilemap_draw(bitmap, cliprect, state->m_mid2tilemap, 0, 0);
-	metro_draw_sprites(screen->machine(), bitmap, cliprect);
-	tilemap_draw(bitmap, cliprect, state->m_texttilemap, 0, 0);
+	state->m_mid1tilemap->draw(bitmap, cliprect, 0, 0);
+	state->m_mid2tilemap->draw(bitmap, cliprect, 0, 0);
+	metro_draw_sprites(screen.machine(), bitmap, cliprect);
+	state->m_texttilemap->draw(bitmap, cliprect, 0, 0);
 	return 0;
 }
 
@@ -450,10 +450,9 @@ static MACHINE_CONFIG_START( varia, vmetal_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(2048, 2048)
 	MCFG_SCREEN_VISIBLE_AREA(0+64, 319+64, 0+64, 223+64)
-	MCFG_SCREEN_UPDATE(varia)
+	MCFG_SCREEN_UPDATE_STATIC(varia)
 
 	MCFG_GFXDECODE(vmetal)
 	MCFG_PALETTE_LENGTH(0x4000)

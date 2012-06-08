@@ -35,8 +35,8 @@ public:
 	UINT32 *  m_right_priority;
 
 	/* video related */
-	bitmap_t  *m_left;
-	bitmap_t  *m_right;
+	bitmap_ind16  *m_left;
+	bitmap_ind16  *m_right;
 
 	/* devices */
 	device_t *m_maincpu;
@@ -70,8 +70,8 @@ static VIDEO_START( backfire )
 	state->save_item(NAME(state->m_pf3_rowscroll));
 	state->save_item(NAME(state->m_pf4_rowscroll));
 
-	state->m_left =  auto_bitmap_alloc(machine, 80*8, 32*8, BITMAP_FORMAT_INDEXED16);
-	state->m_right = auto_bitmap_alloc(machine, 80*8, 32*8, BITMAP_FORMAT_INDEXED16);
+	state->m_left =  auto_bitmap_ind16_alloc(machine, 80*8, 32*8);
+	state->m_right = auto_bitmap_ind16_alloc(machine, 80*8, 32*8);
 
 	state->save_pointer(NAME(state->m_spriteram_1), 0x2000/2);
 	state->save_pointer(NAME(state->m_spriteram_2), 0x2000/2);
@@ -82,59 +82,69 @@ static VIDEO_START( backfire )
 
 
 
-static SCREEN_UPDATE( backfire )
+static SCREEN_UPDATE_IND16( backfire_left )
 {
-	backfire_state *state = screen->machine().driver_data<backfire_state>();
+	backfire_state *state = screen.machine().driver_data<backfire_state>();
 
 	//FIXME: flip_screen_x should not be written!
-	flip_screen_set_no_update(screen->machine(), 1);
+	flip_screen_set_no_update(screen.machine(), 1);
 
 	/* screen 1 uses pf1 as the forground and pf3 as the background */
 	/* screen 2 uses pf2 as the foreground and pf4 as the background */
 	deco16ic_pf_update(state->m_deco_tilegen1, state->m_pf1_rowscroll, state->m_pf2_rowscroll);
 	deco16ic_pf_update(state->m_deco_tilegen2, state->m_pf3_rowscroll, state->m_pf4_rowscroll);
 
-	if (screen == state->m_lscreen)
+	screen.machine().priority_bitmap.fill(0);
+	bitmap.fill(0x100, cliprect);
+
+	if (state->m_left_priority[0] == 0)
 	{
-
-		bitmap_fill(screen->machine().priority_bitmap, NULL, 0);
-		bitmap_fill(bitmap, cliprect, 0x100);
-
-		if (state->m_left_priority[0] == 0)
-		{
-			deco16ic_tilemap_1_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 1);
-			deco16ic_tilemap_1_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
-			screen->machine().device<decospr_device>("spritegen")->draw_sprites(screen->machine(), bitmap, cliprect, state->m_spriteram_1, 0x800);
-		}
-		else if (state->m_left_priority[0] == 2)
-		{
-			deco16ic_tilemap_1_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
-			deco16ic_tilemap_1_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 4);
-			screen->machine().device<decospr_device>("spritegen")->draw_sprites(screen->machine(), bitmap, cliprect, state->m_spriteram_1, 0x800);
-		}
-		else
-			popmessage( "unknown left priority %08x", state->m_left_priority[0]);
+		deco16ic_tilemap_1_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 1);
+		deco16ic_tilemap_1_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram_1, 0x800);
 	}
-	else if (screen == state->m_rscreen)
+	else if (state->m_left_priority[0] == 2)
 	{
-		bitmap_fill(screen->machine().priority_bitmap, NULL, 0);
-		bitmap_fill(bitmap, cliprect, 0x500);
-
-		if (state->m_right_priority[0] == 0)
-		{
-			deco16ic_tilemap_2_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 1);
-			deco16ic_tilemap_2_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
-			screen->machine().device<decospr_device>("spritegen2")->draw_sprites(screen->machine(), bitmap, cliprect, state->m_spriteram_2, 0x800);
-		}
-		else if (state->m_right_priority[0] == 2)
-		{
-			deco16ic_tilemap_2_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
-			deco16ic_tilemap_2_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 4);
-			screen->machine().device<decospr_device>("spritegen2")->draw_sprites(screen->machine(), bitmap, cliprect, state->m_spriteram_2, 0x800);
-		}
-		else
-			popmessage( "unknown right priority %08x", state->m_right_priority[0]);
+		deco16ic_tilemap_1_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
+		deco16ic_tilemap_1_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 4);
+		screen.machine().device<decospr_device>("spritegen")->draw_sprites(bitmap, cliprect, state->m_spriteram_1, 0x800);
 	}
+	else
+		popmessage( "unknown left priority %08x", state->m_left_priority[0]);
+
+	return 0;
+}
+
+static SCREEN_UPDATE_IND16( backfire_right )
+{
+	backfire_state *state = screen.machine().driver_data<backfire_state>();
+
+	//FIXME: flip_screen_x should not be written!
+	flip_screen_set_no_update(screen.machine(), 1);
+
+	/* screen 1 uses pf1 as the forground and pf3 as the background */
+	/* screen 2 uses pf2 as the foreground and pf4 as the background */
+	deco16ic_pf_update(state->m_deco_tilegen1, state->m_pf1_rowscroll, state->m_pf2_rowscroll);
+	deco16ic_pf_update(state->m_deco_tilegen2, state->m_pf3_rowscroll, state->m_pf4_rowscroll);
+
+	screen.machine().priority_bitmap.fill(0);
+	bitmap.fill(0x500, cliprect);
+
+	if (state->m_right_priority[0] == 0)
+	{
+		deco16ic_tilemap_2_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 1);
+		deco16ic_tilemap_2_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
+		screen.machine().device<decospr_device>("spritegen2")->draw_sprites(bitmap, cliprect, state->m_spriteram_2, 0x800);
+	}
+	else if (state->m_right_priority[0] == 2)
+	{
+		deco16ic_tilemap_2_draw(state->m_deco_tilegen1, bitmap, cliprect, 0, 2);
+		deco16ic_tilemap_2_draw(state->m_deco_tilegen2, bitmap, cliprect, 0, 4);
+		screen.machine().device<decospr_device>("spritegen2")->draw_sprites(bitmap, cliprect, state->m_spriteram_2, 0x800);
+	}
+	else
+		popmessage( "unknown right priority %08x", state->m_right_priority[0]);
+
 	return 0;
 }
 
@@ -481,20 +491,18 @@ static MACHINE_CONFIG_START( backfire, backfire_state )
 	MCFG_DEFAULT_LAYOUT(layout_dualhsxs)
 
 	MCFG_SCREEN_ADD("lscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(backfire)
+	MCFG_SCREEN_UPDATE_STATIC(backfire_left)
 
 	MCFG_SCREEN_ADD("rscreen", RASTER)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
 	MCFG_SCREEN_SIZE(40*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 40*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(backfire)
+	MCFG_SCREEN_UPDATE_STATIC(backfire_right)
 
 	MCFG_VIDEO_START(backfire)
 

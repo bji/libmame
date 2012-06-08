@@ -24,7 +24,6 @@ Decrypt Space Position Somehow (not something I
 can do)
 Unknown Reads / Writes
 Whats the Prom for? nothing important?
-Clock Speeds etc.
 Is the level order correct?
 the progress sprite on the side of the screen re-appears at the bottom when you get
 to the top, but the wrap-around is needed for other things, actual game bug?
@@ -606,12 +605,12 @@ static MACHINE_RESET( angelkds )
 
 static MACHINE_CONFIG_START( angelkds, angelkds_state )
 
-	MCFG_CPU_ADD("maincpu", Z80, 8000000) /* 8MHz? 6 seems too slow? */
+	MCFG_CPU_ADD("maincpu", Z80, XTAL_6MHz)
 	MCFG_CPU_PROGRAM_MAP(main_map)
 	MCFG_CPU_IO_MAP(main_portmap)
 	MCFG_CPU_VBLANK_INT("screen", irq0_line_hold)
 
-	MCFG_CPU_ADD("sub", Z80, 4000000) /* 8 MHz? */
+	MCFG_CPU_ADD("sub", Z80, XTAL_4MHz)
 	MCFG_CPU_PROGRAM_MAP(sub_map)
 	MCFG_CPU_IO_MAP(sub_portmap)
 
@@ -624,10 +623,9 @@ static MACHINE_CONFIG_START( angelkds, angelkds_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 1*8, 31*8-1)
-	MCFG_SCREEN_UPDATE(angelkds)
+	MCFG_SCREEN_UPDATE_STATIC(angelkds)
 
 	MCFG_GFXDECODE(angelkds)
 	MCFG_PALETTE_LENGTH(0x100)
@@ -636,14 +634,14 @@ static MACHINE_CONFIG_START( angelkds, angelkds_state )
 
 	MCFG_SPEAKER_STANDARD_MONO("mono")
 
-	MCFG_SOUND_ADD("ym1", YM2203, 4000000)
+	MCFG_SOUND_ADD("ym1", YM2203, XTAL_4MHz)
 	MCFG_SOUND_CONFIG(ym2203_config)
 	MCFG_SOUND_ROUTE(0, "mono", 0.65)
 	MCFG_SOUND_ROUTE(1, "mono", 0.65)
 	MCFG_SOUND_ROUTE(2, "mono", 0.65)
 	MCFG_SOUND_ROUTE(3, "mono", 0.45)
 
-	MCFG_SOUND_ADD("ym2", YM2203, 4000000)
+	MCFG_SOUND_ADD("ym2", YM2203, XTAL_4MHz)
 	MCFG_SOUND_ROUTE(0, "mono", 0.65)
 	MCFG_SOUND_ROUTE(1, "mono", 0.65)
 	MCFG_SOUND_ROUTE(2, "mono", 0.65)

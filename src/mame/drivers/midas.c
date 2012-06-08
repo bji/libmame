@@ -70,7 +70,7 @@ public:
 
 
 static VIDEO_START( midas );
-static SCREEN_UPDATE( midas );
+static SCREEN_UPDATE_IND16( midas );
 
 
 static TILE_GET_INFO( get_tile_info )
@@ -88,10 +88,10 @@ static VIDEO_START( midas )
 	state->m_tmap = tilemap_create(	machine, get_tile_info, tilemap_scan_cols,
 							8,8, 0x80,0x20	);
 
-	tilemap_set_transparent_pen(state->m_tmap, 0);
+	state->m_tmap->set_transparent_pen(0);
 }
 
-static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect)
+static void draw_sprites(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	midas_state *state = machine.driver_data<midas_state>();
 	UINT16 *s		=	state->m_gfxram + 0x8000;
@@ -175,25 +175,25 @@ static void draw_sprites(running_machine &machine, bitmap_t *bitmap, const recta
 	}
 }
 
-static SCREEN_UPDATE( midas )
+static SCREEN_UPDATE_IND16( midas )
 {
-	midas_state *state = screen->machine().driver_data<midas_state>();
+	midas_state *state = screen.machine().driver_data<midas_state>();
 	int layers_ctrl = -1;
 
 #ifdef MAME_DEBUG
-	if ( screen->machine().input().code_pressed(KEYCODE_Z) )
+	if ( screen.machine().input().code_pressed(KEYCODE_Z) )
 	{
 		int msk = 0;
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	msk |= 1 << 0;	// for state->m_tmap
-		if (screen->machine().input().code_pressed(KEYCODE_A))	msk |= 1 << 1;	// for sprites
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	msk |= 1 << 0;	// for state->m_tmap
+		if (screen.machine().input().code_pressed(KEYCODE_A))	msk |= 1 << 1;	// for sprites
 		if (msk != 0) layers_ctrl &= msk;
 	}
 #endif
 
-	bitmap_fill(bitmap,cliprect,4095);
+	bitmap.fill(4095, cliprect);
 
-	if (layers_ctrl & 2)	draw_sprites(screen->machine(), bitmap,cliprect);
-	if (layers_ctrl & 1)	tilemap_draw(bitmap,cliprect, state->m_tmap, 0, 0);
+	if (layers_ctrl & 2)	draw_sprites(screen.machine(), bitmap,cliprect);
+	if (layers_ctrl & 1)	state->m_tmap->draw(bitmap, cliprect, 0, 0);
 
 	return 0;
 }
@@ -232,7 +232,7 @@ static WRITE16_HANDLER( midas_gfxregs_w )
 			state->m_gfxram[addr] = data;
 			state->m_gfxregs[0] += state->m_gfxregs[2];
 
-			if ( addr >= 0x7000 && addr <= 0x7fff )	tilemap_mark_tile_dirty(state->m_tmap, addr - 0x7000);
+			if ( addr >= 0x7000 && addr <= 0x7fff )	state->m_tmap->mark_tile_dirty(addr - 0x7000);
 
 			break;
 		}
@@ -700,10 +700,9 @@ static MACHINE_CONFIG_START( livequiz, midas_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(midas)
+	MCFG_SCREEN_UPDATE_STATIC(midas)
 
 	MCFG_GFXDECODE(midas)
 	MCFG_PALETTE_LENGTH(0x10000)
@@ -735,10 +734,9 @@ static MACHINE_CONFIG_START( hammer, midas_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(320, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 320-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(midas)
+	MCFG_SCREEN_UPDATE_STATIC(midas)
 
 	MCFG_GFXDECODE(midas)
 	MCFG_PALETTE_LENGTH(0x10000)

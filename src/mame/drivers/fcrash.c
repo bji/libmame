@@ -120,13 +120,13 @@ static void fcrash_update_transmasks( running_machine &machine )
 		else
 			mask = 0xffff;	/* completely transparent if priority masks not defined (mercs, qad) */
 
-		tilemap_set_transmask(state->m_bg_tilemap[0], i, mask, 0x8000);
-		tilemap_set_transmask(state->m_bg_tilemap[1], i, mask, 0x8000);
-		tilemap_set_transmask(state->m_bg_tilemap[2], i, mask, 0x8000);
+		state->m_bg_tilemap[0]->set_transmask(i, mask, 0x8000);
+		state->m_bg_tilemap[1]->set_transmask(i, mask, 0x8000);
+		state->m_bg_tilemap[2]->set_transmask(i, mask, 0x8000);
 	}
 }
 
-static void fcrash_render_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void fcrash_render_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	cps_state *state = machine.driver_data<cps_state>();
 	int pos;
@@ -159,7 +159,7 @@ static void fcrash_render_sprites( running_machine &machine, bitmap_t *bitmap, c
 
 }
 
-static void fcrash_render_layer( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int layer, int primask )
+static void fcrash_render_layer( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int layer, int primask )
 {
 	cps_state *state = machine.driver_data<cps_state>();
 
@@ -171,14 +171,15 @@ static void fcrash_render_layer( running_machine &machine, bitmap_t *bitmap, con
 		case 1:
 		case 2:
 		case 3:
-			tilemap_draw(bitmap, cliprect, state->m_bg_tilemap[layer - 1], TILEMAP_DRAW_LAYER1, primask);
+			state->m_bg_tilemap[layer - 1]->draw(bitmap, cliprect, TILEMAP_DRAW_LAYER1, primask);
 			break;
 	}
 }
 
-static void fcrash_render_high_layer( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int layer )
+static void fcrash_render_high_layer( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int layer )
 {
 	cps_state *state = machine.driver_data<cps_state>();
+	bitmap_ind16 dummy_bitmap;
 
 	switch (layer)
 	{
@@ -188,7 +189,7 @@ static void fcrash_render_high_layer( running_machine &machine, bitmap_t *bitmap
 		case 1:
 		case 2:
 		case 3:
-			tilemap_draw(NULL, cliprect, state->m_bg_tilemap[layer - 1], TILEMAP_DRAW_LAYER0, 1);
+			state->m_bg_tilemap[layer - 1]->draw(dummy_bitmap, cliprect, TILEMAP_DRAW_LAYER0, 1);
 			break;
 	}
 }
@@ -216,27 +217,27 @@ static void fcrash_build_palette( running_machine &machine )
 	}
 }
 
-static SCREEN_UPDATE( fcrash )
+static SCREEN_UPDATE_IND16( fcrash )
 {
-	cps_state *state = screen->machine().driver_data<cps_state>();
+	cps_state *state = screen.machine().driver_data<cps_state>();
 	int layercontrol, l0, l1, l2, l3;
 	int videocontrol = state->m_cps_a_regs[0x22 / 2];
 
 
-	flip_screen_set(screen->machine(), videocontrol & 0x8000);
+	flip_screen_set(screen.machine(), videocontrol & 0x8000);
 
 	layercontrol = state->m_cps_b_regs[0x20 / 2];
 
 	/* Get video memory base registers */
-	cps1_get_video_base(screen->machine());
+	cps1_get_video_base(screen.machine());
 
 	/* Build palette */
-	fcrash_build_palette(screen->machine());
+	fcrash_build_palette(screen.machine());
 
-	fcrash_update_transmasks(screen->machine());
+	fcrash_update_transmasks(screen.machine());
 
-	tilemap_set_scrollx(state->m_bg_tilemap[0], 0, state->m_scroll1x - 62);
-	tilemap_set_scrolly(state->m_bg_tilemap[0], 0, state->m_scroll1y);
+	state->m_bg_tilemap[0]->set_scrollx(0, state->m_scroll1x - 62);
+	state->m_bg_tilemap[0]->set_scrolly(0, state->m_scroll1y);
 
 	if (videocontrol & 0x01)	/* linescroll enable */
 	{
@@ -244,79 +245,79 @@ static SCREEN_UPDATE( fcrash )
 		int i;
 		int otheroffs;
 
-		tilemap_set_scroll_rows(state->m_bg_tilemap[1], 1024);
+		state->m_bg_tilemap[1]->set_scroll_rows(1024);
 
 		otheroffs = state->m_cps_a_regs[CPS1_ROWSCROLL_OFFS];
 
 		for (i = 0; i < 256; i++)
-			tilemap_set_scrollx(state->m_bg_tilemap[1], (i - scrly) & 0x3ff, state->m_scroll2x + state->m_other[(i + otheroffs) & 0x3ff]);
+			state->m_bg_tilemap[1]->set_scrollx((i - scrly) & 0x3ff, state->m_scroll2x + state->m_other[(i + otheroffs) & 0x3ff]);
 	}
 	else
 	{
-		tilemap_set_scroll_rows(state->m_bg_tilemap[1], 1);
-		tilemap_set_scrollx(state->m_bg_tilemap[1], 0, state->m_scroll2x - 60);
+		state->m_bg_tilemap[1]->set_scroll_rows(1);
+		state->m_bg_tilemap[1]->set_scrollx(0, state->m_scroll2x - 60);
 	}
-	tilemap_set_scrolly(state->m_bg_tilemap[1], 0, state->m_scroll2y);
-	tilemap_set_scrollx(state->m_bg_tilemap[2], 0, state->m_scroll3x - 64);
-	tilemap_set_scrolly(state->m_bg_tilemap[2], 0, state->m_scroll3y);
+	state->m_bg_tilemap[1]->set_scrolly(0, state->m_scroll2y);
+	state->m_bg_tilemap[2]->set_scrollx(0, state->m_scroll3x - 64);
+	state->m_bg_tilemap[2]->set_scrolly(0, state->m_scroll3y);
 
 
 	/* turn all tilemaps on regardless of settings in get_video_base() */
 	/* write a custom get_video_base for this bootleg hardware? */
-	tilemap_set_enable(state->m_bg_tilemap[0], 1);
-	tilemap_set_enable(state->m_bg_tilemap[1], 1);
-	tilemap_set_enable(state->m_bg_tilemap[2], 1);
+	state->m_bg_tilemap[0]->enable(1);
+	state->m_bg_tilemap[1]->enable(1);
+	state->m_bg_tilemap[2]->enable(1);
 
 	/* Blank screen */
-	bitmap_fill(bitmap, cliprect, 0xbff);
+	bitmap.fill(0xbff, cliprect);
 
-	bitmap_fill(screen->machine().priority_bitmap,cliprect,0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 	l0 = (layercontrol >> 0x06) & 03;
 	l1 = (layercontrol >> 0x08) & 03;
 	l2 = (layercontrol >> 0x0a) & 03;
 	l3 = (layercontrol >> 0x0c) & 03;
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l0, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l0, 0);
 
 	if (l1 == 0)
-		fcrash_render_high_layer(screen->machine(), bitmap, cliprect, l0);
+		fcrash_render_high_layer(screen.machine(), bitmap, cliprect, l0);
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l1, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l1, 0);
 
 	if (l2 == 0)
-		fcrash_render_high_layer(screen->machine(), bitmap, cliprect, l1);
+		fcrash_render_high_layer(screen.machine(), bitmap, cliprect, l1);
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l2, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l2, 0);
 
 	if (l3 == 0)
-		fcrash_render_high_layer(screen->machine(), bitmap, cliprect, l2);
+		fcrash_render_high_layer(screen.machine(), bitmap, cliprect, l2);
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l3, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l3, 0);
 
 	return 0;
 }
 
 // doesn't have the scroll offsets like fcrash
-static SCREEN_UPDATE( kodb )
+static SCREEN_UPDATE_IND16( kodb )
 {
-	cps_state *state = screen->machine().driver_data<cps_state>();
+	cps_state *state = screen.machine().driver_data<cps_state>();
 	int layercontrol, l0, l1, l2, l3;
 	int videocontrol = state->m_cps_a_regs[0x22 / 2];
 
-	flip_screen_set(screen->machine(), videocontrol & 0x8000);
+	flip_screen_set(screen.machine(), videocontrol & 0x8000);
 
 	layercontrol = state->m_cps_b_regs[0x20 / 2];
 
 	/* Get video memory base registers */
-	cps1_get_video_base(screen->machine());
+	cps1_get_video_base(screen.machine());
 
 	/* Build palette */
-	fcrash_build_palette(screen->machine());
+	fcrash_build_palette(screen.machine());
 
-	fcrash_update_transmasks(screen->machine());
+	fcrash_update_transmasks(screen.machine());
 
-	tilemap_set_scrollx(state->m_bg_tilemap[0], 0, state->m_scroll1x);
-	tilemap_set_scrolly(state->m_bg_tilemap[0], 0, state->m_scroll1y);
+	state->m_bg_tilemap[0]->set_scrollx(0, state->m_scroll1x);
+	state->m_bg_tilemap[0]->set_scrolly(0, state->m_scroll1y);
 
 	if (videocontrol & 0x01)	/* linescroll enable */
 	{
@@ -324,55 +325,55 @@ static SCREEN_UPDATE( kodb )
 		int i;
 		int otheroffs;
 
-		tilemap_set_scroll_rows(state->m_bg_tilemap[1], 1024);
+		state->m_bg_tilemap[1]->set_scroll_rows(1024);
 
 		otheroffs = state->m_cps_a_regs[CPS1_ROWSCROLL_OFFS];
 
 		for (i = 0; i < 256; i++)
-			tilemap_set_scrollx(state->m_bg_tilemap[1], (i - scrly) & 0x3ff, state->m_scroll2x + state->m_other[(i + otheroffs) & 0x3ff]);
+			state->m_bg_tilemap[1]->set_scrollx((i - scrly) & 0x3ff, state->m_scroll2x + state->m_other[(i + otheroffs) & 0x3ff]);
 	}
 	else
 	{
-		tilemap_set_scroll_rows(state->m_bg_tilemap[1], 1);
-		tilemap_set_scrollx(state->m_bg_tilemap[1], 0, state->m_scroll2x);
+		state->m_bg_tilemap[1]->set_scroll_rows(1);
+		state->m_bg_tilemap[1]->set_scrollx(0, state->m_scroll2x);
 	}
 
-	tilemap_set_scrolly(state->m_bg_tilemap[1], 0, state->m_scroll2y);
-	tilemap_set_scrollx(state->m_bg_tilemap[2], 0, state->m_scroll3x);
-	tilemap_set_scrolly(state->m_bg_tilemap[2], 0, state->m_scroll3y);
+	state->m_bg_tilemap[1]->set_scrolly(0, state->m_scroll2y);
+	state->m_bg_tilemap[2]->set_scrollx(0, state->m_scroll3x);
+	state->m_bg_tilemap[2]->set_scrolly(0, state->m_scroll3y);
 
 
 	/* turn all tilemaps on regardless of settings in get_video_base() */
 	/* write a custom get_video_base for this bootleg hardware? */
-	tilemap_set_enable(state->m_bg_tilemap[0], 1);
-	tilemap_set_enable(state->m_bg_tilemap[1], 1);
-	tilemap_set_enable(state->m_bg_tilemap[2], 1);
+	state->m_bg_tilemap[0]->enable(1);
+	state->m_bg_tilemap[1]->enable(1);
+	state->m_bg_tilemap[2]->enable(1);
 
 	/* Blank screen */
-	bitmap_fill(bitmap, cliprect, 0xbff);
+	bitmap.fill(0xbff, cliprect);
 
-	bitmap_fill(screen->machine().priority_bitmap, cliprect, 0);
+	screen.machine().priority_bitmap.fill(0, cliprect);
 	l0 = (layercontrol >> 0x06) & 03;
 	l1 = (layercontrol >> 0x08) & 03;
 	l2 = (layercontrol >> 0x0a) & 03;
 	l3 = (layercontrol >> 0x0c) & 03;
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l0, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l0, 0);
 
 	if (l1 == 0)
-		fcrash_render_high_layer(screen->machine(), bitmap, cliprect, l0);
+		fcrash_render_high_layer(screen.machine(), bitmap, cliprect, l0);
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l1, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l1, 0);
 
 	if (l2 == 0)
-		fcrash_render_high_layer(screen->machine(), bitmap, cliprect, l1);
+		fcrash_render_high_layer(screen.machine(), bitmap, cliprect, l1);
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l2, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l2, 0);
 
 	if (l3 == 0)
-		fcrash_render_high_layer(screen->machine(), bitmap, cliprect, l2);
+		fcrash_render_high_layer(screen.machine(), bitmap, cliprect, l2);
 
-	fcrash_render_layer(screen->machine(), bitmap, cliprect, l3, 0);
+	fcrash_render_layer(screen.machine(), bitmap, cliprect, l3, 0);
 
 	return 0;
 }
@@ -742,11 +743,10 @@ static MACHINE_CONFIG_START( fcrash, cps_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(fcrash)
-	MCFG_SCREEN_EOF(cps1)
+	MCFG_SCREEN_UPDATE_STATIC(fcrash)
+	MCFG_SCREEN_VBLANK_STATIC(cps1)
 
 	MCFG_GFXDECODE(cps1)
 	MCFG_PALETTE_LENGTH(4096)
@@ -793,11 +793,10 @@ static MACHINE_CONFIG_START( kodb, cps_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(64*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 2*8, 30*8-1 )
-	MCFG_SCREEN_UPDATE(kodb)
-	MCFG_SCREEN_EOF(cps1)
+	MCFG_SCREEN_UPDATE_STATIC(kodb)
+	MCFG_SCREEN_VBLANK_STATIC(cps1)
 
 	MCFG_GFXDECODE(cps1)
 	MCFG_PALETTE_LENGTH(0xc00)
@@ -915,5 +914,76 @@ ROM_START( kodb )
 	ROM_LOAD( "2.ic19",      0x00000, 0x40000, CRC(a2db1575) SHA1(1a4a29e4b045af50700adf1665697feab12cc234) )
 ROM_END
 
+ROM_START( cawingbl )
+	ROM_REGION( 0x400000, "maincpu", 0 )      /* 68000 code */
+	ROM_LOAD16_BYTE( "caw2.bin",    0x00000, 0x80000, CRC(8125d3f0) SHA1(a0e48c326c6164ca189c9372f5c38a7c103772c1) )
+	ROM_LOAD16_BYTE( "caw1.bin",    0x00001, 0x80000, CRC(b19b10ce) SHA1(3c71f1dc830d1e8b8ba26d8a71e12f477659480c) )
+
+	ROM_REGION( 0x200000, "gfx", 0 )
+	ROMX_LOAD( "caw4.bin", 0x000000, 0x80000, CRC(4937fc41) SHA1(dac179715be483a521df8e515afc1fb7a2cd8f13) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "caw5.bin", 0x000002, 0x80000, CRC(30dd78db) SHA1(e0295001d6f5fb4a9276c432f971e88f73c5e39a) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "caw6.bin", 0x000004, 0x80000, CRC(61192f7c) SHA1(86643c62653a62a5c7541d50cfdecae9b607440d) , ROM_GROUPWORD | ROM_SKIP(6) )
+	ROMX_LOAD( "caw7.bin", 0x000006, 0x80000, CRC(a045c689) SHA1(8946c55635121282ea03586a278e50de20d92633) , ROM_GROUPWORD | ROM_SKIP(6) )
+
+	ROM_REGION( 0x30000, "soundcpu", 0 ) /* 64k for the audio CPU (+banks) */
+	ROM_LOAD( "caw3.bin",  0x00000, 0x20000, CRC(ffe16cdc) SHA1(8069ea69f0b89d61c35995c8040a4989d7be9c1f) )
+	ROM_RELOAD(          0x10000, 0x20000 )
+ROM_END
+
+// 24mhz crystal (maincpu), 28.322 crystal (video), 3.579545 crystal (sound)
+// sound cpu is (239 V 249521 VC5006 KABUKI DL-030P-110V) - recycled Kabuki Z80 from genuine Capcom HW?
+// 3x8 dsws
+
+static MACHINE_CONFIG_START( sgyxz, cps_state )
+	/* basic machine hardware */
+	MCFG_CPU_ADD("maincpu", M68000, 12000000)
+	MCFG_CPU_PROGRAM_MAP(kodb_map)
+	MCFG_CPU_VBLANK_INT("screen", cps1_interrupt)
+
+//  MCFG_CPU_ADD("soundcpu", Z80, 3579545)
+//  MCFG_CPU_PROGRAM_MAP(sub_map)
+
+	MCFG_MACHINE_START(kodb)
+
+	/* video hardware */
+	MCFG_SCREEN_ADD("screen", RASTER)
+	MCFG_SCREEN_REFRESH_RATE(60)
+	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
+	MCFG_SCREEN_SIZE(64*8, 32*8)
+	MCFG_SCREEN_VISIBLE_AREA(8*8, (64-8)*8-1, 2*8, 30*8-1 )
+	MCFG_SCREEN_UPDATE_STATIC(kodb)
+	MCFG_SCREEN_VBLANK_STATIC(cps1)
+
+	MCFG_GFXDECODE(cps1)
+	MCFG_PALETTE_LENGTH(0xc00)
+
+	MCFG_VIDEO_START(cps1)
+MACHINE_CONFIG_END
+
+
+
+ROM_START( sgyxz )
+	ROM_REGION( 0x400000, "maincpu", 0 ) /* 68000 Code */
+	ROM_LOAD16_BYTE( "sgyxz_prg1.bin", 0x000001, 0x80000, CRC(d8511929) SHA1(4de9263778f327693f4d1e21b48e43806f673487) )
+	ROM_LOAD16_BYTE( "sgyxz_prg2.bin", 0x000000, 0x80000, CRC(95429c83) SHA1(e981624d018132e5625a66113b6ac4fc44e55cf7) )
+
+	ROM_REGION( 0x400000, "gfx", 0 )
+	ROM_LOAD16_BYTE("sgyxz_gfx1.bin", 0x000000, 0x200000, CRC(a60be9f6) SHA1(2298a4b6a2c83b76dc106a1efa19606b298d378a) ) // 'picture 1'
+	ROM_LOAD16_BYTE("sgyxz_gfx2.bin", 0x000001, 0x200000, CRC(6ad9d048) SHA1(d47212d28d0a1ce349e4c59e5d0d99c541b3458e) ) // 'picture 2'
+
+	ROM_REGION( 0x10000, "soundcpu", 0 ) /* Z80 code */
+	ROM_LOAD( "sgyxz_snd2.bin", 0x00000, 0x10000,  CRC(210c376f) SHA1(0d937c86078d0a106f5636b7daf5fc0266c2c2ec) )
+
+	ROM_REGION( 0x040000, "oki", 0 ) /* Samples */
+	ROM_LOAD( "sgyxz_snd1.bin", 0x00000, 0x40000,  CRC(c15ac0f2) SHA1(8d9e5519d9820e4ac4f70555088c80e64d052c9d) )
+ROM_END
+
+
+
+
+
+
 GAME( 1990, fcrash,   ffight,  fcrash,     fcrash,   cps1,     ROT0,   "bootleg (Playmark)", "Final Crash (bootleg of Final Fight)", GAME_SUPPORTS_SAVE )
 GAME( 1991, kodb,     kod,     kodb,       kodb,     cps1,     ROT0,   "bootleg (Playmark)", "The King of Dragons (bootleg)", GAME_NOT_WORKING | GAME_NO_SOUND | GAME_SUPPORTS_SAVE )	// 910731  "ETC"
+GAME( 1990, cawingbl, cawing,  fcrash,     fcrash,   cps1,     ROT0,   "bootleg", "Carrier Air Wing (bootleg with 2xYM2203)", GAME_NOT_WORKING )
+GAME( 199?, sgyxz,    wof,     sgyxz,     fcrash,    cps1,     ROT0,   "bootleg (All-In Electronic)", "Warriors of Fate ('sgyxz' bootleg)", GAME_NOT_WORKING | GAME_NO_SOUND )

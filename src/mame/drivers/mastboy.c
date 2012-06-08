@@ -470,9 +470,9 @@ static VIDEO_START(mastboy)
 	gfx_element_set_source(machine.gfx[0], state->m_vram);
 }
 
-static SCREEN_UPDATE(mastboy)
+static SCREEN_UPDATE_IND16(mastboy)
 {
-	mastboy_state *state = screen->machine().driver_data<mastboy_state>();
+	mastboy_state *state = screen.machine().driver_data<mastboy_state>();
 	int y,x,i;
 	int count = 0x000;
 
@@ -480,7 +480,7 @@ static SCREEN_UPDATE(mastboy)
 	{
 		int coldat = state->m_colram[i+1] |  (state->m_colram[i+0]<<8);
 
-		palette_set_color_rgb(screen->machine(),i/2,pal4bit(coldat>>8),pal4bit(coldat>>12),pal4bit(coldat>>4));
+		palette_set_color_rgb(screen.machine(),i/2,pal4bit(coldat>>8),pal4bit(coldat>>12),pal4bit(coldat>>4));
 	}
 
 	for (y=0;y<32;y++)
@@ -494,12 +494,12 @@ static SCREEN_UPDATE(mastboy)
 
 			if (tileno&0x800)
 			{
-				gfx = screen->machine().gfx[1];
+				gfx = screen.machine().gfx[1];
 				tileno &=0x7ff;
 			}
 			else
 			{
-				gfx = screen->machine().gfx[0];
+				gfx = screen.machine().gfx[0];
 			}
 
 
@@ -891,10 +891,9 @@ static MACHINE_CONFIG_START( mastboy, mastboy_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(6000000.0f / 384.0f / 282.0f)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(2500) /* not accurate */)
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(256, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 256-1, 16, 256-16-1)
-	MCFG_SCREEN_UPDATE(mastboy)
+	MCFG_SCREEN_UPDATE_STATIC(mastboy)
 
 	MCFG_GFXDECODE(mastboy)
 	MCFG_PALETTE_LENGTH(0x100)

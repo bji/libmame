@@ -97,7 +97,6 @@ Notes:
 
 #include "emu.h"
 #include "cpu/m68000/m68000.h"
-#include "deprecat.h"
 #include "cpu/z80/z80.h"
 #include "sound/ay8910.h"
 #include "sound/okim6295.h"
@@ -1268,7 +1267,7 @@ static READ16_HANDLER( ddenlovr_gfxrom_r )
 }
 
 
-static void copylayer(running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, int layer )
+static void copylayer(running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, int layer )
 {
 	dynax_state *state = machine.driver_data<dynax_state>();
 	int x,y;
@@ -1286,25 +1285,25 @@ static void copylayer(running_machine &machine, bitmap_t *bitmap, const rectangl
 
 	if (((state->m_ddenlovr_layer_enable2 << 4) | state->m_ddenlovr_layer_enable) & (1 << layer))
 	{
-		for (y = cliprect->min_y; y <= cliprect->max_y; y++)
+		for (y = cliprect.min_y; y <= cliprect.max_y; y++)
 		{
-			for (x = cliprect->min_x; x <= cliprect->max_x; x++)
+			for (x = cliprect.min_x; x <= cliprect.max_x; x++)
 			{
 				int pen = state->m_ddenlovr_pixmap[layer][512 * ((y + scrolly) & 0x1ff) + ((x + scrollx) & 0x1ff)];
 				if ((pen & transmask) != transpen)
 				{
 					pen &= penmask;
 					pen |= palbase;
-					*BITMAP_ADDR16(bitmap, y, x) = pen;
+					bitmap.pix16(y, x) = pen;
 				}
 			}
 		}
 	}
 }
 
-SCREEN_UPDATE(ddenlovr)
+SCREEN_UPDATE_IND16(ddenlovr)
 {
-	dynax_state *state = screen->machine().driver_data<dynax_state>();
+	dynax_state *state = screen.machine().driver_data<dynax_state>();
 
 	static const int order[24][4] =
 	{
@@ -1321,7 +1320,7 @@ SCREEN_UPDATE(ddenlovr)
 
 #if 0
 	static int base = 0x0;
-	const UINT8 *gfx = screen->machine().region("blitter")->base();
+	const UINT8 *gfx = screen.machine().region("blitter")->base();
 	int next;
 	memset(state->m_ddenlovr_pixmap[0], 0, 512 * 512);
 	memset(state->m_ddenlovr_pixmap[1], 0, 512 * 512);
@@ -1332,38 +1331,38 @@ SCREEN_UPDATE(ddenlovr)
 	state->m_ddenlovr_blit_pen_mode = 0;
 	state->m_ddenlovr_blit_y = 5;
 	state->m_ddenlovr_clip_ctrl = 0x0f;
-	next = blit_draw(screen->machine(), base, 0);
+	next = blit_draw(screen.machine(), base, 0);
 	popmessage("GFX %06x", base);
-	if (screen->machine().input().code_pressed(KEYCODE_S)) base = next;
-	if (screen->machine().input().code_pressed_once(KEYCODE_X)) base = next;
-	if (screen->machine().input().code_pressed(KEYCODE_C)) { base--; while ((gfx[base] & 0xf0) != 0x30) base--; }
-	if (screen->machine().input().code_pressed(KEYCODE_V)) { base++; while ((gfx[base] & 0xf0) != 0x30) base++; }
-	if (screen->machine().input().code_pressed_once(KEYCODE_D)) { base--; while ((gfx[base] & 0xf0) != 0x30) base--; }
-	if (screen->machine().input().code_pressed_once(KEYCODE_F)) { base++; while ((gfx[base] & 0xf0) != 0x30) base++; }
+	if (screen.machine().input().code_pressed(KEYCODE_S)) base = next;
+	if (screen.machine().input().code_pressed_once(KEYCODE_X)) base = next;
+	if (screen.machine().input().code_pressed(KEYCODE_C)) { base--; while ((gfx[base] & 0xf0) != 0x30) base--; }
+	if (screen.machine().input().code_pressed(KEYCODE_V)) { base++; while ((gfx[base] & 0xf0) != 0x30) base++; }
+	if (screen.machine().input().code_pressed_once(KEYCODE_D)) { base--; while ((gfx[base] & 0xf0) != 0x30) base--; }
+	if (screen.machine().input().code_pressed_once(KEYCODE_F)) { base++; while ((gfx[base] & 0xf0) != 0x30) base++; }
 #endif
 
-	bitmap_fill(bitmap, cliprect, state->m_ddenlovr_bgcolor);
+	bitmap.fill(state->m_ddenlovr_bgcolor, cliprect);
 
 #ifdef MAME_DEBUG
-	if (screen->machine().input().code_pressed(KEYCODE_Z))
+	if (screen.machine().input().code_pressed(KEYCODE_Z))
 	{
 		int mask, mask2;
 
 		mask = 0;
 
-		if (screen->machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
-		if (screen->machine().input().code_pressed(KEYCODE_W))	mask |= 2;
-		if (screen->machine().input().code_pressed(KEYCODE_E))	mask |= 4;
-		if (screen->machine().input().code_pressed(KEYCODE_R))	mask |= 8;
+		if (screen.machine().input().code_pressed(KEYCODE_Q))	mask |= 1;
+		if (screen.machine().input().code_pressed(KEYCODE_W))	mask |= 2;
+		if (screen.machine().input().code_pressed(KEYCODE_E))	mask |= 4;
+		if (screen.machine().input().code_pressed(KEYCODE_R))	mask |= 8;
 
 		mask2 = 0;
 
 		if (state->m_extra_layers)
 		{
-			if (screen->machine().input().code_pressed(KEYCODE_A))	mask2 |= 1;
-			if (screen->machine().input().code_pressed(KEYCODE_S))	mask2 |= 2;
-			if (screen->machine().input().code_pressed(KEYCODE_D))	mask2 |= 4;
-			if (screen->machine().input().code_pressed(KEYCODE_F))	mask2 |= 8;
+			if (screen.machine().input().code_pressed(KEYCODE_A))	mask2 |= 1;
+			if (screen.machine().input().code_pressed(KEYCODE_S))	mask2 |= 2;
+			if (screen.machine().input().code_pressed(KEYCODE_D))	mask2 |= 4;
+			if (screen.machine().input().code_pressed(KEYCODE_F))	mask2 |= 8;
 		}
 
 		if (mask || mask2)
@@ -1382,10 +1381,10 @@ SCREEN_UPDATE(ddenlovr)
 		pri = 0;
 	}
 
-	copylayer(screen->machine(), bitmap, cliprect, order[pri][0]);
-	copylayer(screen->machine(), bitmap, cliprect, order[pri][1]);
-	copylayer(screen->machine(), bitmap, cliprect, order[pri][2]);
-	copylayer(screen->machine(), bitmap, cliprect, order[pri][3]);
+	copylayer(screen.machine(), bitmap, cliprect, order[pri][0]);
+	copylayer(screen.machine(), bitmap, cliprect, order[pri][1]);
+	copylayer(screen.machine(), bitmap, cliprect, order[pri][2]);
+	copylayer(screen.machine(), bitmap, cliprect, order[pri][3]);
 
 	if (state->m_extra_layers)
 	{
@@ -1397,10 +1396,10 @@ SCREEN_UPDATE(ddenlovr)
 			pri = 0;
 		}
 
-		copylayer(screen->machine(), bitmap, cliprect, order[pri][0] + 4);
-		copylayer(screen->machine(), bitmap, cliprect, order[pri][1] + 4);
-		copylayer(screen->machine(), bitmap, cliprect, order[pri][2] + 4);
-		copylayer(screen->machine(), bitmap, cliprect, order[pri][3] + 4);
+		copylayer(screen.machine(), bitmap, cliprect, order[pri][0] + 4);
+		copylayer(screen.machine(), bitmap, cliprect, order[pri][1] + 4);
+		copylayer(screen.machine(), bitmap, cliprect, order[pri][2] + 4);
+		copylayer(screen.machine(), bitmap, cliprect, order[pri][3] + 4);
 	}
 
 	state->m_ddenlovr_layer_enable = enab;
@@ -1750,7 +1749,7 @@ static ADDRESS_MAP_START( quiz365_map, AS_PROGRAM, 16 )
 
 	AM_RANGE(0x3002c0, 0x3002c1) AM_DEVREADWRITE8_MODERN("oki", okim6295_device, read, write, 0x00ff)// Sound
 	AM_RANGE(0x300300, 0x300303) AM_DEVWRITE8("ymsnd", ym2413_w, 0x00ff)
-	AM_RANGE(0x300340, 0x30035f) AM_DEVREADWRITE8("rtc", msm6242_r, msm6242_w, 0x00ff)	// 6242RTC
+	AM_RANGE(0x300340, 0x30035f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write,0x00ff)
 	AM_RANGE(0x300380, 0x300383) AM_DEVWRITE8("aysnd", ay8910_address_data_w, 0x00ff)
 	AM_RANGE(0x300384, 0x300385) AM_DEVREAD8("aysnd", ay8910_r, 0x00ff)
 	AM_RANGE(0x3003c2, 0x3003c3) AM_DEVWRITE("oki", quiz365_oki_bank1_w)
@@ -1804,7 +1803,7 @@ static ADDRESS_MAP_START( ddenlovj_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x300080, 0x300083) AM_WRITE(ddenlovr_blitter_w)
 	AM_RANGE(0x300086, 0x300087) AM_READ(ddenlovr_gfxrom_r)								// Video Chip
 	AM_RANGE(0x3000c0, 0x3000c3) AM_DEVWRITE8("ymsnd", ym2413_w, 0x00ff)
-	AM_RANGE(0x300100, 0x30011f) AM_DEVREADWRITE8("rtc", msm6242_r, msm6242_w, 0x00ff)	// 6242RTC
+	AM_RANGE(0x300100, 0x30011f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write,0x00ff)
 	AM_RANGE(0x300140, 0x300143) AM_DEVWRITE8("aysnd", ay8910_address_data_w, 0x00ff)
 	AM_RANGE(0x300180, 0x300181) AM_READ_PORT("P1")
 	AM_RANGE(0x300182, 0x300183) AM_READ_PORT("P2")
@@ -1875,7 +1874,7 @@ static ADDRESS_MAP_START( ddenlovrk_map, AS_PROGRAM, 16 )
 	AM_RANGE(0xe0030c, 0xe0030d) AM_WRITE(ddenlovr_coincounter_1_w)							//
 
 	AM_RANGE(0xe00400, 0xe00403) AM_DEVWRITE8("ymsnd", ym2413_w, 0x00ff)
-	AM_RANGE(0xe00500, 0xe0051f) AM_DEVREADWRITE8("rtc", msm6242_r,	msm6242_w, 0x00ff)		// 6242RTC
+	AM_RANGE(0xe00500, 0xe0051f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write,0x00ff)
 	AM_RANGE(0xe00600, 0xe00603) AM_DEVWRITE8("aysnd", ay8910_address_data_w, 0x00ff)
 	AM_RANGE(0xe00604, 0xe00605) AM_DEVREAD8("aysnd", ay8910_r, 0x00ff)
 	AM_RANGE(0xe00700, 0xe00701) AM_DEVREADWRITE8_MODERN("oki", okim6295_device, read, write, 0x00ff)	// Sound
@@ -1913,7 +1912,7 @@ static ADDRESS_MAP_START( ddenlovr_map, AS_PROGRAM, 16 )
 	AM_RANGE(0xe0030c, 0xe0030d) AM_WRITE(ddenlovr_coincounter_1_w)							//
 
 	AM_RANGE(0xe00400, 0xe00403) AM_DEVWRITE8("ymsnd", ym2413_w, 0x00ff)
-	AM_RANGE(0xe00500, 0xe0051f) AM_DEVREADWRITE8("rtc", msm6242_r, msm6242_w, 0x00ff)		// 6242RTC
+	AM_RANGE(0xe00500, 0xe0051f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write,0x00ff)
 	AM_RANGE(0xe00600, 0xe00603) AM_DEVWRITE8("aysnd", ay8910_address_data_w, 0x00ff)
 	AM_RANGE(0xe00604, 0xe00605) AM_DEVREAD8("aysnd", ay8910_r, 0x00ff)
 	AM_RANGE(0xe00700, 0xe00701) AM_DEVREADWRITE8_MODERN("oki", okim6295_device, read, write, 0x00ff)	// Sound
@@ -1993,7 +1992,7 @@ static ADDRESS_MAP_START( nettoqc_map, AS_PROGRAM, 16 )
 	AM_RANGE(0x300080, 0x300083) AM_WRITE(ddenlovr_blitter_w)
 	AM_RANGE(0x300086, 0x300087) AM_READ(ddenlovr_gfxrom_r)									// Video Chip
 	AM_RANGE(0x3000c0, 0x3000c3) AM_DEVWRITE8("ymsnd", ym2413_w, 0x00ff)
-	AM_RANGE(0x300100, 0x30011f) AM_DEVREADWRITE8("rtc", msm6242_r, msm6242_w, 0x00ff)		// 6242RTC
+	AM_RANGE(0x300100, 0x30011f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write,0x00ff)
 	AM_RANGE(0x300140, 0x300143) AM_DEVWRITE8("aysnd", ay8910_address_data_w, 0x00ff)
 	AM_RANGE(0x300180, 0x300181) AM_READ_PORT("P1")
 	AM_RANGE(0x300182, 0x300183) AM_READ_PORT("P2")
@@ -2069,7 +2068,7 @@ static ADDRESS_MAP_START( quizchq_portmap, AS_IO, 8 )
 	AM_RANGE(0x96, 0x96) AM_WRITE(ddenlovr_layer_enable_w)
 	AM_RANGE(0x98, 0x98) AM_READ(unk_r)							// ? must be 78 on startup
 
-	AM_RANGE(0xa0, 0xaf) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0xa0, 0xaf) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0xc0, 0xc0) AM_DEVWRITE("oki", quizchq_oki_bank_w)
 	AM_RANGE(0xc2, 0xc2) AM_WRITENOP						// enables palette RAM at 8000
 ADDRESS_MAP_END
@@ -2092,7 +2091,7 @@ static ADDRESS_MAP_START( rongrong_portmap, AS_IO, 8 )
 	AM_RANGE(0x1c, 0x1c) AM_READ(rongrong_input_r)
 	AM_RANGE(0x1e, 0x1e) AM_WRITE(rongrong_select_w)
 
-	AM_RANGE(0x20, 0x2f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x20, 0x2f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x40, 0x40) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
 	AM_RANGE(0x60, 0x61) AM_DEVWRITE("ymsnd", ym2413_w)
 
@@ -2198,7 +2197,7 @@ ADDRESS_MAP_END
 
 static ADDRESS_MAP_START( mmpanic_portmap, AS_IO, 8 )
 	ADDRESS_MAP_GLOBAL_MASK(0xff)
-	AM_RANGE(0x00, 0x0f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x00, 0x0f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 
 	// Layers 0-3:
 	AM_RANGE(0x20, 0x23) AM_WRITE(ddenlovr_palette_base_w)
@@ -2368,7 +2367,7 @@ static ADDRESS_MAP_START( funkyfig_portmap, AS_IO, 8 )
 	AM_RANGE(0x1e, 0x1e) AM_WRITE(funkyfig_rombank_w)
 	AM_RANGE(0x20, 0x21) AM_WRITE(funkyfig_blitter_w)
 	AM_RANGE(0x23, 0x23) AM_READ(rongrong_gfxrom_r)		// Video Chip
-	AM_RANGE(0x40, 0x4f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x40, 0x4f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 
 	// Layers 0-3:
 	AM_RANGE(0x60, 0x63) AM_WRITE(ddenlovr_palette_base_w)
@@ -2558,7 +2557,7 @@ static ADDRESS_MAP_START( hanakanz_portmap, AS_IO, 8 )
 	AM_RANGE(0x96, 0x96) AM_READ(hanakanz_rand_r)
 	AM_RANGE(0xa0, 0xa1) AM_DEVWRITE("ymsnd", ym2413_w)
 	AM_RANGE(0xc0, 0xc0) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
-	AM_RANGE(0xe0, 0xef) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0xe0, 0xef) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 ADDRESS_MAP_END
 
 
@@ -2579,7 +2578,7 @@ static ADDRESS_MAP_START( hkagerou_portmap, AS_IO, 8 )
 	AM_RANGE(0xb4, 0xb4) AM_WRITE(hanakanz_keyb_w)
 	AM_RANGE(0xb6, 0xb6) AM_READ(hanakanz_rand_r)
 	AM_RANGE(0xc0, 0xc0) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
-	AM_RANGE(0xe0, 0xef) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0xe0, 0xef) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 ADDRESS_MAP_END
 
 
@@ -2613,7 +2612,7 @@ static ADDRESS_MAP_START( mjreach1_portmap, AS_IO, 8 )
 	AM_RANGE(0x97, 0x97) AM_WRITE(hanakanz_coincounter_w)
 	AM_RANGE(0xa0, 0xa1) AM_DEVWRITE("ymsnd", ym2413_w)
 	AM_RANGE(0xc0, 0xc0) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
-	AM_RANGE(0xe0, 0xef) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0xe0, 0xef) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 ADDRESS_MAP_END
 
 
@@ -2746,7 +2745,7 @@ static ADDRESS_MAP_START( mjchuuka_portmap, AS_IO, 8 )	// 16 bit I/O
 	AM_RANGE(0x64, 0x64) AM_MIRROR(0xff00) AM_READ_PORT("DSW5")		// DSW 1-4 high bits
 	AM_RANGE(0x80, 0x80) AM_MIRROR(0xff00) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
 	AM_RANGE(0xa0, 0xa1) AM_MIRROR(0xff00) AM_DEVWRITE("ymsnd", ym2413_w)
-	AM_RANGE(0xc0, 0xcf) AM_MIRROR(0xff00) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0xc0, 0xcf) AM_MIRROR(0xff00) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0xe0, 0xe1) AM_MIRROR(0xff00) AM_DEVWRITE("aysnd", ay8910_address_data_w)
 ADDRESS_MAP_END
 
@@ -2866,7 +2865,7 @@ static ADDRESS_MAP_START( mjmyster_portmap, AS_IO, 8 )
 	AM_RANGE(0x44, 0x44) AM_DEVREAD("aysnd", ay8910_r)
 	AM_RANGE(0x46, 0x46) AM_DEVWRITE("aysnd", ay8910_data_w)
 	AM_RANGE(0x48, 0x48) AM_DEVWRITE("aysnd", ay8910_address_w)
-	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x80, 0x83) AM_WRITE(ddenlovr_palette_base_w)
 	AM_RANGE(0x84, 0x87) AM_WRITE(ddenlovr_palette_mask_w)
 	AM_RANGE(0x88, 0x8b) AM_WRITE(ddenlovr_transparency_pen_w)
@@ -3045,7 +3044,7 @@ static ADDRESS_MAP_START( hginga_portmap, AS_IO, 8 )
 	AM_RANGE(0x41, 0x41) AM_WRITE(hginga_coins_w)
 	AM_RANGE(0x42, 0x42) AM_READ(hginga_coins_r)
 	AM_RANGE(0x43, 0x43) AM_READ(hginga_input_r)
-	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x80, 0x80) AM_WRITE(hginga_80_w)
 	AM_RANGE(0xa0, 0xa3) AM_WRITE(ddenlovr_palette_base_w)
 	AM_RANGE(0xa4, 0xa7) AM_WRITE(ddenlovr_palette_mask_w)
@@ -3153,7 +3152,7 @@ static ADDRESS_MAP_START( hgokou_portmap, AS_IO, 8 )
 	AM_RANGE(0x03, 0x03) AM_READ(rongrong_gfxrom_r)
 	AM_RANGE(0x1c, 0x1c) AM_READNOP AM_WRITE(mjmyster_rambank_w)		// ? ack on RTC int
 	AM_RANGE(0x1e, 0x1e) AM_WRITE(hginga_rombank_w)
-	AM_RANGE(0x20, 0x2f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x20, 0x2f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x40, 0x43) AM_WRITE(ddenlovr_palette_base_w)
 	AM_RANGE(0x44, 0x47) AM_WRITE(ddenlovr_palette_mask_w)
 	AM_RANGE(0x48, 0x4b) AM_WRITE(ddenlovr_transparency_pen_w)
@@ -3219,7 +3218,7 @@ static ADDRESS_MAP_START( hgokbang_portmap, AS_IO, 8 )
 	AM_RANGE(0x41, 0x41) AM_WRITE(hgokou_input_w)
 	AM_RANGE(0x42, 0x42) AM_READ(hgokou_input_r)
 	AM_RANGE(0x43, 0x43) AM_READ(hgokbang_input_r)
-	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0xa0, 0xa3) AM_WRITE(ddenlovr_palette_base_w)
 	AM_RANGE(0xa4, 0xa7) AM_WRITE(ddenlovr_palette_mask_w)
 	AM_RANGE(0xa8, 0xab) AM_WRITE(ddenlovr_transparency_pen_w)
@@ -3361,7 +3360,7 @@ static ADDRESS_MAP_START( mjmywrld_portmap, AS_IO, 8 )
 	AM_RANGE(0x44, 0x44) AM_DEVREAD("aysnd", ay8910_r)
 	AM_RANGE(0x46, 0x46) AM_DEVWRITE("aysnd", ay8910_data_w)
 	AM_RANGE(0x48, 0x48) AM_DEVWRITE("aysnd", ay8910_address_w)
-	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x60, 0x6f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x80, 0x83) AM_WRITE(ddenlovr_palette_base_w)
 	AM_RANGE(0x84, 0x87) AM_WRITE(ddenlovr_palette_mask_w)
 	AM_RANGE(0x88, 0x8b) AM_WRITE(ddenlovr_transparency_pen_w)
@@ -3462,7 +3461,7 @@ static ADDRESS_MAP_START( akamaru_map, AS_PROGRAM, 16 )
 	AM_RANGE(0xe0030c, 0xe0030d) AM_WRITE(ddenlovr_coincounter_1_w)							//
 
 	AM_RANGE(0xe00400, 0xe00403) AM_DEVWRITE8("ymsnd", ym2413_w, 0x00ff)
-	AM_RANGE(0xe00500, 0xe0051f) AM_DEVREADWRITE8("rtc", msm6242_r, msm6242_w, 0x00ff)		// 6242RTC
+	AM_RANGE(0xe00500, 0xe0051f) AM_DEVREADWRITE8_MODERN("rtc", msm6242_device, read, write, 0x00ff)
 	AM_RANGE(0xe00600, 0xe00603) AM_DEVWRITE8("aysnd", ay8910_address_data_w, 0x00ff)
 	AM_RANGE(0xe00604, 0xe00605) AM_DEVREAD8("aysnd", ay8910_r, 0x00ff)
 	AM_RANGE(0xe00700, 0xe00701) AM_DEVREADWRITE8_MODERN("oki", okim6295_device, read, write, 0x00ff)	// Sound
@@ -3556,7 +3555,7 @@ static ADDRESS_MAP_START( mjflove_portmap, AS_IO, 8 )	// 16 bit I/O
 	AM_RANGE(0x0181, 0x0181) AM_WRITENOP						// ? int. enable
 	AM_RANGE(0x0184, 0x0184) AM_WRITE(mjflove_coincounter_w)
 	AM_RANGE(0x0200, 0x0201) AM_DEVWRITE("ymsnd", ym2413_w)
-	AM_RANGE(0x0280, 0x028f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x0280, 0x028f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x0300, 0x0301) AM_DEVWRITE("aysnd", ay8910_address_data_w)
 	AM_RANGE(0x0380, 0x0380) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
 ADDRESS_MAP_END
@@ -3600,7 +3599,7 @@ static ADDRESS_MAP_START( jongtei_portmap, AS_IO, 8 )
 	AM_RANGE(0x63, 0x64) AM_READ(hanakanz_gfxrom_r)
 	AM_RANGE(0x80, 0x81) AM_DEVWRITE("ymsnd", ym2413_w)
 	AM_RANGE(0xa0, 0xa0) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
-	AM_RANGE(0xc0, 0xcf) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0xc0, 0xcf) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 ADDRESS_MAP_END
 
 
@@ -3676,7 +3675,7 @@ static ADDRESS_MAP_START( sryudens_portmap, AS_IO, 8 )
 	AM_RANGE(0x43, 0x43) AM_READ(rongrong_gfxrom_r)
 	AM_RANGE(0x50, 0x50) AM_READ(hanakanz_rand_r)
 	AM_RANGE(0x70, 0x70) AM_DEVWRITE("oki", quizchq_oki_bank_w)
-	AM_RANGE(0x80, 0x8f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x80, 0x8f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0x90, 0x90) AM_READ_PORT("DSW1")
 	AM_RANGE(0x91, 0x91) AM_READ_PORT("DSW2")
 	AM_RANGE(0x92, 0x92) AM_READ_PORT("DSW4")
@@ -3803,7 +3802,7 @@ static ADDRESS_MAP_START( daimyojn_portmap, AS_IO, 8 )
 	AM_RANGE(0x40, 0x40) AM_WRITE(daimyojn_blitter_data_palette_w)
 	AM_RANGE(0x42, 0x44) AM_READ(hanakanz_gfxrom_r)
 	AM_RANGE(0x8a, 0x8b) AM_READ(daimyojn_year_hack_r)	// ?
-	AM_RANGE(0x80, 0x8f) AM_DEVREADWRITE("rtc", msm6242_r, msm6242_w)	// 6242RTC
+	AM_RANGE(0x80, 0x8f) AM_DEVREADWRITE_MODERN("rtc", msm6242_device, read, write)
 	AM_RANGE(0xa0, 0xa1) AM_DEVWRITE("ymsnd", ym2413_w)
 	AM_RANGE(0xa2, 0xa2) AM_DEVREADWRITE_MODERN("oki", okim6295_device, read, write)
 	AM_RANGE(0xa8, 0xa8) AM_READ_PORT("SYSTEM")
@@ -7790,6 +7789,12 @@ static MACHINE_START( sryudens )
                             Don Den Lover Vol.1
 ***************************************************************************/
 
+static MSM6242_INTERFACE( ddenlovr_rtc_intf )
+{
+	DEVCB_NULL
+};
+
+
 static MACHINE_CONFIG_START( ddenlovr, dynax_state )
 
 	/* basic machine hardware */
@@ -7804,10 +7809,9 @@ static MACHINE_CONFIG_START( ddenlovr, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(336, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 5, 256-16+5-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x100)
 
@@ -7827,7 +7831,7 @@ static MACHINE_CONFIG_START( ddenlovr, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", ddenlovr_rtc_intf)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( ddenlovj, ddenlovr )
@@ -7892,25 +7896,28 @@ MACHINE_CONFIG_END
 static INTERRUPT_GEN( quizchq_irq )
 {
 	dynax_state *state = device->machine().driver_data<dynax_state>();
+//  int scanline = param;
 
 	/* I haven't found a irq ack register, so I need this kludge to
        make sure I don't lose any interrupt generated by the blitter,
        otherwise quizchq would lock up. */
-	if (downcast<cpu_device *>(device)->input_state(0))
-		return;
+//  if (downcast<cpu_device *>(state->m_maincpu)->input_state(0))
+//      return;
 
-	if ((++state->m_irq_count % 60) == 0)
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xfc);
-	else
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xee);
+	device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xee);
 }
 
-#ifdef UNUSED_FUNCTION
-static INTERRUPT_GEN( rtc_irq )
+static WRITE_LINE_DEVICE_HANDLER( quizchq_rtc_irq )
 {
-    device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xfc);
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	device_set_input_line_and_vector(drvstate->m_maincpu, 0, HOLD_LINE, 0xfc);
 }
-#endif
+
+static MSM6242_INTERFACE( quizchq_rtc_intf )
+{
+	DEVCB_LINE(quizchq_rtc_irq)
+};
 
 static MACHINE_CONFIG_START( quizchq, dynax_state )
 
@@ -7918,7 +7925,7 @@ static MACHINE_CONFIG_START( quizchq, dynax_state )
 	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2)	/* Verified */
 	MCFG_CPU_PROGRAM_MAP(quizchq_map)
 	MCFG_CPU_IO_MAP(quizchq_portmap)
-	MCFG_CPU_VBLANK_INT("screen", quizchq_irq)
+	MCFG_CPU_VBLANK_INT("screen",quizchq_irq)
 
 	MCFG_MACHINE_START(rongrong)
 	MCFG_MACHINE_RESET(ddenlovr)
@@ -7927,10 +7934,9 @@ static MACHINE_CONFIG_START( quizchq, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(336, 256)
+	MCFG_SCREEN_SIZE(336, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 5, 256-16+5-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x100)
 
@@ -7947,7 +7953,7 @@ static MACHINE_CONFIG_START( quizchq, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.00)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", quizchq_rtc_intf)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( rongrong, quizchq )
@@ -7967,24 +7973,37 @@ MACHINE_CONFIG_END
 /*  the CPU is in Interrupt Mode 0:
 
     RST 08 is vblank
-    RST 18 is from the blitter
-    RST 20 is from the 6242RTC
+    RST 18 is from the 6242RTC
+    RST 20 is from the link device?
  */
+
 static INTERRUPT_GEN( mmpanic_irq )
 {
 	dynax_state *state = device->machine().driver_data<dynax_state>();
+	//int scanline = param;
 
 	/* I haven't found a irq ack register, so I need this kludge to
        make sure I don't lose any interrupt generated by the blitter,
-       otherwise the game would lock up. */
-	if (downcast<cpu_device *>(device)->input_state(0))
-		return;
+       otherwise quizchq would lock up. */
+	//if (downcast<cpu_device *>(state->m_maincpu)->input_state(0))
+	//  return;
 
-	if ((++state->m_irq_count % 60) == 0)
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xe7);	// RST 20, clock
-	else
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xcf);	// RST 08, vblank
+	device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xcf); // RST 08, vblank
 }
+
+
+static WRITE_LINE_DEVICE_HANDLER( mmpanic_rtc_irq )
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	device_set_input_line_and_vector(drvstate->m_maincpu, 0, HOLD_LINE, 0xdf); // RST 18, clock
+}
+
+static MSM6242_INTERFACE( mmpanic_rtc_intf )
+{
+	DEVCB_LINE(mmpanic_rtc_irq)
+};
+
 
 static MACHINE_CONFIG_START( mmpanic, dynax_state )
 
@@ -7992,7 +8011,7 @@ static MACHINE_CONFIG_START( mmpanic, dynax_state )
 	MCFG_CPU_ADD("maincpu", Z80, 8000000)
 	MCFG_CPU_PROGRAM_MAP(mmpanic_map)
 	MCFG_CPU_IO_MAP(mmpanic_portmap)
-	MCFG_CPU_VBLANK_INT("screen", mmpanic_irq)
+	MCFG_CPU_VBLANK_INT("screen",mmpanic_irq)
 
 	MCFG_CPU_ADD("soundcpu", Z80, 3579545)
 	MCFG_CPU_PROGRAM_MAP(mmpanic_sound_map)
@@ -8006,10 +8025,9 @@ static MACHINE_CONFIG_START( mmpanic, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(336, 256)
+	MCFG_SCREEN_SIZE(336, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 5, 256-16+5-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x100)
 
@@ -8029,7 +8047,7 @@ static MACHINE_CONFIG_START( mmpanic, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", mmpanic_rtc_intf)
 MACHINE_CONFIG_END
 
 
@@ -8044,6 +8062,7 @@ MACHINE_CONFIG_END
     0xe0 is vblank
     0xe2 is from the 6242RTC
  */
+
 static INTERRUPT_GEN( hanakanz_irq )
 {
 	dynax_state *state = device->machine().driver_data<dynax_state>();
@@ -8051,14 +8070,29 @@ static INTERRUPT_GEN( hanakanz_irq )
 	/* I haven't found a irq ack register, so I need this kludge to
        make sure I don't lose any interrupt generated by the blitter,
        otherwise quizchq would lock up. */
-	if (downcast<cpu_device *>(device)->input_state(0))
-		return;
+	//if (downcast<cpu_device *>(state->m_maincpu)->input_state(0))
+	//  return;
 
-	if ((++state->m_irq_count % 60) == 0)
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xe2);
-	else
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xe0);
+	device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xe0);
 }
+
+static WRITE_LINE_DEVICE_HANDLER(hanakanz_rtc_irq)
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	/* I haven't found a irq ack register, so I need this kludge to
+       make sure I don't lose any interrupt generated by the blitter,
+       otherwise quizchq would lock up. */
+	//if (downcast<cpu_device *>(drvstate->m_maincpu)->input_state(0))
+	//  return;
+
+	device_set_input_line_and_vector(drvstate->m_maincpu, 0, HOLD_LINE, 0xe2);
+}
+
+static MSM6242_INTERFACE( hanakanz_rtc_intf )
+{
+	DEVCB_LINE(hanakanz_rtc_irq)
+};
 
 static MACHINE_CONFIG_START( hanakanz, dynax_state )
 
@@ -8075,10 +8109,9 @@ static MACHINE_CONFIG_START( hanakanz, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(336, 256)
+	MCFG_SCREEN_SIZE(336, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 5, 256-11-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x200)
 
@@ -8095,7 +8128,7 @@ static MACHINE_CONFIG_START( hanakanz, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", hanakanz_rtc_intf)
 MACHINE_CONFIG_END
 
 static MACHINE_CONFIG_DERIVED( hkagerou, hanakanz )
@@ -8129,14 +8162,29 @@ static INTERRUPT_GEN( mjchuuka_irq )
 	/* I haven't found a irq ack register, so I need this kludge to
        make sure I don't lose any interrupt generated by the blitter,
        otherwise quizchq would lock up. */
-	if (downcast<cpu_device *>(device)->input_state(0))
-		return;
+	//if (downcast<cpu_device *>(state->m_maincpu)->input_state(0))
+	//  return;
 
-	if ((++state->m_irq_count % 60) == 0)
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xfa);
-	else
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xf8);
+	device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xf8);
 }
+
+static WRITE_LINE_DEVICE_HANDLER(mjchuuka_rtc_irq)
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	/* I haven't found a irq ack register, so I need this kludge to
+       make sure I don't lose any interrupt generated by the blitter,
+       otherwise quizchq would lock up. */
+	//if (downcast<cpu_device *>(drvstate->m_maincpu)->input_state(0))
+	//  return;
+
+	device_set_input_line_and_vector(drvstate->m_maincpu, 0, HOLD_LINE, 0xfa);
+}
+
+static MSM6242_INTERFACE( mjchuuka_rtc_intf )
+{
+	DEVCB_LINE(mjchuuka_rtc_irq)
+};
 
 
 static MACHINE_CONFIG_DERIVED( mjchuuka, hanakanz )
@@ -8144,7 +8192,10 @@ static MACHINE_CONFIG_DERIVED( mjchuuka, hanakanz )
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_IO_MAP(mjchuuka_portmap)
-	MCFG_CPU_VBLANK_INT("screen", mjchuuka_irq)
+	MCFG_CPU_VBLANK_INT("screen",mjchuuka_irq)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(mjchuuka_rtc_intf)
 
 	MCFG_SOUND_ADD("aysnd", AY8910, 1789772)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
@@ -8155,9 +8206,12 @@ static MACHINE_CONFIG_DERIVED( funkyfig, mmpanic )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(funkyfig_map)
 	MCFG_CPU_IO_MAP(funkyfig_portmap)
-	MCFG_CPU_VBLANK_INT("screen", mjchuuka_irq)
+	MCFG_CPU_VBLANK_INT("screen",mjchuuka_irq)
 
 	MCFG_MACHINE_START(funkyfig)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(mjchuuka_rtc_intf)
 
 	MCFG_CPU_MODIFY("soundcpu")
 	MCFG_CPU_IO_MAP(funkyfig_sound_portmap)
@@ -8182,24 +8236,23 @@ MACHINE_CONFIG_END
     blitter interrupt I guess (nested blitter irqs?). Hence the hack
     to trigger the blitter irq every frame.
  */
-static INTERRUPT_GEN( mjmyster_irq )
+
+static TIMER_DEVICE_CALLBACK( mjmyster_irq )
 {
+	dynax_state *state = timer.machine().driver_data<dynax_state>();
+	int scanline = param;
+
 	/* I haven't found a irq ack register, so I need this kludge to
        make sure I don't lose any interrupt generated by the blitter,
        otherwise quizchq would lock up. */
-	if (downcast<cpu_device *>(device)->input_state(0))
+	if (downcast<cpu_device *>(state->m_maincpu)->input_state(0))
 		return;
 
-	switch (cpu_getiloops(device))
-	{
-		case 0:	device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xf8);	break;
-		case 1:	device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xfa);	break;
-	}
-}
+	if(scanline == 245)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xf8);
 
-static INTERRUPT_GEN( rtc_nmi_irq )
-{
-	device_set_input_line(device, INPUT_LINE_NMI, PULSE_LINE);
+	if(scanline == 0)
+		device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xfa);
 }
 
 static const ay8910_interface mjmyster_ay8910_interface =
@@ -8212,14 +8265,37 @@ static const ay8910_interface mjmyster_ay8910_interface =
 	DEVCB_HANDLER(ddenlovr_select_w)
 };
 
+static WRITE_LINE_DEVICE_HANDLER(mjmyster_rtc_irq)
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	/* I haven't found a irq ack register, so I need this kludge to
+       make sure I don't lose any interrupt generated by the blitter,
+       otherwise quizchq would lock up. */
+	//if (downcast<cpu_device *>(drvstate->m_maincpu)->input_state(0))
+	//  return;
+
+	device_set_input_line(drvstate->m_maincpu, INPUT_LINE_NMI, PULSE_LINE);
+}
+
+static MSM6242_INTERFACE( mjmyster_rtc_intf )
+{
+	DEVCB_LINE(mjmyster_rtc_irq)
+};
+
+
 static MACHINE_CONFIG_DERIVED( mjmyster, quizchq )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("maincpu")
+	MCFG_DEVICE_REMOVE("maincpu")
+
+	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2)	/* Verified */
 	MCFG_CPU_PROGRAM_MAP(mjmyster_map)
 	MCFG_CPU_IO_MAP(mjmyster_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(mjmyster_irq, 2)
-	MCFG_CPU_PERIODIC_INT(rtc_nmi_irq, 1)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mjmyster_irq, "screen", 0, 1)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(mjmyster_rtc_intf)
 
 	MCFG_MACHINE_START(mjmyster)
 
@@ -8241,17 +8317,15 @@ MACHINE_CONFIG_END
 static INTERRUPT_GEN( hginga_irq )
 {
 	dynax_state *state = device->machine().driver_data<dynax_state>();
+//  int scanline = param;
 
 	/* I haven't found a irq ack register, so I need this kludge to
        make sure I don't lose any interrupt generated by the blitter,
        otherwise hginga would lock up. */
-	if (downcast<cpu_device *>(device)->input_state(0))
-		return;
+//  if (downcast<cpu_device *>(state->m_maincpu)->input_state(0))
+//      return;
 
-	if ((++state->m_irq_count % 60) == 0)
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xee);
-	else
-		device_set_input_line_and_vector(device, 0, HOLD_LINE, 0xf8);
+	device_set_input_line_and_vector(state->m_maincpu, 0, HOLD_LINE, 0xf8);
 }
 
 static const ay8910_interface hginga_ay8910_interface =
@@ -8263,13 +8337,35 @@ static const ay8910_interface hginga_ay8910_interface =
 	DEVCB_NULL,						DEVCB_HANDLER(ddenlovr_select_w)		// W
 };
 
+static WRITE_LINE_DEVICE_HANDLER(hginga_rtc_irq)
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	/* I haven't found a irq ack register, so I need this kludge to
+       make sure I don't lose any interrupt generated by the blitter,
+       otherwise quizchq would lock up. */
+	//if (downcast<cpu_device *>(drvstate->m_maincpu)->input_state(0))
+	//  return;
+
+	device_set_input_line_and_vector(drvstate->m_maincpu, 0, HOLD_LINE, 0xee);
+}
+
+static MSM6242_INTERFACE( hginga_rtc_intf )
+{
+	DEVCB_LINE(hginga_rtc_irq)
+};
+
+
 static MACHINE_CONFIG_DERIVED( hginga, quizchq )
 
 	/* basic machine hardware */
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(hginga_map)
 	MCFG_CPU_IO_MAP(hginga_portmap)
-	MCFG_CPU_VBLANK_INT("screen", hginga_irq)
+	MCFG_CPU_VBLANK_INT("screen",hginga_irq)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(hginga_rtc_intf)
 
 	MCFG_MACHINE_START(mjmyster)
 
@@ -8284,7 +8380,10 @@ static MACHINE_CONFIG_DERIVED( hgokou, quizchq )
 	MCFG_CPU_MODIFY("maincpu")
 	MCFG_CPU_PROGRAM_MAP(hgokou_map)
 	MCFG_CPU_IO_MAP(hgokou_portmap)
-	MCFG_CPU_VBLANK_INT("screen", hginga_irq)
+	MCFG_CPU_VBLANK_INT("screen",hginga_irq)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(hginga_rtc_intf)
 
 	MCFG_MACHINE_START(mjmyster)
 
@@ -8312,13 +8411,17 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( mjmyuniv, quizchq )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("maincpu")
+	MCFG_DEVICE_REMOVE("maincpu")
+
+	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2)	/* Verified */
 	MCFG_CPU_PROGRAM_MAP(mjmyster_map)
 	MCFG_CPU_IO_MAP(mjmyster_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(mjmyster_irq, 2)
-	MCFG_CPU_PERIODIC_INT(rtc_nmi_irq, 1)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mjmyster_irq, "screen", 0, 1)
 
 	MCFG_MACHINE_START(mjmyster)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(mjmyster_rtc_intf)
 
 	MCFG_SOUND_ADD("aysnd", AY8910, 1789772)
 	MCFG_SOUND_CONFIG(mjmyster_ay8910_interface)
@@ -8328,46 +8431,59 @@ MACHINE_CONFIG_END
 static MACHINE_CONFIG_DERIVED( mjmyornt, quizchq )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("maincpu")
+	MCFG_DEVICE_REMOVE("maincpu")
+
+	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2)	/* Verified */
+	MCFG_CPU_PROGRAM_MAP(quizchq_map)
 	MCFG_CPU_IO_MAP(mjmyster_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(mjmyster_irq, 2)
-	MCFG_CPU_PERIODIC_INT(rtc_nmi_irq, 1)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", mjmyster_irq, "screen", 0, 1)
 
 	MCFG_MACHINE_START(mjmyster)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(mjmyster_rtc_intf)
 
 	MCFG_SOUND_ADD("aysnd", AY8910, 1789772)
 	MCFG_SOUND_CONFIG(mjmyster_ay8910_interface)
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.30)
 MACHINE_CONFIG_END
 
+
 static INTERRUPT_GEN( mjflove_irq )
 {
 	dynax_state *state = device->machine().driver_data<dynax_state>();
 
-	state->m_mjflove_irq_cause = 1 | (1 << 1);
-
-	switch (cpu_getiloops(device))
-	{
-		case 0:
-			state->m_mjflove_irq_cause &= 1;
-			device_set_input_line(device, 0, HOLD_LINE);
-			break;
-		case 1:
-			state->m_mjflove_irq_cause &= 1 << 1;
-			device_set_input_line(device, 0, HOLD_LINE);
-			break;
-	}
+	state->m_mjflove_irq_cause = 1;
+	device_set_input_line(state->m_maincpu, 0, HOLD_LINE);
 }
+
+static WRITE_LINE_DEVICE_HANDLER(mjflove_rtc_irq)
+{
+	dynax_state *drvstate = device->machine().driver_data<dynax_state>();
+
+	drvstate->m_mjflove_irq_cause = 2;
+	device_set_input_line(drvstate->m_maincpu, 0, HOLD_LINE);
+}
+
+static MSM6242_INTERFACE( mjflove_rtc_intf )
+{
+	DEVCB_LINE(mjflove_rtc_irq)
+};
 
 static MACHINE_CONFIG_DERIVED( mjflove, quizchq )
 
 	/* basic machine hardware */
-	MCFG_CPU_MODIFY("maincpu")
+	MCFG_DEVICE_REMOVE("maincpu")
+
+	MCFG_CPU_ADD("maincpu", Z80, XTAL_16MHz/2)	/* Verified */
 	MCFG_CPU_PROGRAM_MAP(rongrong_map)
 	MCFG_CPU_IO_MAP(mjflove_portmap)
-	MCFG_CPU_VBLANK_INT_HACK(mjflove_irq, 2)
+	MCFG_CPU_VBLANK_INT("screen",mjflove_irq)
 
 	MCFG_MACHINE_START(mjflove)
+
+	MCFG_DEVICE_MODIFY("rtc")
+	MCFG_DEVICE_CONFIG(mjflove_rtc_intf)
 
 	MCFG_VIDEO_START(mjflove)	// blitter commands in the roms are shuffled around
 
@@ -8393,6 +8509,8 @@ static MACHINE_CONFIG_DERIVED( hparadis, quizchq )
 	MCFG_MACHINE_START(hparadis)
 MACHINE_CONFIG_END
 
+
+
 static MACHINE_CONFIG_START( jongtei, dynax_state )
 
 	/* basic machine hardware */
@@ -8408,10 +8526,9 @@ static MACHINE_CONFIG_START( jongtei, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(336, 256)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 5, 256-11-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x200)
 
@@ -8428,7 +8545,7 @@ static MACHINE_CONFIG_START( jongtei, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", hanakanz_rtc_intf)
 MACHINE_CONFIG_END
 
 /***************************************************************************
@@ -8441,7 +8558,7 @@ static MACHINE_CONFIG_START( sryudens, dynax_state )
 	MCFG_CPU_ADD("maincpu",Z80, XTAL_16MHz / 2)	// ?
 	MCFG_CPU_PROGRAM_MAP(sryudens_map)
 	MCFG_CPU_IO_MAP(sryudens_portmap)
-	MCFG_CPU_VBLANK_INT("screen", mjchuuka_irq)
+	MCFG_CPU_VBLANK_INT("screen",mjchuuka_irq)
 
 	MCFG_MACHINE_START(sryudens)
 	MCFG_MACHINE_RESET(ddenlovr)
@@ -8450,10 +8567,9 @@ static MACHINE_CONFIG_START( sryudens, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60.8532)	// VSync 60.8532Hz, HSync 15.2790kHz
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(336, 256)
+	MCFG_SCREEN_SIZE(336, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1, 0+5, 256-12-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x100)
 
@@ -8473,12 +8589,13 @@ static MACHINE_CONFIG_START( sryudens, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", mjchuuka_rtc_intf)
 MACHINE_CONFIG_END
 
 /***************************************************************************
                             Mahjong Daimyojin
 ***************************************************************************/
+
 
 static MACHINE_CONFIG_START( daimyojn, dynax_state )
 
@@ -8495,10 +8612,9 @@ static MACHINE_CONFIG_START( daimyojn, dynax_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(59.7922)	// HSync 15.4248kHz
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
-	MCFG_SCREEN_SIZE(336, 256)
+	MCFG_SCREEN_SIZE(336, 256+22)
 	MCFG_SCREEN_VISIBLE_AREA(0, 336-1-1, 1, 256-15-1)
-	MCFG_SCREEN_UPDATE(ddenlovr)
+	MCFG_SCREEN_UPDATE_STATIC(ddenlovr)
 
 	MCFG_PALETTE_LENGTH(0x200)
 
@@ -8515,7 +8631,7 @@ static MACHINE_CONFIG_START( daimyojn, dynax_state )
 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 0.80)
 
 	/* devices */
-	MCFG_MSM6242_ADD("rtc")
+	MCFG_MSM6242_ADD("rtc", hanakanz_rtc_intf)
 MACHINE_CONFIG_END
 
 

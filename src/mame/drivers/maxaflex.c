@@ -11,7 +11,6 @@
 ******************************************************************************/
 
 #include "emu.h"
-#include "deprecat.h"
 #include "cpu/m6502/m6502.h"
 #include "cpu/m6805/m6805.h"
 #include "includes/atari.h"
@@ -368,26 +367,54 @@ static const pokey_interface pokey_config = {
 	atari_interrupt_cb
 };
 
+READ8_DEVICE_HANDLER(maxaflex_atari_pia_pa_r)
+{
+	return atari_input_disabled(device->machine()) ? 0xFF : input_port_read_safe(device->machine(), "djoy_0_1", 0);
+}
+
+READ8_DEVICE_HANDLER(maxaflex_atari_pia_pb_r)
+{
+	return atari_input_disabled(device->machine()) ? 0xFF : input_port_read_safe(device->machine(), "djoy_2_3", 0);
+}
+
+
+const pia6821_interface maxaflex_atarixl_pia_interface =
+{
+	DEVCB_HANDLER(maxaflex_atari_pia_pa_r),		/* port A in */
+	DEVCB_HANDLER(maxaflex_atari_pia_pb_r),	/* port B in */
+	DEVCB_NULL,		/* line CA1 in */
+	DEVCB_NULL,		/* line CB1 in */
+	DEVCB_NULL,		/* line CA2 in */
+	DEVCB_NULL,		/* line CB2 in */
+	DEVCB_NULL,		/* port A out */
+	DEVCB_HANDLER(a600xl_pia_pb_w),		/* port B out */
+	DEVCB_NULL,		/* line CA2 out */
+	DEVCB_LINE(atari_pia_cb2_w),		/* port CB2 out */
+	DEVCB_NULL,		/* IRQA */
+	DEVCB_NULL		/* IRQB */
+};
+
+
+
 static MACHINE_CONFIG_START( a600xl, maxaflex_state )
 	/* basic machine hardware */
 	MCFG_CPU_ADD("maincpu", M6502, FREQ_17_EXACT)
 	MCFG_CPU_PROGRAM_MAP(a600xl_mem)
-	MCFG_CPU_VBLANK_INT_HACK(a800xl_interrupt, TOTAL_LINES_60HZ)
+	MCFG_TIMER_ADD_SCANLINE("scantimer", a800xl_interrupt, "screen", 0, 1)
 
 	MCFG_CPU_ADD("mcu", M68705, 3579545)
 	MCFG_CPU_PROGRAM_MAP(mcu_mem)
 
-	MCFG_PIA6821_ADD("pia", atarixl_pia_interface)
+	MCFG_PIA6821_ADD("pia", maxaflex_atarixl_pia_interface)
 	MCFG_TIMER_ADD("mcu_timer", mcu_timer_proc)
 
 	/* video hardware */
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_VISIBLE_AREA(MIN_X, MAX_X, MIN_Y, MAX_Y)
 	MCFG_SCREEN_REFRESH_RATE(FRAME_RATE_60HZ)
 	MCFG_SCREEN_SIZE(HWIDTH*8, TOTAL_LINES_60HZ)
-	MCFG_SCREEN_UPDATE(atari)
+	MCFG_SCREEN_UPDATE_STATIC(atari)
 
 	MCFG_PALETTE_LENGTH(256)
 	MCFG_PALETTE_INIT(atari)

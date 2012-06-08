@@ -28,7 +28,10 @@ class seta_state : public driver_device
 {
 public:
 	seta_state(const machine_config &mconfig, device_type type, const char *tag)
-		: driver_device(mconfig, type, tag) { }
+		: driver_device(mconfig, type, tag),
+		m_maincpu(*this,"maincpu"),
+		m_subcpu(*this,"sub")
+		{ }
 
 	UINT8 *m_sharedram;
 	UINT16 *m_workram;
@@ -82,6 +85,9 @@ public:
 	UINT16 m_pairslove_protram[0x200];
 	UINT16 m_pairslove_protram_old[0x200];
 	UINT16 m_downtown_protection[0x200/2];
+
+	required_device<cpu_device> m_maincpu;
+	optional_device<cpu_device> m_subcpu;
 };
 
 /*----------- defined in video/seta.c -----------*/
@@ -108,11 +114,11 @@ VIDEO_START( seta_1_layer);
 VIDEO_START( seta_2_layers);
 VIDEO_START( oisipuzl_2_layers );
 
-SCREEN_UPDATE( seta );
-SCREEN_UPDATE( seta_no_layers );
-SCREEN_UPDATE( usclssic );
-SCREEN_UPDATE( inttoote );
-SCREEN_UPDATE( setaroul );
+SCREEN_UPDATE_IND16( seta );
+SCREEN_UPDATE_IND16( seta_no_layers );
+SCREEN_UPDATE_IND16( usclssic );
+SCREEN_UPDATE_IND16( inttoote );
+SCREEN_UPDATE_IND16( setaroul );
 
-SCREEN_EOF( setaroul );
+SCREEN_VBLANK( setaroul );
 

@@ -58,7 +58,7 @@ static void set_pens( running_machine &machine )
 void jackal_mark_tile_dirty( running_machine &machine, int offset )
 {
 	jackal_state *state = machine.driver_data<jackal_state>();
-	tilemap_mark_tile_dirty(state->m_bg_tilemap, offset);
+	state->m_bg_tilemap->mark_tile_dirty(offset);
 }
 
 static TILE_GET_INFO( get_bg_tile_info )
@@ -79,7 +79,7 @@ VIDEO_START( jackal )
 	state->m_bg_tilemap = tilemap_create(machine, get_bg_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 }
 
-static void draw_background( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_background( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	jackal_state *state = machine.driver_data<jackal_state>();
 	UINT8 *RAM = machine.region("master")->base();
@@ -87,37 +87,37 @@ static void draw_background( running_machine &machine, bitmap_t *bitmap, const r
 
 	state->m_scrollram = &RAM[0x0020];
 
-	tilemap_set_scroll_rows(state->m_bg_tilemap, 1);
-	tilemap_set_scroll_cols(state->m_bg_tilemap, 1);
+	state->m_bg_tilemap->set_scroll_rows(1);
+	state->m_bg_tilemap->set_scroll_cols(1);
 
-	tilemap_set_scrolly(state->m_bg_tilemap, 0, state->m_videoctrl[0]);
-	tilemap_set_scrollx(state->m_bg_tilemap, 0, state->m_videoctrl[1]);
+	state->m_bg_tilemap->set_scrolly(0, state->m_videoctrl[0]);
+	state->m_bg_tilemap->set_scrollx(0, state->m_videoctrl[1]);
 
 	if (state->m_videoctrl[2] & 0x02)
 	{
 		if (state->m_videoctrl[2] & 0x08)
 		{
-			tilemap_set_scroll_rows(state->m_bg_tilemap, 32);
+			state->m_bg_tilemap->set_scroll_rows(32);
 
 			for (i = 0; i < 32; i++)
-				tilemap_set_scrollx(state->m_bg_tilemap, i, state->m_scrollram[i]);
+				state->m_bg_tilemap->set_scrollx(i, state->m_scrollram[i]);
 		}
 
 		if (state->m_videoctrl[2] & 0x04)
 		{
-			tilemap_set_scroll_cols(state->m_bg_tilemap, 32);
+			state->m_bg_tilemap->set_scroll_cols(32);
 
 			for (i = 0; i < 32; i++)
-				tilemap_set_scrolly(state->m_bg_tilemap, i, state->m_scrollram[i]);
+				state->m_bg_tilemap->set_scrolly(i, state->m_scrollram[i]);
 		}
 	}
 
-	tilemap_draw(bitmap, cliprect, state->m_bg_tilemap, 0, 0);
+	state->m_bg_tilemap->draw(bitmap, cliprect, 0, 0);
 }
 
 #define DRAW_SPRITE(bank, code, sx, sy) drawgfx_transpen(bitmap, cliprect, machine.gfx[bank], code, color, flipx, flipy, sx, sy, 0);
 
-static void draw_sprites_region( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect, const UINT8 *sram, int length, int bank )
+static void draw_sprites_region( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect, const UINT8 *sram, int length, int bank )
 {
 	int offs;
 
@@ -201,7 +201,7 @@ static void draw_sprites_region( running_machine &machine, bitmap_t *bitmap, con
 	}
 }
 
-static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rectangle *cliprect )
+static void draw_sprites( running_machine &machine, bitmap_ind16 &bitmap, const rectangle &cliprect )
 {
 	jackal_state *state = machine.driver_data<jackal_state>();
 	UINT8 *RAM = machine.region("master")->base();
@@ -222,10 +222,10 @@ static void draw_sprites( running_machine &machine, bitmap_t *bitmap, const rect
 	draw_sprites_region(machine, bitmap, cliprect, sr, 0x500, 1);
 }
 
-SCREEN_UPDATE( jackal )
+SCREEN_UPDATE_IND16( jackal )
 {
-	set_pens(screen->machine());
-	draw_background(screen->machine(), bitmap, cliprect);
-	draw_sprites(screen->machine(), bitmap, cliprect);
+	set_pens(screen.machine());
+	draw_background(screen.machine(), bitmap, cliprect);
+	draw_sprites(screen.machine(), bitmap, cliprect);
 	return 0;
 }

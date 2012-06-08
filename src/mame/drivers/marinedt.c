@@ -107,9 +107,9 @@ public:
 	UINT8 *     m_tx_tileram;
 
 	/* video-related */
-	bitmap_t *m_tile;
-	bitmap_t *m_obj1;
-	bitmap_t *m_obj2;
+	bitmap_ind16 *m_tile;
+	bitmap_ind16 *m_obj1;
+	bitmap_ind16 *m_obj2;
 	tilemap_t *m_tx_tilemap;
 
 	UINT8 m_obj1_a;
@@ -138,7 +138,7 @@ static WRITE8_HANDLER( tx_tileram_w )
 	marinedt_state *state = space->machine().driver_data<marinedt_state>();
 
 	state->m_tx_tileram[offset] = data;
-	tilemap_mark_tile_dirty(state->m_tx_tilemap, offset);
+	state->m_tx_tilemap->mark_tile_dirty(offset);
 }
 
 static READ8_HANDLER( marinedt_port1_r )
@@ -287,9 +287,9 @@ static WRITE8_HANDLER( marinedt_pf_w )
 			mame_printf_debug("tile non-flip\n");
 
 		if (data & 0x02)
-			tilemap_set_flip(state->m_tx_tilemap, TILEMAP_FLIPX | TILEMAP_FLIPY);
+			state->m_tx_tilemap->set_flip(TILEMAP_FLIPX | TILEMAP_FLIPY);
 		else
-			tilemap_set_flip(state->m_tx_tilemap, 0);
+			state->m_tx_tilemap->set_flip(0);
 	}
 
 	state->m_pf = data;
@@ -483,13 +483,13 @@ static VIDEO_START( marinedt )
 	marinedt_state *state = machine.driver_data<marinedt_state>();
 	state->m_tx_tilemap = tilemap_create(machine, get_tile_info, tilemap_scan_rows, 8, 8, 32, 32);
 
-	tilemap_set_transparent_pen(state->m_tx_tilemap, 0);
-	tilemap_set_scrolldx(state->m_tx_tilemap, 0, 4*8);
-	tilemap_set_scrolldy(state->m_tx_tilemap, 0, -4*8);
+	state->m_tx_tilemap->set_transparent_pen(0);
+	state->m_tx_tilemap->set_scrolldx(0, 4*8);
+	state->m_tx_tilemap->set_scrolldy(0, -4*8);
 
-	state->m_tile = auto_bitmap_alloc(machine, 32 * 8, 32 * 8, machine.primary_screen->format());
-	state->m_obj1 = auto_bitmap_alloc(machine, 32, 32, machine.primary_screen->format());
-	state->m_obj2 = auto_bitmap_alloc(machine, 32, 32, machine.primary_screen->format());
+	state->m_tile = auto_bitmap_ind16_alloc(machine, 32 * 8, 32 * 8);
+	state->m_obj1 = auto_bitmap_ind16_alloc(machine, 32, 32);
+	state->m_obj2 = auto_bitmap_ind16_alloc(machine, 32, 32);
 }
 
 
@@ -506,37 +506,37 @@ static VIDEO_START( marinedt )
 #define OBJ_FLIPX(a)	((state->m_pf & 0x02) == 0)
 #define OBJ_FLIPY(a)	((a) & 0x80)
 
-static SCREEN_UPDATE( marinedt )
+static SCREEN_UPDATE_IND16( marinedt )
 {
-	marinedt_state *state = screen->machine().driver_data<marinedt_state>();
+	marinedt_state *state = screen.machine().driver_data<marinedt_state>();
 	int sx, sy;
 
-	bitmap_fill(state->m_tile, NULL, 0);
-	tilemap_draw(state->m_tile, cliprect, state->m_tx_tilemap, 0, 0);
+	state->m_tile->fill(0);
+	state->m_tx_tilemap->draw(*state->m_tile, cliprect, 0, 0);
 
-	bitmap_fill(state->m_obj1, NULL, 0);
-	drawgfx_transpen(state->m_obj1, NULL, screen->machine().gfx[1],
+	state->m_obj1->fill(0);
+	drawgfx_transpen(*state->m_obj1, state->m_obj1->cliprect(), screen.machine().gfx[1],
 			OBJ_CODE(state->m_obj1_a),
 			OBJ_COLOR(state->m_obj1_a),
 			OBJ_FLIPX(state->m_obj1_a), OBJ_FLIPY(state->m_obj1_a),
 			0, 0, 0);
 
-	bitmap_fill(state->m_obj2, NULL, 0);
-	drawgfx_transpen(state->m_obj2, NULL, screen->machine().gfx[2],
+	state->m_obj2->fill(0);
+	drawgfx_transpen(*state->m_obj2, state->m_obj2->cliprect(), screen.machine().gfx[2],
 			OBJ_CODE(state->m_obj2_a),
 			OBJ_COLOR(state->m_obj2_a),
 			OBJ_FLIPX(state->m_obj2_a), OBJ_FLIPY(state->m_obj2_a),
 			0, 0, 0);
 
-	bitmap_fill(bitmap, NULL, 0);
+	bitmap.fill(0);
 
 	if (state->m_pd & 0x02)
-		copybitmap_trans(bitmap, state->m_obj2, 0, 0, OBJ_X(state->m_obj2_x), OBJ_Y(state->m_obj2_y), cliprect, 0);
+		copybitmap_trans(bitmap, *state->m_obj2, 0, 0, OBJ_X(state->m_obj2_x), OBJ_Y(state->m_obj2_y), cliprect, 0);
 
 	if (state->m_pd & 0x01)
-		copybitmap_trans(bitmap, state->m_obj1, 0, 0, OBJ_X(state->m_obj1_x), OBJ_Y(state->m_obj1_y), cliprect, 0);
+		copybitmap_trans(bitmap, *state->m_obj1, 0, 0, OBJ_X(state->m_obj1_x), OBJ_Y(state->m_obj1_y), cliprect, 0);
 
-	copybitmap_trans(bitmap, state->m_tile, 0, 0, 0, 0, cliprect, 0);
+	copybitmap_trans(bitmap, *state->m_tile, 0, 0, 0, 0, cliprect, 0);
 
 	state->m_coll = state->m_cx = state->m_cyr = state->m_cyq = 0;
 	if (state->m_pd & 0x01)
@@ -547,13 +547,13 @@ static SCREEN_UPDATE( marinedt )
 				int x = OBJ_X(state->m_obj1_x) + sx;
 				int y = OBJ_Y(state->m_obj1_y) + sy;
 
-				if (x < cliprect->min_x || x > cliprect->max_x || y < cliprect->min_y || y > cliprect->max_y)
+				if (!cliprect.contains(x, y))
 					continue;
 
-				if (*BITMAP_ADDR16(state->m_obj1, sy, sx) == 0)
+				if (state->m_obj1->pix16(sy, sx) == 0)
 					continue;
 
-				if (*BITMAP_ADDR16(state->m_tile, y, x) != 0)
+				if (state->m_tile->pix16(y, x) != 0)
 				{
 					state->m_coll = 0x08;
 
@@ -586,10 +586,10 @@ static SCREEN_UPDATE( marinedt )
 				if (xx < 0 || xx >= 32 || yy < 0 || yy >= 32)
 					continue;
 
-				if (*BITMAP_ADDR16(state->m_obj1, sy, sx) == 0)
+				if (state->m_obj1->pix16(sy, sx) == 0)
 					continue;
 
-				if (*BITMAP_ADDR16(state->m_obj2, yy, xx) != 0)
+				if (state->m_obj2->pix16(yy, xx) != 0)
 				{
 					state->m_collh = 0x80;
 
@@ -672,10 +672,9 @@ static MACHINE_CONFIG_START( marinedt, marinedt_state )
 	MCFG_SCREEN_ADD("screen", RASTER)
 	MCFG_SCREEN_REFRESH_RATE(60)
 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
-	MCFG_SCREEN_FORMAT(BITMAP_FORMAT_INDEXED16)
 	MCFG_SCREEN_SIZE(4*8+32*8, 32*8)
 	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 4*8, 32*8-1)
-	MCFG_SCREEN_UPDATE(marinedt)
+	MCFG_SCREEN_UPDATE_STATIC(marinedt)
 
 	MCFG_GFXDECODE(marinedt)
 	MCFG_PALETTE_LENGTH(64)
