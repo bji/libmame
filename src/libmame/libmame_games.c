@@ -81,8 +81,8 @@ public:
         pthread_mutex_lock(&mutexM);
         
         if (!driversM) {
-            emu_options options;
-            driversM = global_alloc(driver_enumerator(options));
+            optionsM = global_alloc(emu_options);
+            driversM = global_alloc(driver_enumerator(*optionsM));
         }
 
         pthread_mutex_unlock(&mutexM);
@@ -93,6 +93,7 @@ public:
 private:
 
     pthread_mutex_t mutexM;
+    emu_options *optionsM;
     driver_enumerator *driversM;
 };
 
@@ -1083,7 +1084,8 @@ static void convert_game_info(GameInfo *gameinfo)
 {
     const game_driver &driver = g_drivers.Get().driver(gameinfo->driver_index);
 
-	machine_config &machineconfig = g_drivers.Get().config(gameinfo->driver_index);
+	machine_config &machineconfig = g_drivers.Get().config
+        (gameinfo->driver_index);
     ioport_list ioportlist;
     astring errors;
 	for (device_t *device = machineconfig.devicelist().first(); device;
@@ -1109,33 +1111,39 @@ static void convert_game_info(GameInfo *gameinfo)
 static GameInfo *get_gameinfo_helper_locked(int gamenum, bool converted)
 {
     if (g_game_count == 0) {
-        g_drivers.Get().reset();
-        while (g_drivers.Get().next()) {
-            const game_driver &driver = g_drivers.Get().driver();
-            if (!(driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
-                                  GAME_MECHANICAL))) {
-                g_game_count++;
+        // Get the drivers list to ensure that it has been created
+        (void) g_drivers.Get();
+
+        int count = driver_list::total();
+    
+        for (int i = 0; i < count; i++) {
+            const game_driver &driver = driver_list::driver(i);
+            if (driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
+                                GAME_MECHANICAL)) {
+                continue;
             }
+            g_game_count++;
         }
-        g_gameinfos = (GameInfo *) osd_calloc
-            (sizeof(GameInfo) * g_game_count);
+
+        g_gameinfos = (GameInfo *) osd_calloc(sizeof(GameInfo) * g_game_count);
         int gameinfo_index = 0, driver_index = 0;
-        g_drivers.Get().reset();
-        while (g_drivers.Get().next()) {
-            const game_driver &driver = g_drivers.Get().driver();
+        for (int i = 0; i < count; i++) {
+            const game_driver &driver = driver_list::driver(i);
             int *pHashValue;
             g_drivers_hash.Put(driver.name, /* returns */ pHashValue);
-            *pHashValue = driver_index++;
-            if (!(driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
-                                  GAME_MECHANICAL))) {
-                GameInfo *gameinfo = &(g_gameinfos[gameinfo_index]);
-                gameinfo->converted = false;
-                gameinfo->driver_index = driver_index;
-                gameinfo->gameinfo_index = gameinfo_index;
-                g_gameinfos_hash.Put(driver.name, /* returns */ pHashValue);
-                *pHashValue = gameinfo_index;
-                gameinfo_index++;
+            int this_driver_index = driver_index++;
+            *pHashValue = this_driver_index;
+            if (driver.flags & (GAME_IS_BIOS_ROOT | GAME_NO_STANDALONE |
+                                GAME_MECHANICAL)) {
+                continue;
             }
+            GameInfo *gameinfo = &(g_gameinfos[gameinfo_index]);
+            gameinfo->converted = false;
+            gameinfo->driver_index = this_driver_index;
+            gameinfo->gameinfo_index = gameinfo_index;
+            g_gameinfos_hash.Put
+                (driver.name, /* returns */ pHashValue);
+            *pHashValue = gameinfo_index++;
         }
     }
 
@@ -1164,7 +1172,8 @@ static GameInfo *get_gameinfo_helper(int gamenum, bool converted)
 
 static const game_driver &get_game_driver(int gamenum)
 {
-    return g_drivers.Get().driver(get_gameinfo_helper(gamenum, false)->driver_index);
+    return g_drivers.Get().driver
+        (get_gameinfo_helper(gamenum, false)->driver_index);
 }
 
 
