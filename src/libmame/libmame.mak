@@ -36,7 +36,7 @@ ifdef STATIC
 LIBMAME = $(OBJ)/libmame.a
 LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ)            \
                        $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) \
-                       $(DASMOBJS) $(SOUNDOBJS) $(LIBFLACOBJS)               \
+                       $(DASMOBJS) $(SOUNDOBJS) $(LIBFLACOBJS) $(LIB7ZOBJS)  \
                        $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS)   \
                        $(SOFTFLOATOBJS) $(DRIVLISTOBJ) $(DEVLISTOBJ) 
 
@@ -65,8 +65,8 @@ ifdef SYMBOLS
 $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ)        \
             $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU)           \
             $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT)          \
-            $(JPEG_LIB) $(FLAC_LIB) $(FORMATS_LIB) $(LIBOCORE) $(ZLIB)       \
-            $(RESFILE)
+            $(JPEG_LIB) $(FLAC_LIB) $(7Z_LIB) $(FORMATS_LIB) $(LIBOCORE)     \
+            $(ZLIB) $(RESFILE)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -o $@ $^ -lpthread
 
@@ -75,8 +75,8 @@ else
 $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ)        \
             $(DEVLISTOBJ) $(DRVLIBS) $(LIBOSD) $(LIBCPU) $(LIBEMU)           \
             $(LIBDASM) $(LIBSOUND) $(LIBUTIL) $(EXPAT) $(SOFTFLOAT)          \
-            $(JPEG_LIB) $(FLAC_LIB) $(FORMATS_LIB) $(LIBOCORE) $(ZLIB)       \
-            $(RESFILE)
+            $(JPEG_LIB) $(FLAC_LIB) $(7Z_LIB) $(FORMATS_LIB) $(LIBOCORE)     \
+            $(ZLIB) $(RESFILE)
 			$(ECHO) Linking $@...
 			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT)  \
                 -o $@ $^ -lpthread

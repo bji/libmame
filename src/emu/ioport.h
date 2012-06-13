@@ -1029,6 +1029,7 @@ public:
 	ioport_field *next() const { return m_next; }
 	ioport_port &port() const { return m_port; }
 	device_t &device() const;
+    bool has_manager() const;
 	ioport_manager &manager() const;
 	running_machine &machine() const;
 	int modcount() const { return m_modcount; }
@@ -1056,6 +1057,9 @@ public:
 	const input_seq &seq(input_seq_type seqtype = SEQ_TYPE_STANDARD) const;
 	const input_seq &defseq(input_seq_type seqtype = SEQ_TYPE_STANDARD) const;
 	const input_seq &defseq_unresolved(input_seq_type seqtype = SEQ_TYPE_STANDARD) const { return m_seq[seqtype]; }
+    // modifiable_seq will return NULL if the sequence is not modifiable
+    // because this field is not live, or is disabled.
+    input_seq *modifiable_seq(input_seq_type seqtype = SEQ_TYPE_STANDARD);
 	bool has_dynamic_read() const { return !m_read.isnull(); }
 	bool has_dynamic_write() const { return !m_write.isnull(); }
 
@@ -1187,6 +1191,7 @@ public:
 
 	// getters
 	ioport_port *next() const { return m_next; }
+    bool has_manager() const;
 	ioport_manager &manager() const;
 	device_t &device() const { return m_device; }
 	running_machine &machine() const;
@@ -1712,6 +1717,7 @@ void ioport_write_line_wrapper(_FunctionClass &device, ioport_field &field, void
 //  INLINE FUNCITONS
 //**************************************************************************
 
+inline bool ioport_field::has_manager() const { return m_port.has_manager(); }
 inline ioport_manager &ioport_field::manager() const { return m_port.manager(); }
 inline device_t &ioport_field::device() const { return m_port.device(); }
 inline running_machine &ioport_field::machine() const { return m_port.machine(); }

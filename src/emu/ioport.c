@@ -1702,7 +1702,10 @@ const char *ioport_field::name() const
 		return m_name;
 
 	// otherwise, return the name associated with the type
-	return manager().type_name(m_type, m_player);
+    if (has_manager())
+        return manager().type_name(m_type, m_player);
+
+    return NULL;
 }
 
 
@@ -1747,6 +1750,27 @@ const input_seq &ioport_field::defseq(input_seq_type seqtype) const
 
 	// otherwise, return the sequence as-is
 	return m_seq[seqtype];
+}
+
+
+//-------------------------------------------------
+//  modifiable_seq - return the modifiable live input sequence for the
+//  given input field, or NULL if there is no modifiable live input
+//  sequence
+//-------------------------------------------------
+
+input_seq *ioport_field::modifiable_seq(input_seq_type seqtype)
+{
+	// if no live state, return NULL
+	if (m_live == NULL)
+		return NULL;
+
+	// if the field is disabled, return NULL
+	if (unused())
+		return NULL;
+
+	// otherwise, return the sequence
+	return &(m_live->seq[seqtype]);
 }
 
 
@@ -2390,6 +2414,17 @@ ioport_port::~ioport_port()
 running_machine &ioport_port::machine() const
 {
 	return m_device.machine();
+}
+
+
+//-------------------------------------------------
+//  has_manager - return true if calling manager()
+//  will not blow up
+//-------------------------------------------------
+
+bool ioport_port::has_manager() const
+{
+    return m_device.has_machine();
 }
 
 

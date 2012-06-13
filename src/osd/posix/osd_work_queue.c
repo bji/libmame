@@ -168,11 +168,13 @@ static void work_item_release_locked(osd_work_item *item)
 {
     if ((item >= &(g_static_items[0])) &&
         (item <= &(g_static_items[sizeof(g_static_items) / 
-                                  sizeof(g_static_items[0])]))) {
+                                  sizeof(g_static_items[0])])))
+    {
         item->next = g_free_items;
         g_free_items = item;
     }
-    else {
+    else
+    {
         osd_free(item);
     }
 }
@@ -183,7 +185,8 @@ static void work_queue_run_items_locked(int threadid)
     /**
      * Run items in a loop until there are no more
      **/
-    do {
+    do
+    {
         /**
          * Save a pointer to the item, as g_items may change while we are
          * working on this item
@@ -208,7 +211,8 @@ static void work_queue_run_items_locked(int threadid)
         {
             g_items = g_items->next;
 
-            if (!g_items) {
+            if (!g_items)
+            {
                 g_items_tail = 0;
             }
         }
@@ -364,7 +368,8 @@ static void work_queue_destroy_threads_locked()
      * And, join them all to prevent pthreads memory leaks in buggy pthreads
      * implementations
      **/
-    for (int i = 0; i < threads_count; i++) {
+    for (int i = 0; i < threads_count; i++)
+    {
         void *dontcare;
         (void) pthread_join(g_thread_ids[i], &dontcare);
     }
@@ -420,7 +425,8 @@ static int work_queue_create_threads_locked()
 #endif
 #endif
 
-    if (threads_count < 1) {
+    if (threads_count < 1)
+    {
         threads_count = 1;
     }
 
@@ -501,27 +507,14 @@ osd_work_queue *osd_work_queue_alloc(int flags)
 
     queue->items_count = 0;
 
-    /* Take this opportunity to create the work threads if they need to be
-       created */
-    pthread_mutex_lock(&g_mutex);
-
-    if (g_queues_count == 0)
-    {
-        if (work_queue_create_threads_locked())
-        {
-            pthread_mutex_unlock(&g_mutex);
-            pthread_cond_destroy(&(queue->cond));
-            osd_free(queue);
-            return NULL;
-        }
-    }
-
     g_queues_count += 1;
 
-    if (!g_free_items_initialized) {
+    if (!g_free_items_initialized)
+    {
         g_free_items = 0;
         for (unsigned int i = 0; 
-             i < (sizeof(g_static_items) / sizeof(g_static_items[0])); i++) {
+             i < (sizeof(g_static_items) / sizeof(g_static_items[0])); i++)
+        {
             osd_work_item *item = &(g_static_items[i]);
             item->next = g_free_items;
             g_free_items = item;
@@ -567,14 +560,16 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
          * If there are items to run, then run them, to try to complete the
          * items
          **/
-        if (g_items) {
+        if (g_items)
+        {
             work_queue_run_items_locked(threadid);
         }
         /**
          * Else, some other thread must be completing the queue on our
          * behalf.  Wait for them to finish.
          **/
-        else {
+        else
+        {
             pthread_cond_wait(&queue->cond, &g_mutex);
         }
     }
@@ -626,7 +621,19 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
 
     pthread_mutex_lock(&g_mutex);
 
-    if (g_free_items) {
+    /* Take this opportunity to create the work threads if they need to be
+       created */
+    if (g_thread_ids == NULL)
+    {
+        if (work_queue_create_threads_locked())
+        {
+            pthread_mutex_unlock(&g_mutex);
+            return NULL;
+        }
+    }
+
+    if (g_free_items)
+    {
         item = g_free_items;
         g_free_items = item->next;
     }
@@ -664,17 +671,20 @@ osd_work_item *osd_work_item_queue_multiple(osd_work_queue *queue,
         g_items_tail->next = item;
         g_items_tail = item;
     }
-    else {
+    else
+    {
         g_items = g_items_tail = item;
     }
 
 #if 0
     pthread_cond_broadcast(&g_items_cond);
 #else
-    if (numitems == 1) {
+    if (numitems == 1)
+    {
         pthread_cond_signal(&g_items_cond);
     }
-    else {
+    else
+    {
         pthread_cond_broadcast(&g_items_cond);
     }
 #endif

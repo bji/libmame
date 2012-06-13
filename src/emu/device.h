@@ -148,7 +148,8 @@ protected:
 
 public:
 	// getters
-	running_machine &machine() const { assert(m_machine != NULL); return *m_machine; }
+    bool has_machine() const { return (m_machine != NULL); }
+	running_machine &machine() const { assert(has_machine()); return *m_machine; }
 	const char *tag() const { return m_tag; }
 	const char *basetag() const { return m_basetag; }
 	device_type type() const { return m_type; }

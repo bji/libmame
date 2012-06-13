@@ -303,7 +303,8 @@ static void convert_sound_samples_helper(const machine_config *machineconfig,
          device = iter.next())
 	{
 		samples_iterator sampiter(*device);
-		for (const char *samplename = sampiter.first(); samplename != NULL; samplename = sampiter.next())
+		for (const char *samplename = sampiter.first(); samplename != NULL;
+             samplename = sampiter.next())
 		{
             /* "*" sample indicates the sample source */
             if (*samplename == '*') {
@@ -444,11 +445,11 @@ static void convert_settings(const ioport_list *ioportlist,
                              GameInfo *gameinfo)
 {
 	for (ioport_port *port = ioportlist->first(); port != NULL; 
-         port = port->next())
+         port = port->next()) {
 		for (ioport_field *field = port->first_field(); field != NULL; 
-             field = field->next())
+             field = field->next()) {
             if (field->type() == IPT_DIPSWITCH) {
-                gameinfo->dipswitch_count++;
+                gameinfo->dipswitch_count += 1;
             }
         }
     }
@@ -462,13 +463,15 @@ static void convert_settings(const ioport_list *ioportlist,
 
     LibMame_Dipswitch *desc = gameinfo->dipswitches;
 
-	for (port = ioportlist->first(); port; port = port->next()) {
-		for (field = port->fieldlist().first(); field; field = field->next()) {
-            if (field->type != IPT_DIPSWITCH) {
+	for (ioport_port *port = ioportlist->first(); port != NULL; 
+         port = port->next()) {
+		for (ioport_field *field = port->first_field(); field != NULL; 
+             field = field->next()) {
+            if (field->type() != IPT_DIPSWITCH) {
                 continue;
             }
 
-            desc->name = input_field_name(field);
+            desc->name = field->name();
             const char *tag = field->port().tag();
             if (tag) {
                 desc->tag = copy_string(tag);
@@ -476,10 +479,9 @@ static void convert_settings(const ioport_list *ioportlist,
             else {
                 desc->tag = emptyStringG;
             }
-            desc->mask = field->mask;
-            const input_setting_config *setting;
-            for (setting = field->settinglist().first(); setting; 
-                 setting = setting->next()) {
+            desc->mask = field->mask();
+            for (ioport_setting *setting = field->first_setting(); 
+                 setting != NULL; setting = setting->next()) {
                 desc->value_count++;
             }
 
@@ -492,10 +494,10 @@ static void convert_settings(const ioport_list *ioportlist,
                 (sizeof(const char *) * desc->value_count);
             const char **value_names = (const char **) desc->value_names;
             int index = 0;
-            for (setting = field->settinglist().first(); setting; 
-                 setting = setting->next()) {
-                value_names[index] = setting->name;
-                if (setting->value == field->defvalue) {
+            for (ioport_setting *setting = field->first_setting(); 
+                 setting != NULL; setting = setting->next()) {
+                value_names[index] = setting->name();
+                if (setting->value() == field->defvalue()) {
                     desc->default_value = index;
                 }
                 index++;
@@ -510,46 +512,165 @@ static void convert_settings(const ioport_list *ioportlist,
 static void convert_controllers(const ioport_list *ioportlist,
                                 GameInfo *gameinfo)
 {
-	input_port_config *port;
-	const input_field_config *field;
-
     int special_count = 0;
 
-	for (port = ioportlist->first(); port; port = port->next()) {
-		for (field = port->fieldlist().first(); field; field = field->next()) {
-            if (field->flags & FIELD_FLAG_UNUSED) {
+	for (ioport_port *port = ioportlist->first(); port != NULL; 
+         port = port->next()) {
+		for (ioport_field *field = port->first_field(); field != NULL; 
+             field = field->next()) {
+            if (field->unused()) {
                 continue;
             }
-            // Skip cocktail ports, for the time being; at some point in the
-            // future this code should store the cocktail port specifications
-            // in a different set of perplayer configs.
-            if (field->flags & FIELD_FLAG_COCKTAIL) {
-                continue;
+            uint8_t player = field->player();
+            // Use 0 for player 1
+            if (player) {
+                player -= 1;
             }
-			if (gameinfo->max_simultaneous_players < field->player) {
-				gameinfo->max_simultaneous_players = field->player;
+			if (gameinfo->max_simultaneous_players < player) {
+				gameinfo->max_simultaneous_players = player;
             }
             // Only process player 1 controls; it is assumed that all controls
             // are identical between all players
-            if (field->player != 0) {
+            if (player > 0) {
                 continue;
             }
-            switch (field->type) {
+            switch (field->type()) {
+            case IPT_ADJUSTER:
+                // Adjusters are mostly for things like volumes and such
+                // They have a default value and can be set from 0 to 100.
+                // Currently not supported.
+                break;
             case IPT_OTHER:
-                if (field->name && 
+                // IPT_OTHER represents toggles that effect special actions in
+                // games; these are button-style toggles (pressing has an
+                // effect, they don't stay "pressed" like dipswitches do); the
+                // most important being the "Advance" button that is used to
+                // get past diagnostic screens on some games.  "Special"
+                // buttons are created for IPT_OTHER types to allow the user
+                // to input them.
+                if (field->name() && 
                     (special_count < LibMame_SpecialButtonTypeCount)) {
                     gameinfo->controllers.shared.special_button_flags |=
                         (1 << special_count);
                     gameinfo->controllers.shared.
                         special_button_names[special_count++] =
-                        field->name ? field->name : emptyStringG;
+                        field->name() ? field->name() : emptyStringG;
                 }
+                break;
+            case IPT_SPECIAL:
+            case IPT_CUSTOM:
+            case IPT_OUTPUT:
+                // IPT_SPECIAL, IPT_CUSTOM, and IPT_OUTPUT are used for weird
+                // stuff that is not sensible to even report to an end user.
+                break;
+            case IPT_DIPSWITCH:
+                // Skip dipswitches, they are handled elsewhere
+                break;
+            case IPT_INVALID:
+            case IPT_UNUSED:
+            case IPT_UNKNOWN:
+                // Obviously invalid, unused, and unknown ports are ignored
+                break;
+            case IPT_START:
+            case IPT_SELECT:
+            case IPT_KEYPAD:
+            case IPT_KEYBOARD:
+                // MESS only stuff - would want to support in a libmess
+                break;
+            case IPT_TILT1:
+                // Only used by a single mechanical game - icecold - which
+                // should probably just have used IPT_TILT
+                break;
+            case IPT_PORT:
+            case IPT_END:
+            case IPT_CONFIG:
+            case IPT_DIGITAL_JOYSTICK_FIRST:
+            case IPT_DIGITAL_JOYSTICK_LAST:
+            case IPT_MAHJONG_FIRST:
+            case IPT_MAHJONG_LAST:
+            case IPT_HANAFUDA_FIRST:
+            case IPT_HANAFUDA_LAST:
+            case IPT_GAMBLING_FIRST:
+            case IPT_GAMBLING_LAST:
+            case IPT_ANALOG_FIRST:
+            case IPT_ANALOG_LAST:
+            case IPT_ANALOG_ABSOLUTE_FIRST:
+            case IPT_ANALOG_ABSOLUTE_LAST:
+            case IPT_UI_FIRST:
+            case IPT_UI_LAST:
+            case IPT_OSD_1:
+            case IPT_OSD_2:
+            case IPT_OSD_3:
+            case IPT_OSD_4:
+            case IPT_OSD_5:
+            case IPT_OSD_6:
+            case IPT_OSD_7:
+            case IPT_OSD_8:
+            case IPT_OSD_9:
+            case IPT_OSD_10:
+            case IPT_OSD_11:
+            case IPT_OSD_12:
+            case IPT_OSD_13:
+            case IPT_OSD_14:
+            case IPT_OSD_15:
+            case IPT_OSD_16:
+            case IPT_COUNT:
+                // Cruft
+                break;
+            case IPT_COIN9:
+            case IPT_COIN10:
+            case IPT_COIN11:
+            case IPT_COIN12:
+            case IPT_TILT2:
+            case IPT_TILT3:
+            case IPT_TILT4:
+                // MAME defines these but never uses them
+                break;
+            case IPT_UI_CONFIGURE:
+            case IPT_UI_ON_SCREEN_DISPLAY:
+            case IPT_UI_DEBUG_BREAK:
+            case IPT_UI_PAUSE:
+            case IPT_UI_RESET_MACHINE:
+            case IPT_UI_SOFT_RESET:
+            case IPT_UI_SHOW_GFX:
+            case IPT_UI_FRAMESKIP_DEC:
+            case IPT_UI_FRAMESKIP_INC:
+            case IPT_UI_THROTTLE:
+            case IPT_UI_FAST_FORWARD:
+            case IPT_UI_SHOW_FPS:
+            case IPT_UI_SNAPSHOT:
+            case IPT_UI_RECORD_MOVIE:
+            case IPT_UI_TOGGLE_CHEAT:
+            case IPT_UI_UP:
+            case IPT_UI_DOWN:
+            case IPT_UI_LEFT:
+            case IPT_UI_RIGHT:
+            case IPT_UI_HOME:
+            case IPT_UI_END:
+            case IPT_UI_PAGE_UP:
+            case IPT_UI_PAGE_DOWN:
+            case IPT_UI_SELECT:
+            case IPT_UI_CANCEL:
+            case IPT_UI_DISPLAY_COMMENT:
+            case IPT_UI_CLEAR:
+            case IPT_UI_ZOOM_IN:
+            case IPT_UI_ZOOM_OUT:
+            case IPT_UI_PREV_GROUP:
+            case IPT_UI_NEXT_GROUP:
+            case IPT_UI_ROTATE:
+            case IPT_UI_SHOW_PROFILER:
+            case IPT_UI_TOGGLE_UI:
+            case IPT_UI_TOGGLE_DEBUG:
+            case IPT_UI_PASTE:
+            case IPT_UI_SAVE_STATE:
+            case IPT_UI_LOAD_STATE:
+                // UI ports are not reported, they are implied
                 break;
             case IPT_JOYSTICK_LEFT:
             case IPT_JOYSTICK_RIGHT:
             case IPT_JOYSTICKLEFT_LEFT:
             case IPT_JOYSTICKLEFT_RIGHT:
-                switch (field->way) {
+                switch (field->way()) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_LeftHorizontalJoystick);
@@ -568,7 +689,7 @@ static void convert_controllers(const ioport_list *ioportlist,
             case IPT_JOYSTICK_DOWN:
             case IPT_JOYSTICKLEFT_UP:
             case IPT_JOYSTICKLEFT_DOWN:
-                switch (field->way) {
+                switch (field->way()) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_LeftVerticalJoystick);
@@ -585,7 +706,7 @@ static void convert_controllers(const ioport_list *ioportlist,
                 break;
             case IPT_JOYSTICKRIGHT_LEFT:
             case IPT_JOYSTICKRIGHT_RIGHT:
-                switch (field->way) {
+                switch (field->way()) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_RightHorizontalJoystick);
@@ -602,7 +723,7 @@ static void convert_controllers(const ioport_list *ioportlist,
                 break;
             case IPT_JOYSTICKRIGHT_UP:
             case IPT_JOYSTICKRIGHT_DOWN:
-                switch (field->way) {
+                switch (field->way()) {
                 case 2:
                     gameinfo->controllers.per_player.controller_flags |= 
                         (1 << LibMame_ControllerType_RightVerticalJoystick);
@@ -622,6 +743,7 @@ static void convert_controllers(const ioport_list *ioportlist,
                 gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Paddle);
                 break;
+            case IPT_PADDLE_V:
             case IPT_POSITIONAL_V:
                 gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_VerticalPaddle);
@@ -630,8 +752,14 @@ static void convert_controllers(const ioport_list *ioportlist,
                 gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Spinner);
                 break;
+            case IPT_DIAL_V:
+                gameinfo->controllers.per_player.controller_flags |= 
+                    (1 << LibMame_ControllerType_VerticalSpinner);
+                break;
             case IPT_TRACKBALL_X:
             case IPT_TRACKBALL_Y:
+            case IPT_MOUSE_X:
+            case IPT_MOUSE_Y:
                 gameinfo->controllers.per_player.controller_flags |= 
                     (1 << LibMame_ControllerType_Trackball);
                 break;
@@ -671,7 +799,7 @@ static void convert_controllers(const ioport_list *ioportlist,
                     (1 << enumvalue);                                   \
                 gameinfo->                                              \
                     controllers.per_player.normal_button_names[n] =     \
-                    field->name ? field->name : emptyStringG;           \
+                    field->name() ? field->name() : emptyStringG;       \
                 break
                 
 #define CASE_SHARED_BUTTON(iptname, enumvalue)                          \
@@ -882,27 +1010,22 @@ static void convert_controllers(const ioport_list *ioportlist,
 }
 
 
-static void convert_image_info(const game_driver *driver, 
-                               const machine_config *machineconfig,
-                               GameInfo *gameinfo)
+static void convert_image_info(const game_driver &driver,
+                               const device_t &device, GameInfo *gameinfo)
 {
     /* Convert the roms and hdd images */
 
-    /* Iterate through the sources ... */
-    for (const rom_source *source = rom_first_source(*machineconfig); 
-         source; source = rom_next_source(*source)) {
-        /* Iterate through the regions */
-        for (const rom_entry *region = rom_first_region(*source); region;
-             region = rom_next_region(region)) {
-            /* iterate through ROM entries */
-            for (const rom_entry *rom = rom_first_file(region); rom;
-                 rom = rom_next_file(rom)) {
-                if (ROMREGION_ISDISKDATA(region)) {
-                    gameinfo->hdd_count++;
-                }
-                else {
-                    gameinfo->rom_count++;
-                }
+    /* Iterate through the regions */
+    for (const rom_entry *region = rom_first_region(device); region; 
+         region = rom_next_region(region)) {
+        /* iterate through ROM entries */
+        for (const rom_entry *rom = rom_first_file(region); rom;
+             rom = rom_next_file(rom)) {
+            if (ROMREGION_ISDISKDATA(region)) {
+                gameinfo->hdd_count++;
+            }
+            else {
+                gameinfo->rom_count++;
             }
         }
     }
@@ -921,118 +1044,114 @@ static void convert_image_info(const game_driver *driver,
     Hash::Table<Hash::StringKey, LibMame_BiosSet> htBiosSets;
     LibMame_Image *rom_image = gameinfo->roms, *hdd_image = gameinfo->hdds;
     int current_rom_index = 0;
-    for (const rom_source *source = rom_first_source(*machineconfig);
-         source; source = rom_next_source(*source)) {
-        /* Iterate through the regions */
-        for (const rom_entry *region = rom_first_region(*source); 
-             region; region = rom_next_region(region)) {
-            /* iterate through ROM entries */
-            for (const rom_entry *rom = rom_first_file(region); rom;
-                 rom = rom_next_file(rom)) {
-                LibMame_Image *image;
-                bool is_disk = ROMREGION_ISDISKDATA(region);
-                if (is_disk) {
-                    image = hdd_image;
-                    hdd_image++;
-                }
-                else {
-                    image = rom_image;
-                    rom_image++;
-                    current_rom_index++;
-                }
-                image->name = ROM_GETNAME(rom);
-                hash_collection hashes(ROM_GETHASHDATA(rom));
-                image->status = (hashes.flag(hash_collection::FLAG_BAD_DUMP) ?
-                                 LibMame_ImageStatus_BadDump :
-                                 hashes.flag(hash_collection::FLAG_NO_DUMP) ?
-                                 LibMame_ImageStatus_NoDump :
-                                 LibMame_ImageStatus_GoodDump);
-                image->is_optional = ((is_disk && DISK_ISOPTIONAL(rom)) ||
-                                      (!is_disk && ROM_ISOPTIONAL(rom)));
-                image->size_if_known = is_disk ? 0 : rom_file_size(rom);
-                image->clone_of_game = emptyStringG;
-                image->clone_of_rom = emptyStringG;
+    /* Iterate through the regions */
+    for (const rom_entry *region = rom_first_region(device); region; 
+         region = rom_next_region(region)) {
+        /* iterate through ROM entries */
+        for (const rom_entry *rom = rom_first_file(region); rom;
+             rom = rom_next_file(rom)) {
+            LibMame_Image *image;
+            bool is_disk = ROMREGION_ISDISKDATA(region);
+            if (is_disk) {
+                image = hdd_image;
+                hdd_image++;
+            }
+            else {
+                image = rom_image;
+                rom_image++;
+                current_rom_index++;
+            }
+            image->name = ROM_GETNAME(rom);
+            hash_collection hashes(ROM_GETHASHDATA(rom));
+            image->status = (hashes.flag(hash_collection::FLAG_BAD_DUMP) ?
+                             LibMame_ImageStatus_BadDump :
+                             hashes.flag(hash_collection::FLAG_NO_DUMP) ?
+                             LibMame_ImageStatus_NoDump :
+                             LibMame_ImageStatus_GoodDump);
+            image->is_optional = ((is_disk && DISK_ISOPTIONAL(rom)) ||
+                                  (!is_disk && ROM_ISOPTIONAL(rom)));
+            image->size_if_known = is_disk ? 0 : rom_file_size(rom);
+            image->clone_of_game = emptyStringG;
+            image->clone_of_rom = emptyStringG;
 
-                int clone_of = g_drivers.Get().find(driver->parent);
-                if (clone_of != -1) {
-                    for (const rom_source *psource = rom_first_source
-                             (g_drivers.Get().config(clone_of)); psource;
-                         psource = rom_next_source(*psource)) {
-                        for (const rom_entry *pregion = 
-                                 rom_first_region(*psource); pregion;
-                             pregion = rom_next_region(pregion)) {
-                            for (const rom_entry *prom = 
-                                     rom_first_file(pregion); prom; 
-                                 prom = rom_next_file(prom)) {
-                                if (hashes == 
-                                    hash_collection(ROM_GETHASHDATA(prom))) {
-                                    image->clone_of_game = driver->parent;
-                                    if (!image->clone_of_game) {
-                                        image->clone_of_game = emptyStringG;
-                                    }
-                                    image->clone_of_rom = ROM_GETNAME(prom);
-                                    if (!image->clone_of_rom) {
-                                        image->clone_of_rom = emptyStringG;
-                                    }
-                                    break;
-                                }
+            int clone_of = g_drivers.Get().find(driver.parent);
+            if (clone_of != -1) {
+                machine_config &clone_of_machineconfig =
+                    g_drivers.Get().config(clone_of);
+                for (const rom_entry *pregion = 
+                         rom_first_region(clone_of_machineconfig.
+                                          root_device()); pregion;
+                     pregion = rom_next_region(pregion)) {
+                    for (const rom_entry *prom = rom_first_file(pregion);
+                         prom; prom = rom_next_file(prom)) {
+                        if (hashes == 
+                            hash_collection(ROM_GETHASHDATA(prom))) {
+                            image->clone_of_game = driver.parent;
+                            if (!image->clone_of_game) {
+                                image->clone_of_game = emptyStringG;
                             }
-                        }
-                    }
-                }
-                image->crc = image->sha1 = image->md5 = emptyStringG;
-                if (!hashes.flag(hash_collection::FLAG_NO_DUMP)) {
-                    for (hash_base *hash = hashes.first(); hash != NULL; 
-                         hash = hash->next()) {
-                        char id = hash->id();
-                        astring tempstr;
-                        const char *value = hash->string(tempstr);
-                        if (id == hash_collection::HASH_CRC) {
-                            if (!image->crc) {
-                                image->crc = copy_string(value);
+                            image->clone_of_rom = ROM_GETNAME(prom);
+                            if (!image->clone_of_rom) {
+                                image->clone_of_rom = emptyStringG;
                             }
-                            // Else weirdness???
-                        }
-                        else if (id == hash_collection::HASH_SHA1) {
-                            if (!image->sha1) {
-                                image->sha1 = copy_string(value);
-                            }
-                            // Else weirdness???
-                        }
-                        // Else weirdness???
-                    }
-                }
-                /* This is really weird but it's what MAME does. */
-                if (!is_disk && ROM_GETBIOSFLAGS(rom)) {
-                    /* scan backwards through the ROM entries */
-                    for (const rom_entry *brom = rom - 1; brom != driver->rom; 
-                         brom--) {
-                        if (ROMENTRY_ISSYSTEM_BIOS(brom)) {
-                            /* This is a ROM for this BIOS set.  Look the BIOS
-                               up in the hashtable, and create if if
-                               necessary; then add this ROM to its list of
-                               ROMs */
-                            const char *bios_set_name = ROM_GETNAME(brom);
-                            LibMame_BiosSet *bios_set;
-                            if (!htBiosSets.Put(bios_set_name,
-                                                /* returns */ bios_set)) {
-                                /* New BIOS set, so set it up */
-                                bios_set->name = bios_set_name;
-                                bios_set->description = ROM_GETHASHDATA(brom);
-                                bios_set->is_default = 
-                                    (ROM_GETBIOSFLAGS(brom) == 1);
-                                bios_set->rom_count = 0;
-                                /* Allocate the maximum possible, which is
-                                   almost certainly more than needed, but is
-                                   easy */ 
-                                bios_set->rom_numbers = (const int *) 
-                                    osd_malloc(sizeof(int) * 
-                                               gameinfo->rom_count);
-                            }
-                            ((int *) (bios_set->rom_numbers))
-                                [bios_set->rom_count++] = current_rom_index - 1;
                             break;
                         }
+                    }
+                }
+            }
+            image->md5 = emptyStringG;
+            if (hashes.flag(hash_collection::FLAG_NO_DUMP)) {
+                image->crc = image->sha1 = emptyStringG;
+            }
+            else {
+                UINT32 crc;
+                if (hashes.crc(crc)) {
+                    char crcbuf[256];
+                    snprintf(crcbuf, sizeof(crcbuf), "%ux", crc);
+                    image->crc = copy_string(crcbuf);
+                }
+                else {
+                    image->crc = emptyStringG;
+                }
+                sha1_t sha1;
+                if (hashes.sha1(sha1)) {
+                    astring abuf;
+                    image->sha1 = copy_string(sha1.as_string(abuf));
+                }
+                else {
+                    image->sha1 = emptyStringG;
+                }
+            }
+            /* This is really weird but it's what MAME does. */
+            if (!is_disk && ROM_GETBIOSFLAGS(rom)) {
+                /* scan backwards through the ROM entries */
+                for (const rom_entry *brom = rom - 1; brom != driver.rom; 
+                     brom--) {
+                    if (ROMENTRY_ISSYSTEM_BIOS(brom)) {
+                        /* This is a ROM for this BIOS set.  Look the BIOS
+                           up in the hashtable, and create if if
+                           necessary; then add this ROM to its list of
+                           ROMs */
+                        const char *bios_set_name = ROM_GETNAME(brom);
+                        LibMame_BiosSet *bios_set;
+                        if (!htBiosSets.Put(bios_set_name,
+                                            /* returns */ bios_set)) {
+                            /* New BIOS set, so set it up */
+                            bios_set->name = bios_set_name;
+                            bios_set->description = ROM_GETHASHDATA(brom);
+                            bios_set->is_default = 
+                                (ROM_GETBIOSFLAGS(brom) == 1);
+                            bios_set->rom_count = 0;
+                            /* Allocate the maximum possible, which is
+                               almost certainly more than needed, but is
+                               easy */ 
+                            bios_set->rom_numbers = (const int *) 
+                                osd_malloc(sizeof(int) * 
+                                           gameinfo->rom_count);
+                        }
+                        ((int *) (bios_set->rom_numbers))
+                            [bios_set->rom_count++] = current_rom_index - 1;
+                        break;
                     }
                 }
             }
@@ -1088,7 +1207,7 @@ static void convert_game_info(GameInfo *gameinfo)
 	device_iterator iter(machineconfig.root_device());
 	for (device_t *device = iter.first(); device != NULL; 
          device = iter.next()) {
-		input_port_list_init(*device, ioportlist, errors);
+        ioportlist.append(*device, errors);
     }
     /* Mame's code assumes the above succeeds, we will too */
 
@@ -1101,7 +1220,7 @@ static void convert_game_info(GameInfo *gameinfo)
     convert_chips(&machineconfig, gameinfo);
     convert_settings(&ioportlist, gameinfo);
     convert_controllers(&ioportlist, gameinfo);
-    convert_image_info(&driver, &machineconfig, gameinfo);
+    convert_image_info(driver, machineconfig.root_device(), gameinfo);
     convert_source_file_name(&driver, gameinfo);
 }
 

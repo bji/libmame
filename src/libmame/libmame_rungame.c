@@ -429,8 +429,8 @@ static libmame_input_descriptor g_input_descriptors[IPT_COUNT] =
     { IPT_DIAL_V, ANALOG_INPUT(vertical_spinner, ITEM_ID_RYAXIS) },
     { IPT_TRACKBALL_X, ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS) },
     { IPT_TRACKBALL_Y, ANALOG_INPUT(trackball_vertical, ITEM_ID_RYAXIS) },
-    { IPT_MOUSE_X, INVALID_INPUT },
-    { IPT_MOUSE_Y, INVALID_INPUT },
+    { IPT_MOUSE_X, ANALOG_INPUT(trackball_horizontal, ITEM_ID_RXAXIS) },
+    { IPT_MOUSE_Y, ANALOG_INPUT(trackball_vertical, ITEM_ID_RYAXIS) },
     { IPT_ANALOG_LAST, INVALID_INPUT },
     { IPT_ADJUSTER, INVALID_INPUT },
     { IPT_UI_FIRST, INVALID_INPUT },
@@ -598,6 +598,7 @@ static INT32 get_controller_state(void *, void *data)
     }
 
 #undef RANGED
+#undef PEDAL
 
     /* Weird, this is not an input type that we know about */
     return 0;
@@ -806,32 +807,13 @@ static void startup_callback(running_machine &machine)
                                    (void *) (uintptr_t) special_button_index++);
                 keyboard_item++;
 
-                // XXX bji - this no longer works.  MAME cannot be forced to
-                // use an item input code via a method call, it has to extract
-                // it from some settings values somewhere.
-
-                // The dipswitch and settings stuff has changed significantly
-                // over time and I am not sure that libmame's use of it works
-                // anymore anyway.
-                
-                // It might be better to more significantly hack MAME to
-                // have much, much saner API for querying about controls,
-                // dipswitches, adjusters, and configuration stuff, and
-                // setting those at runtime, than to try to continue to
-                // try to force MAME into doing what I want in this minimal
-                // fashion.
-
-                // Basically, I would leave the macros that are used by all of
-                // the drivers to define their ports and stuff, but
-                // reimplement them into something usable.  Also I would
-                // figure out what minimal API is necessary for the drivers to
-                // acquire input values and re-implement that too.
-#if 0
-                port->first_field()->seq(SEQ_TYPE_STANDARD).
-                    set(item_input_code);
-#else
-                (void) item_input_code;
-#endif
+                input_seq *seq = field->modifiable_seq(SEQ_TYPE_STANDARD);
+                if (seq == NULL) {
+                    // Warning/error - field is not live or not enabled
+                }
+                else {
+                    seq->set(item_input_code);
+                }
             }
         }
     }
@@ -877,21 +859,19 @@ static void set_configuration_value(LibMame_RunningGame *game,
                                     const char *tag, uint32_t mask,
                                     int value)
 {
-    (void) game;
 
     // This no longer works; the whole dipswitch/coniguration thing needs
     // to be redone as per other comments
+    
+    ioport_manager &manager = g_state.machine->ioport();
 
-#if 0
-    const input_field_config *config = input_field_by_tag_and_mask
-        (*(g_state.machine), tag, mask);
-
-    if (config != NULL) {
-        input_field_user_settings settings;
-        settings.value = value;
-        input_field_set_user_settings(config, &settings);
+    for (ioport_port *ioport = manager.first_port(); ioport;
+         ioport = ioport->next()) {
+        if (!strcmp(ioport->tag(), tag)) {
+            ioport->write(value, mask);
+            return;
+        }
     }
-#endif
 }
 
 
@@ -1071,25 +1051,23 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
     input_device *pedal[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
     char namebuf[256];
 
-
 #define GET_ITEM_DEVICE_AND_ID(devices, deviceclass, item_class)        \
     do {                                                                \
-        if (devices [entry->player] == 0) {                             \
+        if (devices [entry->player()] == 0) {                           \
             snprintf(namebuf, sizeof(namebuf),                          \
                      "libmame_virtual_" #devices "_%d",                 \
-                     entry->player);                                    \
-            devices [entry->player] = g_state.machine->input().         \
+                     entry->player());                                  \
+            devices [entry->player()] = g_state.machine->input().       \
                 device_class(deviceclass).add_device(namebuf);          \
         }                                                               \
-        item_device = devices [entry->player];                          \
-        item_id = g_input_descriptors[entry->type].item_id;             \
+        item_device = devices [entry->player()];                        \
+        item_id = g_input_descriptors[entry->type()].item_id;           \
         item_input_code = input_code(deviceclass,                       \
-                                     devices [entry->player]->          \
+                                     devices [entry->player()]->        \
                                      devindex(),                        \
                                      item_class, ITEM_MODIFIER_NONE,    \
                                      item_id);                          \
     } while (0);
-
 
 	for (entry = typelist.first(); entry; entry = entry->next()) {
         item_device = NULL;
@@ -1100,6 +1078,8 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
             }
         }
         if (index == g_input_descriptor_count) {
+            // XXX maybe should warn or error here or at least in debug builds
+            // crash assert or something - otherwise, the input gets ignored
             continue;
         }
         if (controllers_have_input(g_state.maximum_player_count,
@@ -1199,7 +1179,7 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
 
         if (item_device) {
             item_device->add_item("", item_id, &get_controller_state,
-                                  CBDATA_MAKE(entry->player, index));
+                                  CBDATA_MAKE(entry->player(), index));
         }
         else {
             /* For some reason or another, we can't handle this input, so turn
@@ -1207,7 +1187,7 @@ osd_customize_input_type_list(simple_list<input_type_entry> &typelist)
             item_id = ITEM_ID_MAXIMUM;
         }
 
-        entry->defseq[SEQ_TYPE_STANDARD].set(item_input_code);
+        entry->defseq(SEQ_TYPE_STANDARD).set(item_input_code);
     }
 }
 
