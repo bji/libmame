@@ -1107,7 +1107,7 @@ static void convert_image_info(const game_driver &driver,
                 UINT32 crc;
                 if (hashes.crc(crc)) {
                     char crcbuf[256];
-                    snprintf(crcbuf, sizeof(crcbuf), "%ux", crc);
+                    snprintf(crcbuf, sizeof(crcbuf), "%x", crc);
                     image->crc = copy_string(crcbuf);
                 }
                 else {
