@@ -9,6 +9,12 @@ To build:
 
 make BUILD_LIBMAME=1 libmame
 
+- The resulting shared object library will be obj/posix{64}/libmame.so
+- The header file is src/libmame/libmame.h
+- You can build a static version of the library too:
+  make BUILD_LIBMAME=1 STATIC=1 libmame
+  in which case the static library will be at obj/posix{64}s/libmame.a
+
 (Windows)
 
 ... haven't built it in a while, I'll update this when I have verified
