@@ -505,9 +505,6 @@ COBJFLAGS =
 CPPONLYFLAGS =
 
 ifdef BUILD_LIBMAME
-# libmame doesn't support "mem tracking" - this is a debugging facility
-# best left to standalone developer builds
-# CCOMFLAGS = -DNO_MEM_TRACKING
 # if bulding shared libraries (the default), need -fPIC
 ifndef STATIC
 # -fPIC is not used on Microsoft Windows

@@ -523,10 +523,6 @@ public:
 	bool lightgun_reload_button() const { return m_lightgun_reload_button; }
 
 	// item management
-    // gets the index of an input_device within the input_class.  Each
-    // { input_class, index } pair is unique, meaning that these two values
-    // will uniquely identify an input_device.
-    int get_index() const { return m_devindex; } 
 	input_item_id add_item(const char *name, input_item_id itemid, item_get_state_func getstate, void *internal = NULL);
 	void set_joystick_map(const joystick_map &map) { m_joymap = map; }
 
