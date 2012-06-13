@@ -36,8 +36,9 @@ ifdef STATIC
 LIBMAME = $(OBJ)/libmame.a
 LIBMAME_STATIC_OBJS := $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ)            \
                        $(DRVLIBOBJS) $(OSDCOREOBJS) $(LIBEMUOBJS) $(CPUOBJS) \
-                       $(DASMOBJS) $(SOUNDOBJS) $(LIBFLACOBJS) $(LIB7ZOBJS)  \
-                       $(FORMATSOBJS) $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS)   \
+                       $(DASMOBJS) $(SOUNDOBJS) $(LIBJPEGOBJS)               \
+                       $(LIBFLACOBJS) $(LIB7ZOBJS) $(FORMATSOBJS)            \
+                       $(UTILOBJS) $(EXPATOBJS) $(ZLIBOBJS)                  \
                        $(SOFTFLOATOBJS) $(DRIVLISTOBJ) $(DEVLISTOBJ) 
 
 $(OBJ)/libmame/libmame_arargs:
