@@ -22,7 +22,7 @@ make BUILD_LIBMAME=1 libmame
 - Ensure that you have pthreads-w64 installed; NOTE that if you installed
   the MingW compiler from mamedev.org, you will have to additionally
   extract the contents of the pthreads-w64 ZIP file and store them in
-  the x64-64-w64-mingw32 folder (I am not sure why MAME ships its
+  the x64_64-w64-mingw32 folder (I am not sure why MAME ships its
   build tools with pthreads-w64 present but not unzipped, but there you
   have it).
 - From a Windows CMD line, run:
