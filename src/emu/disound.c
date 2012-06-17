@@ -75,7 +75,7 @@ device_sound_interface::sound_route &device_sound_interface::static_add_route(de
 {
 	// find our sound interface
 	device_sound_interface *sound;
-	if (!device.interface(sound))
+	if (!device.get_interface(sound))
 		throw emu_fatalerror("MCFG_SOUND_ROUTE called on device '%s' with no sound interface", device.tag());
 
 	// append a new route to the list
@@ -92,7 +92,7 @@ void device_sound_interface::static_reset_routes(device_t &device)
 {
 	// find our sound interface
 	device_sound_interface *sound;
-	if (!device.interface(sound))
+	if (!device.get_interface(sound))
 		throw emu_fatalerror("MCFG_SOUND_ROUTES_RESET called on device '%s' with no sound interface", device.tag());
 
 	// reset the routine list
@@ -273,7 +273,7 @@ void device_sound_interface::interface_validity_check(validity_checker &valid) c
 
 		// if it's not a speaker or a sound device, error
 		const device_sound_interface *sound;
-		if (target != NULL && target->type() != SPEAKER && !target->interface(sound))
+		if (target != NULL && target->type() != SPEAKER && !target->get_interface(sound))
 			mame_printf_error("Attempting to route sound to a non-sound device '%s' (%s)\n", route->m_target.cstr(), target->name());
 	}
 }

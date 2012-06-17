@@ -88,7 +88,7 @@ public:
 	samples_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 
 	// static configuration helpers
-	static void static_set_interface(device_t &device, const samples_interface &interface);
+	static void static_set_interface(device_t &device, const samples_interface &_interface);
 
 	// getters
 	bool playing(UINT8 channel) const;

@@ -744,7 +744,7 @@ private:
 	{
 		device_execute_interface *intf;
 		bool is_octal = false;
-		if (m_space.device().interface(intf))
+		if (m_space.device().get_interface(intf))
 			is_octal = intf->is_octal();
 
 		if (m_space.log_unmap() && !m_space.debugger_access())
@@ -815,7 +815,7 @@ private:
 	{
 		device_execute_interface *intf;
 		bool is_octal = false;
-		if (m_space.device().interface(intf))
+		if (m_space.device().get_interface(intf))
 			is_octal = intf->is_octal();
 
 		if (m_space.log_unmap() && !m_space.debugger_access())

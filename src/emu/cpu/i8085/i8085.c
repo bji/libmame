@@ -977,7 +977,7 @@ static void init_808x_common(legacy_cpu_device *device, device_irq_acknowledge_c
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->interface(state);
+		device->get_interface(state);
 		state->state_add(I8085_PC,     "PC",     cpustate->PC.w.l);
 		state->state_add(STATE_GENPC,  "GENPC",  cpustate->PC.w.l).noshow();
 		state->state_add(I8085_SP,     "SP",     cpustate->SP.w.l);

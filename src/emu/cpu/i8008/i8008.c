@@ -524,7 +524,7 @@ static CPU_INIT( i8008 )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->interface(state);
+		device->get_interface(state);
 		state->state_add(I8008_PC,    "PC",    cpustate->PC.w.l).mask(0x3fff);
 		state->state_add(STATE_GENPC, "GENPC", cpustate->PC.w.l).mask(0x3fff).noshow();
 		state->state_add(STATE_GENFLAGS, "GENFLAGS", cpustate->flags).mask(0x0f).callimport().callexport().noshow().formatstr("%4s");

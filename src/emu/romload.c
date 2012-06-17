@@ -1235,7 +1235,7 @@ static void normalize_flags_for_device(running_machine &machine, const char *rgn
 {
 	device_t *device = machine.device(rgntag);
 	device_memory_interface *memory;
-	if (device->interface(memory))
+	if (device->get_interface(memory))
 	{
 		const address_space_config *spaceconfig = memory->space_config();
 		if (spaceconfig != NULL)

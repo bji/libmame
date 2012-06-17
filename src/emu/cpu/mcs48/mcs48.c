@@ -867,7 +867,7 @@ static void mcs48_init(legacy_cpu_device *device, device_irq_acknowledge_callbac
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->interface(state);
+		device->get_interface(state);
 		state->state_add(MCS48_PC,        "PC",        cpustate->pc).mask(0xfff);
 		state->state_add(STATE_GENPC,     "GENPC",     cpustate->pc).mask(0xfff).noshow();
 		state->state_add(STATE_GENPCBASE, "GENPCBASE", cpustate->prevpc).mask(0xfff).noshow();

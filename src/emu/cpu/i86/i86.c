@@ -174,7 +174,7 @@ static CPU_INIT( i8086 )
 	/* set up the state table */
 	{
 		device_state_interface *state;
-		device->interface(state);
+		device->get_interface(state);
 		state->state_add(STATE_GENPC, "GENPC", cpustate->pc).mask(0xfffff).formatstr("%9s").callimport();
 		state->state_add(I8086_IP,    "IP",    cpustate->ip).callimport().callexport();
 		state->state_add(I8086_FLAGS, "FLAGS", cpustate->flags).callimport().callexport().noshow();

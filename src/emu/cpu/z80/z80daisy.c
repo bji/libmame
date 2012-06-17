@@ -66,7 +66,7 @@ void z80_daisy_chain::init(device_t *cpudevice, const z80_daisy_config *daisy)
 
 		// make sure it has an interface
 		device_z80daisy_interface *intf;
-		if (!target->interface(intf))
+		if (!target->get_interface(intf))
 			fatalerror("Device '%s' does not implement the z80daisy interface!", daisy->devname);
 
 		// append to the end
@@ -166,5 +166,5 @@ z80_daisy_chain::daisy_entry::daisy_entry(device_t *device)
 	  m_device(device),
 	  m_interface(NULL)
 {
-	device->interface(m_interface);
+	device->get_interface(m_interface);
 }

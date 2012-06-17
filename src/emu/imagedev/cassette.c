@@ -278,7 +278,7 @@ bool cassette_image_device::call_load()
 	const char *extension;
 	int is_writable;
 	device_image_interface *image = NULL;
-	interface(image);
+	get_interface(image);
 
 	if ((has_been_created()) || (length() == 0))
 	{

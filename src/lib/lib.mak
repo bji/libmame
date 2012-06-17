@@ -304,7 +304,9 @@ endif   # ifeq ($(TARGETOS),macosx)
 FLACOPTS=-DFLAC__NO_ASM -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DHAVE_CONFIG_H=0 -DFLAC__HAS_OGG=0 -Wno-unused-function $(ARCHFLAGS)
 
 ifdef BUILD_LIBMAME
+ifneq ($(OS),Windows_NT)
 FLACOPTS := $(FLACOPTS) -fPIC
+endif
 endif
 
 LIBFLACOBJS = \
