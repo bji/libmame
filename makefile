@@ -477,10 +477,8 @@ DEFS += -DUSE_NETWORK
 endif
 
 # need to ensure FLAC functions are statically linked
-ifndef BUILD_LIBMAME
 ifeq ($(BUILD_FLAC),1)
 DEFS += -DFLAC__NO_DLL
-endif
 endif
 
 # define USE_SYSTEM_JPEGLIB if library shipped with MAME is not used

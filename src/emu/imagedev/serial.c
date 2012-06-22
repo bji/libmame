@@ -101,7 +101,7 @@ void serial_image_device::device_start()
 	device_serial_interface *intf = NULL;
 	if (m_tag_connected) {
 		device_t *dev = machine().device(m_tag_connected);
-		if (dev!=NULL && dev->interface(intf)) {
+		if (dev!=NULL && dev->get_interface(intf)) {
 			intf->connect(this);
 		}
 	}

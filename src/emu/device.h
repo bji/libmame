@@ -169,16 +169,16 @@ public:
 	UINT8 system_bios() const { return m_system_bios; }
 
 	// interface helpers
-	template<class _DeviceClass> bool interface(_DeviceClass *&intf) { intf = dynamic_cast<_DeviceClass *>(this); return (intf != NULL); }
-	template<class _DeviceClass> bool interface(_DeviceClass *&intf) const { intf = dynamic_cast<const _DeviceClass *>(this); return (intf != NULL); }
+	template<class _DeviceClass> bool get_interface(_DeviceClass *&intf) { intf = dynamic_cast<_DeviceClass *>(this); return (intf != NULL); }
+	template<class _DeviceClass> bool get_interface(_DeviceClass *&intf) const { intf = dynamic_cast<const _DeviceClass *>(this); return (intf != NULL); }
 
 	// specialized helpers for common core interfaces
-	bool interface(device_execute_interface *&intf) { intf = m_execute; return (intf != NULL); }
-	bool interface(device_execute_interface *&intf) const { intf = m_execute; return (intf != NULL); }
-	bool interface(device_memory_interface *&intf) { intf = m_memory; return (intf != NULL); }
-	bool interface(device_memory_interface *&intf) const { intf = m_memory; return (intf != NULL); }
-	bool interface(device_state_interface *&intf) { intf = m_state; return (intf != NULL); }
-	bool interface(device_state_interface *&intf) const { intf = m_state; return (intf != NULL); }
+	bool get_interface(device_execute_interface *&intf) { intf = m_execute; return (intf != NULL); }
+	bool get_interface(device_execute_interface *&intf) const { intf = m_execute; return (intf != NULL); }
+	bool get_interface(device_memory_interface *&intf) { intf = m_memory; return (intf != NULL); }
+	bool get_interface(device_memory_interface *&intf) const { intf = m_memory; return (intf != NULL); }
+	bool get_interface(device_state_interface *&intf) { intf = m_state; return (intf != NULL); }
+	bool get_interface(device_state_interface *&intf) const { intf = m_state; return (intf != NULL); }
 	device_execute_interface &execute() const { assert(m_execute != NULL); return *m_execute; }
 	device_memory_interface &memory() const { assert(m_memory != NULL); return *m_memory; }
 
@@ -879,7 +879,7 @@ public:
 	_InterfaceClass *first()
 	{
 		for (device_t *device = m_iterator.first(); device != NULL; device = m_iterator.next())
-			if (device->interface(m_current))
+			if (device->get_interface(m_current))
 				return m_current;
 		return NULL;
 	}
@@ -888,7 +888,7 @@ public:
 	_InterfaceClass *next()
 	{
 		for (device_t *device = m_iterator.next(); device != NULL; device = m_iterator.next())
-			if (device->interface(m_current))
+			if (device->get_interface(m_current))
 				return m_current;
 		return NULL;
 	}

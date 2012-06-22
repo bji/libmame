@@ -17,8 +17,21 @@ make BUILD_LIBMAME=1 libmame
 
 (Windows)
 
-... haven't built it in a while, I'll update this when I have verified
-that it still works and have instructions.
+- Install MingW compiler; an extremely good choice is the compiler
+  available from the Development Tools section of mamedev.org
+- Ensure that you have pthreads-w64 installed; NOTE that if you installed
+  the MingW compiler from mamedev.org, you will have to additionally
+  extract the contents of the pthreads-w64 ZIP file and store them in
+  the x64_64-w64-mingw32 folder (I am not sure why MAME ships its
+  build tools with pthreads-w64 present but not unzipped, but there you
+  have it).
+- From a Windows CMD line, run:
+  make BUILD_LIBMAME=1 libmame
+- The resulting DLL will be obj/posix{64}/libmame.dll
+- The header file is src/libmame/libmame.h
+- You can build a static version of the library too:
+  make BUILD_LIBMAME=1 STATIC=1 libmame
+  in which case the static library will be at obj/posix{64}/libmame.a
 
 (Mac OSX)
 

@@ -700,12 +700,12 @@ address_map::address_map(const device_t &device, address_spacenum spacenum)
 {
 	// get our memory interface
 	const device_memory_interface *memintf;
-	if (!device.interface(memintf))
+	if (!device.get_interface(memintf))
 		throw emu_fatalerror("No memory interface defined for device '%s'\n", device.tag());
 
 	// and then the configuration for the current address space
 	const address_space_config *spaceconfig = memintf->space_config(spacenum);
-	if (!device.interface(memintf))
+	if (!device.get_interface(memintf))
 		throw emu_fatalerror("No memory address space configuration found for device '%s', space %d\n", device.tag(), spacenum);
 
 	// append the internal device map (first so it takes priority) */

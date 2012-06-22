@@ -194,12 +194,12 @@ const char *software_part_get_feature(const software_part *part, const char *fea
 
 bool load_software_part(emu_options &options, device_image_interface *image, const char *path, software_info **sw_info, software_part **sw_part, char **full_sw_name, char**list_name);
 
-void software_display_matches(const machine_config &config, emu_options &options,const char *interface,const char *swname_bckp);
+void software_display_matches(const machine_config &config, emu_options &options,const char *_interface,const char *swname_bckp);
 
 const char *software_get_default_slot(const machine_config &config, emu_options &options, const device_image_interface *image, const char* default_card_slot);
 
 bool is_software_compatible(const software_part *swpart, const software_list_device *swlist);
-bool swinfo_has_multiple_parts(const software_info *swinfo, const char *interface);
+bool swinfo_has_multiple_parts(const software_info *swinfo, const char *_interface);
 
-bool softlist_contain_interface(const char *interface, const char *part_interface);
+bool softlist_contain_interface(const char *_interface, const char *part_interface);
 #endif

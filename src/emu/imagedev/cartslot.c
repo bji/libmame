@@ -131,7 +131,7 @@ int cartslot_image_device::load_cartridge(const rom_entry *romrgn, const rom_ent
 		/* if the region is inverted, do that now */
 		device_memory_interface *memory;
 		cpu = device().machine().device(type);
-		if (cpu!=NULL && cpu->interface(memory))
+		if (cpu!=NULL && cpu->get_interface(memory))
 		{
 			datawidth = cpu->memory().space_config(AS_PROGRAM)->m_databus_width / 8;
 			littleendian = (cpu->memory().space_config()->m_endianness == ENDIANNESS_LITTLE);

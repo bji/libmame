@@ -628,7 +628,7 @@ static WRITE8_DEVICE_HANDLER( champwr_msm5205_stop_w )
 static WRITE8_DEVICE_HANDLER( champwr_msm5205_volume_w )
 {
 	device_sound_interface *sound;
-	device->interface(sound);
+	device->get_interface(sound);
 	sound->set_output_gain(0, data / 255.0);
 }
 

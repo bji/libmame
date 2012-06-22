@@ -142,7 +142,7 @@ device_memory_interface::~device_memory_interface()
 void device_memory_interface::static_set_addrmap(device_t &device, address_spacenum spacenum, address_map_constructor map)
 {
 	device_memory_interface *memory;
-	if (!device.interface(memory))
+	if (!device.get_interface(memory))
 		throw emu_fatalerror("MCFG_DEVICE_ADDRESS_MAP called on device '%s' with no memory interface", device.tag());
 	if (spacenum >= ARRAY_LENGTH(memory->m_address_map))
 		throw emu_fatalerror("MCFG_DEVICE_ADDRESS_MAP called with out-of-range space number %d", device.tag(), spacenum);
