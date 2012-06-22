@@ -522,16 +522,12 @@ static void convert_controllers(const ioport_list *ioportlist,
                 continue;
             }
             uint8_t player = field->player();
-            // Use 0 for player 1
-            if (player) {
-                player -= 1;
-            }
 			if (gameinfo->max_simultaneous_players < player) {
 				gameinfo->max_simultaneous_players = player;
             }
             // Only process player 1 controls; it is assumed that all controls
             // are identical between all players
-            if (player > 0) {
+            if (player > 1) {
                 continue;
             }
             switch (field->type()) {
