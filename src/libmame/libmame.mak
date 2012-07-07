@@ -20,6 +20,19 @@ LIBMAMEOBJS = $(OBJ)/libmame/hashtable.o                                     \
               $(OBJ)/libmame/libmame_options.o                               \
               $(OBJ)/libmame/libmame_rungame.o
 
+# Mac OS X uses a different ld argument and file format for specifying
+# symbol visibility.  Also strip has different arguments.  And since it
+# uses BSD tools it has different ar args.
+ifeq ($(TARGETOS),macosx)
+    SYMBOLS_ARG := -Wl,-exported_symbols_list $(SRC)/libmame/libmame.exported_symbols
+    STRIP_ARG := -x
+    AR_ARG = $(shell cat $(OBJ)/libmame/libmame_arargs)
+else
+    SYMBOLS_ARG := -Wl,--version-script=$(SRC)/libmame/libmame.version
+    STRIP_ARG := --strip-unneeded
+    AR_ARG := @$(OBJ)/libmame/libmame_arargs
+endif
+
 
 #-------------------------------------------------
 # rules
@@ -53,11 +66,9 @@ $(OBJ)/libmame/libmame_arargs:
 
 $(LIBMAME): $(LIBMAME_STATIC_OBJS) | $(OBJ)/libmame/libmame_arargs
 			$(ECHO) Archiving $@...
-			$(AR) @$(OBJ)/libmame/libmame_arargs
+			$(AR) $(AR_ARG)
 
 else
-
-VERSION_SCRIPT := $(SRC)/libmame/libmame.version
 
 LIBMAME = $(OBJ)/libmame$(SHLIB)
 
@@ -79,10 +90,9 @@ $(LIBMAME): $(LIBMAMEOBJS) $(VERSIONOBJ) $(EMUINFOOBJ) $(DRIVLISTOBJ)        \
             $(JPEG_LIB) $(FLAC_LIB) $(7Z_LIB) $(FORMATS_LIB) $(LIBOCORE)     \
             $(ZLIB) $(RESFILE)
 			$(ECHO) Linking $@...
-			$(LD) $(LDFLAGS) -shared -Wl,--version-script=$(VERSION_SCRIPT)  \
-                -o $@ $^ -lpthread
+			$(LD) $(LDFLAGS) -shared $(SYMBOLS_ARG) -o $@ $^ -lpthread
 			$(ECHO) Stripping $@...
-			$(STRIP) --strip-unneeded $@
+			$(STRIP) $(STRIP_ARG) $@
 
 endif
 

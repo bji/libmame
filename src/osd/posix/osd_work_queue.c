@@ -109,6 +109,11 @@ static int g_threads_count;
 static pthread_t *g_thread_ids;
 
 /**
+ * Just used to allow integer thread ids to be passed to thread main functions
+ **/
+static int *g_thread_numbers;
+
+/**
  * This boolean is set to false when work threads are starting up, and is not
  * set to true until it is time for all work threads to exit
  **/
@@ -283,15 +288,9 @@ static void work_queue_run_items_locked(int threadid)
 /**
  * Worker thread function
  **/
-static void *work_queue_thread_main(void *)
+static void *work_queue_thread_main(void *data)
 {
-    int threadid;
-
-#ifdef WINDOWS
-    threadid = GetCurrentThreadId();
-#else
-    threadid = (int) pthread_self();
-#endif
+    int threadid = * (int *) data;
 
     pthread_mutex_lock(&g_mutex);
     
@@ -376,6 +375,8 @@ static void work_queue_destroy_threads_locked()
 
     osd_free(g_thread_ids);
 
+    osd_free(g_thread_numbers);
+
     g_thread_ids = NULL;
 }
 
@@ -448,12 +449,23 @@ static int work_queue_create_threads_locked()
     g_thread_ids = (pthread_t *) osd_malloc(sizeof(pthread_t) * threads_count);
 
     /**
+     * Create the array to allow passing of integer thread ids to the thread
+     * main function
+     **/
+    g_thread_numbers = (int *) osd_malloc(sizeof(int) * threads_count);
+    for (int i = 0; i < threads_count; i++)
+    {
+        g_thread_numbers[i] = i;
+    }
+
+    /**
      * Create threads_count work threads
      **/
     for (int i = 0; i < threads_count; i++)
     {
         pthread_t newthread;
-        if (pthread_create(&newthread, NULL, &work_queue_thread_main, NULL))
+        if (pthread_create(&newthread, NULL, &work_queue_thread_main,
+                           &(g_thread_numbers[i])))
         {
             /**
              * On failure, set the flag, and stop trying to create new threads
@@ -541,13 +553,17 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
      **/
     (void) timeout;
 
+    /**
+     * Find the thread id in the list of threads
+     **/
     int threadid;
-
-#ifdef WINDOWS
-    threadid = GetCurrentThreadId();
-#else
-    threadid = (int) pthread_self();
-#endif
+    pthread_t this_thread = pthread_self();
+    for (int i = 0; i < g_threads_count; i++) {
+        if (g_thread_ids[i] == this_thread) {
+            threadid = i;
+            break;
+        }
+    }
 
     pthread_mutex_lock(&g_mutex);
 
