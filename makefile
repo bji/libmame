@@ -315,7 +315,7 @@ EXE = .exe
 SHLIB = .dll
 endif
 ifeq ($(TARGETOS),macosx)
-SHLIB = .dynlib
+SHLIB = .dylib
 endif
 
 ifndef BUILD_EXE
