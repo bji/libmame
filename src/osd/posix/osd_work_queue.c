@@ -426,6 +426,11 @@ static int work_queue_create_threads_locked()
 #endif
 #endif
 
+    if (threads_count > WORK_MAX_THREADS)
+    {
+        threads_count = WORK_MAX_THREADS;
+    }
+
     if (threads_count < 1)
     {
         threads_count = 1;
@@ -553,18 +558,6 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
      **/
     (void) timeout;
 
-    /**
-     * Find the thread id in the list of threads
-     **/
-    int threadid;
-    pthread_t this_thread = pthread_self();
-    for (int i = 0; i < g_threads_count; i++) {
-        if (g_thread_ids[i] == this_thread) {
-            threadid = i;
-            break;
-        }
-    }
-
     pthread_mutex_lock(&g_mutex);
 
     /**
@@ -572,22 +565,7 @@ int osd_work_queue_wait(osd_work_queue *queue, osd_ticks_t timeout)
      **/
     while (queue->items_count)
     {
-        /**
-         * If there are items to run, then run them, to try to complete the
-         * items
-         **/
-        if (g_items)
-        {
-            work_queue_run_items_locked(threadid);
-        }
-        /**
-         * Else, some other thread must be completing the queue on our
-         * behalf.  Wait for them to finish.
-         **/
-        else
-        {
-            pthread_cond_wait(&queue->cond, &g_mutex);
-        }
+        pthread_cond_wait(&queue->cond, &g_mutex);
     }
 
     /**
