@@ -26,7 +26,7 @@ LIBMAMEOBJS = $(OBJ)/libmame/hashtable.o                                     \
 ifeq ($(TARGETOS),macosx)
     SYMBOLS_ARG := -Wl,-exported_symbols_list $(SRC)/libmame/libmame.exported_symbols
     STRIP_ARG := -x
-    AR_ARG := $$(shell cat $(OBJ)/libmame/libmame_arargs)
+    AR_ARG = $(shell cat $(OBJ)/libmame/libmame_arargs)
 else
     SYMBOLS_ARG := -Wl,--version-script=$(SRC)/libmame/libmame.version
     STRIP_ARG := --strip-unneeded
