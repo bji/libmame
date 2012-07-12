@@ -35,5 +35,19 @@ make BUILD_LIBMAME=1 libmame
 
 (Mac OSX)
 
-... have never built it on Mac OS X but I'm hoping it will work.  I'll
-update these instructions once I know how to build on Mac OS X.
+- You'll need to have Xcode installed and its command-line tools
+- libmame is in the Macports system so if you have Macports installed you
+  can simply issue this command:
+  sudo port install libmame
+  This will install libmame.dylib and libmame.a in /opt/local/lib, and
+  libmame.h in /opt/local/include/libmame
+- Alternately, you can build libmame yourself:
+  make BUILD_LIBMAME=1 LDFLAGS_EXTRA="-Wl,-current_version,1.0.0 -Wl,-install_name,<wherever_you_expect_to_install_it>" libmame
+- The resulting dylib will be obj/posix{64}/libmame.dylib
+- The header file is src/libmame/libmame.h
+- You can build a static version of the library too:
+  make BUILD_LIBMAME=1 STATIC=1 libmame
+  in which case the static library will be at obj/posix{64}/libmame.a
+- Note that the libmame makefiles assume that the kernel architecture is the
+  same as the runtime architecture; it might be necessary to set BIGENDIAN
+  and PTR64 manually in some circumstances.
